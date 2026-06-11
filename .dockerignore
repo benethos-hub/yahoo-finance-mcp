@@ -1,0 +1,21 @@
+# Keep the build context small and reproducible.
+.git
+.github
+.gitignore
+.gitattributes
+.venv
+venv
+__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.cache
+*.sqlite
+
+# Not needed inside the image
+tests
+TODO.md
+SPECS.md
+CLAUDE.md
+Dockerfile
+.dockerignore

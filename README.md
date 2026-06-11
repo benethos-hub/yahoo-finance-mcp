@@ -84,6 +84,29 @@ JSON-RPC protocol.
 > built-in authentication. Only bind to `0.0.0.0` on trusted networks, and put
 > a reverse proxy / auth layer in front for any real deployment.
 
+## Docker
+
+A `Dockerfile` builds a small image that hosts the server over the
+streamable-HTTP transport (the stdio transport is for local subprocess use and
+is not what you containerize).
+
+```bash
+# Build
+docker build -t yahoo-finance-mcp .
+
+# Run: container port 8000 -> host port 8000
+docker run --rm -p 8000:8000 yahoo-finance-mcp
+# Server is now reachable at http://localhost:8000/mcp
+
+# Override transport options by appending args (they replace the default CMD):
+docker run --rm -p 9000:9000 yahoo-finance-mcp \
+    --transport streamable-http --host 0.0.0.0 --port 9000 --path /yf
+```
+
+The image runs as a non-root user and includes a basic healthcheck on the HTTP
+port. As with any HTTP deployment, there is no built-in authentication — front
+it with a reverse proxy / auth layer before exposing it publicly.
+
 ## Claude Desktop configuration
 
 Add the server to your `claude_desktop_config.json`:

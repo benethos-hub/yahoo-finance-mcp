@@ -17,6 +17,12 @@ done.
 - [ ] **Create the remote and push** `main` (e.g. via `gh repo create` /
   `git remote add origin ...`).
 
+## Deployment
+
+- [x] Dockerfile that hosts the server over streamable-HTTP (built and verified).
+- [ ] Optionally publish the image to a registry (e.g. `ghcr.io`) via a
+  GitHub Actions workflow on release/tag.
+
 ## Optional polish (deferred — items 6-8 from the publishing review)
 
 - [ ] `CONTRIBUTING.md` + issue / pull-request templates.
