@@ -1,0 +1,31 @@
+# Open items
+
+Pending tasks, mainly for publishing the project. Remove entries as they are
+done.
+
+## Before publishing to GitHub
+
+- [ ] **Set the GitHub owner.** Replace the `<OWNER>` placeholder in
+  [pyproject.toml](pyproject.toml) (`[project.urls]`) with the real GitHub
+  username, e.g. `https://github.com/<OWNER>/yahoo-finance-mcp`.
+- [ ] **Decide on the commit author email.** Current commits use
+  `BeneODev <296451023+BeneODev@users.noreply.github.com>`. This becomes public in the
+  commit history on push. Optionally switch to a GitHub noreply address
+  (`<id>+<user>@users.noreply.github.com`). Nothing is pushed yet, so the two
+  existing commits can still be rewritten if desired. If changed, also set the
+  repo-local `git config user.email` so future commits match.
+- [ ] **Create the remote and push** `main` (e.g. via `gh repo create` /
+  `git remote add origin ...`).
+
+## Optional polish (deferred — items 6-8 from the publishing review)
+
+- [ ] `CONTRIBUTING.md` + issue / pull-request templates.
+- [ ] README badges (CI status, Python version, license).
+- [ ] A concrete usage example in the README (sample prompt + sample response).
+
+## Future features (see SPECS.md §11)
+
+- [ ] Multi-symbol batch for `get_quote`.
+- [ ] Persistent caching (`requests-cache`) with tiered TTLs.
+- [ ] Validate `period` / `interval` / `freq` against known value sets.
+- [ ] Configurable log level via environment variable.
