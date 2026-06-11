@@ -55,17 +55,17 @@ The transport is chosen on the command line. **stdio** is the default (used by
 Claude Desktop and other local clients):
 
 ```powershell
-.\.venv\Scripts\python.exe -m yahoo_finance_mcp.server
+.\.venv\Scripts\python.exe -m yahoo_finance_mcp
 ```
 
 To run it as a standalone, network-reachable service, use an HTTP transport:
 
 ```powershell
 # Streamable HTTP on http://127.0.0.1:8000/mcp
-.\.venv\Scripts\python.exe -m yahoo_finance_mcp.server --transport streamable-http
+.\.venv\Scripts\python.exe -m yahoo_finance_mcp --transport streamable-http
 
 # Bind all interfaces on a custom port / path
-.\.venv\Scripts\python.exe -m yahoo_finance_mcp.server `
+.\.venv\Scripts\python.exe -m yahoo_finance_mcp `
     --transport streamable-http --host 0.0.0.0 --port 9000 --path /yf
 ```
 
@@ -131,7 +131,7 @@ Add the server to your `claude_desktop_config.json`:
   "mcpServers": {
     "yahoo-finance": {
       "command": "d:\\projects\\xt-yahoo-finance-mcp\\.venv\\Scripts\\python.exe",
-      "args": ["-m", "yahoo_finance_mcp.server"]
+      "args": ["-m", "yahoo_finance_mcp"]
     }
   }
 }

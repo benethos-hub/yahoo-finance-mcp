@@ -1,9 +1,9 @@
 """Thin wrapper around :mod:`yfinance` with light in-memory caching.
 
-This module isolates all direct yfinance usage so the MCP tools in
-:mod:`yahoo_finance_mcp.server` stay small and easy to test. yfinance talks to
-the unofficial Yahoo Finance endpoints and can be rate limited, so ``Ticker``
-objects are cached briefly to avoid redundant network calls.
+This module isolates all direct yfinance usage so the MCP tools in ``server.py``
+stay small and easy to test. yfinance talks to the unofficial Yahoo Finance
+endpoints and can be rate limited, so ``Ticker`` objects are cached briefly to
+avoid redundant network calls.
 """
 
 from __future__ import annotations

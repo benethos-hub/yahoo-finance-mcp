@@ -48,9 +48,8 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (FastMCP)
 - **CLI flags:** `--transport`, `--host` (default 127.0.0.1), `--port`
   (default 8000), `--path` (default `/mcp`, `/sse` for sse), `--log-level`.
   Host/port/path apply to the HTTP transports only; for stdio they are ignored.
-- **Entry points:** `python -m yahoo_finance_mcp`,
-  `python -m yahoo_finance_mcp.server`, or the `yahoo-finance-mcp` console
-  script.
+- **Entry points:** `python -m yahoo_finance_mcp` or the `yahoo-finance-mcp`
+  console script.
 - **Python:** 3.11+ (developed/verified on 3.14).
 - **HTTP security:** the HTTP transports have no built-in auth; bind to
   `0.0.0.0` only on trusted networks and front them with a proxy/auth layer.

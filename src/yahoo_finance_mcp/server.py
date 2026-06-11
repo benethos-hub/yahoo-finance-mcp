@@ -1,6 +1,6 @@
 """MCP server entry point exposing Yahoo Finance tools.
 
-Run directly (``python -m yahoo_finance_mcp.server``) or via the installed
+Run directly (``python -m yahoo_finance_mcp``) or via the installed
 ``yahoo-finance-mcp`` console script. The transport is selectable on the
 command line (``--transport``): ``stdio`` (default, for Claude Desktop and
 other local clients) or an HTTP transport (``streamable-http`` / ``sse``) for
