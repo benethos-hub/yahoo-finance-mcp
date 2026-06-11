@@ -55,6 +55,10 @@ Keep the layers separate: **tools in `server.py` stay thin** and delegate to
 ## Verifying
 
 - Tests: `.venv/Scripts/python.exe -m pytest -q` (must stay green; offline).
+- Lint + format: `.venv/Scripts/python.exe -m ruff check .` and
+  `.venv/Scripts/python.exe -m ruff format .` (CI checks `ruff format --check`).
+- Types: `.venv/Scripts/python.exe -m mypy`.
+- Coverage (CI floor 80%): `… -m pytest --cov=yahoo_finance_mcp --cov-fail-under=80`.
 - Inspect what the client sends to Claude (no Desktop restart needed):
   ```
   .venv/Scripts/python.exe -c "import asyncio,json;from yahoo_finance_mcp.server import mcp;print(json.dumps([t.model_dump() for t in asyncio.run(mcp.list_tools())],indent=2,default=str))"

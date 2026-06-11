@@ -10,10 +10,14 @@ __pycache__/
 build/
 dist/
 
-# Caching
+# Caching / coverage
 .pytest_cache/
 .cache/
 *.sqlite
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
 
 # IDE / OS
 .vscode/

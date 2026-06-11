@@ -32,11 +32,12 @@ def _wrap_upstream(exc: Exception, message: str) -> ToolError:
         return RateLimitError()
     return ToolError(f"{message}: {exc}")
 
+
 # Time-to-live for cached Ticker objects, in seconds. Short enough that quotes
 # stay fresh, long enough to coalesce bursts of related tool calls.
 _TICKER_TTL = 60.0
 
-_ticker_cache: dict[str, tuple[float, "yf.Ticker"]] = {}
+_ticker_cache: dict[str, tuple[float, yf.Ticker]] = {}
 _cache_lock = Lock()
 
 # Fields surfaced from Ticker.fast_info for get_quote.
@@ -59,7 +60,7 @@ _QUOTE_FAST_FIELDS = (
 )
 
 
-def _get_ticker(symbol: str) -> "yf.Ticker":
+def _get_ticker(symbol: str) -> yf.Ticker:
     """Return a cached ``yf.Ticker`` for ``symbol`` (case-insensitive key)."""
     key = symbol.strip().upper()
     if not key:
@@ -219,7 +220,9 @@ def get_company_info(symbol: str) -> dict[str, Any]:
     try:
         info = ticker.info or {}
     except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load company info for {symbol!r}") from exc
+        raise _wrap_upstream(
+            exc, f"Failed to load company info for {symbol!r}"
+        ) from exc
 
     if not info or info.get("quoteType") is None and info.get("shortName") is None:
         raise SymbolNotFoundError(symbol)
@@ -324,7 +327,11 @@ def get_news(symbol: str, *, limit: int = 10) -> dict[str, Any]:
                 "url": canonical.get("url"),
             }
         )
-    return {"symbol": symbol.strip().upper(), "count": len(articles), "articles": articles}
+    return {
+        "symbol": symbol.strip().upper(),
+        "count": len(articles),
+        "articles": articles,
+    }
 
 
 def get_recommendations(symbol: str) -> dict[str, Any]:

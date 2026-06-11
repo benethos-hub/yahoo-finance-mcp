@@ -34,7 +34,7 @@ def to_jsonable(value: Any) -> Any:
     # pandas missing-value sentinels (NaT, NA) — guarded because pd.isna on
     # arrays/containers raises or returns arrays.
     try:
-        if pd.isna(value):  # type: ignore[arg-type]
+        if pd.isna(value):
             return None
     except (TypeError, ValueError):
         pass

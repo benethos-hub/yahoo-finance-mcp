@@ -32,16 +32,29 @@ def test_rejects_unknown_transport():
 
 def test_main_runs_stdio_by_default(monkeypatch):
     called = {}
-    monkeypatch.setattr(server.mcp, "run", lambda transport: called.setdefault("t", transport))
+    monkeypatch.setattr(
+        server.mcp, "run", lambda transport: called.setdefault("t", transport)
+    )
     server.main([])
     assert called["t"] == "stdio"
 
 
 def test_main_applies_http_settings(monkeypatch):
     called = {}
-    monkeypatch.setattr(server.mcp, "run", lambda transport: called.setdefault("t", transport))
+    monkeypatch.setattr(
+        server.mcp, "run", lambda transport: called.setdefault("t", transport)
+    )
     server.main(
-        ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "9001", "--path", "/yf"]
+        [
+            "--transport",
+            "streamable-http",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            "9001",
+            "--path",
+            "/yf",
+        ]
     )
     assert called["t"] == "streamable-http"
     assert server.mcp.settings.host == "0.0.0.0"
