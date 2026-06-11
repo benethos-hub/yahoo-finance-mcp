@@ -5,9 +5,17 @@ data to MCP clients (such as Claude Desktop) over the stdio transport. Market
 data is sourced through the [`yfinance`](https://github.com/ranaroussi/yfinance)
 library, which uses Yahoo's unofficial endpoints.
 
-> **Disclaimer:** This project relies on unofficial Yahoo Finance endpoints via
-> `yfinance`. It is intended for personal and educational use. Data may be
-> delayed, incomplete, or unavailable, and Yahoo may rate limit requests.
+> **Disclaimer**
+>
+> - This project is **not affiliated with, endorsed by, or sponsored by Yahoo**.
+>   "Yahoo" and "Yahoo Finance" are trademarks of their respective owners.
+> - It relies on **unofficial** Yahoo Finance endpoints via `yfinance`. Those
+>   endpoints can change or break at any time, and Yahoo may rate limit or block
+>   requests. Review Yahoo's Terms of Service before use.
+> - Data may be delayed, incomplete, or inaccurate. **Nothing here is financial
+>   advice.** Do not rely on it for trading or investment decisions.
+> - Provided "as is", without warranty. Intended for personal and educational
+>   use. You use it at your own risk. See [LICENSE](LICENSE).
 
 ## Tools
 
