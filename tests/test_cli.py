@@ -16,6 +16,25 @@ def test_defaults_to_stdio():
     assert args.log_level == "INFO"
 
 
+def test_default_log_level_from_env(monkeypatch):
+    monkeypatch.setenv("YF_MCP_LOG_LEVEL", "debug")  # case-insensitive
+    assert server._default_log_level() == "DEBUG"
+    # The parser picks up the env-derived default.
+    args = server._build_parser().parse_args([])
+    assert args.log_level == "DEBUG"
+
+
+def test_default_log_level_invalid_falls_back(monkeypatch):
+    monkeypatch.setenv("YF_MCP_LOG_LEVEL", "bogus")
+    assert server._default_log_level() == "INFO"
+
+
+def test_explicit_log_level_overrides_env(monkeypatch):
+    monkeypatch.setenv("YF_MCP_LOG_LEVEL", "DEBUG")
+    args = server._build_parser().parse_args(["--log-level", "ERROR"])
+    assert args.log_level == "ERROR"
+
+
 def test_parses_http_options():
     args = server._build_parser().parse_args(
         ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "9000"]

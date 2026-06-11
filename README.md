@@ -79,6 +79,9 @@ Options (`--help` for the full list):
 | `--path` | `/mcp` (`/sse` for sse) | URL path for HTTP transports. |
 | `--log-level` | `INFO` | `DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`. |
 
+The log level can also be set via the `YF_MCP_LOG_LEVEL` environment variable
+(handy for containers); an explicit `--log-level` flag takes precedence.
+
 Logging always goes to stderr, so under stdio stdout stays reserved for the
 JSON-RPC protocol.
 

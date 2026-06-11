@@ -8,6 +8,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - `python -m yahoo_finance_mcp` entry point (alias for the server).
+- `YF_MCP_LOG_LEVEL` environment variable to set the default log level.
 - `compose.yaml` for hosting the server over streamable-HTTP via Docker Compose.
 - Tooling: ruff (lint + format), mypy type checking, and pytest coverage,
   wired into CI; Dependabot for pip and GitHub Actions updates.

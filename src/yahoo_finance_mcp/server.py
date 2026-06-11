@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 from typing import Annotated, Any
 
@@ -22,9 +23,18 @@ from pydantic import Field
 
 from . import client
 
+_LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+
+def _default_log_level() -> str:
+    """Default log level from the YF_MCP_LOG_LEVEL env var, falling back to INFO."""
+    level = os.environ.get("YF_MCP_LOG_LEVEL", "INFO").upper()
+    return level if level in _LOG_LEVELS else "INFO"
+
+
 # Log to stderr only: stdout carries the MCP JSON-RPC protocol.
 logging.basicConfig(
-    level=logging.INFO,
+    level=_default_log_level(),
     stream=sys.stderr,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
@@ -226,9 +236,10 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--log-level",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        default="INFO",
-        help="Logging verbosity (default: INFO).",
+        choices=_LOG_LEVELS,
+        default=_default_log_level(),
+        help="Logging verbosity. Defaults to the YF_MCP_LOG_LEVEL env var, "
+        "or INFO if unset.",
     )
     return parser
 
