@@ -113,7 +113,7 @@ values).
 
 - Caches the **normalized tool results** (not HTTP responses) in a SQLite file
   so they survive restarts; each tool category has its own TTL.
-- Cache names (the `NAME` in `--cache-ttl NAME=SECONDS` /
+- Cache names (the `<NAME>` in `--cache-ttl <NAME>=<SECONDS>` /
   `YF_MCP_CACHE_TTL_<NAME>`) and default TTLs:
 
   | Name | Tool | Default TTL |
@@ -131,7 +131,7 @@ values).
   importing the package or calling client functions in tests/library use does
   not touch disk unless caching is explicitly enabled.
 - Config precedence CLI > env > default: `--cache/--no-cache` (`YF_MCP_CACHE`),
-  `--cache-dir` (`YF_MCP_CACHE_DIR`), `--cache-ttl NAME=SECONDS`
+  `--cache-dir` (`YF_MCP_CACHE_DIR`), `--cache-ttl <NAME>=<SECONDS>`
   (`YF_MCP_CACHE_TTL_<NAME>`). A TTL of `0` bypasses caching for that tool.
 - Only successful returns are cached; exceptions propagate and are never cached.
 

@@ -80,7 +80,7 @@ Options (`--help` for the full list):
 | `--log-level` | `INFO` | `DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`. |
 | `--cache` / `--no-cache` | on | Enable/disable the persistent result cache. |
 | `--cache-dir` | OS cache dir | Directory for the cache file. |
-| `--cache-ttl NAME=SECONDS` | per-tool defaults | Override one tool's TTL (repeatable). |
+| `--cache-ttl <NAME>=<SECONDS>` | per-tool defaults | Override one tool's TTL (repeatable). |
 
 The log level can also be set via the `YF_MCP_LOG_LEVEL` environment variable
 (handy for containers); an explicit `--log-level` flag takes precedence.
@@ -98,8 +98,8 @@ To reduce load on Yahoo's endpoints and avoid rate limiting, successful tool
 results are cached in a small SQLite file with a per-tool time-to-live (TTL).
 Fast-moving data has a short TTL, stable data a long one.
 
-Cache names (used for `--cache-ttl NAME=SECONDS` and `YF_MCP_CACHE_TTL_<NAME>`)
-and their default TTLs:
+Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
+`YF_MCP_CACHE_TTL_<NAME>`) and their default TTLs:
 
 | Name | Tool | Default TTL |
 |------|------|-------------|

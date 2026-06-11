@@ -10,7 +10,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `python -m yahoo_finance_mcp` entry point (alias for the server).
 - `YF_MCP_LOG_LEVEL` environment variable to set the default log level.
 - Persistent result cache (SQLite) with per-tool TTLs, configurable via
-  `--cache`/`--no-cache`, `--cache-dir`, `--cache-ttl NAME=SECONDS`, and the
+  `--cache`/`--no-cache`, `--cache-dir`, `--cache-ttl <NAME>=<SECONDS>`, and the
   `YF_MCP_CACHE` / `YF_MCP_CACHE_DIR` / `YF_MCP_CACHE_TTL_<NAME>` env vars.
 - `compose.yaml` for hosting the server over streamable-HTTP via Docker Compose.
 - Tooling: ruff (lint + format), mypy type checking, and pytest coverage,

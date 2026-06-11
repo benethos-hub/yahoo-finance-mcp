@@ -258,7 +258,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--cache-ttl",
         action="append",
         default=[],
-        metavar="NAME=SECONDS",
+        metavar="<NAME>=<SECONDS>",
         help="Override a tool's cache TTL, e.g. --cache-ttl quote=15. May be "
         "repeated. Valid names: " + ", ".join(cache.DEFAULT_TTLS) + ".",
     )
@@ -268,14 +268,14 @@ def _build_parser() -> argparse.ArgumentParser:
 def _parse_ttl_overrides(
     parser: argparse.ArgumentParser, items: list[str]
 ) -> dict[str, float]:
-    """Parse ``NAME=SECONDS`` ``--cache-ttl`` items into a mapping."""
+    """Parse ``<NAME>=<SECONDS>`` ``--cache-ttl`` items into a mapping."""
     overrides: dict[str, float] = {}
     for item in items:
         name, sep, raw = item.partition("=")
         name = name.strip().lower()
         if not sep or name not in cache.DEFAULT_TTLS:
             parser.error(
-                f"invalid --cache-ttl {item!r}; expected NAME=SECONDS with NAME "
+                f"invalid --cache-ttl {item!r}; expected <NAME>=<SECONDS> with <NAME> "
                 f"one of {', '.join(cache.DEFAULT_TTLS)}"
             )
         try:
