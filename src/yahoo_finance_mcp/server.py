@@ -21,7 +21,7 @@ from typing import Annotated, Any
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
 
-from . import client
+from . import cache, client
 
 _LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -241,14 +241,65 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Logging verbosity. Defaults to the YF_MCP_LOG_LEVEL env var, "
         "or INFO if unset.",
     )
+    parser.add_argument(
+        "--cache",
+        action=argparse.BooleanOptionalAction,
+        default=cache.env_enabled(),
+        help="Enable the persistent result cache (default: on; "
+        "set via YF_MCP_CACHE). Use --no-cache to disable.",
+    )
+    parser.add_argument(
+        "--cache-dir",
+        default=os.environ.get("YF_MCP_CACHE_DIR"),
+        help="Directory for the cache file (default: the OS user cache dir; "
+        "set via YF_MCP_CACHE_DIR).",
+    )
+    parser.add_argument(
+        "--cache-ttl",
+        action="append",
+        default=[],
+        metavar="NAME=SECONDS",
+        help="Override a tool's cache TTL, e.g. --cache-ttl quote=15. May be "
+        "repeated. Valid names: " + ", ".join(cache.DEFAULT_TTLS) + ".",
+    )
     return parser
+
+
+def _parse_ttl_overrides(
+    parser: argparse.ArgumentParser, items: list[str]
+) -> dict[str, float]:
+    """Parse ``NAME=SECONDS`` ``--cache-ttl`` items into a mapping."""
+    overrides: dict[str, float] = {}
+    for item in items:
+        name, sep, raw = item.partition("=")
+        name = name.strip().lower()
+        if not sep or name not in cache.DEFAULT_TTLS:
+            parser.error(
+                f"invalid --cache-ttl {item!r}; expected NAME=SECONDS with NAME "
+                f"one of {', '.join(cache.DEFAULT_TTLS)}"
+            )
+        try:
+            overrides[name] = float(raw)
+        except ValueError:
+            parser.error(f"invalid --cache-ttl seconds in {item!r}")
+    return overrides
 
 
 def main(argv: list[str] | None = None) -> None:
     """Console-script entry point: parse CLI args and run the MCP server."""
-    args = _build_parser().parse_args(argv)
+    parser = _build_parser()
+    args = parser.parse_args(argv)
 
     logging.getLogger().setLevel(args.log_level)
+
+    # Result cache: CLI overrides win over env vars, which win over defaults.
+    ttl_overrides = {
+        **cache.ttls_from_env(),
+        **_parse_ttl_overrides(parser, args.cache_ttl),
+    }
+    cache.configure(
+        enabled=args.cache, cache_dir=args.cache_dir, ttl_overrides=ttl_overrides
+    )
 
     # Host/port/path only matter for the HTTP transports; setting them for
     # stdio is harmless.

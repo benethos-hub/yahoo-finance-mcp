@@ -16,6 +16,7 @@ from typing import Any
 import yfinance as yf
 from yfinance.exceptions import YFRateLimitError
 
+from . import cache
 from .errors import RateLimitError, SymbolNotFoundError, ToolError
 from .formatting import dataframe_to_records, to_jsonable
 
@@ -76,6 +77,7 @@ def _get_ticker(symbol: str) -> yf.Ticker:
         return ticker
 
 
+@cache.cached("search")
 def search(query: str, *, limit: int = 8) -> list[dict[str, Any]]:
     """Search Yahoo Finance by free text, ticker, or ISIN.
 
@@ -109,6 +111,7 @@ def search(query: str, *, limit: int = 8) -> list[dict[str, Any]]:
     return matches
 
 
+@cache.cached("quote")
 def get_quote(symbol: str) -> dict[str, Any]:
     """Return the current quote and key intraday figures for ``symbol``."""
     ticker = _get_ticker(symbol)
@@ -135,6 +138,7 @@ def get_quote(symbol: str) -> dict[str, Any]:
     return quote
 
 
+@cache.cached("history")
 def get_history(
     symbol: str,
     *,
@@ -214,6 +218,7 @@ _STATEMENT_ATTRS = {
 }
 
 
+@cache.cached("company_info")
 def get_company_info(symbol: str) -> dict[str, Any]:
     """Return a curated company profile and key statistics for ``symbol``."""
     ticker = _get_ticker(symbol)
@@ -234,6 +239,7 @@ def get_company_info(symbol: str) -> dict[str, Any]:
     return profile
 
 
+@cache.cached("financials")
 def get_financials(
     symbol: str,
     *,
@@ -278,6 +284,7 @@ def get_financials(
     }
 
 
+@cache.cached("dividends")
 def get_dividends(symbol: str, *, max_rows: int = 250) -> dict[str, Any]:
     """Return historical dividends and stock splits for ``symbol``."""
     ticker = _get_ticker(symbol)
@@ -303,6 +310,7 @@ def get_dividends(symbol: str, *, max_rows: int = 250) -> dict[str, Any]:
     }
 
 
+@cache.cached("news")
 def get_news(symbol: str, *, limit: int = 10) -> dict[str, Any]:
     """Return recent news headlines for ``symbol``."""
     limit = max(1, min(int(limit), 30))
@@ -334,6 +342,7 @@ def get_news(symbol: str, *, limit: int = 10) -> dict[str, Any]:
     }
 
 
+@cache.cached("recommendations")
 def get_recommendations(symbol: str) -> dict[str, Any]:
     """Return analyst recommendation trends and price targets for ``symbol``."""
     ticker = _get_ticker(symbol)
@@ -356,6 +365,7 @@ def get_recommendations(symbol: str) -> dict[str, Any]:
     }
 
 
+@cache.cached("options")
 def get_options(
     symbol: str,
     *,

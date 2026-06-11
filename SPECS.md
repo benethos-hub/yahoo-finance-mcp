@@ -34,7 +34,8 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (FastMCP)
 |--------|----------------|
 | `server.py` | FastMCP instance, tool definitions (signatures + docstrings), CLI/`main()`. |
 | `__main__.py` | Enables `python -m yahoo_finance_mcp` (delegates to `server.main`). |
-| `client.py` | All direct yfinance usage; caching; error normalization. |
+| `client.py` | All direct yfinance usage; ticker cache; error normalization. |
+| `cache.py` | Persistent result cache (SQLite) with per-tool TTLs. |
 | `formatting.py` | Convert pandas/yfinance output to compact, JSON-safe values. |
 | `errors.py` | `ToolError`, `SymbolNotFoundError`, `RateLimitError`. |
 
@@ -48,8 +49,9 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (FastMCP)
 - **CLI flags:** `--transport`, `--host` (default 127.0.0.1), `--port`
   (default 8000), `--path` (default `/mcp`, `/sse` for sse), `--log-level`.
   Host/port/path apply to the HTTP transports only; for stdio they are ignored.
-- **Environment:** `YF_MCP_LOG_LEVEL` sets the default log level (overridden by
-  an explicit `--log-level`).
+- **Environment:** `YF_MCP_LOG_LEVEL` sets the default log level; `YF_MCP_CACHE`,
+  `YF_MCP_CACHE_DIR`, and `YF_MCP_CACHE_TTL_<NAME>` configure the result cache.
+  Explicit CLI flags override env vars.
 - **Entry points:** `python -m yahoo_finance_mcp` or the `yahoo-finance-mcp`
   console script.
 - **Python:** 3.11+ (developed/verified on 3.14).
@@ -61,8 +63,11 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (FastMCP)
 ## 5. Data source rules
 
 - Single source: `yfinance`. No other provider, no direct HTTP scraping.
-- `Ticker` objects are cached in-memory for `_TICKER_TTL` (60 s) to coalesce
-  bursts of related calls and reduce rate-limit risk.
+- Two cache layers: `Ticker` objects are cached in-memory for `_TICKER_TTL`
+  (60 s) to coalesce bursts within a process; successful tool **results** are
+  cached persistently with per-tool TTLs (see §8a). requests-cache is **not**
+  usable here — yfinance uses curl_cffi and rejects caching sessions — so the
+  result cache operates on our normalized output, not on HTTP responses.
 - Symbol resolution (name / ticker / ISIN) uses `yfinance.Search`; the same
   endpoint handles all three input kinds.
 
@@ -104,6 +109,20 @@ values).
 - Tabular results are row-capped (`MAX_ROWS = 250`, tighter per tool) to stay
   within the client's token budget; truncation keeps the most recent rows.
 
+## 8a. Result cache (`cache.py`)
+
+- Caches the **normalized tool results** (not HTTP responses) in a SQLite file
+  so they survive restarts; each tool category has its own TTL.
+- Default TTLs reflect data volatility, e.g. quote 30s, history/news/options
+  10min, search/company_info/dividends/recommendations 6h, financials 24h.
+- Disabled until `configure()` is called (which `server.main` does), so
+  importing the package or calling client functions in tests/library use does
+  not touch disk unless caching is explicitly enabled.
+- Config precedence CLI > env > default: `--cache/--no-cache` (`YF_MCP_CACHE`),
+  `--cache-dir` (`YF_MCP_CACHE_DIR`), `--cache-ttl NAME=SECONDS`
+  (`YF_MCP_CACHE_TTL_<NAME>`). A TTL of `0` bypasses caching for that tool.
+- Only successful returns are cached; exceptions propagate and are never cached.
+
 ## 9. Error handling
 
 - Expected failures raise a `ToolError` subclass with a concise message
@@ -129,6 +148,5 @@ values).
 ## 11. Future work (not yet implemented)
 
 - Multi-symbol batch for `get_quote`.
-- Persistent caching (`requests-cache`) with tiered TTLs.
 - Input validation of `period`/`interval`/`freq` against known value sets.
-- Configurable log level via environment variable.
+- Stale-on-error: serve an expired cache entry when Yahoo is rate limiting.

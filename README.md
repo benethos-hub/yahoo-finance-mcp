@@ -78,6 +78,9 @@ Options (`--help` for the full list):
 | `--port` | `8000` | Port for HTTP transports. |
 | `--path` | `/mcp` (`/sse` for sse) | URL path for HTTP transports. |
 | `--log-level` | `INFO` | `DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`. |
+| `--cache` / `--no-cache` | on | Enable/disable the persistent result cache. |
+| `--cache-dir` | OS cache dir | Directory for the cache file. |
+| `--cache-ttl NAME=SECONDS` | per-tool defaults | Override one tool's TTL (repeatable). |
 
 The log level can also be set via the `YF_MCP_LOG_LEVEL` environment variable
 (handy for containers); an explicit `--log-level` flag takes precedence.
@@ -88,6 +91,21 @@ JSON-RPC protocol.
 > **Note:** The HTTP transports expose the server over the network without
 > built-in authentication. Only bind to `0.0.0.0` on trusted networks, and put
 > a reverse proxy / auth layer in front for any real deployment.
+
+## Caching
+
+To reduce load on Yahoo's endpoints and avoid rate limiting, successful tool
+results are cached in a small SQLite file with a per-tool time-to-live (TTL).
+Fast-moving data has a short TTL, stable data a long one (e.g. quotes ~30s,
+history/news ~10min, company info/financials hours).
+
+- On by default; disable with `--no-cache` or `YF_MCP_CACHE=0`.
+- Location: the OS user cache directory, or `--cache-dir` / `YF_MCP_CACHE_DIR`.
+- Override a TTL: `--cache-ttl quote=15` (repeatable) or the
+  `YF_MCP_CACHE_TTL_<NAME>` env var (e.g. `YF_MCP_CACHE_TTL_QUOTE=15`).
+  Set a TTL to `0` to bypass caching for that tool.
+
+Precedence is CLI > environment > default. Errors are never cached.
 
 ## Docker
 

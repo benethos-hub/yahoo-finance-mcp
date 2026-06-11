@@ -33,8 +33,8 @@ done.
 ## Future features (see SPECS.md §11)
 
 - [ ] Multi-symbol batch for `get_quote`.
-- [ ] Persistent caching with tiered TTLs. NOTE: `requests-cache` is not viable —
-  yfinance 1.4 uses curl_cffi and explicitly rejects caching sessions. Would
-  need a result-level disk cache instead.
+- [x] Persistent caching with tiered TTLs — implemented as a result-level SQLite
+  cache (`cache.py`), since `requests-cache` is not viable with yfinance's
+  curl_cffi backend.
 - [ ] Validate `period` / `interval` / `freq` against known value sets.
 - [x] Configurable log level via environment variable (`YF_MCP_LOG_LEVEL`).
