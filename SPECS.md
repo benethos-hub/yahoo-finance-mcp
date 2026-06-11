@@ -113,8 +113,20 @@ values).
 
 - Caches the **normalized tool results** (not HTTP responses) in a SQLite file
   so they survive restarts; each tool category has its own TTL.
-- Default TTLs reflect data volatility, e.g. quote 30s, history/news/options
-  10min, search/company_info/dividends/recommendations 6h, financials 24h.
+- Cache names (the `NAME` in `--cache-ttl NAME=SECONDS` /
+  `YF_MCP_CACHE_TTL_<NAME>`) and default TTLs:
+
+  | Name | Tool | Default TTL |
+  |------|------|-------------|
+  | `quote` | `get_quote` | 30 s |
+  | `history` | `get_history` | 10 min |
+  | `news` | `get_news` | 10 min |
+  | `options` | `get_options` | 10 min |
+  | `search` | `search` | 6 h |
+  | `company_info` | `get_company_info` | 6 h |
+  | `dividends` | `get_dividends` | 6 h |
+  | `recommendations` | `get_recommendations` | 6 h |
+  | `financials` | `get_financials` | 24 h |
 - Disabled until `configure()` is called (which `server.main` does), so
   importing the package or calling client functions in tests/library use does
   not touch disk unless caching is explicitly enabled.

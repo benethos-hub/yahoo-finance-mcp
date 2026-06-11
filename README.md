@@ -96,8 +96,22 @@ JSON-RPC protocol.
 
 To reduce load on Yahoo's endpoints and avoid rate limiting, successful tool
 results are cached in a small SQLite file with a per-tool time-to-live (TTL).
-Fast-moving data has a short TTL, stable data a long one (e.g. quotes ~30s,
-history/news ~10min, company info/financials hours).
+Fast-moving data has a short TTL, stable data a long one.
+
+Cache names (used for `--cache-ttl NAME=SECONDS` and `YF_MCP_CACHE_TTL_<NAME>`)
+and their default TTLs:
+
+| Name | Tool | Default TTL |
+|------|------|-------------|
+| `quote` | `get_quote` | 30 s |
+| `history` | `get_history` | 10 min |
+| `news` | `get_news` | 10 min |
+| `options` | `get_options` | 10 min |
+| `search` | `search` | 6 h |
+| `company_info` | `get_company_info` | 6 h |
+| `dividends` | `get_dividends` | 6 h |
+| `recommendations` | `get_recommendations` | 6 h |
+| `financials` | `get_financials` | 24 h |
 
 - On by default; disable with `--no-cache` or `YF_MCP_CACHE=0`.
 - Location: the OS user cache directory, or `--cache-dir` / `YF_MCP_CACHE_DIR`.
