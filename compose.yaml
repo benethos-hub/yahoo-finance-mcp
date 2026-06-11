@@ -1,0 +1,23 @@
+# Docker Compose file for hosting the server over the streamable-HTTP transport.
+# Usage:
+#   docker compose up -d        # build (if needed) and start in the background
+#   docker compose logs -f      # follow logs
+#   docker compose down         # stop and remove
+#
+# The modern canonical filename is compose.yaml; `docker compose` also still
+# reads the legacy docker-compose.yml name.
+
+services:
+  yahoo-finance-mcp:
+    build: .
+    image: yahoo-finance-mcp:latest
+    container_name: yahoo-finance-mcp
+    ports:
+      # host:container — change the host port if 8000 is taken.
+      - "8000:8000"
+    restart: unless-stopped
+    # The image already defaults to:
+    #   --transport streamable-http --host 0.0.0.0 --port 8000
+    # Uncomment to override transport/port/path (keep --host 0.0.0.0 so the
+    # server is reachable from outside the container):
+    # command: ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8000", "--path", "/yf"]

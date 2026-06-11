@@ -107,6 +107,19 @@ The image runs as a non-root user and includes a basic healthcheck on the HTTP
 port. As with any HTTP deployment, there is no built-in authentication — front
 it with a reverse proxy / auth layer before exposing it publicly.
 
+### Docker Compose
+
+A `compose.yaml` is provided for convenience:
+
+```bash
+docker compose up -d      # build (if needed) and start in the background
+docker compose logs -f    # follow logs
+docker compose down       # stop and remove
+```
+
+This requires Docker Compose v2 (the `compose` CLI plugin). The server is then
+reachable at `http://localhost:8000/mcp`.
+
 ## Claude Desktop configuration
 
 Add the server to your `claude_desktop_config.json`:
