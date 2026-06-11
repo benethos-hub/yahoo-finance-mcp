@@ -309,3 +309,102 @@ def test_get_options_returns_chain(patch_ticker):
     out = client.get_options("aapl", expiration="2024-01-19")
     assert out["calls"][0]["strike"] == 100.0
     assert out["puts"][0]["strike"] == 90.0
+
+
+def test_get_options_caps_rows(patch_ticker):
+    import types
+
+    calls = pd.DataFrame({"strike": list(range(100))})
+    puts = pd.DataFrame({"strike": list(range(100))})
+    chain = types.SimpleNamespace(calls=calls, puts=puts)
+    patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
+    out = client.get_options("aapl", expiration="2024-01-19", max_rows=5)
+    assert len(out["calls"]) == 5
+    assert len(out["puts"]) == 5
+
+
+# --- get_company_info -----------------------------------------------------
+
+
+def test_get_company_info_returns_curated_fields(patch_ticker):
+    patch_ticker(
+        FakeTicker(
+            info={
+                "quoteType": "EQUITY",
+                "shortName": "Apple Inc.",
+                "sector": "Technology",
+                "marketCap": 3_000_000,
+                "irrelevant": "dropped",
+            }
+        )
+    )
+    info = client.get_company_info("aapl")
+    assert info["symbol"] == "AAPL"
+    assert info["shortName"] == "Apple Inc."
+    assert info["sector"] == "Technology"
+    # Only curated fields are surfaced.
+    assert "irrelevant" not in info
+
+
+def test_get_company_info_empty_raises(patch_ticker):
+    patch_ticker(FakeTicker(info={}))
+    with pytest.raises(SymbolNotFoundError):
+        client.get_company_info("nope")
+
+
+# --- search limit clamping ------------------------------------------------
+
+
+def test_search_clamps_limit(monkeypatch):
+    captured = {}
+
+    class FakeSearch:
+        def __init__(self, query, max_results=8, **kwargs):
+            captured["max_results"] = max_results
+            self.quotes = []
+
+    monkeypatch.setattr(client.yf, "Search", FakeSearch)
+
+    client.search("x", limit=999)
+    assert captured["max_results"] == 25
+
+    client.search("x", limit=0)
+    assert captured["max_results"] == 1
+
+
+# --- get_history truncation -----------------------------------------------
+
+
+def test_get_history_truncates_and_flags(patch_ticker):
+    idx = pd.date_range("2024-01-01", periods=10, freq="D")
+    df = pd.DataFrame({"Close": list(range(10))}, index=idx)
+    patch_ticker(FakeTicker(history=df))
+    out = client.get_history("aapl", max_rows=3)
+    assert out["count"] == 3
+    assert out["truncated"] is True
+    # The most recent rows are kept (tail).
+    assert out["rows"][-1]["Close"] == 9
+
+
+# --- _get_ticker cache ----------------------------------------------------
+
+
+def test_get_ticker_caches_and_is_case_insensitive(monkeypatch):
+    client._ticker_cache.clear()
+    constructed: list[str] = []
+
+    def fake_ticker(symbol):
+        constructed.append(symbol)
+        return FakeTicker()
+
+    monkeypatch.setattr(client.yf, "Ticker", fake_ticker)
+
+    first = client._get_ticker("aapl")
+    second = client._get_ticker("AAPL")
+    assert first is second  # same cached instance
+    assert constructed == ["AAPL"]  # built once, key upper-cased
+
+
+def test_get_ticker_empty_symbol_raises():
+    with pytest.raises(ToolError):
+        client._get_ticker("   ")
