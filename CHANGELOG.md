@@ -8,8 +8,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - `python -m yahoo_finance_mcp` entry point (alias for the server).
+- `compose.yaml` for hosting the server over streamable-HTTP via Docker Compose.
 - Tooling: ruff (lint + format), mypy type checking, and pytest coverage,
   wired into CI; Dependabot for pip and GitHub Actions updates.
+- Expanded test coverage: `get_company_info`, ticker caching, search limit
+  clamping, history truncation, options row capping, and tool
+  registration/schema checks.
 
 ## [0.1.0] - 2026-06-11
 

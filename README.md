@@ -1,9 +1,11 @@
 # Yahoo Finance MCP Server
 
 An [MCP](https://modelcontextprotocol.io) server that exposes Yahoo Finance
-data to MCP clients (such as Claude Desktop) over the stdio transport. Market
-data is sourced through the [`yfinance`](https://github.com/ranaroussi/yfinance)
-library, which uses Yahoo's unofficial endpoints.
+data to MCP clients (such as Claude Desktop). It runs over **stdio** (default,
+for local clients) or an **HTTP** transport (for standalone / containerized
+hosting). Market data is sourced through the
+[`yfinance`](https://github.com/ranaroussi/yfinance) library, which uses
+Yahoo's unofficial endpoints.
 
 > **Disclaimer**
 >
@@ -141,14 +143,21 @@ All `get_*` tools expect a Yahoo Finance **symbol** (e.g. `AAPL`, `SAP.DE`).
 To resolve a company name or an ISIN to a symbol, call `search` first — the
 same Yahoo search endpoint handles free text, tickers, and ISINs.
 
-## Testing
+## Development
 
-Unit tests mock `yfinance` and run offline:
+Install the dev extras, then run the test, lint, and type-check steps (the same
+ones CI runs):
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
-.\.venv\Scripts\python.exe -m pytest -q
+
+.\.venv\Scripts\python.exe -m pytest -q                 # unit tests (offline)
+.\.venv\Scripts\python.exe -m ruff check .              # lint
+.\.venv\Scripts\python.exe -m ruff format .             # format
+.\.venv\Scripts\python.exe -m mypy                      # type check
+.\.venv\Scripts\python.exe -m pytest --cov=yahoo_finance_mcp   # coverage
 ```
 
-`tests/smoke.py` performs an ad-hoc check against live Yahoo Finance and is
-not part of the unit suite.
+The unit tests mock `yfinance` and run fully offline. `tests/smoke.py` performs
+an ad-hoc check against live Yahoo Finance and is not part of the unit suite.
+CI also runs across Python 3.11–3.13 and enforces an 80% coverage floor.

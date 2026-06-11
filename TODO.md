@@ -20,6 +20,7 @@ done.
 ## Deployment
 
 - [x] Dockerfile that hosts the server over streamable-HTTP (built and verified).
+- [x] `compose.yaml` for Docker Compose (built and verified).
 - [ ] Optionally publish the image to a registry (e.g. `ghcr.io`) via a
   GitHub Actions workflow on release/tag.
 

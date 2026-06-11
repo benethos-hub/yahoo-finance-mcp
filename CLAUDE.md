@@ -21,7 +21,9 @@ How to work in this repository. Read this before making changes. See
 
 - Windows, PowerShell or Bash. Python 3.11+ (developed on 3.14).
 - Set up: `py -m venv .venv` then `.\.venv\Scripts\python.exe -m pip install -e ".[dev]"`.
-- Run the server: `.\.venv\Scripts\python.exe -m yahoo_finance_mcp.server`.
+- Run the server (stdio): `.\.venv\Scripts\python.exe -m yahoo_finance_mcp.server`
+  (or `python -m yahoo_finance_mcp`). For HTTP transports and Docker/Compose
+  hosting, see the README (`--transport`, `Dockerfile`, `compose.yaml`).
 
 ## Project layout
 

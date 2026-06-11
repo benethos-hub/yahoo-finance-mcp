@@ -32,7 +32,8 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (FastMCP)
 
 | Module | Responsibility |
 |--------|----------------|
-| `server.py` | FastMCP instance, tool definitions (signatures + docstrings), `main()`. |
+| `server.py` | FastMCP instance, tool definitions (signatures + docstrings), CLI/`main()`. |
+| `__main__.py` | Enables `python -m yahoo_finance_mcp` (delegates to `server.main`). |
 | `client.py` | All direct yfinance usage; caching; error normalization. |
 | `formatting.py` | Convert pandas/yfinance output to compact, JSON-safe values. |
 | `errors.py` | `ToolError`, `SymbolNotFoundError`, `RateLimitError`. |
@@ -47,11 +48,14 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (FastMCP)
 - **CLI flags:** `--transport`, `--host` (default 127.0.0.1), `--port`
   (default 8000), `--path` (default `/mcp`, `/sse` for sse), `--log-level`.
   Host/port/path apply to the HTTP transports only; for stdio they are ignored.
-- **Entry points:** `python -m yahoo_finance_mcp.server` or the
-  `yahoo-finance-mcp` console script.
+- **Entry points:** `python -m yahoo_finance_mcp`,
+  `python -m yahoo_finance_mcp.server`, or the `yahoo-finance-mcp` console
+  script.
 - **Python:** 3.11+ (developed/verified on 3.14).
 - **HTTP security:** the HTTP transports have no built-in auth; bind to
   `0.0.0.0` only on trusted networks and front them with a proxy/auth layer.
+- **Deployment:** a `Dockerfile` (multi-stage, non-root, healthcheck) and a
+  `compose.yaml` host the server over streamable-HTTP on port 8000.
 
 ## 5. Data source rules
 
@@ -115,7 +119,11 @@ values).
   `tests/test_formatting.py`).
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo; it is not part of
   the pytest suite (no `test_*` functions, so it is not collected).
-- CI (GitHub Actions) runs `pytest` on Python 3.11-3.13.
+- Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
+  of 80% (currently ~88%).
+- CI (GitHub Actions): a lint job (ruff + mypy) plus a test matrix running
+  `pytest` with coverage on Python 3.11-3.13. Dependabot keeps pip and Actions
+  dependencies updated.
 
 ## 11. Future work (not yet implemented)
 
