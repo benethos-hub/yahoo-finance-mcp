@@ -35,6 +35,35 @@ def test_explicit_log_level_overrides_env(monkeypatch):
     assert args.log_level == "ERROR"
 
 
+def test_transport_host_port_path_from_env(monkeypatch):
+    monkeypatch.setenv("YF_MCP_TRANSPORT", "streamable-http")
+    monkeypatch.setenv("YF_MCP_HOST", "0.0.0.0")
+    monkeypatch.setenv("YF_MCP_PORT", "9000")
+    monkeypatch.setenv("YF_MCP_PATH", "/yf")
+    args = server._build_parser().parse_args([])
+    assert args.transport == "streamable-http"
+    assert args.host == "0.0.0.0"
+    assert args.port == 9000
+    assert args.path == "/yf"
+
+
+def test_invalid_env_transport_and_port_fall_back(monkeypatch):
+    monkeypatch.setenv("YF_MCP_TRANSPORT", "carrier-pigeon")
+    monkeypatch.setenv("YF_MCP_PORT", "not-a-number")
+    assert server._default_transport() == "stdio"
+    assert server._default_port() == 8000
+
+
+def test_explicit_flags_override_env(monkeypatch):
+    monkeypatch.setenv("YF_MCP_TRANSPORT", "sse")
+    monkeypatch.setenv("YF_MCP_PORT", "9000")
+    args = server._build_parser().parse_args(
+        ["--transport", "streamable-http", "--port", "8123"]
+    )
+    assert args.transport == "streamable-http"
+    assert args.port == 8123
+
+
 def test_parses_http_options():
     args = server._build_parser().parse_args(
         ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "9000"]

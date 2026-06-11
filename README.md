@@ -69,21 +69,20 @@ To run it as a standalone, network-reachable service, use an HTTP transport:
     --transport streamable-http --host 0.0.0.0 --port 9000 --path /yf
 ```
 
-Options (`--help` for the full list):
+Every option has both a CLI flag and an environment variable (handy for
+containers). Precedence is **CLI > environment > default** (`--help` for the
+full list):
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--transport` | `stdio` | `stdio`, `streamable-http`, or `sse`. |
-| `--host` | `127.0.0.1` | Bind host for HTTP transports (`0.0.0.0` for remote). |
-| `--port` | `8000` | Port for HTTP transports. |
-| `--path` | `/mcp` (`/sse` for sse) | URL path for HTTP transports. |
-| `--log-level` | `INFO` | `DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`. |
-| `--cache` / `--no-cache` | on | Enable/disable the persistent result cache. |
-| `--cache-dir` | OS cache dir | Directory for the cache file. |
-| `--cache-ttl <NAME>=<SECONDS>` | per-tool defaults | Override one tool's TTL (repeatable). |
-
-The log level can also be set via the `YF_MCP_LOG_LEVEL` environment variable
-(handy for containers); an explicit `--log-level` flag takes precedence.
+| Flag | Env var | Default | Description |
+|------|---------|---------|-------------|
+| `--transport` | `YF_MCP_TRANSPORT` | `stdio` | `stdio`, `streamable-http`, or `sse`. |
+| `--host` | `YF_MCP_HOST` | `127.0.0.1` | Bind host for HTTP transports (`0.0.0.0` for remote). |
+| `--port` | `YF_MCP_PORT` | `8000` | Port for HTTP transports. |
+| `--path` | `YF_MCP_PATH` | `/mcp` (`/sse` for sse) | URL path for HTTP transports. |
+| `--log-level` | `YF_MCP_LOG_LEVEL` | `INFO` | `DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`. |
+| `--cache` / `--no-cache` | `YF_MCP_CACHE` | on | Enable/disable the persistent result cache. |
+| `--cache-dir` | `YF_MCP_CACHE_DIR` | OS cache dir | Directory for the cache file. |
+| `--cache-ttl <NAME>=<SECONDS>` | `YF_MCP_CACHE_TTL_<NAME>` | per-tool defaults | Override one tool's TTL. |
 
 Logging always goes to stderr, so under stdio stdout stays reserved for the
 JSON-RPC protocol.
@@ -127,26 +126,36 @@ A `Dockerfile` builds a small image that hosts the server over the
 streamable-HTTP transport (the stdio transport is for local subprocess use and
 is not what you containerize).
 
+The image is **configured entirely through environment variables** (see the
+options table above) — it carries no default command arguments, so overriding a
+single setting with `-e` does not disturb the others.
+
 ```bash
 # Build
 docker build -t yahoo-finance-mcp .
 
-# Run: container port 8000 -> host port 8000
+# Run with the built-in defaults (streamable-HTTP on 0.0.0.0:8000)
 docker run --rm -p 8000:8000 yahoo-finance-mcp
 # Server is now reachable at http://localhost:8000/mcp
 
-# Override transport options by appending args (they replace the default CMD):
-docker run --rm -p 9000:9000 yahoo-finance-mcp \
-    --transport streamable-http --host 0.0.0.0 --port 9000 --path /yf
+# Override settings via -e, and persist the cache in a named volume
+docker run --rm -p 9000:9000 \
+    -e YF_MCP_PORT=9000 \
+    -e YF_MCP_LOG_LEVEL=DEBUG \
+    -v yahoo-finance-cache:/cache \
+    yahoo-finance-mcp
 ```
 
-The image runs as a non-root user and includes a basic healthcheck on the HTTP
-port. As with any HTTP deployment, there is no built-in authentication — front
-it with a reverse proxy / auth layer before exposing it publicly.
+The image runs as a non-root user, includes a healthcheck on the configured
+HTTP port, and writes its cache to `/cache` (declared as a volume) — mount a
+named volume there to keep the cache across container restarts. As with any
+HTTP deployment, there is no built-in authentication — front it with a reverse
+proxy / auth layer before exposing it publicly.
 
 ### Docker Compose
 
-A `compose.yaml` is provided for convenience:
+A `compose.yaml` is provided (settings under `environment:`, cache in a named
+volume):
 
 ```bash
 docker compose up -d      # build (if needed) and start in the background

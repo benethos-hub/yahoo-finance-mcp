@@ -49,16 +49,19 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (FastMCP)
 - **CLI flags:** `--transport`, `--host` (default 127.0.0.1), `--port`
   (default 8000), `--path` (default `/mcp`, `/sse` for sse), `--log-level`.
   Host/port/path apply to the HTTP transports only; for stdio they are ignored.
-- **Environment:** `YF_MCP_LOG_LEVEL` sets the default log level; `YF_MCP_CACHE`,
-  `YF_MCP_CACHE_DIR`, and `YF_MCP_CACHE_TTL_<NAME>` configure the result cache.
-  Explicit CLI flags override env vars.
+- **Environment:** every CLI flag has an env-var equivalent (CLI > env >
+  default): `YF_MCP_TRANSPORT`, `YF_MCP_HOST`, `YF_MCP_PORT`, `YF_MCP_PATH`,
+  `YF_MCP_LOG_LEVEL`, and the cache vars `YF_MCP_CACHE`, `YF_MCP_CACHE_DIR`,
+  `YF_MCP_CACHE_TTL_<NAME>`.
 - **Entry points:** `python -m yahoo_finance_mcp` or the `yahoo-finance-mcp`
   console script.
 - **Python:** 3.11+ (developed/verified on 3.14).
 - **HTTP security:** the HTTP transports have no built-in auth; bind to
   `0.0.0.0` only on trusted networks and front them with a proxy/auth layer.
 - **Deployment:** a `Dockerfile` (multi-stage, non-root, healthcheck) and a
-  `compose.yaml` host the server over streamable-HTTP on port 8000.
+  `compose.yaml` host the server over streamable-HTTP on port 8000. The image
+  is configured entirely via env vars (no default CMD args) and persists its
+  cache to a `/cache` volume.
 
 ## 5. Data source rules
 

@@ -8,7 +8,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - `python -m yahoo_finance_mcp` entry point (alias for the server).
-- `YF_MCP_LOG_LEVEL` environment variable to set the default log level.
+- Environment-variable equivalents for every CLI option
+  (`YF_MCP_TRANSPORT`/`HOST`/`PORT`/`PATH`/`LOG_LEVEL`), with CLI > env >
+  default precedence.
+- The Docker image is now configured entirely via environment variables (no
+  default command args) and persists its result cache to a `/cache` volume.
 - Persistent result cache (SQLite) with per-tool TTLs, configurable via
   `--cache`/`--no-cache`, `--cache-dir`, `--cache-ttl <NAME>=<SECONDS>`, and the
   `YF_MCP_CACHE` / `YF_MCP_CACHE_DIR` / `YF_MCP_CACHE_TTL_<NAME>` env vars.

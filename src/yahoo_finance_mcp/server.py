@@ -24,12 +24,27 @@ from pydantic import Field
 from . import cache, client
 
 _LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+_TRANSPORTS = ["stdio", "streamable-http", "sse"]
 
 
 def _default_log_level() -> str:
     """Default log level from the YF_MCP_LOG_LEVEL env var, falling back to INFO."""
     level = os.environ.get("YF_MCP_LOG_LEVEL", "INFO").upper()
     return level if level in _LOG_LEVELS else "INFO"
+
+
+def _default_transport() -> str:
+    """Default transport from the YF_MCP_TRANSPORT env var, falling back to stdio."""
+    transport = os.environ.get("YF_MCP_TRANSPORT", "stdio").strip().lower()
+    return transport if transport in _TRANSPORTS else "stdio"
+
+
+def _default_port() -> int:
+    """Default port from the YF_MCP_PORT env var, falling back to 8000."""
+    try:
+        return int(os.environ.get("YF_MCP_PORT", "8000"))
+    except ValueError:
+        return 8000
 
 
 # Log to stderr only: stdout carries the MCP JSON-RPC protocol.
@@ -212,27 +227,27 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--transport",
-        choices=["stdio", "streamable-http", "sse"],
-        default="stdio",
-        help="Transport to serve on (default: stdio).",
+        choices=_TRANSPORTS,
+        default=_default_transport(),
+        help="Transport to serve on (default: stdio; set via YF_MCP_TRANSPORT).",
     )
     parser.add_argument(
         "--host",
-        default="127.0.0.1",
-        help="Host to bind for HTTP transports (default: 127.0.0.1). "
-        "Use 0.0.0.0 to accept remote connections.",
+        default=os.environ.get("YF_MCP_HOST", "127.0.0.1"),
+        help="Host to bind for HTTP transports (default: 127.0.0.1; set via "
+        "YF_MCP_HOST). Use 0.0.0.0 to accept remote connections.",
     )
     parser.add_argument(
         "--port",
         type=int,
-        default=8000,
-        help="Port for HTTP transports (default: 8000).",
+        default=_default_port(),
+        help="Port for HTTP transports (default: 8000; set via YF_MCP_PORT).",
     )
     parser.add_argument(
         "--path",
-        default=None,
-        help="URL path to serve MCP on for HTTP transports "
-        "(default: /mcp for streamable-http, /sse for sse).",
+        default=os.environ.get("YF_MCP_PATH"),
+        help="URL path to serve MCP on for HTTP transports (default: /mcp for "
+        "streamable-http, /sse for sse; set via YF_MCP_PATH).",
     )
     parser.add_argument(
         "--log-level",

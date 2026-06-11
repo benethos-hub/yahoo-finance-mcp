@@ -16,8 +16,22 @@ services:
       # host:container — change the host port if 8000 is taken.
       - "8000:8000"
     restart: unless-stopped
-    # The image already defaults to:
-    #   --transport streamable-http --host 0.0.0.0 --port 8000
-    # Uncomment to override transport/port/path (keep --host 0.0.0.0 so the
-    # server is reachable from outside the container):
-    # command: ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8000", "--path", "/yf"]
+    # All configuration is via environment variables. The image already sets
+    # sensible defaults (streamable-HTTP on 0.0.0.0:8000, cache at /cache);
+    # override any of them here.
+    environment:
+      # YF_MCP_TRANSPORT: streamable-http
+      # YF_MCP_HOST: "0.0.0.0"
+      # YF_MCP_PORT: "8000"
+      # YF_MCP_PATH: /mcp
+      YF_MCP_LOG_LEVEL: INFO
+      YF_MCP_CACHE: "1"
+      YF_MCP_CACHE_DIR: /cache
+      # Override a single tool's cache TTL (seconds), e.g.:
+      # YF_MCP_CACHE_TTL_QUOTE: "15"
+    volumes:
+      # Persist the result cache across container restarts.
+      - yfmcp-cache:/cache
+
+volumes:
+  yfmcp-cache:
