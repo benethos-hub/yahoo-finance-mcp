@@ -49,12 +49,40 @@ py -m venv .venv
 
 ## Running
 
+The transport is chosen on the command line. **stdio** is the default (used by
+Claude Desktop and other local clients):
+
 ```powershell
 .\.venv\Scripts\python.exe -m yahoo_finance_mcp.server
 ```
 
-The server speaks MCP over stdio. All logging goes to stderr so stdout stays
-reserved for the JSON-RPC protocol.
+To run it as a standalone, network-reachable service, use an HTTP transport:
+
+```powershell
+# Streamable HTTP on http://127.0.0.1:8000/mcp
+.\.venv\Scripts\python.exe -m yahoo_finance_mcp.server --transport streamable-http
+
+# Bind all interfaces on a custom port / path
+.\.venv\Scripts\python.exe -m yahoo_finance_mcp.server `
+    --transport streamable-http --host 0.0.0.0 --port 9000 --path /yf
+```
+
+Options (`--help` for the full list):
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--transport` | `stdio` | `stdio`, `streamable-http`, or `sse`. |
+| `--host` | `127.0.0.1` | Bind host for HTTP transports (`0.0.0.0` for remote). |
+| `--port` | `8000` | Port for HTTP transports. |
+| `--path` | `/mcp` (`/sse` for sse) | URL path for HTTP transports. |
+| `--log-level` | `INFO` | `DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`. |
+
+Logging always goes to stderr, so under stdio stdout stays reserved for the
+JSON-RPC protocol.
+
+> **Note:** The HTTP transports expose the server over the network without
+> built-in authentication. Only bind to `0.0.0.0` on trusted networks, and put
+> a reverse proxy / auth layer in front for any real deployment.
 
 ## Claude Desktop configuration
 

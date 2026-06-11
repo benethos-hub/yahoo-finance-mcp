@@ -1,12 +1,18 @@
-"""MCP server entry point exposing Yahoo Finance tools over stdio.
+"""MCP server entry point exposing Yahoo Finance tools.
 
 Run directly (``python -m yahoo_finance_mcp.server``) or via the installed
-``yahoo-finance-mcp`` console script. The server communicates over stdio, so
-all logging is sent to stderr to keep stdout reserved for the JSON-RPC stream.
+``yahoo-finance-mcp`` console script. The transport is selectable on the
+command line (``--transport``): ``stdio`` (default, for Claude Desktop and
+other local clients) or an HTTP transport (``streamable-http`` / ``sse``) for
+running the server as a standalone, network-reachable service.
+
+Logging always goes to stderr so that, under stdio, stdout stays reserved for
+the JSON-RPC stream.
 """
 
 from __future__ import annotations
 
+import argparse
 import logging
 import sys
 from typing import Annotated, Any
@@ -187,10 +193,73 @@ def get_options(
     return client.get_options(symbol, expiration=expiration)
 
 
-def main() -> None:
-    """Console-script entry point: run the MCP server over stdio."""
-    logger.info("Starting Yahoo Finance MCP server (stdio)")
-    mcp.run()
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the command-line parser for the server entry point."""
+    parser = argparse.ArgumentParser(
+        prog="yahoo-finance-mcp",
+        description="Yahoo Finance MCP server. Defaults to stdio; pass "
+        "--transport for an HTTP transport.",
+    )
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "streamable-http", "sse"],
+        default="stdio",
+        help="Transport to serve on (default: stdio).",
+    )
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Host to bind for HTTP transports (default: 127.0.0.1). "
+        "Use 0.0.0.0 to accept remote connections.",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port for HTTP transports (default: 8000).",
+    )
+    parser.add_argument(
+        "--path",
+        default=None,
+        help="URL path to serve MCP on for HTTP transports "
+        "(default: /mcp for streamable-http, /sse for sse).",
+    )
+    parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
+        help="Logging verbosity (default: INFO).",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Console-script entry point: parse CLI args and run the MCP server."""
+    args = _build_parser().parse_args(argv)
+
+    logging.getLogger().setLevel(args.log_level)
+
+    # Host/port/path only matter for the HTTP transports; setting them for
+    # stdio is harmless.
+    mcp.settings.host = args.host
+    mcp.settings.port = args.port
+    if args.path:
+        if args.transport == "sse":
+            mcp.settings.sse_path = args.path
+        else:
+            mcp.settings.streamable_http_path = args.path
+
+    if args.transport == "stdio":
+        logger.info("Starting Yahoo Finance MCP server (stdio)")
+    else:
+        logger.info(
+            "Starting Yahoo Finance MCP server (%s) on http://%s:%s",
+            args.transport,
+            args.host,
+            args.port,
+        )
+
+    mcp.run(transport=args.transport)
 
 
 if __name__ == "__main__":
