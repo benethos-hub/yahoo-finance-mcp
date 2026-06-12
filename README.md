@@ -147,6 +147,23 @@ Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 
 Precedence is CLI > environment > default. Errors are never cached.
 
+### When to enable it
+
+Enable the cache (`--cache` / `YF_MCP_CACHE=1`) if you:
+
+- run the server as a long-running or **containerized HTTP service** that
+  restarts periodically (the cache survives restarts → instant repeat results);
+- **hit Yahoo rate limits** or make many repeated identical requests over time;
+- mostly query **slow-changing data** (search, company info, financials), where
+  staleness is irrelevant.
+
+Leave it off (the default) if you:
+
+- run it **locally over stdio** for interactive sessions — yfinance already
+  reuses identical requests within a single process, so the cache adds little;
+- need the **freshest possible** data;
+- use it only occasionally.
+
 ## Docker
 
 A `Dockerfile` builds a small image that hosts the server over the
