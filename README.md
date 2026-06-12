@@ -128,7 +128,7 @@ Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 | `history` | `get_history` | 10 min |
 | `news` | `get_news` | 10 min |
 | `options` | `get_options` | 10 min |
-| `search` | `search` | 6 h |
+| `search` | `search` | 1 h |
 | `company_info` | `get_company_info` | 6 h |
 | `dividends` | `get_dividends` | 6 h |
 | `recommendations` | `get_recommendations` | 6 h |

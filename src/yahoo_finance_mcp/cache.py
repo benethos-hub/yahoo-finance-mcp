@@ -38,7 +38,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 # Default time-to-live per tool category, in seconds. Tuned to the volatility of
 # each data type: quotes change constantly, fundamentals rarely.
 DEFAULT_TTLS: dict[str, float] = {
-    "search": 6 * 3600,
+    "search": 3600,
     "quote": 30,
     "history": 600,
     "company_info": 6 * 3600,
