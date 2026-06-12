@@ -408,3 +408,71 @@ def test_get_ticker_caches_and_is_case_insensitive(monkeypatch):
 def test_get_ticker_empty_symbol_raises():
     with pytest.raises(ToolError):
         client._get_ticker("   ")
+
+
+# --- upstream error normalization -----------------------------------------
+
+
+def _ticker_raising_on(attr, exc):
+    """A FakeTicker subclass whose ``attr`` access raises ``exc``."""
+
+    def _raise(self):
+        raise exc
+
+    return type("Raising", (FakeTicker,), {attr: property(_raise)})()
+
+
+# (attribute that fails, call that should trigger it)
+_UPSTREAM_CASES = [
+    ("fast_info", lambda: client.get_quote("AAPL")),
+    ("info", lambda: client.get_company_info("AAPL")),
+    ("income_stmt", lambda: client.get_financials("AAPL")),
+    ("dividends", lambda: client.get_dividends("AAPL")),
+    ("news", lambda: client.get_news("AAPL")),
+    ("recommendations", lambda: client.get_recommendations("AAPL")),
+    ("options", lambda: client.get_options("AAPL")),
+]
+
+
+@pytest.mark.parametrize("attr,call", _UPSTREAM_CASES)
+def test_upstream_error_becomes_toolerror(monkeypatch, attr, call):
+    monkeypatch.setattr(
+        client, "_get_ticker", lambda s: _ticker_raising_on(attr, RuntimeError("boom"))
+    )
+    with pytest.raises(ToolError) as exc_info:
+        call()
+    # A generic upstream error maps to a plain ToolError, not RateLimitError.
+    assert not isinstance(exc_info.value, RateLimitError)
+
+
+@pytest.mark.parametrize("attr,call", _UPSTREAM_CASES)
+def test_upstream_rate_limit_becomes_rate_limit_error(monkeypatch, attr, call):
+    monkeypatch.setattr(
+        client, "_get_ticker", lambda s: _ticker_raising_on(attr, YFRateLimitError())
+    )
+    with pytest.raises(RateLimitError):
+        call()
+
+
+def test_get_options_chain_upstream_error(monkeypatch):
+    ticker = FakeTicker(options=("2024-01-19",))
+
+    def boom(expiration):
+        raise RuntimeError("chain failed")
+
+    ticker.option_chain = boom
+    monkeypatch.setattr(client, "_get_ticker", lambda s: ticker)
+    with pytest.raises(ToolError):
+        client.get_options("AAPL", expiration="2024-01-19")
+
+
+def test_get_options_chain_rate_limit(monkeypatch):
+    ticker = FakeTicker(options=("2024-01-19",))
+
+    def boom(expiration):
+        raise YFRateLimitError()
+
+    ticker.option_chain = boom
+    monkeypatch.setattr(client, "_get_ticker", lambda s: ticker)
+    with pytest.raises(RateLimitError):
+        client.get_options("AAPL", expiration="2024-01-19")
