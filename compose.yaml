@@ -25,12 +25,14 @@ services:
       # YF_MCP_PORT: "8000"
       # YF_MCP_PATH: /mcp
       YF_MCP_LOG_LEVEL: INFO
-      YF_MCP_CACHE: "1"
+      # The result cache is opt-in (off by default). Enable it and it persists
+      # to the /cache volume below:
+      # YF_MCP_CACHE: "1"
       YF_MCP_CACHE_DIR: /cache
       # Override a single tool's cache TTL (seconds), e.g.:
       # YF_MCP_CACHE_TTL_QUOTE: "15"
     volumes:
-      # Persist the result cache across container restarts.
+      # Used only when the cache is enabled; persists it across restarts.
       - yfmcp-cache:/cache
 
 volumes:

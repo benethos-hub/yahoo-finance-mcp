@@ -130,6 +130,9 @@ values).
   | `dividends` | `get_dividends` | 6 h |
   | `recommendations` | `get_recommendations` | 6 h |
   | `financials` | `get_financials` | 24 h |
+- **Opt-in: off by default.** Within a single process yfinance already reuses
+  identical requests, so the cache mainly helps across restarts and as
+  rate-limit protection; enable it with `--cache` / `YF_MCP_CACHE=1`.
 - Disabled until `configure()` is called (which `server.main` does), so
   importing the package or calling client functions in tests/library use does
   not touch disk unless caching is explicitly enabled.

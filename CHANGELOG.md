@@ -13,9 +13,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   default precedence.
 - The Docker image is now configured entirely via environment variables (no
   default command args) and persists its result cache to a `/cache` volume.
-- Persistent result cache (SQLite) with per-tool TTLs, configurable via
-  `--cache`/`--no-cache`, `--cache-dir`, `--cache-ttl <NAME>=<SECONDS>`, and the
-  `YF_MCP_CACHE` / `YF_MCP_CACHE_DIR` / `YF_MCP_CACHE_TTL_<NAME>` env vars.
+- Optional persistent result cache (SQLite) with per-tool TTLs — **opt-in, off
+  by default** (it mainly helps across restarts; yfinance already reuses
+  identical requests within a process). Configurable via `--cache`/`--no-cache`,
+  `--cache-dir`, `--cache-ttl <NAME>=<SECONDS>`, and the `YF_MCP_CACHE` /
+  `YF_MCP_CACHE_DIR` / `YF_MCP_CACHE_TTL_<NAME>` env vars.
 - `compose.yaml` for hosting the server over streamable-HTTP via Docker Compose.
 - Tooling: ruff (lint + format), mypy type checking, and pytest coverage,
   wired into CI; Dependabot for pip and GitHub Actions updates.

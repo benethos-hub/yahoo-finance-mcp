@@ -181,7 +181,7 @@ def test_make_key_kwargs_order_independent_but_value_sensitive():
 
 def test_env_enabled(monkeypatch):
     monkeypatch.delenv("YF_MCP_CACHE", raising=False)
-    assert cache.env_enabled() is True
+    assert cache.env_enabled() is False  # opt-in: off unless set
     monkeypatch.setenv("YF_MCP_CACHE", "off")
     assert cache.env_enabled() is False
     monkeypatch.setenv("YF_MCP_CACHE", "1")

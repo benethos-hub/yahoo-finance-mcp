@@ -260,8 +260,8 @@ def _build_parser() -> argparse.ArgumentParser:
         "--cache",
         action=argparse.BooleanOptionalAction,
         default=cache.env_enabled(),
-        help="Enable the persistent result cache (default: on; "
-        "set via YF_MCP_CACHE). Use --no-cache to disable.",
+        help="Enable the persistent result cache (default: off; "
+        "set via YF_MCP_CACHE). Use --cache to enable.",
     )
     parser.add_argument(
         "--cache-dir",

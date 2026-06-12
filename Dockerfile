@@ -24,8 +24,9 @@ FROM python:3.12-slim AS runtime
 
 # All runtime configuration is via environment variables, so the container
 # needs no CMD args and stays fully configurable with `docker run -e ...`.
-# Defaults: serve streamable-HTTP on all interfaces, cache to the mounted
-# /cache volume. Override any of these with -e, e.g. -e YF_MCP_PORT=9000.
+# Defaults: serve streamable-HTTP on all interfaces. The result cache is
+# opt-in (off by default); enable it with `-e YF_MCP_CACHE=1`, in which case it
+# is written to the mounted /cache volume. Override anything with -e.
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH" \
@@ -34,7 +35,7 @@ ENV PYTHONUNBUFFERED=1 \
     YF_MCP_PORT=8000 \
     YF_MCP_PATH=/mcp \
     YF_MCP_LOG_LEVEL=INFO \
-    YF_MCP_CACHE=1 \
+    YF_MCP_CACHE=0 \
     YF_MCP_CACHE_DIR=/cache
 
 # Run as a non-root user; create the cache dir it owns.

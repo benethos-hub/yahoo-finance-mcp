@@ -102,7 +102,7 @@ full list):
 | `--port` | `YF_MCP_PORT` | `8000` | Port for HTTP transports. |
 | `--path` | `YF_MCP_PATH` | `/mcp` (`/sse` for sse) | URL path for HTTP transports. |
 | `--log-level` | `YF_MCP_LOG_LEVEL` | `INFO` | `DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`. |
-| `--cache` / `--no-cache` | `YF_MCP_CACHE` | on | Enable/disable the persistent result cache. |
+| `--cache` / `--no-cache` | `YF_MCP_CACHE` | off | Enable/disable the persistent result cache. |
 | `--cache-dir` | `YF_MCP_CACHE_DIR` | OS cache dir | Directory for the cache file. |
 | `--cache-ttl <NAME>=<SECONDS>` | `YF_MCP_CACHE_TTL_<NAME>` | per-tool defaults | Override one tool's TTL. |
 
@@ -115,9 +115,14 @@ JSON-RPC protocol.
 
 ## Caching
 
-To reduce load on Yahoo's endpoints and avoid rate limiting, successful tool
-results are cached in a small SQLite file with a per-tool time-to-live (TTL).
-Fast-moving data has a short TTL, stable data a long one.
+An **opt-in** persistent cache. When enabled, successful tool results are
+cached in a small SQLite file with a per-tool time-to-live (TTL) to reduce load
+on Yahoo's endpoints and survive restarts. Fast-moving data has a short TTL,
+stable data a long one.
+
+Within a single running process yfinance already reuses identical requests, so
+the cache mainly helps **across restarts** and as **rate-limit protection** —
+that is why it is off by default.
 
 Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 `YF_MCP_CACHE_TTL_<NAME>`) and their default TTLs:
@@ -134,7 +139,7 @@ Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 | `recommendations` | `get_recommendations` | 6 h |
 | `financials` | `get_financials` | 24 h |
 
-- On by default; disable with `--no-cache` or `YF_MCP_CACHE=0`.
+- Off by default; enable with `--cache` or `YF_MCP_CACHE=1`.
 - Location: the OS user cache directory, or `--cache-dir` / `YF_MCP_CACHE_DIR`.
 - Override a TTL: `--cache-ttl quote=15` (repeatable) or the
   `YF_MCP_CACHE_TTL_<NAME>` env var (e.g. `YF_MCP_CACHE_TTL_QUOTE=15`).
@@ -160,17 +165,19 @@ docker build -t yahoo-finance-mcp .
 docker run --rm -p 8000:8000 yahoo-finance-mcp
 # Server is now reachable at http://localhost:8000/mcp
 
-# Override settings via -e, and persist the cache in a named volume
+# Override settings via -e; opt into the cache and persist it in a named volume
 docker run --rm -p 9000:9000 \
     -e YF_MCP_PORT=9000 \
     -e YF_MCP_LOG_LEVEL=DEBUG \
+    -e YF_MCP_CACHE=1 \
     -v yahoo-finance-cache:/cache \
     yahoo-finance-mcp
 ```
 
-The image runs as a non-root user, includes a healthcheck on the configured
-HTTP port, and writes its cache to `/cache` (declared as a volume) — mount a
-named volume there to keep the cache across container restarts. As with any
+The image runs as a non-root user and includes a healthcheck on the configured
+HTTP port. The cache is off by default; enable it with `-e YF_MCP_CACHE=1`, in
+which case it is written to `/cache` (declared as a volume) — mount a named
+volume there to keep it across container restarts. As with any
 HTTP deployment, there is no built-in authentication — front it with a reverse
 proxy / auth layer before exposing it publicly.
 

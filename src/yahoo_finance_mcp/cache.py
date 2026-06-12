@@ -58,8 +58,12 @@ _ttls: dict[str, float] = dict(DEFAULT_TTLS)
 _cache: ResultCache | None = None
 
 
-def env_enabled(default: bool = True) -> bool:
-    """Whether caching is enabled per the ``YF_MCP_CACHE`` env var."""
+def env_enabled(default: bool = False) -> bool:
+    """Whether caching is enabled per the ``YF_MCP_CACHE`` env var.
+
+    Caching is **opt-in**: it is off unless ``YF_MCP_CACHE`` is truthy (or the
+    ``--cache`` flag is passed).
+    """
     val = os.environ.get("YF_MCP_CACHE")
     if val is None:
         return default
