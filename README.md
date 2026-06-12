@@ -43,10 +43,21 @@ name or ISIN into a symbol first.
 
 ## Setup
 
+The only platform difference is the venv interpreter path: Windows uses
+`.venv\Scripts\python.exe`, Linux/macOS use `.venv/bin/python`.
+
+Windows (PowerShell):
+
 ```powershell
-# Create and populate the virtual environment
 py -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e .
+```
+
+Linux / macOS (bash):
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -e .
 ```
 
 ## Running
@@ -54,18 +65,27 @@ py -m venv .venv
 The transport is chosen on the command line. **stdio** is the default (used by
 Claude Desktop and other local clients):
 
+Windows (PowerShell):
+
 ```powershell
 .\.venv\Scripts\python.exe -m yahoo_finance_mcp
 ```
 
-To run it as a standalone, network-reachable service, use an HTTP transport:
+Linux / macOS (bash):
 
-```powershell
+```bash
+.venv/bin/python -m yahoo_finance_mcp
+```
+
+To run it as a standalone, network-reachable service, use an HTTP transport
+(same flags on every OS, only the interpreter path differs):
+
+```bash
 # Streamable HTTP on http://127.0.0.1:8000/mcp
-.\.venv\Scripts\python.exe -m yahoo_finance_mcp --transport streamable-http
+.venv/bin/python -m yahoo_finance_mcp --transport streamable-http
 
 # Bind all interfaces on a custom port / path
-.\.venv\Scripts\python.exe -m yahoo_finance_mcp `
+.venv/bin/python -m yahoo_finance_mcp \
     --transport streamable-http --host 0.0.0.0 --port 9000 --path /yf
 ```
 
@@ -168,13 +188,29 @@ reachable at `http://localhost:8000/mcp`.
 
 ## Claude Desktop configuration
 
-Add the server to your `claude_desktop_config.json`:
+Add the server to your `claude_desktop_config.json`, using the absolute path to
+the venv interpreter.
+
+Windows:
 
 ```json
 {
   "mcpServers": {
     "yahoo-finance": {
-      "command": "d:\\projects\\xt-yahoo-finance-mcp\\.venv\\Scripts\\python.exe",
+      "command": "C:\\path\\to\\xt-yahoo-finance-mcp\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "yahoo_finance_mcp"]
+    }
+  }
+}
+```
+
+Linux / macOS:
+
+```json
+{
+  "mcpServers": {
+    "yahoo-finance": {
+      "command": "/path/to/xt-yahoo-finance-mcp/.venv/bin/python",
       "args": ["-m", "yahoo_finance_mcp"]
     }
   }
@@ -190,16 +226,17 @@ same Yahoo search endpoint handles free text, tickers, and ISINs.
 ## Development
 
 Install the dev extras, then run the test, lint, and type-check steps (the same
-ones CI runs):
+ones CI runs). Replace `.venv/bin/python` with `.venv\Scripts\python.exe` on
+Windows:
 
-```powershell
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+```bash
+.venv/bin/python -m pip install -e ".[dev]"
 
-.\.venv\Scripts\python.exe -m pytest -q                 # unit tests (offline)
-.\.venv\Scripts\python.exe -m ruff check .              # lint
-.\.venv\Scripts\python.exe -m ruff format .             # format
-.\.venv\Scripts\python.exe -m mypy                      # type check
-.\.venv\Scripts\python.exe -m pytest --cov=yahoo_finance_mcp   # coverage
+.venv/bin/python -m pytest -q                 # unit tests (offline)
+.venv/bin/python -m ruff check .              # lint
+.venv/bin/python -m ruff format .             # format
+.venv/bin/python -m mypy                      # type check
+.venv/bin/python -m pytest --cov=yahoo_finance_mcp   # coverage
 ```
 
 The unit tests mock `yfinance` and run fully offline. `tests/smoke.py` performs
