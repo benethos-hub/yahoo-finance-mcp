@@ -105,6 +105,19 @@ def test_cached_decorator_passthrough_when_disabled():
     assert calls["n"] == 2  # no caching
 
 
+def test_cached_decorator_does_not_cache_empty_results(enabled_cache):
+    calls = {"n": 0}
+
+    @cache.cached("search")
+    def fetch(query):
+        calls["n"] += 1
+        return []  # e.g. a search with no matches
+
+    fetch("nothing")
+    fetch("nothing")
+    assert calls["n"] == 2  # empty result is not pinned
+
+
 def test_cached_decorator_does_not_cache_exceptions(enabled_cache):
     calls = {"n": 0}
 

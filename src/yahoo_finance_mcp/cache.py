@@ -219,7 +219,10 @@ def cached(category: str) -> Callable[[F], F]:
             if hit:
                 return value
             result = fn(*args, **kwargs)
-            _cache.set(key, result, _ttls.get(category, 0))
+            # Skip empty results (e.g. a search with no matches) so a transient
+            # empty response is not pinned for the whole TTL.
+            if result:
+                _cache.set(key, result, _ttls.get(category, 0))
             return result
 
         return wrapper  # type: ignore[return-value]

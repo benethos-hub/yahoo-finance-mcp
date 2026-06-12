@@ -136,7 +136,9 @@ values).
 - Config precedence CLI > env > default: `--cache/--no-cache` (`YF_MCP_CACHE`),
   `--cache-dir` (`YF_MCP_CACHE_DIR`), `--cache-ttl <NAME>=<SECONDS>`
   (`YF_MCP_CACHE_TTL_<NAME>`). A TTL of `0` bypasses caching for that tool.
-- Only successful returns are cached; exceptions propagate and are never cached.
+- Only successful, non-empty returns are cached; exceptions propagate and are
+  never cached, and empty results (e.g. a search with no matches) are not
+  pinned for the TTL.
 
 ## 9. Error handling
 
