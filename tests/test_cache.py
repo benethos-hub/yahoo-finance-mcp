@@ -137,6 +137,32 @@ def test_ttl_override_zero_disables_category(tmp_path):
         cache.configure(enabled=False)
 
 
+# --- key building ---------------------------------------------------------
+
+
+def test_make_key_is_deterministic_and_normalized():
+    k = cache._make_key
+    base = k("quote", ("AAPL",), {})
+    assert k("quote", ("AAPL",), {}) == base  # deterministic
+    assert k("quote", (" aapl ",), {}) == base  # strip + lowercase
+
+
+def test_make_key_distinct_by_category_and_args():
+    k = cache._make_key
+    base = k("quote", ("AAPL",), {})
+    assert k("history", ("AAPL",), {}) != base  # category must matter
+    assert k("quote", ("MSFT",), {}) != base  # positional arg must matter
+
+
+def test_make_key_kwargs_order_independent_but_value_sensitive():
+    k = cache._make_key
+    a = k("history", ("AAPL",), {"period": "1mo", "interval": "1d"})
+    b = k("history", ("AAPL",), {"interval": "1d", "period": "1mo"})
+    assert a == b  # kwargs are sorted -> order does not matter
+    # kwarg values matter
+    assert k("history", ("AAPL",), {"period": "1y", "interval": "1d"}) != a
+
+
 # --- config helpers -------------------------------------------------------
 
 
