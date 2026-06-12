@@ -113,57 +113,6 @@ JSON-RPC protocol.
 > built-in authentication. Only bind to `0.0.0.0` on trusted networks, and put
 > a reverse proxy / auth layer in front for any real deployment.
 
-## Caching
-
-An **opt-in** persistent cache. When enabled, successful tool results are
-cached in a small SQLite file with a per-tool time-to-live (TTL) to reduce load
-on Yahoo's endpoints and survive restarts. Fast-moving data has a short TTL,
-stable data a long one.
-
-Within a single running process yfinance already reuses identical requests, so
-the cache mainly helps **across restarts** and as **rate-limit protection** —
-that is why it is off by default.
-
-Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
-`YF_MCP_CACHE_TTL_<NAME>`) and their default TTLs:
-
-| Name | Tool | Default TTL |
-|------|------|-------------|
-| `quote` | `get_quote` | 30 s |
-| `history` | `get_history` | 10 min |
-| `news` | `get_news` | 10 min |
-| `options` | `get_options` | 10 min |
-| `search` | `search` | 1 h |
-| `company_info` | `get_company_info` | 6 h |
-| `dividends` | `get_dividends` | 6 h |
-| `recommendations` | `get_recommendations` | 6 h |
-| `financials` | `get_financials` | 24 h |
-
-- Off by default; enable with `--cache` or `YF_MCP_CACHE=1`.
-- Location: the OS user cache directory, or `--cache-dir` / `YF_MCP_CACHE_DIR`.
-- Override a TTL: `--cache-ttl quote=15` (repeatable) or the
-  `YF_MCP_CACHE_TTL_<NAME>` env var (e.g. `YF_MCP_CACHE_TTL_QUOTE=15`).
-  Set a TTL to `0` to bypass caching for that tool.
-
-Precedence is CLI > environment > default. Errors are never cached.
-
-### When to enable it
-
-Enable the cache (`--cache` / `YF_MCP_CACHE=1`) if you:
-
-- run the server as a long-running or **containerized HTTP service** that
-  restarts periodically (the cache survives restarts → instant repeat results);
-- **hit Yahoo rate limits** or make many repeated identical requests over time;
-- mostly query **slow-changing data** (search, company info, financials), where
-  staleness is irrelevant.
-
-Leave it off (the default) if you:
-
-- run it **locally over stdio** for interactive sessions — yfinance already
-  reuses identical requests within a single process, so the cache adds little;
-- need the **freshest possible** data;
-- use it only occasionally.
-
 ## Docker
 
 A `Dockerfile` builds a small image that hosts the server over the
@@ -248,6 +197,57 @@ Linux / macOS:
 All `get_*` tools expect a Yahoo Finance **symbol** (e.g. `AAPL`, `SAP.DE`).
 To resolve a company name or an ISIN to a symbol, call `search` first — the
 same Yahoo search endpoint handles free text, tickers, and ISINs.
+
+## Caching
+
+An **opt-in** persistent cache. When enabled, successful tool results are
+cached in a small SQLite file with a per-tool time-to-live (TTL) to reduce load
+on Yahoo's endpoints and survive restarts. Fast-moving data has a short TTL,
+stable data a long one.
+
+Within a single running process yfinance already reuses identical requests, so
+the cache mainly helps **across restarts** and as **rate-limit protection** —
+that is why it is off by default.
+
+Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
+`YF_MCP_CACHE_TTL_<NAME>`) and their default TTLs:
+
+| Name | Tool | Default TTL |
+|------|------|-------------|
+| `quote` | `get_quote` | 30 s |
+| `history` | `get_history` | 10 min |
+| `news` | `get_news` | 10 min |
+| `options` | `get_options` | 10 min |
+| `search` | `search` | 1 h |
+| `company_info` | `get_company_info` | 6 h |
+| `dividends` | `get_dividends` | 6 h |
+| `recommendations` | `get_recommendations` | 6 h |
+| `financials` | `get_financials` | 24 h |
+
+- Off by default; enable with `--cache` or `YF_MCP_CACHE=1`.
+- Location: the OS user cache directory, or `--cache-dir` / `YF_MCP_CACHE_DIR`.
+- Override a TTL: `--cache-ttl quote=15` (repeatable) or the
+  `YF_MCP_CACHE_TTL_<NAME>` env var (e.g. `YF_MCP_CACHE_TTL_QUOTE=15`).
+  Set a TTL to `0` to bypass caching for that tool.
+
+Precedence is CLI > environment > default. Errors are never cached.
+
+### When to enable it
+
+Enable the cache (`--cache` / `YF_MCP_CACHE=1`) if you:
+
+- run the server as a long-running or **containerized HTTP service** that
+  restarts periodically (the cache survives restarts → instant repeat results);
+- **hit Yahoo rate limits** or make many repeated identical requests over time;
+- mostly query **slow-changing data** (search, company info, financials), where
+  staleness is irrelevant.
+
+Leave it off (the default) if you:
+
+- run it **locally over stdio** for interactive sessions — yfinance already
+  reuses identical requests within a single process, so the cache adds little;
+- need the **freshest possible** data;
+- use it only occasionally.
 
 ## Development
 
