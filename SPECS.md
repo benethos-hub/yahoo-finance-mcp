@@ -150,12 +150,14 @@ values).
 
 ## 10. Testing
 
-- Unit tests mock `yfinance` and run **offline** (`tests/test_client.py`,
-  `tests/test_formatting.py`).
+- Unit tests mock `yfinance` and run **offline**, covering the client wrapper
+  and error normalization, formatting, the cache, CLI/transport selection, and
+  tool registration/schema (`tests/test_client.py`, `test_formatting.py`,
+  `test_cache.py`, `test_cli.py`, `test_server.py`).
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo; it is not part of
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
-  of 80% (currently ~88%).
+  of 80% (currently ~90%).
 - CI (GitHub Actions): a lint job (ruff + mypy) plus a test matrix running
   `pytest` with coverage on Python 3.11-3.13. Dependabot keeps pip and Actions
   dependencies updated.

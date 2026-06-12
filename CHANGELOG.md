@@ -20,8 +20,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Tooling: ruff (lint + format), mypy type checking, and pytest coverage,
   wired into CI; Dependabot for pip and GitHub Actions updates.
 - Expanded test coverage: `get_company_info`, ticker caching, search limit
-  clamping, history truncation, options row capping, and tool
-  registration/schema checks.
+  clamping, history truncation, options row capping, tool registration/schema
+  checks, cache key building, and upstream error normalization (~90% overall).
 
 ## [0.1.0] - 2026-06-11
 
