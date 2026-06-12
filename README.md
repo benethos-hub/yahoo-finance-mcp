@@ -18,6 +18,8 @@ Yahoo's unofficial endpoints.
 >   advice.** Do not rely on it for trading or investment decisions.
 > - Provided "as is", without warranty. Intended for personal and educational
 >   use. You use it at your own risk. See [LICENSE](LICENSE).
+> - For **commercial use**, review Yahoo's Terms of Service and consider a
+>   properly licensed market-data provider instead of the unofficial endpoints.
 
 ## Tools
 
