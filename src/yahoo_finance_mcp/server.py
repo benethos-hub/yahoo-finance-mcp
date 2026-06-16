@@ -79,7 +79,16 @@ def search(
 
 Symbol = Annotated[
     str,
-    Field(description="Yahoo Finance ticker symbol, e.g. 'AAPL' or 'SAP.DE'."),
+    Field(
+        description=(
+            "A native Yahoo Finance ticker symbol, e.g. 'AAPL', 'MSFT', "
+            "'SAP.DE', or 'BMW.DE'. This is NOT an ISIN, a WKN, or a company "
+            "name, and must NOT be built by appending an exchange suffix to an "
+            "ISIN (e.g. 'US0378331005.DE' is invalid). If you only have a name "
+            "or ISIN, call the 'search' tool first and pass the 'symbol' value "
+            "it returns."
+        )
+    ),
 ]
 
 
@@ -87,8 +96,10 @@ Symbol = Annotated[
 def get_quote(symbol: Symbol) -> dict[str, Any]:
     """Get the current price and key intraday figures for a Yahoo symbol.
 
-    ``symbol`` must be a Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``). Use
-    the ``search`` tool first if you only have a name or ISIN.
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name. Do not build a symbol by appending an
+    exchange suffix to an ISIN. If you only have a name or ISIN, call the
+    ``search`` tool first and use the ``symbol`` it returns.
     """
     return client.get_quote(symbol)
 
@@ -121,6 +132,8 @@ def get_history(
 ) -> dict[str, Any]:
     """Get historical OHLCV (open/high/low/close/volume) data for a symbol.
 
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     ``period`` accepts Yahoo values such as ``1d``, ``5d``, ``1mo``, ``6mo``,
     ``1y``, ``5y``, ``max``. ``interval`` accepts e.g. ``1m``, ``5m``, ``1h``,
     ``1d``, ``1wk``, ``1mo``. Provide ``start`` (and optional ``end``) as
@@ -138,7 +151,9 @@ def get_company_info(symbol: Symbol) -> dict[str, Any]:
 
     Returns name, sector/industry, location, employee count, and valuation
     metrics (market cap, P/E, beta, 52-week range, dividend yield) plus a
-    business summary. ``symbol`` must be a Yahoo ticker.
+    business summary. ``symbol`` must be a native Yahoo Finance ticker (e.g.
+    ``AAPL``, ``SAP.DE``), never an ISIN, WKN, or company name; resolve those
+    via ``search`` first.
     """
     return client.get_company_info(symbol)
 
@@ -160,6 +175,8 @@ def get_financials(
 ) -> dict[str, Any]:
     """Get a financial statement for a Yahoo symbol.
 
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     ``statement`` is one of ``income`` (income statement), ``balance`` (balance
     sheet), or ``cashflow`` (cash flow statement). ``freq`` is ``annual`` or
     ``quarterly``. Each row is a line item; columns are reporting periods.
@@ -169,7 +186,11 @@ def get_financials(
 
 @mcp.tool()
 def get_dividends(symbol: Symbol) -> dict[str, Any]:
-    """Get the dividend and stock-split history for a Yahoo symbol."""
+    """Get the dividend and stock-split history for a Yahoo symbol.
+
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
+    """
     return client.get_dividends(symbol)
 
 
@@ -183,6 +204,8 @@ def get_news(
 ) -> dict[str, Any]:
     """Get recent news headlines for a Yahoo symbol (up to ``limit``, 1-30).
 
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Each article includes title, summary, publisher, publish time, and URL.
     """
     return client.get_news(symbol, limit=limit)
@@ -192,6 +215,8 @@ def get_news(
 def get_recommendations(symbol: Symbol) -> dict[str, Any]:
     """Get analyst recommendation trends and price targets for a Yahoo symbol.
 
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Returns the buy/hold/sell trend over recent months plus current/high/low/
     mean/median analyst price targets when available.
     """
@@ -211,6 +236,8 @@ def get_options(
 ) -> dict[str, Any]:
     """Get the option chain for a Yahoo symbol.
 
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Call without ``expiration`` to list available expiration dates. Call with
     an ``expiration`` (``YYYY-MM-DD`` from that list) to get the calls and puts
     for that date.
