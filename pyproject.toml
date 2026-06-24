@@ -24,7 +24,7 @@ classifiers = [
 ]
 dependencies = [
     "mcp[cli]>=1.28.0",
-    "yfinance>=1.4",
+    "yfinance>=1.4.1",
 ]
 
 [project.urls]
