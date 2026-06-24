@@ -29,8 +29,10 @@ How to work in this repository. Read this before making changes. See
 
 ```
 src/yahoo_finance_mcp/
-  server.py       # FastMCP instance + @mcp.tool() definitions + main()
-  client.py       # all yfinance access, caching, error normalization
+  server.py       # FastMCP instance + @mcp.tool() definitions + CLI main()
+  __main__.py     # enables `python -m yahoo_finance_mcp` (delegates to main())
+  client.py       # all yfinance access, in-memory ticker cache, error mapping
+  cache.py        # opt-in persistent result cache (SQLite) with per-tool TTLs
   formatting.py   # pandas/yfinance -> compact JSON-safe values
   errors.py       # ToolError / SymbolNotFoundError / RateLimitError
 tests/            # mocked, offline unit tests (+ live smoke.py, not collected)
@@ -44,7 +46,10 @@ Keep the layers separate: **tools in `server.py` stay thin** and delegate to
 1. Add the data-fetching logic to `client.py`. Wrap every yfinance call in
    `try/except` and route failures through `_wrap_upstream(exc, "...")` so rate
    limits map to `RateLimitError` and other errors keep context. Raise
-   `SymbolNotFoundError(symbol)` on empty results.
+   `SymbolNotFoundError(symbol)` on empty results. Decorate the function with
+   `@cache.cached("<category>")` and add that category with a TTL to
+   `cache.DEFAULT_TTLS` (the cache is opt-in; the decorator is a no-op until
+   enabled).
 2. Convert pandas output with `formatting.dataframe_to_records` / `to_jsonable`;
    apply a sensible `max_rows`.
 3. Expose it in `server.py` with `@mcp.tool()`. The **docstring becomes the
