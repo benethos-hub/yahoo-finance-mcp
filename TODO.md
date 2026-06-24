@@ -5,15 +5,11 @@ done.
 
 ## Before publishing to GitHub
 
-- [ ] **Set the GitHub owner.** Replace the `<OWNER>` placeholder in
-  [pyproject.toml](pyproject.toml) (`[project.urls]`) with the real GitHub
-  username, e.g. `https://github.com/<OWNER>/yahoo-finance-mcp`.
-- [ ] **Decide on the commit author email.** Current commits use
-  `BeneODev <296451023+BeneODev@users.noreply.github.com>`. This becomes public in the
-  commit history on push. Optionally switch to a GitHub noreply address
-  (`<id>+<user>@users.noreply.github.com`). Nothing is pushed yet, so the two
-  existing commits can still be rewritten if desired. If changed, also set the
-  repo-local `git config user.email` so future commits match.
+- [x] **Set the GitHub owner.** Project URLs point to
+  `https://github.com/benethos-hub/yahoo-finance-mcp`.
+- [x] **Decide on the commit author email.** History rewritten to
+  `BeneODev <296451023+BeneODev@users.noreply.github.com>` (GitHub noreply); the
+  repo-local `git config user.email` is set to match for future commits.
 - [ ] **Create the remote and push** `main` (e.g. via `gh repo create` /
   `git remote add origin ...`).
 

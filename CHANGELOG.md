@@ -40,5 +40,5 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Dockerfile to host the server over the streamable-HTTP transport.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/<OWNER>/yahoo-finance-mcp/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/<OWNER>/yahoo-finance-mcp/releases/tag/v0.1.0
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/benethos-hub/yahoo-finance-mcp/releases/tag/v0.1.0
