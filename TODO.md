@@ -3,16 +3,6 @@
 Pending tasks, mainly for publishing the project. Remove entries as they are
 done.
 
-## Before publishing to GitHub
-
-- [x] **Set the GitHub owner.** Project URLs point to
-  `https://github.com/benethos-hub/yahoo-finance-mcp`.
-- [x] **Decide on the commit author email.** History rewritten to
-  `BeneODev <296451023+BeneODev@users.noreply.github.com>` (GitHub noreply); the
-  repo-local `git config user.email` is set to match for future commits.
-- [ ] **Create the remote and push** `main` (e.g. via `gh repo create` /
-  `git remote add origin ...`).
-
 ## Deployment
 
 - [x] Dockerfile that hosts the server over streamable-HTTP (built and verified).
@@ -24,7 +14,8 @@ done.
 
 - [ ] `CONTRIBUTING.md` + issue / pull-request templates.
 - [ ] README badges (CI status, Python version, license).
-- [ ] A concrete usage example in the README (sample prompt + sample response).
+- [x] Concrete usage examples in the README ("Example prompts" section, grouped
+  by tool). A full sample request/response transcript is still optional.
 
 ## Future features (see SPECS.md §11)
 

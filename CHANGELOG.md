@@ -19,6 +19,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `--cache-dir`, `--cache-ttl <NAME>=<SECONDS>`, and the `YF_MCP_CACHE` /
   `YF_MCP_CACHE_DIR` / `YF_MCP_CACHE_TTL_<NAME>` env vars.
 - `compose.yaml` for hosting the server over streamable-HTTP via Docker Compose.
+- README "Example prompts" section with sample natural-language queries
+  grouped by tool.
 - Tooling: ruff (lint + format), mypy type checking, and pytest coverage,
   wired into CI; Dependabot for pip and GitHub Actions updates.
 - Expanded test coverage: `get_company_info`, ticker caching, search limit

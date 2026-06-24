@@ -192,6 +192,59 @@ Linux / macOS:
 }
 ```
 
+## Example prompts
+
+Once the server is connected, you can ask the client natural-language
+questions and it will pick the right tools. Replace the bracketed placeholders
+(e.g. `[Ticker]`, `[ISIN]`) with concrete values.
+
+**Price & quote** (`get_quote`, `get_history`)
+
+- "What's the current price of [Ticker] and how has it moved over the last 24h?"
+- "Get the daily closing prices of [Ticker] for the last 6 months and compute
+  RSI, MACD, and the 50/200-day moving averages."
+- "What was the max drawdown of [Ticker] since inception, and how long was it
+  underwater?"
+- "Compare the performance of [Ticker A] against [Index] over 1, 3, and 6
+  months (relative strength)."
+- "How far is [Ticker] currently from its 52-week high?"
+
+**Company data & valuation** (`get_company_info`, `get_financials`)
+
+- "Give me P/E, beta, market cap, and dividend yield for [Ticker]."
+- "Are the fundamentals (ROE, leverage, margins) for [Ticker] available via
+  Yahoo? If not, flag the metric as unavailable."
+- "How liquid is [Ticker]? Average daily volume and market cap."
+
+**Analysts & sentiment** (`get_recommendations`, `get_news`)
+
+- "What's the current analyst consensus for [Ticker], and any up-/downgrades
+  from the last few weeks?"
+- "How far is the average price target for [Ticker] above/below the current
+  price?"
+- "Any recent news on [Ticker], and is the sentiment positive or negative?"
+
+**Dividends** (`get_dividends`)
+
+- "List the distribution history of [Ticker] and compute the total-return
+  recovery including reinvested dividends from [year]."
+- "From which year does Yahoo cover dividends for [Ticker]?"
+
+**Search / resolution** (`search`)
+
+- "Resolve the ISIN [ISIN] to a Yahoo ticker."
+- "Which Yahoo ticker belongs to [security name] on [exchange]?"
+
+**Combined daily update** (multiple tools)
+
+- "For the asset list [Ticker, Ticker, …]: for each name, pull the price history
+  (6 months), quote, company info, and analyst recommendations, then summarize
+  the current technical and sentiment picture per asset."
+
+> The server only returns raw market data; any derived metrics (RSI, MACD,
+> drawdown, sentiment, total return) are computed by the client/model from that
+> data, not by the tools themselves.
+
 ## Symbol resolution
 
 All `get_*` tools expect a Yahoo Finance **symbol** (e.g. `AAPL`, `SAP.DE`).
