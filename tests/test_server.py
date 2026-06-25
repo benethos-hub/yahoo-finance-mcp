@@ -25,6 +25,8 @@ EXPECTED_TOOLS = {
     "get_calendar",
     "get_shares",
     "get_fund_data",
+    "get_sector",
+    "get_industry",
 }
 
 

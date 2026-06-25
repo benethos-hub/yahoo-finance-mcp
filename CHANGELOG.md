@@ -21,6 +21,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Tools `get_shares` (shares-outstanding history) and `get_fund_data` (fund/ETF
   profile: overview, asset-class and sector weightings, top holdings;
   fund/ETF-only).
+- Module-level browsing tools `get_sector` and `get_industry`, which take a
+  sector/industry key (e.g. `technology`, `semiconductors`) instead of a ticker
+  and return the overview, top companies, and (for sectors) ETFs/funds and the
+  constituent industries.
 
 ### Changed
 - `get_financials` now accepts `freq="ttm"` (trailing twelve months) for the

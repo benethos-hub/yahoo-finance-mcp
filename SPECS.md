@@ -83,7 +83,9 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (FastMCP)
 
 ## 7. Tools
 
-All tools are read-only. `symbol` always means a Yahoo ticker.
+All tools are read-only. `symbol` always means a Yahoo ticker. The two
+exceptions are `get_sector` / `get_industry`, which take a sector/industry
+**key** (e.g. `technology`, `semiconductors`) rather than a symbol.
 
 | Tool | Inputs | Output (shape) |
 |------|--------|----------------|
@@ -105,6 +107,8 @@ All tools are read-only. `symbol` always means a Yahoo ticker.
 | `get_calendar` | `symbol` | `{symbol, calendar{}}` (next earnings/dividend dates + estimate ranges; equity-only) |
 | `get_shares` | `symbol`, `start?`, `end?`, `limit` 1-250 (=50) | `{symbol, count, shares[{date, shares}]}` (most recent kept) |
 | `get_fund_data` | `symbol`, `limit` 1-100 (=25) | `{symbol, description, fund_overview, asset_classes, sector_weightings, top_holdings[]}` (fund/ETF-only) |
+| `get_sector` | `key` (sector key), `limit` 1-100 (=25) | `{key, name, index_symbol, overview, top_companies[], top_etfs, top_mutual_funds, industries[]}` (module-level; not a symbol) |
+| `get_industry` | `key` (industry key), `limit` 1-100 (=25) | `{key, name, index_symbol, sector_key, sector_name, overview, top_companies[], top_performing_companies[], top_growth_companies[]}` (module-level; not a symbol) |
 
 ### Parameter descriptions
 
@@ -149,6 +153,8 @@ values).
   | `holders` | `get_holders` | 24 h |
   | `shares` | `get_shares` | 24 h |
   | `fund_data` | `get_fund_data` | 24 h |
+  | `sector` | `get_sector` | 24 h |
+  | `industry` | `get_industry` | 24 h |
 - **Opt-in: off by default.** Within a single process yfinance already reuses
   identical requests, so the cache mainly helps across restarts and as
   rate-limit protection; enable it with `--cache` / `YF_MCP_CACHE=1`.
@@ -248,12 +254,41 @@ new ones. The planned `get_recommendations` extension was **dropped**:
 `recommendations_summary` is identical to `recommendations`, which the existing
 tool already returns as `recommendation_trend`.
 
-### Module-level (later phase, larger)
+### Module-level (separate, larger category)
 
-`Sector` / `Industry` / `Market` / `Lookup` browsing, the screener
+These take no per-symbol `Ticker`. `Sector` / `Industry` browsing landed in
+Phase 4 (`get_sector` / `get_industry`). Still open: `Market` (market
+status/summary) and `Lookup` (richer search — overlaps the existing `search`,
+so likely an extension rather than a new tool), the screener
 (`screen` / `EquityQuery`), and multi-symbol (`download` / `Tickers`, which also
-covers the §11 multi-symbol-quote item) are a separate, larger category — not
-part of the first per-symbol tool batch.
+covers the §11 multi-symbol-quote item).
+
+The sector/industry key set is sourced from yfinance's own constant
+(`yfinance.const.SECTOR_INDUSTY_MAPPING_LC`, imported defensively in
+`client.py`), so the validation, the tool descriptions, and the error messages
+share one source of truth. The README's collapsible **"Sector & industry keys"**
+block is produced from the same constant — regenerate it after a yfinance bump
+(one sector per paragraph) and paste it over the existing `<details>` block:
+
+```
+uv run python - <<'PY'
+import sys; sys.stdout.reconfigure(encoding="utf-8")
+import yfinance.const as c
+m = c.SECTOR_INDUSTY_MAPPING_LC
+print("<details>")
+print(f'<summary><b>📊 Sector &amp; industry keys</b> — click to expand '
+      f'({len(m)} sectors, {sum(len(v) for v in m.values())} industries, generated)</summary>')
+print()
+for s in sorted(m):
+    print(f'**`{s}`** ({len(m[s])})')
+    print(", ".join(f"`{i}`" for i in sorted(m[s])))
+    print()
+print("</details>")
+PY
+```
+
+(Some industry keys use an em-dash, not a hyphen — copy them from `get_sector`
+output rather than typing them.)
 
 ### Process
 
@@ -273,4 +308,7 @@ green).
   `get_shares` (`get_shares_full`) and `get_fund_data` (`funds_data`). The
   `get_recommendations`/`recommendations_summary` extension was dropped as
   redundant (see above).
-- **Later (larger):** module-level browsing/screener and multi-symbol tools.
+- **Phase 4 — done:** module-level sector/industry browsing — `get_sector`
+  (`yf.Sector`) and `get_industry` (`yf.Industry`); these take a sector/industry
+  key, not a symbol.
+- **Later (larger):** `Market` / `Lookup`, the screener, and multi-symbol tools.

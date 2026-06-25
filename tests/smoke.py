@@ -100,3 +100,27 @@ if __name__ == "__main__":
     # Fund data is ETF/fund-only; use SPY.
     fund = client.get_fund_data("SPY", max_rows=3)
     show("get_fund_data('SPY', max_rows=3)", fund)
+
+    sector = client.get_sector("technology", max_rows=3)
+    show(
+        "get_sector('technology', max_rows=3)",
+        {
+            "key": sector["key"],
+            "name": sector["name"],
+            "overview": sector["overview"],
+            "top_companies": sector["top_companies"],
+            "industries": sector["industries"][:3],
+        },
+    )
+
+    industry = client.get_industry("semiconductors", max_rows=3)
+    show(
+        "get_industry('semiconductors', max_rows=3)",
+        {
+            "key": industry["key"],
+            "name": industry["name"],
+            "sector_key": industry["sector_key"],
+            "top_companies": industry["top_companies"],
+            "top_performing_companies": industry["top_performing_companies"],
+        },
+    )

@@ -711,6 +711,204 @@ def test_get_fund_data_upstream_error(patch_ticker):
         client.get_fund_data("spy")
 
 
+# --- get_sector -----------------------------------------------------------
+
+
+def _fake_sector(name="Technology", n_companies=2):
+    import types
+
+    top = pd.DataFrame(
+        {
+            "name": [f"C{i}" for i in range(n_companies)],
+            "rating": ["Buy"] * n_companies,
+            "market weight": [0.1] * n_companies,
+        },
+        index=pd.Index([f"S{i}" for i in range(n_companies)], name="symbol"),
+    )
+    industries = pd.DataFrame(
+        {"name": ["Semiconductors"], "symbol": ["^X"], "market weight": [0.4]},
+        index=pd.Index(["semiconductors"], name="key"),
+    )
+    return types.SimpleNamespace(
+        name=name,
+        symbol="^YH311",
+        overview={"companies_count": 842},
+        top_companies=top,
+        top_etfs={"VGT": "Vanguard Information Tech ETF"},
+        top_mutual_funds={"VITAX": "Fidelity Select"},
+        industries=industries,
+    )
+
+
+def test_get_sector_returns_overview(monkeypatch):
+    monkeypatch.setattr(client.yf, "Sector", lambda key: _fake_sector())
+    out = client.get_sector("technology")
+    assert out["key"] == "technology"
+    assert out["name"] == "Technology"
+    assert out["index_symbol"] == "^YH311"
+    assert out["top_etfs"] == {"VGT": "Vanguard Information Tech ETF"}
+    assert out["industries"][0]["key"] == "semiconductors"
+
+
+def test_get_sector_caps_top_companies(monkeypatch):
+    monkeypatch.setattr(client.yf, "Sector", lambda key: _fake_sector(n_companies=100))
+    out = client.get_sector("technology", max_rows=5)
+    assert len(out["top_companies"]) == 5
+
+
+def test_get_sector_unknown_key_raises(monkeypatch):
+    import types
+
+    none_sector = types.SimpleNamespace(
+        name=None,
+        symbol=None,
+        overview=None,
+        top_companies=None,
+        top_etfs=None,
+        top_mutual_funds=None,
+        industries=None,
+    )
+    monkeypatch.setattr(client.yf, "Sector", lambda key: none_sector)
+    with pytest.raises(ToolError):
+        client.get_sector("not-a-sector")
+
+
+def test_get_sector_empty_key_raises():
+    with pytest.raises(ToolError):
+        client.get_sector("   ")
+
+
+def test_get_sector_valid_key_no_data_raises_not_found(monkeypatch):
+    import types
+
+    none_sector = types.SimpleNamespace(
+        name=None,
+        symbol=None,
+        overview=None,
+        top_companies=None,
+        top_etfs=None,
+        top_mutual_funds=None,
+        industries=None,
+    )
+    # A valid key that returns no data is a not-found, not an unknown-key error.
+    monkeypatch.setattr(client.yf, "Sector", lambda key: none_sector)
+    with pytest.raises(SymbolNotFoundError):
+        client.get_sector("technology")
+
+
+def test_get_sector_upstream_error(monkeypatch):
+    def boom(key):
+        raise RuntimeError("network down")
+
+    monkeypatch.setattr(client.yf, "Sector", boom)
+    with pytest.raises(ToolError):
+        client.get_sector("technology")
+
+
+def test_sector_keys_derived_from_const():
+    # Keys come from yfinance's constant (or the fallback); both include these.
+    assert "technology" in client.SECTOR_KEYS
+    assert "healthcare" in client.SECTOR_KEYS
+    assert len(client.SECTOR_KEYS) >= 11
+
+
+# --- get_industry ---------------------------------------------------------
+
+
+def _fake_industry(name="Semiconductors", n_companies=2):
+    import types
+
+    top = pd.DataFrame(
+        {"name": [f"C{i}" for i in range(n_companies)]},
+        index=pd.Index([f"S{i}" for i in range(n_companies)], name="symbol"),
+    )
+    performing = pd.DataFrame(
+        {"name": ["NVDA Corp"], "ytd return": [0.5]},
+        index=pd.Index(["NVDA"], name="symbol"),
+    )
+    growth = pd.DataFrame(
+        {"name": ["AMD Inc"], "growth estimate": [0.3]},
+        index=pd.Index(["AMD"], name="symbol"),
+    )
+    return types.SimpleNamespace(
+        name=name,
+        symbol="^YH31130020",
+        sector_key="technology",
+        sector_name="Technology",
+        overview={"companies_count": 49},
+        top_companies=top,
+        top_performing_companies=performing,
+        top_growth_companies=growth,
+    )
+
+
+def test_get_industry_returns_overview(monkeypatch):
+    monkeypatch.setattr(client.yf, "Industry", lambda key: _fake_industry())
+    out = client.get_industry("semiconductors")
+    assert out["name"] == "Semiconductors"
+    assert out["sector_key"] == "technology"
+    assert out["top_performing_companies"][0]["symbol"] == "NVDA"
+    assert out["top_growth_companies"][0]["symbol"] == "AMD"
+
+
+def test_get_industry_caps_top_companies(monkeypatch):
+    monkeypatch.setattr(
+        client.yf, "Industry", lambda key: _fake_industry(n_companies=100)
+    )
+    out = client.get_industry("semiconductors", max_rows=5)
+    assert len(out["top_companies"]) == 5
+
+
+def test_get_industry_unknown_key_raises(monkeypatch):
+    import types
+
+    none_industry = types.SimpleNamespace(
+        name=None,
+        symbol=None,
+        sector_key=None,
+        sector_name=None,
+        overview=None,
+        top_companies=None,
+        top_performing_companies=None,
+        top_growth_companies=None,
+    )
+    monkeypatch.setattr(client.yf, "Industry", lambda key: none_industry)
+    with pytest.raises(ToolError):
+        client.get_industry("not-an-industry")
+
+
+def test_get_industry_empty_key_raises():
+    with pytest.raises(ToolError):
+        client.get_industry("")
+
+
+def test_get_industry_valid_key_no_data_raises_not_found(monkeypatch):
+    import types
+
+    none_industry = types.SimpleNamespace(
+        name=None,
+        symbol=None,
+        sector_key=None,
+        sector_name=None,
+        overview=None,
+        top_companies=None,
+        top_performing_companies=None,
+        top_growth_companies=None,
+    )
+    monkeypatch.setattr(client.yf, "Industry", lambda key: none_industry)
+    with pytest.raises(SymbolNotFoundError):
+        client.get_industry("semiconductors")
+
+
+def test_get_industry_upstream_error(monkeypatch):
+    def boom(key):
+        raise RuntimeError("network down")
+
+    monkeypatch.setattr(client.yf, "Industry", boom)
+    with pytest.raises(ToolError):
+        client.get_industry("semiconductors")
+
+
 # --- get_company_info -----------------------------------------------------
 
 
