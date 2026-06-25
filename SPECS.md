@@ -179,10 +179,10 @@ values).
 ## 12. Tool expansion plan
 
 Goal: expose every **working** yfinance method as an MCP tool. "Working" was
-verified empirically (probed live on a stock `AAPL` and an ETF `SPY`); only
-methods that return real data are in scope. Availability is symbol-dependent
-(equity fields are empty for ETFs and vice versa) — tools surface that as an
-empty result, not an error.
+verified empirically (probed live on a stock `AAPL`, an ETF `SPY`, and a crypto
+pair `BTC-USD`); only methods that return real data are in scope. Availability
+is symbol-dependent (equity fields are empty for ETFs/crypto and vice versa) —
+tools surface that as an empty result, not an error.
 
 ### Verified data sources (probe results)
 
@@ -195,6 +195,11 @@ empty result, not an error.
   `ttm_income_stmt`, `ttm_cashflow`, `valuation`, `get_shares_full`.
 - **Fund/ETF:** `funds_data`.
 - **Any symbol:** `history_metadata`, `isin`.
+- **Crypto (`BTC-USD`):** the existing core paths work — `history`,
+  `fast_info`/`info` (rich), `history_metadata`, `isin` — so `get_quote`,
+  `get_history`, and `get_company_info` already cover crypto. All
+  equity-specific methods (analysts, holders, earnings, financials, calendar)
+  are empty, so the new tools return empty for crypto.
 - **Excluded — upstream empty for all probed symbols:** `sustainability` (ESG),
   `capital_gains`.
 - **Out of scope (non-goals, §2):** `live`/`WebSocket` (streaming), `Auth`.
