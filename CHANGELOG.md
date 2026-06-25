@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- `uv.lock` and a uv-based development workflow (`uv sync`, `uv run`) as the
+  recommended setup; the `venv` + `pip` path remains documented as an
+  alternative.
+
 ## [0.1.0] - 2026-06-24
 
 First public release.

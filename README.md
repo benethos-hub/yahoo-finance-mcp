@@ -45,6 +45,20 @@ name or ISIN into a symbol first.
 
 ## Setup
 
+### Recommended: uv
+
+[uv](https://docs.astral.sh/uv/) creates the virtual environment and installs
+the locked dependencies in one step (same commands on every OS):
+
+```bash
+uv sync                 # runtime only
+uv sync --extra dev     # include the dev tools (tests, lint, types)
+```
+
+This creates a `.venv` and installs the exact versions pinned in `uv.lock`.
+
+### Alternative: venv + pip
+
 The only platform difference is the venv interpreter path: Windows uses
 `.venv\Scripts\python.exe`, Linux/macOS use `.venv/bin/python`.
 
@@ -65,7 +79,15 @@ python3 -m venv .venv
 ## Running
 
 The transport is chosen on the command line. **stdio** is the default (used by
-Claude Desktop and other local clients):
+Claude Desktop and other local clients).
+
+With uv (any OS):
+
+```bash
+uv run yahoo-finance-mcp
+```
+
+With the venv interpreter directly:
 
 Windows (PowerShell):
 
@@ -305,8 +327,22 @@ Leave it off (the default) if you:
 ## Development
 
 Install the dev extras, then run the test, lint, and type-check steps (the same
-ones CI runs). Replace `.venv/bin/python` with `.venv\Scripts\python.exe` on
-Windows:
+ones CI runs).
+
+With uv (any OS):
+
+```bash
+uv sync --extra dev
+
+uv run pytest -q                 # unit tests (offline)
+uv run ruff check .              # lint
+uv run ruff format .             # format
+uv run mypy                      # type check
+uv run pytest --cov=yahoo_finance_mcp   # coverage
+```
+
+With the venv interpreter directly (replace `.venv/bin/python` with
+`.venv\Scripts\python.exe` on Windows):
 
 ```bash
 .venv/bin/python -m pip install -e ".[dev]"
