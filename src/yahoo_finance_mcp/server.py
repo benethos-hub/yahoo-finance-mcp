@@ -245,6 +245,56 @@ def get_options(
     return client.get_options(symbol, expiration=expiration)
 
 
+@mcp.tool()
+def get_earnings(
+    symbol: Symbol,
+    limit: Annotated[
+        int,
+        Field(description="Maximum number of earnings rows to return.", ge=1, le=50),
+    ] = 12,
+) -> dict[str, Any]:
+    """Get upcoming and historical earnings for a Yahoo symbol.
+
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
+    Returns the earnings calendar (upcoming and past dates with EPS estimate,
+    reported EPS, and surprise %) plus the recent earnings history. Equity-only;
+    empty for ETFs, funds, and crypto.
+    """
+    return client.get_earnings(symbol, limit=limit)
+
+
+@mcp.tool()
+def get_estimates(symbol: Symbol) -> dict[str, Any]:
+    """Get forward analyst estimates for a Yahoo symbol.
+
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
+    Returns earnings and revenue estimates, EPS trend and revisions, and growth
+    estimates (small tables keyed by period). Equity-only; empty for ETFs,
+    funds, and crypto.
+    """
+    return client.get_estimates(symbol)
+
+
+@mcp.tool()
+def get_upgrades_downgrades(
+    symbol: Symbol,
+    limit: Annotated[
+        int,
+        Field(description="Maximum number of rating changes to return.", ge=1, le=100),
+    ] = 50,
+) -> dict[str, Any]:
+    """Get recent analyst rating changes (upgrades/downgrades) for a Yahoo symbol.
+
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
+    Each entry is a firm's rating change with the from/to grade and action, most
+    recent first. Equity-only; empty for ETFs, funds, and crypto.
+    """
+    return client.get_upgrades_downgrades(symbol, max_rows=limit)
+
+
 def _build_parser() -> argparse.ArgumentParser:
     """Build the command-line parser for the server entry point."""
     parser = argparse.ArgumentParser(

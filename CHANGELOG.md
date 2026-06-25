@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- Tools `get_earnings` (upcoming + historical earnings with EPS estimate/actual
+  and surprise), `get_estimates` (forward analyst earnings/revenue/EPS/growth
+  estimates), and `get_upgrades_downgrades` (analyst rating changes). All are
+  equity-only and return empty for ETFs/funds/crypto.
+- `lxml` dependency (required by yfinance to scrape the earnings calendar).
+
 ## [0.1.1] - 2026-06-25
 
 ### Added

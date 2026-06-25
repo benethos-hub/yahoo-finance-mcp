@@ -47,6 +47,9 @@ DEFAULT_TTLS: dict[str, float] = {
     "news": 600,
     "recommendations": 6 * 3600,
     "options": 600,
+    "earnings": 6 * 3600,
+    "estimates": 6 * 3600,
+    "upgrades_downgrades": 6 * 3600,
 }
 
 _FALSY = {"0", "false", "no", "off", ""}

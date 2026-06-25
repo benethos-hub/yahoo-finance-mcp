@@ -34,6 +34,9 @@ Yahoo's unofficial endpoints.
 | `get_news` | Recent news headlines (title, summary, publisher, URL). |
 | `get_recommendations` | Analyst recommendation trend and price targets. |
 | `get_options` | Option expiration dates and the calls/puts chain for a date. |
+| `get_earnings` | Upcoming and historical earnings (EPS estimate/actual, surprise). |
+| `get_estimates` | Forward analyst estimates (earnings, revenue, EPS trend/revisions, growth). |
+| `get_upgrades_downgrades` | Recent analyst rating changes (upgrades/downgrades). |
 
 All `get_*` tools take a Yahoo Finance **symbol**. Use `search` to resolve a
 name or ISIN into a symbol first.
@@ -327,6 +330,9 @@ Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 | `company_info` | `get_company_info` | 6 h |
 | `dividends` | `get_dividends` | 6 h |
 | `recommendations` | `get_recommendations` | 6 h |
+| `earnings` | `get_earnings` | 6 h |
+| `estimates` | `get_estimates` | 6 h |
+| `upgrades_downgrades` | `get_upgrades_downgrades` | 6 h |
 | `financials` | `get_financials` | 24 h |
 
 - Off by default; enable with `--cache` or `YF_MCP_CACHE=1`.

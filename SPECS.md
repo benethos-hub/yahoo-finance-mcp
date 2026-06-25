@@ -96,6 +96,9 @@ All tools are read-only. `symbol` always means a Yahoo ticker.
 | `get_news` | `symbol`, `limit` 1-30 (=10) | `{symbol, count, articles[{title, summary, publisher, published, url}]}` |
 | `get_recommendations` | `symbol` | `{symbol, price_targets, recommendation_trend[]}` |
 | `get_options` | `symbol`, `expiration?` | without `expiration`: `{symbol, expirations[]}`; with it: `{symbol, expiration, calls[], puts[]}` |
+| `get_earnings` | `symbol`, `limit` 1-50 (=12) | `{symbol, earnings_dates[], earnings_history[]}` (equity-only) |
+| `get_estimates` | `symbol` | `{symbol, earnings_estimate[], revenue_estimate[], eps_trend[], eps_revisions[], growth_estimates[]}` (equity-only) |
+| `get_upgrades_downgrades` | `symbol`, `limit` 1-100 (=50) | `{symbol, changes[]}` (rating changes, newest first; equity-only) |
 
 ### Parameter descriptions
 
@@ -130,6 +133,9 @@ values).
   | `company_info` | `get_company_info` | 6 h |
   | `dividends` | `get_dividends` | 6 h |
   | `recommendations` | `get_recommendations` | 6 h |
+  | `earnings` | `get_earnings` | 6 h |
+  | `estimates` | `get_estimates` | 6 h |
+  | `upgrades_downgrades` | `get_upgrades_downgrades` | 6 h |
   | `financials` | `get_financials` | 24 h |
 - **Opt-in: off by default.** Within a single process yfinance already reuses
   identical requests, so the cache mainly helps across restarts and as
