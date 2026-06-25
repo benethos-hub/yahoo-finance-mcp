@@ -75,7 +75,7 @@ GitHub.
          "command": "uvx",
          "args": [
            "--from",
-           "git+https://github.com/benethos-hub/yahoo-finance-mcp.git@v0.1.0",
+           "git+https://github.com/benethos-hub/yahoo-finance-mcp.git@v0.1.1",
            "yahoo-finance-mcp"
          ]
        }
@@ -83,7 +83,7 @@ GitHub.
    }
    ```
 
-   Pin a release tag (`@v0.1.0`) for stability, or use `@main` for the latest.
+   Pin a release tag (`@v0.1.1`) for stability, or use `@main` for the latest.
    To enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
