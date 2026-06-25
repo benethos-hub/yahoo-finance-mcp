@@ -295,6 +295,84 @@ def get_upgrades_downgrades(
     return client.get_upgrades_downgrades(symbol, max_rows=limit)
 
 
+@mcp.tool()
+def get_holders(
+    symbol: Symbol,
+    limit: Annotated[
+        int,
+        Field(
+            description="Maximum number of institutional/mutual-fund holders to "
+            "return per list.",
+            ge=1,
+            le=100,
+        ),
+    ] = 25,
+) -> dict[str, Any]:
+    """Get the ownership breakdown for a Yahoo symbol.
+
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
+    Returns the high-level holder summary (insider/institutional percentages)
+    plus the top institutional and mutual-fund holders. Equity-only; empty for
+    ETFs, funds, and crypto.
+    """
+    return client.get_holders(symbol, max_rows=limit)
+
+
+@mcp.tool()
+def get_insider_activity(
+    symbol: Symbol,
+    limit: Annotated[
+        int,
+        Field(
+            description="Maximum number of insider transactions/roster rows to return.",
+            ge=1,
+            le=100,
+        ),
+    ] = 50,
+) -> dict[str, Any]:
+    """Get insider trading activity for a Yahoo symbol.
+
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
+    Returns individual insider transactions, a 6-month purchases/sales summary,
+    and the current insider roster. Equity-only; empty for ETFs, funds, and
+    crypto.
+    """
+    return client.get_insider_activity(symbol, max_rows=limit)
+
+
+@mcp.tool()
+def get_sec_filings(
+    symbol: Symbol,
+    limit: Annotated[
+        int,
+        Field(description="Maximum number of filings to return.", ge=1, le=100),
+    ] = 25,
+) -> dict[str, Any]:
+    """Get recent SEC filings for a Yahoo symbol.
+
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
+    Each entry has the filing date, type (e.g. ``10-K``, ``10-Q``, ``8-K``),
+    title, the Yahoo EDGAR URL, and exhibit links. Equity-only; empty for ETFs,
+    funds, and crypto.
+    """
+    return client.get_sec_filings(symbol, limit=limit)
+
+
+@mcp.tool()
+def get_calendar(symbol: Symbol) -> dict[str, Any]:
+    """Get upcoming corporate-calendar events for a Yahoo symbol.
+
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
+    Returns the next earnings date(s) with analyst estimate ranges and the next
+    dividend / ex-dividend dates. Equity-only; empty for ETFs, funds, and crypto.
+    """
+    return client.get_calendar(symbol)
+
+
 def _build_parser() -> argparse.ArgumentParser:
     """Build the command-line parser for the server entry point."""
     parser = argparse.ArgumentParser(

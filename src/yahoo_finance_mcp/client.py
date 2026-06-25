@@ -517,3 +517,142 @@ def get_upgrades_downgrades(symbol: str, *, max_rows: int = 50) -> dict[str, Any
         raise SymbolNotFoundError(symbol)
 
     return {"symbol": symbol.strip().upper(), "changes": rows}
+
+
+@cache.cached("holders")
+def get_holders(symbol: str, *, max_rows: int = 25) -> dict[str, Any]:
+    """Return the ownership breakdown for ``symbol``.
+
+    Combines the high-level holder summary (insider/institutional percentages)
+    with the top institutional and mutual-fund holders. Equity-only; empty for
+    ETFs/funds/crypto.
+    """
+    ticker = _get_ticker(symbol)
+    try:
+        major = ticker.major_holders
+        institutional = ticker.institutional_holders
+        mutualfund = ticker.mutualfund_holders
+    except Exception as exc:  # noqa: BLE001
+        raise _wrap_upstream(exc, f"Failed to load holders for {symbol!r}") from exc
+
+    major_rows = (
+        dataframe_to_records(major, max_rows=10, index_name="metric")
+        if major is not None
+        else []
+    )
+    # Both lists are sorted largest-holder-first; keep the top rows (head), not
+    # the tail that dataframe_to_records would otherwise retain when capping.
+    institutional_rows = (
+        dataframe_to_records(institutional.head(max_rows))
+        if institutional is not None
+        else []
+    )
+    mutualfund_rows = (
+        dataframe_to_records(mutualfund.head(max_rows))
+        if mutualfund is not None
+        else []
+    )
+    if not major_rows and not institutional_rows and not mutualfund_rows:
+        raise SymbolNotFoundError(symbol)
+
+    return {
+        "symbol": symbol.strip().upper(),
+        "major_holders": major_rows,
+        "institutional_holders": institutional_rows,
+        "mutualfund_holders": mutualfund_rows,
+    }
+
+
+@cache.cached("insider_activity")
+def get_insider_activity(symbol: str, *, max_rows: int = 50) -> dict[str, Any]:
+    """Return insider trading activity for ``symbol``.
+
+    Combines individual insider transactions, a 6-month purchases/sales summary,
+    and the current insider roster (with shares owned). Equity-only; empty for
+    ETFs/funds/crypto.
+    """
+    ticker = _get_ticker(symbol)
+    try:
+        transactions = ticker.insider_transactions
+        purchases = ticker.insider_purchases
+        roster = ticker.insider_roster_holders
+    except Exception as exc:  # noqa: BLE001
+        raise _wrap_upstream(
+            exc, f"Failed to load insider activity for {symbol!r}"
+        ) from exc
+
+    # Transactions are newest-first; keep the most recent (head), not the tail
+    # that dataframe_to_records would retain when capping.
+    transactions_rows = (
+        dataframe_to_records(transactions.head(max_rows))
+        if transactions is not None
+        else []
+    )
+    purchases_rows = (
+        dataframe_to_records(purchases, max_rows=10) if purchases is not None else []
+    )
+    roster_rows = (
+        dataframe_to_records(roster.head(max_rows)) if roster is not None else []
+    )
+    if not transactions_rows and not purchases_rows and not roster_rows:
+        raise SymbolNotFoundError(symbol)
+
+    return {
+        "symbol": symbol.strip().upper(),
+        "transactions": transactions_rows,
+        "purchases_summary": purchases_rows,
+        "roster": roster_rows,
+    }
+
+
+@cache.cached("sec_filings")
+def get_sec_filings(symbol: str, *, limit: int = 25) -> dict[str, Any]:
+    """Return recent SEC filings for ``symbol``.
+
+    Each entry has the filing date, type (e.g. ``10-K``, ``10-Q``, ``8-K``),
+    title, the Yahoo EDGAR URL, and exhibit links. Equity-only; empty for
+    ETFs/funds/crypto.
+    """
+    limit = max(1, min(int(limit), 100))
+    ticker = _get_ticker(symbol)
+    try:
+        filings = ticker.sec_filings
+    except Exception as exc:  # noqa: BLE001
+        raise _wrap_upstream(exc, f"Failed to load SEC filings for {symbol!r}") from exc
+
+    items: list[dict[str, Any]] = []
+    for filing in list(filings or [])[:limit]:
+        if not isinstance(filing, dict):
+            continue
+        items.append(
+            {
+                "date": to_jsonable(filing.get("date")),
+                "type": filing.get("type"),
+                "title": filing.get("title"),
+                "url": filing.get("edgarUrl"),
+                "exhibits": to_jsonable(filing.get("exhibits")),
+            }
+        )
+    if not items:
+        raise SymbolNotFoundError(symbol)
+
+    return {"symbol": symbol.strip().upper(), "count": len(items), "filings": items}
+
+
+@cache.cached("calendar")
+def get_calendar(symbol: str) -> dict[str, Any]:
+    """Return upcoming corporate-calendar events for ``symbol``.
+
+    Includes the next earnings date(s) with analyst estimate ranges and the next
+    dividend / ex-dividend dates. Equity-only; empty for ETFs/funds/crypto.
+    """
+    ticker = _get_ticker(symbol)
+    try:
+        cal = ticker.calendar
+    except Exception as exc:  # noqa: BLE001
+        raise _wrap_upstream(exc, f"Failed to load calendar for {symbol!r}") from exc
+
+    if not cal:
+        raise SymbolNotFoundError(symbol)
+
+    return {"symbol": symbol.strip().upper(), "calendar": to_jsonable(cal)}

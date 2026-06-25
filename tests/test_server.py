@@ -19,6 +19,10 @@ EXPECTED_TOOLS = {
     "get_earnings",
     "get_estimates",
     "get_upgrades_downgrades",
+    "get_holders",
+    "get_insider_activity",
+    "get_sec_filings",
+    "get_calendar",
 }
 
 

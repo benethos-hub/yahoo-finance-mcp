@@ -99,6 +99,10 @@ All tools are read-only. `symbol` always means a Yahoo ticker.
 | `get_earnings` | `symbol`, `limit` 1-50 (=12) | `{symbol, earnings_dates[], earnings_history[]}` (equity-only) |
 | `get_estimates` | `symbol` | `{symbol, earnings_estimate[], revenue_estimate[], eps_trend[], eps_revisions[], growth_estimates[]}` (equity-only) |
 | `get_upgrades_downgrades` | `symbol`, `limit` 1-100 (=50) | `{symbol, changes[]}` (rating changes, newest first; equity-only) |
+| `get_holders` | `symbol`, `limit` 1-100 (=25) | `{symbol, major_holders[], institutional_holders[], mutualfund_holders[]}` (top holders first; equity-only) |
+| `get_insider_activity` | `symbol`, `limit` 1-100 (=50) | `{symbol, transactions[], purchases_summary[], roster[]}` (transactions newest first; equity-only) |
+| `get_sec_filings` | `symbol`, `limit` 1-100 (=25) | `{symbol, count, filings[{date, type, title, url, exhibits}]}` (equity-only) |
+| `get_calendar` | `symbol` | `{symbol, calendar{}}` (next earnings/dividend dates + estimate ranges; equity-only) |
 
 ### Parameter descriptions
 
@@ -136,7 +140,11 @@ values).
   | `earnings` | `get_earnings` | 6 h |
   | `estimates` | `get_estimates` | 6 h |
   | `upgrades_downgrades` | `get_upgrades_downgrades` | 6 h |
+  | `insider_activity` | `get_insider_activity` | 6 h |
+  | `sec_filings` | `get_sec_filings` | 6 h |
+  | `calendar` | `get_calendar` | 6 h |
   | `financials` | `get_financials` | 24 h |
+  | `holders` | `get_holders` | 24 h |
 - **Opt-in: off by default.** Within a single process yfinance already reuses
   identical requests, so the cache mainly helps across restarts and as
   rate-limit protection; enable it with `--cache` / `YF_MCP_CACHE=1`.
@@ -249,3 +257,14 @@ docs**. Each tool follows the established pattern (client.py logic +
 `@cache.cached`, server.py `@mcp.tool()` with `Annotated` Fields, FakeTicker
 unit tests, and a smoke-test entry). Land in reviewable PRs (CI must stay
 green).
+
+### Phase status
+
+- **Phase 1 — done:** `get_earnings`, `get_estimates`, `get_upgrades_downgrades`
+  (added `lxml`).
+- **Phase 2 — done:** `get_holders`, `get_insider_activity`, `get_sec_filings`,
+  `get_calendar`.
+- **Phase 3 — planned:** extend `get_financials` with a `ttm` frequency, add
+  `get_shares` (`get_shares_full`) and `get_fund_data` (`funds_data`); extend
+  `get_recommendations` with `recommendations_summary`.
+- **Later (larger):** module-level browsing/screener and multi-symbol tools.

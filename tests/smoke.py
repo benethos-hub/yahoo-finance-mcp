@@ -63,3 +63,28 @@ if __name__ == "__main__":
 
     ud = client.get_upgrades_downgrades("AAPL", max_rows=3)
     show("get_upgrades_downgrades('AAPL', max_rows=3)", ud)
+
+    holders = client.get_holders("AAPL", max_rows=3)
+    show(
+        "get_holders('AAPL', max_rows=3)",
+        {
+            "symbol": holders["symbol"],
+            "major_holders": holders["major_holders"],
+            "institutional_holders": holders["institutional_holders"][:2],
+            "mutualfund_holders": holders["mutualfund_holders"][:2],
+        },
+    )
+
+    insider = client.get_insider_activity("AAPL", max_rows=3)
+    show(
+        "get_insider_activity('AAPL', max_rows=3)",
+        {
+            "symbol": insider["symbol"],
+            "transactions": insider["transactions"][:2],
+            "purchases_summary": insider["purchases_summary"],
+            "roster": insider["roster"][:2],
+        },
+    )
+
+    show("get_sec_filings('AAPL', limit=3)", client.get_sec_filings("AAPL", limit=3))
+    show("get_calendar('AAPL')", client.get_calendar("AAPL"))
