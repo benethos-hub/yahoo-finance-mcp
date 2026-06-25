@@ -29,7 +29,7 @@ Yahoo's unofficial endpoints.
 | `get_quote` | Current price and key intraday figures for a symbol. |
 | `get_history` | Historical OHLCV data (period/interval or explicit date range). |
 | `get_company_info` | Company profile and key statistics (sector, market cap, P/E, …). |
-| `get_financials` | Income statement, balance sheet, or cash flow (annual/quarterly). |
+| `get_financials` | Income statement, balance sheet, or cash flow (annual/quarterly/ttm). |
 | `get_dividends` | Dividend and stock-split history. |
 | `get_news` | Recent news headlines (title, summary, publisher, URL). |
 | `get_recommendations` | Analyst recommendation trend and price targets. |
@@ -41,6 +41,8 @@ Yahoo's unofficial endpoints.
 | `get_insider_activity` | Insider transactions, 6-month purchases/sales summary, and current roster. |
 | `get_sec_filings` | Recent SEC filings (type, date, title, EDGAR/exhibit links). |
 | `get_calendar` | Upcoming earnings and dividend / ex-dividend dates with estimate ranges. |
+| `get_shares` | Shares-outstanding history (date → shares). |
+| `get_fund_data` | Fund/ETF profile: overview, asset-class & sector weightings, top holdings. |
 
 All `get_*` tools take a Yahoo Finance **symbol**. Use `search` to resolve a
 name or ISIN into a symbol first.
@@ -342,6 +344,8 @@ Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 | `calendar` | `get_calendar` | 6 h |
 | `financials` | `get_financials` | 24 h |
 | `holders` | `get_holders` | 24 h |
+| `shares` | `get_shares` | 24 h |
+| `fund_data` | `get_fund_data` | 24 h |
 
 - Off by default; enable with `--cache` or `YF_MCP_CACHE=1`.
 - Location: the OS user cache directory, or `--cache-dir` / `YF_MCP_CACHE_DIR`.

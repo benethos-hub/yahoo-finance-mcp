@@ -91,7 +91,7 @@ All tools are read-only. `symbol` always means a Yahoo ticker.
 | `get_quote` | `symbol` | `{symbol, currency, exchange, quoteType, lastPrice, previousClose, open, dayHigh, dayLow, lastVolume, marketCap, 50/200d avg, yearHigh/Low, yearChange}` |
 | `get_history` | `symbol`, `period` (=1mo), `interval` (=1d), `start?`, `end?` | `{symbol, interval, period, start, end, count, truncated, rows[]}` (OHLCV; ≤250 rows, tail kept) |
 | `get_company_info` | `symbol` | curated profile + key statistics |
-| `get_financials` | `symbol`, `statement` (income/balance/cashflow), `freq` (annual/quarterly) | `{symbol, statement, freq, rows[]}` (rows = line items, columns = periods) |
+| `get_financials` | `symbol`, `statement` (income/balance/cashflow), `freq` (annual/quarterly/ttm — ttm income/cashflow only) | `{symbol, statement, freq, rows[]}` (rows = line items, columns = periods) |
 | `get_dividends` | `symbol` | `{symbol, dividends[], splits[]}` |
 | `get_news` | `symbol`, `limit` 1-30 (=10) | `{symbol, count, articles[{title, summary, publisher, published, url}]}` |
 | `get_recommendations` | `symbol` | `{symbol, price_targets, recommendation_trend[]}` |
@@ -103,6 +103,8 @@ All tools are read-only. `symbol` always means a Yahoo ticker.
 | `get_insider_activity` | `symbol`, `limit` 1-100 (=50) | `{symbol, transactions[], purchases_summary[], roster[]}` (transactions newest first; equity-only) |
 | `get_sec_filings` | `symbol`, `limit` 1-100 (=25) | `{symbol, count, filings[{date, type, title, url, exhibits}]}` (equity-only) |
 | `get_calendar` | `symbol` | `{symbol, calendar{}}` (next earnings/dividend dates + estimate ranges; equity-only) |
+| `get_shares` | `symbol`, `start?`, `end?`, `limit` 1-250 (=50) | `{symbol, count, shares[{date, shares}]}` (most recent kept) |
+| `get_fund_data` | `symbol`, `limit` 1-100 (=25) | `{symbol, description, fund_overview, asset_classes, sector_weightings, top_holdings[]}` (fund/ETF-only) |
 
 ### Parameter descriptions
 
@@ -145,6 +147,8 @@ values).
   | `calendar` | `get_calendar` | 6 h |
   | `financials` | `get_financials` | 24 h |
   | `holders` | `get_holders` | 24 h |
+  | `shares` | `get_shares` | 24 h |
+  | `fund_data` | `get_fund_data` | 24 h |
 - **Opt-in: off by default.** Within a single process yfinance already reuses
   identical requests, so the cache mainly helps across restarts and as
   rate-limit protection; enable it with `--cache` / `YF_MCP_CACHE=1`.
@@ -236,12 +240,13 @@ wrapped via `_wrap_upstream`, cached with a per-tool TTL, and row-capped.
 | `get_calendar` | `calendar` | next earnings/ex-div dates |
 | `get_shares` | `get_shares_full` | shares outstanding over time |
 | `get_fund_data` | `funds_data` | holdings/sector weights — ETFs & funds |
-| extend `get_financials` | `ttm_income_stmt`, `ttm_cashflow` | add a `ttm` frequency |
-| extend `get_recommendations` | `recommendations_summary` | include the summary table |
+| extend `get_financials` | `ttm_income_stmt`, `ttm_cashflow` | add a `ttm` frequency (income/cashflow only; no `ttm_balance_sheet` upstream) |
 
 Excluded from tools: `sustainability`, `capital_gains` (empty). `isin`/
 `history_metadata` are minor and may be folded into existing tools rather than
-new ones.
+new ones. The planned `get_recommendations` extension was **dropped**:
+`recommendations_summary` is identical to `recommendations`, which the existing
+tool already returns as `recommendation_trend`.
 
 ### Module-level (later phase, larger)
 
@@ -264,7 +269,8 @@ green).
   (added `lxml`).
 - **Phase 2 — done:** `get_holders`, `get_insider_activity`, `get_sec_filings`,
   `get_calendar`.
-- **Phase 3 — planned:** extend `get_financials` with a `ttm` frequency, add
-  `get_shares` (`get_shares_full`) and `get_fund_data` (`funds_data`); extend
-  `get_recommendations` with `recommendations_summary`.
+- **Phase 3 — done:** `get_financials` gained a `ttm` frequency, plus new
+  `get_shares` (`get_shares_full`) and `get_fund_data` (`funds_data`). The
+  `get_recommendations`/`recommendations_summary` extension was dropped as
+  redundant (see above).
 - **Later (larger):** module-level browsing/screener and multi-symbol tools.

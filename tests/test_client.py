@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-from yfinance.exceptions import YFRateLimitError
+from yfinance.exceptions import YFDataException, YFRateLimitError
 
 from yahoo_finance_mcp import client
 from yahoo_finance_mcp.errors import RateLimitError, SymbolNotFoundError, ToolError
@@ -67,6 +67,17 @@ class FakeTicker:
     def get_earnings_dates(self, **kwargs):
         self.earnings_dates_kwargs = kwargs
         return self._attrs.get("earnings_dates")
+
+    def get_shares_full(self, **kwargs):
+        self.shares_full_kwargs = kwargs
+        return self._attrs.get("shares_full")
+
+    @property
+    def funds_data(self):
+        fd = self._attrs.get("funds_data")
+        if isinstance(fd, Exception):
+            raise fd
+        return fd
 
 
 @pytest.fixture
@@ -216,6 +227,23 @@ def test_get_financials_returns_rows(patch_ticker):
     out = client.get_financials("aapl", statement="income", freq="annual")
     assert out["statement"] == "income"
     assert out["rows"][0]["item"] == "Total Revenue"
+
+
+def test_get_financials_ttm_uses_ttm_attr(patch_ticker):
+    df = pd.DataFrame(
+        {pd.Timestamp("2026-03-31"): [129174.0]},
+        index=["Free Cash Flow"],
+    )
+    patch_ticker(FakeTicker(ttm_cashflow=df))
+    out = client.get_financials("aapl", statement="cashflow", freq="ttm")
+    assert out["freq"] == "ttm"
+    assert out["rows"][0]["item"] == "Free Cash Flow"
+
+
+def test_get_financials_ttm_not_available_for_balance(patch_ticker):
+    patch_ticker(FakeTicker())
+    with pytest.raises(ToolError):
+        client.get_financials("aapl", statement="balance", freq="ttm")
 
 
 # --- get_dividends --------------------------------------------------------
@@ -569,6 +597,118 @@ def test_get_calendar_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(calendar={}))
     with pytest.raises(SymbolNotFoundError):
         client.get_calendar("nope")
+
+
+# --- get_shares -----------------------------------------------------------
+
+
+def test_get_shares_returns_recent_points(patch_ticker):
+    idx = pd.DatetimeIndex(["2024-01-01", "2024-06-01", "2024-12-01"])
+    series = pd.Series([100, 110, 120], index=idx)
+    ticker = patch_ticker(FakeTicker(shares_full=series))
+    out = client.get_shares("aapl", start="2024-01-01", max_rows=2)
+    # Most recent points are kept (tail).
+    assert out["count"] == 2
+    assert out["shares"][-1]["shares"] == 120
+    assert ticker.shares_full_kwargs == {"start": "2024-01-01", "end": None}
+
+
+def test_get_shares_empty_raises(patch_ticker):
+    patch_ticker(FakeTicker(shares_full=pd.Series(dtype="float64")))
+    with pytest.raises(SymbolNotFoundError):
+        client.get_shares("nope")
+
+
+def test_get_shares_none_raises(patch_ticker):
+    patch_ticker(FakeTicker(shares_full=None))
+    with pytest.raises(SymbolNotFoundError):
+        client.get_shares("nope")
+
+
+def test_get_shares_upstream_error(monkeypatch):
+    class Boom(FakeTicker):
+        def get_shares_full(self, **kwargs):
+            raise RuntimeError("network down")
+
+    monkeypatch.setattr(client, "_get_ticker", lambda s: Boom())
+    with pytest.raises(ToolError):
+        client.get_shares("AAPL")
+
+
+def test_get_shares_rate_limit(monkeypatch):
+    class Throttled(FakeTicker):
+        def get_shares_full(self, **kwargs):
+            raise YFRateLimitError()
+
+    monkeypatch.setattr(client, "_get_ticker", lambda s: Throttled())
+    with pytest.raises(RateLimitError):
+        client.get_shares("AAPL")
+
+
+# --- get_fund_data --------------------------------------------------------
+
+
+def _fake_funds_data():
+    import types
+
+    top = pd.DataFrame(
+        {"Name": ["NVIDIA Corp", "Apple Inc"], "Holding Percent": [0.078, 0.070]},
+        index=pd.Index(["NVDA", "AAPL"], name="Symbol"),
+    )
+    return types.SimpleNamespace(
+        description="An index ETF.",
+        fund_overview={"categoryName": "Large Blend"},
+        asset_classes={"stockPosition": 0.99},
+        sector_weightings={"technology": 0.39},
+        top_holdings=top,
+    )
+
+
+def test_get_fund_data_returns_profile(patch_ticker):
+    patch_ticker(FakeTicker(funds_data=_fake_funds_data()))
+    out = client.get_fund_data("spy")
+    assert out["symbol"] == "SPY"
+    assert out["description"] == "An index ETF."
+    assert out["fund_overview"] == {"categoryName": "Large Blend"}
+    assert out["sector_weightings"] == {"technology": 0.39}
+    assert out["top_holdings"][0]["symbol"] == "NVDA"
+
+
+def test_get_fund_data_caps_holdings(patch_ticker):
+    import types
+
+    top = pd.DataFrame(
+        {"Name": [f"H{i}" for i in range(100)]},
+        index=pd.Index([f"S{i}" for i in range(100)], name="Symbol"),
+    )
+    fd = types.SimpleNamespace(
+        description=None,
+        fund_overview={},
+        asset_classes={},
+        sector_weightings={},
+        top_holdings=top,
+    )
+    patch_ticker(FakeTicker(funds_data=fd))
+    out = client.get_fund_data("spy", max_rows=5)
+    assert len(out["top_holdings"]) == 5
+
+
+def test_get_fund_data_non_fund_raises_not_found(patch_ticker):
+    patch_ticker(FakeTicker(funds_data=YFDataException("No Fund data found.")))
+    with pytest.raises(SymbolNotFoundError):
+        client.get_fund_data("aapl")
+
+
+def test_get_fund_data_rate_limit(patch_ticker):
+    patch_ticker(FakeTicker(funds_data=YFRateLimitError()))
+    with pytest.raises(RateLimitError):
+        client.get_fund_data("spy")
+
+
+def test_get_fund_data_upstream_error(patch_ticker):
+    patch_ticker(FakeTicker(funds_data=RuntimeError("boom")))
+    with pytest.raises(ToolError):
+        client.get_fund_data("spy")
 
 
 # --- get_company_info -----------------------------------------------------

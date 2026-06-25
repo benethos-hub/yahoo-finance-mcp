@@ -170,7 +170,10 @@ def get_financials(
     ] = "income",
     freq: Annotated[
         str,
-        Field(description="Reporting frequency: 'annual' or 'quarterly'."),
+        Field(
+            description="Reporting frequency: 'annual', 'quarterly', or 'ttm' "
+            "(trailing twelve months; income and cashflow only)."
+        ),
     ] = "annual",
 ) -> dict[str, Any]:
     """Get a financial statement for a Yahoo symbol.
@@ -178,8 +181,10 @@ def get_financials(
     ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
     never an ISIN, WKN, or company name; resolve those via ``search`` first.
     ``statement`` is one of ``income`` (income statement), ``balance`` (balance
-    sheet), or ``cashflow`` (cash flow statement). ``freq`` is ``annual`` or
-    ``quarterly``. Each row is a line item; columns are reporting periods.
+    sheet), or ``cashflow`` (cash flow statement). ``freq`` is ``annual``,
+    ``quarterly``, or ``ttm`` (trailing twelve months, available for the income
+    and cash-flow statements only). Each row is a line item; columns are
+    reporting periods.
     """
     return client.get_financials(symbol, statement=statement, freq=freq)
 
@@ -371,6 +376,56 @@ def get_calendar(symbol: Symbol) -> dict[str, Any]:
     dividend / ex-dividend dates. Equity-only; empty for ETFs, funds, and crypto.
     """
     return client.get_calendar(symbol)
+
+
+@mcp.tool()
+def get_shares(
+    symbol: Symbol,
+    start: Annotated[
+        str | None,
+        Field(description="Start date 'YYYY-MM-DD' to bound the series (optional)."),
+    ] = None,
+    end: Annotated[
+        str | None,
+        Field(description="End date 'YYYY-MM-DD' to bound the series (optional)."),
+    ] = None,
+    limit: Annotated[
+        int,
+        Field(
+            description="Maximum number of (most recent) data points to return.",
+            ge=1,
+            le=250,
+        ),
+    ] = 50,
+) -> dict[str, Any]:
+    """Get the shares-outstanding history for a Yahoo symbol.
+
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
+    Each point is a date and the reported shares outstanding; only the most
+    recent ``limit`` points are returned. Optionally bound the range with
+    ``start`` / ``end`` (``YYYY-MM-DD``).
+    """
+    return client.get_shares(symbol, start=start, end=end, max_rows=limit)
+
+
+@mcp.tool()
+def get_fund_data(
+    symbol: Symbol,
+    limit: Annotated[
+        int,
+        Field(description="Maximum number of top holdings to return.", ge=1, le=100),
+    ] = 25,
+) -> dict[str, Any]:
+    """Get fund/ETF profile data for a Yahoo symbol.
+
+    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``SPY``, ``VWRL.L``),
+    never an ISIN, WKN, or company name; resolve those via ``search`` first.
+    Returns the fund overview, asset-class and sector weightings, and the top
+    holdings. Fund/ETF-only; raises for stocks and crypto, which have no fund
+    data.
+    """
+    return client.get_fund_data(symbol, max_rows=limit)
 
 
 def _build_parser() -> argparse.ArgumentParser:

@@ -18,6 +18,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `get_sec_filings` (recent SEC filings with EDGAR/exhibit links), and
   `get_calendar` (upcoming earnings and dividend / ex-dividend dates). All are
   equity-only and return empty for ETFs/funds/crypto.
+- Tools `get_shares` (shares-outstanding history) and `get_fund_data` (fund/ETF
+  profile: overview, asset-class and sector weightings, top holdings;
+  fund/ETF-only).
+
+### Changed
+- `get_financials` now accepts `freq="ttm"` (trailing twelve months) for the
+  income and cash-flow statements.
 
 ## [0.1.1] - 2026-06-25
 
