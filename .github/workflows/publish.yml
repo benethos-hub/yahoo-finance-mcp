@@ -1,0 +1,40 @@
+name: Publish to PyPI
+
+# Builds the sdist + wheel and publishes them to PyPI when a GitHub release is
+# published. Authentication uses PyPI Trusted Publishing (OIDC) — no API token
+# or secret is stored in the repository.
+#
+# One-time setup on PyPI (project owner): add a "pending publisher" for the
+# project `benethos-yahoo-finance-mcp` with:
+#   Owner: benethos-hub
+#   Repository: yahoo-finance-mcp
+#   Workflow filename: publish.yml
+#   Environment: pypi
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  pypi-publish:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/benethos-yahoo-finance-mcp
+    permissions:
+      id-token: write # required for Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Publish to PyPI (Trusted Publishing)
+        run: uv publish --trusted-publishing always

@@ -96,16 +96,17 @@ name or ISIN into a symbol first. The two exceptions are `get_sector` and
 
 - [uv](https://docs.astral.sh/uv/) (recommended) — manages Python, the virtual
   environment, and dependencies in one tool.
-- `git` — required for the `uvx` git-URL install below.
 - Or, without uv: Python 3.11+ with `pip` / `venv`.
+- `git` is **only** needed for the optional install-from-source method.
 
 ## Installation
 
 ### Quick start: uv + Claude Desktop
 
 The simplest way to use the server with Claude Desktop — no clone, no manual
-virtual environment. `uvx` fetches, builds, and runs it on demand straight from
-GitHub.
+virtual environment, no `git`. `uvx` fetches and runs it on demand from
+[PyPI](https://pypi.org/project/benethos-yahoo-finance-mcp/) (published as
+`benethos-yahoo-finance-mcp`).
 
 1. **Install uv** (see the [uv install docs](https://docs.astral.sh/uv/getting-started/installation/)):
 
@@ -127,27 +128,28 @@ GitHub.
      "mcpServers": {
        "yahoo-finance": {
          "command": "uvx",
-         "args": [
-           "--from",
-           "git+https://github.com/benethos-hub/yahoo-finance-mcp.git@v0.2.0",
-           "yahoo-finance-mcp"
-         ]
+         "args": ["benethos-yahoo-finance-mcp"]
        }
      }
    }
    ```
 
-   Pin a release tag (`@v0.2.0`) for stability, or use `@main` for the latest.
-   To enable the optional result cache, add an `env` block, e.g.
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.2.1`. To
+   enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
 3. **Restart Claude Desktop** (quit from the tray, not just close the window).
    The tools then appear in the client.
 
-> `uvx` must be on `PATH` for Claude Desktop. After installing uv, fully restart
-> the app — or use the absolute path to `uvx` as `command`. `git` must be
-> installed for the git-URL install. The first launch builds from source (clone
-> + dependencies), so it takes a moment; subsequent launches use the cache.
+> **Installing from source instead?** You can run the unreleased `main` branch
+> with `uvx --from "git+https://github.com/benethos-hub/yahoo-finance-mcp.git" yahoo-finance-mcp`.
+> That path needs `git` on the `PATH` of the process the client spawns — some
+> GUI clients don't pass a full `PATH`, so prefer the PyPI install above.
+
+> `uvx` must be on the `PATH` the client uses. After installing uv, fully restart
+> the app — or use the absolute path to `uvx` as `command`. The first launch
+> downloads the package and its dependencies, so it takes a moment; subsequent
+> launches use the cache.
 
 ### Other ways to install
 

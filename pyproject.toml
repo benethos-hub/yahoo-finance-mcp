@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "yahoo-finance-mcp"
-version = "0.2.0"
+name = "benethos-yahoo-finance-mcp"
+version = "0.2.1"
 description = "An MCP server exposing Yahoo Finance data (via yfinance) over stdio."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -43,6 +43,9 @@ dev = [
 ]
 
 [project.scripts]
+# Two names for the same entry point: the distribution name (so
+# `uvx benethos-yahoo-finance-mcp` works) and the short historical name.
+benethos-yahoo-finance-mcp = "yahoo_finance_mcp.server:main"
 yahoo-finance-mcp = "yahoo_finance_mcp.server:main"
 
 [tool.hatch.build.targets.wheel]
