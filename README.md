@@ -129,7 +129,7 @@ GitHub.
          "command": "uvx",
          "args": [
            "--from",
-           "git+https://github.com/benethos-hub/yahoo-finance-mcp.git@v0.1.1",
+           "git+https://github.com/benethos-hub/yahoo-finance-mcp.git@v0.2.0",
            "yahoo-finance-mcp"
          ]
        }
@@ -137,7 +137,7 @@ GitHub.
    }
    ```
 
-   Pin a release tag (`@v0.1.1`) for stability, or use `@main` for the latest.
+   Pin a release tag (`@v0.2.0`) for stability, or use `@main` for the latest.
    To enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
@@ -335,6 +335,41 @@ questions and it will pick the right tools. Replace the bracketed placeholders
 - "List the distribution history of [Ticker] and compute the total-return
   recovery including reinvested dividends from [year]."
 - "From which year does Yahoo cover dividends for [Ticker]?"
+
+**Earnings & estimates** (`get_earnings`, `get_estimates`, `get_upgrades_downgrades`)
+
+- "When is [Ticker]'s next earnings date, and what's the EPS estimate?"
+- "Show [Ticker]'s earnings surprises over the last few quarters."
+- "What are the forward revenue and EPS estimates for [Ticker], and how have
+  they been revised recently?"
+- "List the latest analyst upgrades and downgrades for [Ticker]."
+
+**Ownership & insiders** (`get_holders`, `get_insider_activity`)
+
+- "Who are the largest institutional holders of [Ticker]?"
+- "What share of [Ticker] is held by insiders vs institutions?"
+- "Has there been notable insider buying or selling in [Ticker] recently?"
+
+**Filings & calendar** (`get_sec_filings`, `get_calendar`)
+
+- "Show the most recent SEC filings for [Ticker] with links."
+- "When are [Ticker]'s next earnings and ex-dividend dates?"
+
+**Shares & fund profiles** (`get_shares`, `get_fund_data`)
+
+- "How has [Ticker]'s shares outstanding changed over time (buybacks/dilution)?"
+- "What are the top holdings and sector weightings of the ETF [Ticker]?"
+
+**Sector & industry browsing** (`get_sector`, `get_industry`)
+
+- "What are the top companies and industries in the technology sector?"
+- "Show the top-performing and top-growth companies in the semiconductors
+  industry."
+
+**Multiple quotes at once** (`get_quotes`)
+
+- "Get current quotes for [Ticker A], [Ticker B], and [Ticker C] and compare
+  them in a table."
 
 **Search / resolution** (`search`)
 
