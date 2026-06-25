@@ -19,7 +19,7 @@ done.
 
 ## Future features (see SPECS.md §11)
 
-- [ ] Multi-symbol batch for `get_quote`.
+- [x] Multi-symbol batch quoting — implemented as the `get_quotes` tool.
 - [x] Persistent caching with tiered TTLs — implemented as a result-level SQLite
   cache (`cache.py`), since `requests-cache` is not viable with yfinance's
   curl_cffi backend.

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "yahoo-finance-mcp"
-version = "0.1.1"
+version = "0.2.0"
 description = "An MCP server exposing Yahoo Finance data (via yfinance) over stdio."
 readme = "README.md"
 requires-python = ">=3.11"
