@@ -16,6 +16,9 @@ EXPECTED_TOOLS = {
     "get_news",
     "get_recommendations",
     "get_options",
+    "get_earnings",
+    "get_estimates",
+    "get_upgrades_downgrades",
 }
 
 

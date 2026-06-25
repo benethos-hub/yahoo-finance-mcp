@@ -48,3 +48,18 @@ if __name__ == "__main__":
             "puts": chain["puts"][:2],
         }
         show(f"get_options('AAPL', {first}) [first 2 each]", chain_preview)
+
+    earnings = client.get_earnings("AAPL", limit=4)
+    show(
+        "get_earnings('AAPL', limit=4)",
+        {
+            "symbol": earnings["symbol"],
+            "earnings_dates": earnings["earnings_dates"][:2],
+            "earnings_history": earnings["earnings_history"][:2],
+        },
+    )
+
+    show("get_estimates('AAPL')", client.get_estimates("AAPL"))
+
+    ud = client.get_upgrades_downgrades("AAPL", max_rows=3)
+    show("get_upgrades_downgrades('AAPL', max_rows=3)", ud)

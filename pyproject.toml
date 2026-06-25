@@ -25,6 +25,8 @@ classifiers = [
 dependencies = [
     "mcp[cli]>=1.28.0",
     "yfinance>=1.4.1",
+    # Required by yfinance for HTML-table scraping (e.g. earnings dates).
+    "lxml>=5.0",
 ]
 
 [project.urls]
