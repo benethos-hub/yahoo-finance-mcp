@@ -58,7 +58,8 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (FastMCP)
 - **Python:** 3.11+ (developed/verified on 3.14).
 - **HTTP security:** the HTTP transports have no built-in auth; bind to
   `0.0.0.0` only on trusted networks and front them with a proxy/auth layer.
-- **Deployment:** a `Dockerfile` (multi-stage, non-root, healthcheck) and a
+- **Deployment:** a `Dockerfile` (multi-stage, non-root, healthcheck;
+  dependencies installed reproducibly from `uv.lock` via uv) and a
   `compose.yaml` host the server over streamable-HTTP on port 8000. The image
   is configured entirely via env vars (no default CMD args) and persists its
   cache to a `/cache` volume.

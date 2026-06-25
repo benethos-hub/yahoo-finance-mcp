@@ -1,23 +1,27 @@
 # syntax=docker/dockerfile:1
 
-# ---- builder: install the package (and deps) into an isolated venv ----
+# ---- builder: install locked deps + package into /opt/venv via uv ----
 FROM python:3.12-slim AS builder
 
-ENV PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+# Bring in the uv binary (pinned image tag for reproducibility).
+COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /usr/local/bin/uv
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=0 \
+    UV_PROJECT_ENVIRONMENT=/opt/venv
 
 WORKDIR /app
 
-# Build into a dedicated venv we can copy wholesale into the runtime stage.
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+# Install dependencies first (without the project) for better layer caching:
+# this layer only changes when pyproject.toml / uv.lock change.
+COPY pyproject.toml uv.lock README.md ./
+RUN uv sync --frozen --no-install-project --no-dev
 
-# Copy only what the build needs (better layer caching). README.md is required
-# because pyproject.toml references it as the package readme.
-COPY pyproject.toml README.md ./
+# Now install the project itself as a regular (non-editable) wheel, so the
+# resulting /opt/venv is self-contained and can be copied to the runtime stage.
 COPY src ./src
-
-RUN pip install .
+RUN uv sync --frozen --no-dev --no-editable
 
 # ---- runtime: minimal image that just runs the server ----
 FROM python:3.12-slim AS runtime
