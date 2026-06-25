@@ -42,6 +42,27 @@ def test_to_jsonable_numpy_scalar():
     assert formatting.to_jsonable(np.float64(2.5)) == 2.5
 
 
+def test_to_jsonable_falls_back_to_str_for_unknown_objects():
+    class NoItem:
+        def __str__(self):
+            return "custom-repr"
+
+    # An object without a usable ``.item()`` falls back to ``str``.
+    assert formatting.to_jsonable(NoItem()) == "custom-repr"
+
+
+def test_to_jsonable_str_fallback_when_item_raises():
+    class BadItem:
+        def item(self):
+            raise TypeError("no scalar")
+
+        def __str__(self):
+            return "bad-item"
+
+    # A failing ``.item()`` is swallowed and we fall back to ``str``.
+    assert formatting.to_jsonable(BadItem()) == "bad-item"
+
+
 def test_dataframe_to_records_empty():
     assert formatting.dataframe_to_records(pd.DataFrame()) == []
 
