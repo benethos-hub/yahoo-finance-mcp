@@ -17,6 +17,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - README reorganized: a uv + Claude Desktop quick start is now the primary
   install example, followed by the other install methods; the standalone-server
   section leads with Docker.
+- CI now installs via uv against the lockfile (`astral-sh/setup-uv` +
+  `uv sync --frozen`) instead of `pip`; job names are unchanged.
 
 ## [0.1.0] - 2026-06-24
 
