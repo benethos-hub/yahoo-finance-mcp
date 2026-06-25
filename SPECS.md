@@ -175,3 +175,66 @@ values).
 - Multi-symbol batch for `get_quote`.
 - Input validation of `period`/`interval`/`freq` against known value sets.
 - Stale-on-error: serve an expired cache entry when Yahoo is rate limiting.
+
+## 12. Tool expansion plan
+
+Goal: expose every **working** yfinance method as an MCP tool. "Working" was
+verified empirically (probed live on a stock `AAPL` and an ETF `SPY`); only
+methods that return real data are in scope. Availability is symbol-dependent
+(equity fields are empty for ETFs and vice versa) — tools surface that as an
+empty result, not an error.
+
+### Verified data sources (probe results)
+
+- **Equity-only (data for AAPL, empty for SPY):** `upgrades_downgrades`,
+  `recommendations_summary`, `analyst_price_targets`, `earnings_estimate`,
+  `revenue_estimate`, `eps_trend`, `eps_revisions`, `growth_estimates`,
+  `earnings_history`, `get_earnings_dates`, `major_holders`,
+  `institutional_holders`, `mutualfund_holders`, `insider_purchases`,
+  `insider_roster_holders`, `insider_transactions`, `sec_filings`, `calendar`,
+  `ttm_income_stmt`, `ttm_cashflow`, `valuation`, `get_shares_full`.
+- **Fund/ETF:** `funds_data`.
+- **Any symbol:** `history_metadata`, `isin`.
+- **Excluded — upstream empty for all probed symbols:** `sustainability` (ESG),
+  `capital_gains`.
+- **Out of scope (non-goals, §2):** `live`/`WebSocket` (streaming), `Auth`.
+- **Dependency note:** `get_earnings_dates` requires `lxml` (not currently a
+  dependency); adding the earnings tool means adding `lxml` to `dependencies`.
+
+### Proposed new tools (grouped, not one-per-method)
+
+Grouping keeps the tool list legible for the LLM. Each takes a `Symbol`, is
+wrapped via `_wrap_upstream`, cached with a per-tool TTL, and row-capped.
+
+| Tool | Backed by | Notes |
+|------|-----------|-------|
+| `get_earnings` | `get_earnings_dates`, `earnings_history` | upcoming + historical EPS estimate/actual/surprise; **needs `lxml`** |
+| `get_estimates` | `earnings_estimate`, `revenue_estimate`, `eps_trend`, `eps_revisions`, `growth_estimates` | forward analyst estimates |
+| `get_upgrades_downgrades` | `upgrades_downgrades` | analyst rating changes (large; row-capped) |
+| `get_holders` | `major_holders`, `institutional_holders`, `mutualfund_holders` | ownership breakdown |
+| `get_insider_activity` | `insider_transactions`, `insider_purchases`, `insider_roster_holders` | insider trading |
+| `get_sec_filings` | `sec_filings` | recent filings |
+| `get_calendar` | `calendar` | next earnings/ex-div dates |
+| `get_shares` | `get_shares_full` | shares outstanding over time |
+| `get_fund_data` | `funds_data` | holdings/sector weights — ETFs & funds |
+| extend `get_financials` | `ttm_income_stmt`, `ttm_cashflow` | add a `ttm` frequency |
+| extend `get_recommendations` | `recommendations_summary` | include the summary table |
+
+Excluded from tools: `sustainability`, `capital_gains` (empty). `isin`/
+`history_metadata` are minor and may be folded into existing tools rather than
+new ones.
+
+### Module-level (later phase, larger)
+
+`Sector` / `Industry` / `Market` / `Lookup` browsing, the screener
+(`screen` / `EquityQuery`), and multi-symbol (`download` / `Tickers`, which also
+covers the §11 multi-symbol-quote item) are a separate, larger category — not
+part of the first per-symbol tool batch.
+
+### Process
+
+Per the working agreement: **plan (this section) → implement → test → update
+docs**. Each tool follows the established pattern (client.py logic +
+`@cache.cached`, server.py `@mcp.tool()` with `Annotated` Fields, FakeTicker
+unit tests, and a smoke-test entry). Land in reviewable PRs (CI must stay
+green).
