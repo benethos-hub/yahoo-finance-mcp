@@ -196,6 +196,12 @@ values).
   the image and smoke-tests that the container serves HTTP. All jobs install
   dependencies via uv from `uv.lock` (`uv sync --frozen`). Dependabot keeps pip
   and Actions dependencies updated.
+- A separate `publish` workflow builds the sdist + wheel (`uv build`) and uploads
+  them to **PyPI via Trusted Publishing (OIDC)** when a GitHub release is
+  published — no API token is stored. The PyPI distribution name is
+  `benethos-yahoo-finance-mcp` (the `yahoo-finance-mcp` name was already taken);
+  the import package (`yahoo_finance_mcp`) and the `yahoo-finance-mcp` console
+  script are unchanged, with `benethos-yahoo-finance-mcp` added as an alias.
 
 ## 11. Future work (not yet implemented)
 
