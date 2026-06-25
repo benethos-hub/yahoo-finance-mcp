@@ -18,7 +18,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   install example, followed by the other install methods; the standalone-server
   section leads with Docker.
 - CI now installs via uv against the lockfile (`astral-sh/setup-uv` +
-  `uv sync --frozen`) instead of `pip`; job names are unchanged.
+  `uv sync --frozen`) instead of `pip`; the `lint`/`test` job names are
+  unchanged.
+- CI builds the Docker image and smoke-tests that the container serves the
+  HTTP endpoint (`docker` job).
 
 ## [0.1.0] - 2026-06-24
 

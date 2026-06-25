@@ -53,3 +53,31 @@ jobs:
       # the only part that would hit the live Yahoo Finance endpoints.
       - name: Run tests with coverage
         run: uv run pytest -q --cov=yahoo_finance_mcp --cov-fail-under=80
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build image
+        run: docker build -t yahoo-finance-mcp:ci .
+
+      # Start the container and confirm the HTTP server actually serves: a bare
+      # GET on the streamable-HTTP endpoint returns 406 (it needs specific
+      # headers), so any HTTP response means the server is up.
+      - name: Smoke test (server boots and serves HTTP)
+        run: |
+          docker run -d --rm -p 8000:8000 --name yfmcp yahoo-finance-mcp:ci
+          code=000
+          for _ in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/mcp || echo 000)
+            [ "$code" != "000" ] && break
+            sleep 1
+          done
+          docker logs yfmcp || true
+          docker stop yfmcp || true
+          if [ "$code" = "000" ]; then
+            echo "::error::server did not respond on :8000"
+            exit 1
+          fi
+          echo "OK: server responded with HTTP $code"
