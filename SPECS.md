@@ -164,9 +164,11 @@ values).
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
   of 80% (currently ~90%).
-- CI (GitHub Actions): a lint job (ruff + mypy) plus a test matrix running
-  `pytest` with coverage on Python 3.11-3.13. Dependabot keeps pip and Actions
-  dependencies updated.
+- CI (GitHub Actions): a `lint` job (ruff + mypy) and a `test` matrix running
+  `pytest` with coverage on Python 3.11-3.13, plus a `docker` job that builds
+  the image and smoke-tests that the container serves HTTP. All jobs install
+  dependencies via uv from `uv.lock` (`uv sync --frozen`). Dependabot keeps pip
+  and Actions dependencies updated.
 
 ## 11. Future work (not yet implemented)
 

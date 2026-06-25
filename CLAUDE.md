@@ -65,16 +65,19 @@ Keep the layers separate: **tools in `server.py` stay thin** and delegate to
 
 ## Verifying
 
-- Tests: `.venv/Scripts/python.exe -m pytest -q` (must stay green; offline).
-- Lint + format: `.venv/Scripts/python.exe -m ruff check .` and
-  `.venv/Scripts/python.exe -m ruff format .` (CI checks `ruff format --check`).
-- Types: `.venv/Scripts/python.exe -m mypy`.
-- Coverage (CI floor 80%): `… -m pytest --cov=yahoo_finance_mcp --cov-fail-under=80`.
+Commands use uv (recommended); the venv interpreter forms
+(`.venv/Scripts/python.exe -m ...`) work too.
+
+- Tests: `uv run pytest -q` (must stay green; offline).
+- Lint + format: `uv run ruff check .` and `uv run ruff format .`
+  (CI checks `ruff format --check`).
+- Types: `uv run mypy`.
+- Coverage (CI floor 80%): `uv run pytest --cov=yahoo_finance_mcp --cov-fail-under=80`.
 - Inspect what the client sends to Claude (no Desktop restart needed):
   ```
-  .venv/Scripts/python.exe -c "import asyncio,json;from yahoo_finance_mcp.server import mcp;print(json.dumps([t.model_dump() for t in asyncio.run(mcp.list_tools())],indent=2,default=str))"
+  uv run python -c "import asyncio,json;from yahoo_finance_mcp.server import mcp;print(json.dumps([t.model_dump() for t in asyncio.run(mcp.list_tools())],indent=2,default=str))"
   ```
-- Live check against Yahoo: `.venv/Scripts/python.exe tests/smoke.py`.
+- Live check against Yahoo: `uv run python tests/smoke.py`.
 - After changing tool signatures/docstrings, **fully restart Claude Desktop**
   (quit from the tray, not just close the window) to reload the tools.
 
