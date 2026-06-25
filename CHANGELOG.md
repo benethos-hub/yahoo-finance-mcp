@@ -12,6 +12,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   estimates), and `get_upgrades_downgrades` (analyst rating changes). All are
   equity-only and return empty for ETFs/funds/crypto.
 - `lxml` dependency (required by yfinance to scrape the earnings calendar).
+- Tools `get_holders` (insider/institutional ownership breakdown with top
+  institutional and mutual-fund holders), `get_insider_activity` (insider
+  transactions, a 6-month purchases/sales summary, and the current roster),
+  `get_sec_filings` (recent SEC filings with EDGAR/exhibit links), and
+  `get_calendar` (upcoming earnings and dividend / ex-dividend dates). All are
+  equity-only and return empty for ETFs/funds/crypto.
 
 ## [0.1.1] - 2026-06-25
 

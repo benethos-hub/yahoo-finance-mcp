@@ -37,6 +37,10 @@ Yahoo's unofficial endpoints.
 | `get_earnings` | Upcoming and historical earnings (EPS estimate/actual, surprise). |
 | `get_estimates` | Forward analyst estimates (earnings, revenue, EPS trend/revisions, growth). |
 | `get_upgrades_downgrades` | Recent analyst rating changes (upgrades/downgrades). |
+| `get_holders` | Ownership breakdown (insider/institutional %, top institutional and mutual-fund holders). |
+| `get_insider_activity` | Insider transactions, 6-month purchases/sales summary, and current roster. |
+| `get_sec_filings` | Recent SEC filings (type, date, title, EDGAR/exhibit links). |
+| `get_calendar` | Upcoming earnings and dividend / ex-dividend dates with estimate ranges. |
 
 All `get_*` tools take a Yahoo Finance **symbol**. Use `search` to resolve a
 name or ISIN into a symbol first.
@@ -333,7 +337,11 @@ Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 | `earnings` | `get_earnings` | 6 h |
 | `estimates` | `get_estimates` | 6 h |
 | `upgrades_downgrades` | `get_upgrades_downgrades` | 6 h |
+| `insider_activity` | `get_insider_activity` | 6 h |
+| `sec_filings` | `get_sec_filings` | 6 h |
+| `calendar` | `get_calendar` | 6 h |
 | `financials` | `get_financials` | 24 h |
+| `holders` | `get_holders` | 24 h |
 
 - Off by default; enable with `--cache` or `YF_MCP_CACHE=1`.
 - Location: the OS user cache directory, or `--cache-dir` / `YF_MCP_CACHE_DIR`.
