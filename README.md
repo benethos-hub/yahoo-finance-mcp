@@ -27,6 +27,7 @@ Yahoo's unofficial endpoints.
 |------|-------------|
 | `search` | Find instruments by name, ticker, or ISIN; returns Yahoo symbols. |
 | `get_quote` | Current price and key intraday figures for a symbol. |
+| `get_quotes` | Compact current quotes for several symbols at once (per-symbol not-found list). |
 | `get_history` | Historical OHLCV data (period/interval or explicit date range). |
 | `get_company_info` | Company profile and key statistics (sector, market cap, P/E, …). |
 | `get_financials` | Income statement, balance sheet, or cash flow (annual/quarterly/ttm). |
@@ -373,6 +374,7 @@ Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 | Name | Tool | Default TTL |
 |------|------|-------------|
 | `quote` | `get_quote` | 30 s |
+| `quotes` | `get_quotes` | 30 s |
 | `history` | `get_history` | 10 min |
 | `news` | `get_news` | 10 min |
 | `options` | `get_options` | 10 min |

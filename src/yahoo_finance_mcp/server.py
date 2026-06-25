@@ -105,6 +105,29 @@ def get_quote(symbol: Symbol) -> dict[str, Any]:
 
 
 @mcp.tool()
+def get_quotes(
+    symbols: Annotated[
+        list[str],
+        Field(
+            description="A list of native Yahoo Finance ticker symbols, e.g. "
+            "['AAPL', 'MSFT', 'SAP.DE']. Each must be a native ticker, never an "
+            "ISIN, WKN, or company name; resolve those via 'search' first. Up to "
+            "50 symbols; extras are dropped (the result flags this as truncated)."
+        ),
+    ],
+) -> dict[str, Any]:
+    """Get compact current quotes for several Yahoo symbols in one call.
+
+    Use this to compare or fetch prices for multiple tickers at once. Each symbol
+    is looked up individually and returns currency, last price, previous close,
+    open, day high/low, and market cap. Symbols that return no data are listed
+    under ``not_found`` rather than failing the whole call. Symbols must be native
+    Yahoo tickers (e.g. ``AAPL``, ``SAP.DE``), never ISINs, WKNs, or names.
+    """
+    return client.get_quotes(symbols)
+
+
+@mcp.tool()
 def get_history(
     symbol: Symbol,
     period: Annotated[

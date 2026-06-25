@@ -40,6 +40,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 DEFAULT_TTLS: dict[str, float] = {
     "search": 3600,
     "quote": 30,
+    "quotes": 30,
     "history": 600,
     "company_info": 6 * 3600,
     "financials": 24 * 3600,

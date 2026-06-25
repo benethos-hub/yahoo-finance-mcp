@@ -14,6 +14,10 @@ if __name__ == "__main__":
     show("search('Apple')", client.search("Apple", limit=3))
     show("search('US0378331005')  # AAPL ISIN", client.search("US0378331005", limit=3))
     show("get_quote('AAPL')", client.get_quote("AAPL"))
+    show(
+        "get_quotes(['AAPL','MSFT','SPY','NOTAREALSYMBOL'])",
+        client.get_quotes(["AAPL", "MSFT", "SPY", "NOTAREALSYMBOL"]),
+    )
 
     hist = client.get_history("AAPL", period="5d", interval="1d")
     hist_preview = {**hist, "rows": hist["rows"][:2]}
