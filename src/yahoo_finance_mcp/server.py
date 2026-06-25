@@ -428,6 +428,61 @@ def get_fund_data(
     return client.get_fund_data(symbol, max_rows=limit)
 
 
+# Built from yfinance's own constant (via client) so the tool description the
+# LLM sees stays in sync with upstream's sector keys.
+_SECTOR_KEYS_DESC = (
+    "A Yahoo sector key (lowercase, hyphenated). One of: "
+    + ", ".join(client.SECTOR_KEYS)
+    + "."
+)
+
+
+@mcp.tool()
+def get_sector(
+    key: Annotated[
+        str,
+        Field(description=_SECTOR_KEYS_DESC),
+    ],
+    limit: Annotated[
+        int,
+        Field(description="Maximum number of top companies to return.", ge=1, le=100),
+    ] = 25,
+) -> dict[str, Any]:
+    """Browse a market sector by its Yahoo key (not a ticker symbol).
+
+    Returns the sector overview (company count, market cap/weight, description),
+    its top companies, ETFs, and mutual funds, and the constituent industries.
+    Each industry's ``key`` can be passed to ``get_industry`` to drill down.
+    This takes a sector key like ``technology`` or ``healthcare`` — not a ticker.
+    """
+    return client.get_sector(key, max_rows=limit)
+
+
+@mcp.tool()
+def get_industry(
+    key: Annotated[
+        str,
+        Field(
+            description="A Yahoo industry key (lowercase, hyphenated), e.g. "
+            "'semiconductors' or 'software-infrastructure'. Discover valid keys "
+            "from the 'industries' list returned by get_sector."
+        ),
+    ],
+    limit: Annotated[
+        int,
+        Field(description="Maximum number of top companies to return.", ge=1, le=100),
+    ] = 25,
+) -> dict[str, Any]:
+    """Browse an industry by its Yahoo key (not a ticker symbol).
+
+    Returns the industry overview, its parent sector, top companies, and the
+    top-performing and top-growth companies. Discover valid industry keys from
+    the ``industries`` list returned by ``get_sector``. This takes an industry
+    key like ``semiconductors`` — not a ticker symbol.
+    """
+    return client.get_industry(key, max_rows=limit)
+
+
 def _build_parser() -> argparse.ArgumentParser:
     """Build the command-line parser for the server entry point."""
     parser = argparse.ArgumentParser(

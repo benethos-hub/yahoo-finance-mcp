@@ -748,3 +748,163 @@ def get_fund_data(symbol: str, *, max_rows: int = 25) -> dict[str, Any]:
         "sector_weightings": to_jsonable(sector_weightings),
         "top_holdings": holdings_rows,
     }
+
+
+# Sector/industry keys are sourced from yfinance's own constant so they stay in
+# sync with upstream. That constant is semi-internal (note the upstream typo in
+# its name), so the import is defensive: if it is ever renamed or removed we fall
+# back to a known-good snapshot of the 11 sector keys, and correctness never
+# depends on this list alone — an invalid key is still caught at runtime when
+# yfinance returns no data.
+_FALLBACK_SECTOR_KEYS = (
+    "basic-materials",
+    "communication-services",
+    "consumer-cyclical",
+    "consumer-defensive",
+    "energy",
+    "financial-services",
+    "healthcare",
+    "industrials",
+    "real-estate",
+    "technology",
+    "utilities",
+)
+
+try:
+    from yfinance.const import (
+        SECTOR_INDUSTY_MAPPING_LC as _SECTOR_INDUSTRY_MAP_RAW,
+    )
+
+    SECTOR_INDUSTRY_MAP: dict[str, tuple[str, ...]] = {
+        str(sec): tuple(inds) for sec, inds in _SECTOR_INDUSTRY_MAP_RAW.items()
+    }
+except Exception:  # noqa: BLE001 - constant is semi-internal; degrade gracefully
+    logger.warning(
+        "yfinance.const sector mapping unavailable; "
+        "falling back to a static sector list."
+    )
+    SECTOR_INDUSTRY_MAP = {key: () for key in _FALLBACK_SECTOR_KEYS}
+
+# Public, derived from the mapping above (single source of truth for code + docs).
+SECTOR_KEYS: tuple[str, ...] = tuple(SECTOR_INDUSTRY_MAP)
+# Flat set of all valid industry keys; empty only if the fallback is in effect,
+# in which case industry validation defers entirely to the runtime check.
+INDUSTRY_KEYS: frozenset[str] = frozenset(
+    ind for inds in SECTOR_INDUSTRY_MAP.values() for ind in inds
+)
+
+
+@cache.cached("sector")
+def get_sector(key: str, *, max_rows: int = 25) -> dict[str, Any]:
+    """Return an overview of a market sector by its Yahoo ``key``.
+
+    ``key`` is one of Yahoo's fixed sector keys (e.g. ``technology``,
+    ``healthcare``, ``financial-services``). Returns the sector overview, top
+    companies/ETFs/mutual funds, and the constituent industries (whose ``key``
+    feeds :func:`get_industry`).
+    """
+    key = (key or "").strip().lower()
+    if not key:
+        raise ToolError("A non-empty sector key is required.")
+    if key not in SECTOR_KEYS:
+        raise ToolError(
+            f"Unknown sector key {key!r}. Valid keys: {', '.join(SECTOR_KEYS)}."
+        )
+
+    try:
+        sector = yf.Sector(key)
+        name = sector.name
+        index_symbol = sector.symbol
+        overview = sector.overview
+        top_companies = sector.top_companies
+        top_etfs = sector.top_etfs
+        top_mutual_funds = sector.top_mutual_funds
+        industries = sector.industries
+    except Exception as exc:  # noqa: BLE001
+        raise _wrap_upstream(exc, f"Failed to load sector {key!r}") from exc
+
+    if not name:
+        # Key is valid but yfinance returned no data (transient/upstream issue).
+        raise SymbolNotFoundError(key)
+
+    return {
+        "key": key,
+        "name": name,
+        "index_symbol": index_symbol,
+        "overview": to_jsonable(overview),
+        "top_companies": (
+            dataframe_to_records(top_companies.head(max_rows), index_name="symbol")
+            if top_companies is not None
+            else []
+        ),
+        "top_etfs": to_jsonable(top_etfs),
+        "top_mutual_funds": to_jsonable(top_mutual_funds),
+        "industries": (
+            dataframe_to_records(industries, index_name="key")
+            if industries is not None
+            else []
+        ),
+    }
+
+
+@cache.cached("industry")
+def get_industry(key: str, *, max_rows: int = 25) -> dict[str, Any]:
+    """Return an overview of an industry by its Yahoo ``key``.
+
+    ``key`` is a Yahoo industry key (e.g. ``semiconductors``,
+    ``software-infrastructure``); discover valid keys from the ``industries``
+    list returned by :func:`get_sector`. Returns the industry overview, its
+    parent sector, top companies, and the top-performing and top-growth
+    companies.
+    """
+    key = (key or "").strip().lower()
+    if not key:
+        raise ToolError("A non-empty industry key is required.")
+    # Offline pre-check when the upstream key set is known; otherwise defer to
+    # the runtime check below.
+    if INDUSTRY_KEYS and key not in INDUSTRY_KEYS:
+        raise ToolError(
+            f"Unknown industry key {key!r}. Discover valid keys from the "
+            "'industries' list returned by get_sector."
+        )
+
+    try:
+        industry = yf.Industry(key)
+        name = industry.name
+        index_symbol = industry.symbol
+        sector_key = industry.sector_key
+        sector_name = industry.sector_name
+        overview = industry.overview
+        top_companies = industry.top_companies
+        top_performing = industry.top_performing_companies
+        top_growth = industry.top_growth_companies
+    except Exception as exc:  # noqa: BLE001
+        raise _wrap_upstream(exc, f"Failed to load industry {key!r}") from exc
+
+    if not name:
+        # Key is valid but yfinance returned no data (transient/upstream issue).
+        raise SymbolNotFoundError(key)
+
+    return {
+        "key": key,
+        "name": name,
+        "index_symbol": index_symbol,
+        "sector_key": sector_key,
+        "sector_name": sector_name,
+        "overview": to_jsonable(overview),
+        "top_companies": (
+            dataframe_to_records(top_companies.head(max_rows), index_name="symbol")
+            if top_companies is not None
+            else []
+        ),
+        "top_performing_companies": (
+            dataframe_to_records(top_performing, index_name="symbol")
+            if top_performing is not None
+            else []
+        ),
+        "top_growth_companies": (
+            dataframe_to_records(top_growth, index_name="symbol")
+            if top_growth is not None
+            else []
+        ),
+    }

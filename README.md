@@ -43,9 +43,32 @@ Yahoo's unofficial endpoints.
 | `get_calendar` | Upcoming earnings and dividend / ex-dividend dates with estimate ranges. |
 | `get_shares` | Shares-outstanding history (date → shares). |
 | `get_fund_data` | Fund/ETF profile: overview, asset-class & sector weightings, top holdings. |
+| `get_sector` | Browse a market sector by key: overview, top companies/ETFs/funds, industries. |
+| `get_industry` | Browse an industry by key: overview, parent sector, top/top-performing/top-growth companies. |
 
-All `get_*` tools take a Yahoo Finance **symbol**. Use `search` to resolve a
-name or ISIN into a symbol first.
+Most `get_*` tools take a Yahoo Finance **symbol**; use `search` to resolve a
+name or ISIN into a symbol first. The two exceptions are `get_sector` and
+`get_industry`, which take a sector/industry **key** (e.g. `technology`,
+`semiconductors`) rather than a ticker.
+
+<details>
+<summary>Sector &amp; industry keys (generated)</summary>
+
+<!-- Generated from yfinance.const.SECTOR_INDUSTY_MAPPING_LC. Regenerate after a yfinance bump (see CONTRIBUTING/SPECS). Some industry keys use an en-dash; copy them from get_sector output to be safe. -->
+
+- **`basic-materials`** (14): `agricultural-inputs`, `aluminum`, `building-materials`, `chemicals`, `coking-coal`, `copper`, `gold`, `lumber-wood-production`, `other-industrial-metals-mining`, `other-precious-metals-mining`, `paper-paper-products`, `silver`, `specialty-chemicals`, `steel`
+- **`communication-services`** (7): `advertising-agencies`, `broadcasting`, `electronic-gaming-multimedia`, `entertainment`, `internet-content-information`, `publishing`, `telecom-services`
+- **`consumer-cyclical`** (23): `apparel-manufacturing`, `apparel-retail`, `auto-manufacturers`, `auto-parts`, `auto-truck-dealerships`, `department-stores`, `footwear-accessories`, `furnishings-fixtures-appliances`, `gambling`, `home-improvement-retail`, `internet-retail`, `leisure`, `lodging`, `luxury-goods`, `packaging-containers`, `personal-services`, `recreational-vehicles`, `residential-construction`, `resorts-casinos`, `restaurants`, `specialty-retail`, `textile-manufacturing`, `travel-services`
+- **`consumer-defensive`** (12): `beverages—brewers`, `beverages—non-alcoholic`, `beverages—wineries-distilleries`, `confectioners`, `discount-stores`, `education-training-services`, `farm-products`, `food-distribution`, `grocery-stores`, `household-personal-products`, `packaged-foods`, `tobacco`
+- **`energy`** (8): `oil-gas-drilling`, `oil-gas-e&p`, `oil-gas-equipment-services`, `oil-gas-integrated`, `oil-gas-midstream`, `oil-gas-refining-marketing`, `thermal-coal`, `uranium`
+- **`financial-services`** (15): `asset-management`, `banks—diversified`, `banks—regional`, `capital-markets`, `credit-services`, `financial-conglomerates`, `financial-data-stock-exchanges`, `insurance-brokers`, `insurance—diversified`, `insurance—life`, `insurance—property-casualty`, `insurance—reinsurance`, `insurance—specialty`, `mortgage-finance`, `shell-companies`
+- **`healthcare`** (11): `biotechnology`, `diagnostics-research`, `drug-manufacturers—general`, `drug-manufacturers—specialty-generic`, `health-information-services`, `healthcare-plans`, `medical-care-facilities`, `medical-devices`, `medical-distribution`, `medical-instruments-supplies`, `pharmaceutical-retailers`
+- **`industrials`** (25): `aerospace-defense`, `airlines`, `airports-air-services`, `building-products-equipment`, `business-equipment-supplies`, `conglomerates`, `consulting-services`, `electrical-equipment-parts`, `engineering-construction`, `farm-heavy-construction-machinery`, `industrial-distribution`, `infrastructure-operations`, `integrated-freight-logistics`, `marine-shipping`, `metal-fabrication`, `pollution-treatment-controls`, `railroads`, `rental-leasing-services`, `security-protection-services`, `specialty-business-services`, `specialty-industrial-machinery`, `staffing-employment-services`, `tools-accessories`, `trucking`, `waste-management`
+- **`real-estate`** (12): `real-estate-services`, `real-estate—development`, `real-estate—diversified`, `reit—diversified`, `reit—healthcare-facilities`, `reit—hotel-motel`, `reit—industrial`, `reit—mortgage`, `reit—office`, `reit—residential`, `reit—retail`, `reit—specialty`
+- **`technology`** (12): `communication-equipment`, `computer-hardware`, `consumer-electronics`, `electronic-components`, `electronics-computer-distribution`, `information-technology-services`, `scientific-technical-instruments`, `semiconductor-equipment-materials`, `semiconductors`, `software—application`, `software—infrastructure`, `solar`
+- **`utilities`** (6): `utilities—diversified`, `utilities—independent-power-producers`, `utilities—regulated-electric`, `utilities—regulated-gas`, `utilities—regulated-water`, `utilities—renewable`
+
+</details>
 
 ## Requirements
 
@@ -346,6 +369,8 @@ Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 | `holders` | `get_holders` | 24 h |
 | `shares` | `get_shares` | 24 h |
 | `fund_data` | `get_fund_data` | 24 h |
+| `sector` | `get_sector` | 24 h |
+| `industry` | `get_industry` | 24 h |
 
 - Off by default; enable with `--cache` or `YF_MCP_CACHE=1`.
 - Location: the OS user cache directory, or `--cache-dir` / `YF_MCP_CACHE_DIR`.
