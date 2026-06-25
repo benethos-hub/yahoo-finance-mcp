@@ -266,12 +266,25 @@ covers the §11 multi-symbol-quote item).
 The sector/industry key set is sourced from yfinance's own constant
 (`yfinance.const.SECTOR_INDUSTY_MAPPING_LC`, imported defensively in
 `client.py`), so the validation, the tool descriptions, and the error messages
-share one source of truth. The README's collapsible **"Sector & industry keys
-(generated)"** block is produced from the same constant — regenerate it after a
-yfinance bump with:
+share one source of truth. The README's collapsible **"Sector & industry keys"**
+block is produced from the same constant — regenerate it after a yfinance bump
+(one sector per paragraph) and paste it over the existing `<details>` block:
 
 ```
-uv run python -c "import sys; sys.stdout.reconfigure(encoding='utf-8'); import yfinance.const as c; m=c.SECTOR_INDUSTY_MAPPING_LC; [print(f'- **\`{s}\`** ({len(m[s])}): ' + ', '.join(f'\`{i}\`' for i in sorted(m[s]))) for s in sorted(m)]"
+uv run python - <<'PY'
+import sys; sys.stdout.reconfigure(encoding="utf-8")
+import yfinance.const as c
+m = c.SECTOR_INDUSTY_MAPPING_LC
+print("<details>")
+print(f'<summary><b>📊 Sector &amp; industry keys</b> — click to expand '
+      f'({len(m)} sectors, {sum(len(v) for v in m.values())} industries, generated)</summary>')
+print()
+for s in sorted(m):
+    print(f'**`{s}`** ({len(m[s])})')
+    print(", ".join(f"`{i}`" for i in sorted(m[s])))
+    print()
+print("</details>")
+PY
 ```
 
 (Some industry keys use an em-dash, not a hyphen — copy them from `get_sector`
