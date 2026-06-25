@@ -91,6 +91,7 @@ exceptions are `get_sector` / `get_industry`, which take a sector/industry
 |------|--------|----------------|
 | `search` | `query` (name/ticker/ISIN), `limit` 1-25 (=8) | list of `{symbol, name, exchange, type, sector, industry}` |
 | `get_quote` | `symbol` | `{symbol, currency, exchange, quoteType, lastPrice, previousClose, open, dayHigh, dayLow, lastVolume, marketCap, 50/200d avg, yearHigh/Low, yearChange}` |
+| `get_quotes` | `symbols[]` (≤50) | `{count, quotes[{symbol, currency, lastPrice, previousClose, open, dayHigh, dayLow, marketCap}], not_found[], truncated}` |
 | `get_history` | `symbol`, `period` (=1mo), `interval` (=1d), `start?`, `end?` | `{symbol, interval, period, start, end, count, truncated, rows[]}` (OHLCV; ≤250 rows, tail kept) |
 | `get_company_info` | `symbol` | curated profile + key statistics |
 | `get_financials` | `symbol`, `statement` (income/balance/cashflow), `freq` (annual/quarterly/ttm — ttm income/cashflow only) | `{symbol, statement, freq, rows[]}` (rows = line items, columns = periods) |
@@ -136,6 +137,7 @@ values).
   | Name | Tool | Default TTL |
   |------|------|-------------|
   | `quote` | `get_quote` | 30 s |
+  | `quotes` | `get_quotes` | 30 s |
   | `history` | `get_history` | 10 min |
   | `news` | `get_news` | 10 min |
   | `options` | `get_options` | 10 min |
@@ -181,9 +183,10 @@ values).
 ## 10. Testing
 
 - Unit tests mock `yfinance` and run **offline**, covering the client wrapper
-  and error normalization, formatting, the cache, CLI/transport selection, and
-  tool registration/schema (`tests/test_client.py`, `test_formatting.py`,
-  `test_cache.py`, `test_cli.py`, `test_server.py`).
+  and error normalization, formatting, the cache, CLI/transport selection, tool
+  registration/schema, and end-to-end tool invocation via `mcp.call_tool`
+  (`tests/test_client.py`, `test_formatting.py`, `test_cache.py`, `test_cli.py`,
+  `test_server.py`, `test_tools_integration.py`).
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo; it is not part of
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
@@ -196,9 +199,10 @@ values).
 
 ## 11. Future work (not yet implemented)
 
-- Multi-symbol batch for `get_quote`.
 - Input validation of `period`/`interval`/`freq` against known value sets.
 - Stale-on-error: serve an expired cache entry when Yahoo is rate limiting.
+
+(Multi-symbol batch quoting is implemented as `get_quotes` — see §7 and §12.)
 
 ## 12. Tool expansion plan
 
@@ -311,4 +315,30 @@ green).
 - **Phase 4 — done:** module-level sector/industry browsing — `get_sector`
   (`yf.Sector`) and `get_industry` (`yf.Industry`); these take a sector/industry
   key, not a symbol.
-- **Later (larger):** `Market` / `Lookup`, the screener, and multi-symbol tools.
+- **Phase 5 — done:** `get_quotes` — compact multi-symbol quotes in one call
+  (per-symbol `not_found`), covering the §11 multi-symbol-quote item. Backed by
+  per-symbol `fast_info` (yfinance's `Tickers` is only a convenience wrapper, not
+  true batching; `yf.download` is reserved for a possible future bulk-history
+  tool, which needs hard payload caps).
+
+### Remaining roadmap (optional, not yet built)
+
+All per-symbol `Ticker` methods that return real data are now exposed; what is
+left is a smaller, optional set. In rough priority / effort order:
+
+1. **`get_market`** (`yf.Market`, e.g. `"US"`) — market open/closed status and a
+   summary of major indices. Small, self-contained, no symbol. Good low-effort
+   next step.
+2. **Bulk history** (`yf.download`) — multi-symbol OHLCV. Heaviest payload
+   (symbols × rows), and `download` does not raise on bad symbols (silent NaN
+   columns), so it needs **hard symbol/row caps** and per-symbol presence checks.
+3. **Screener** (`yf.screen` / `EquityQuery`) — most design work: needs a JSON
+   query schema (field/operator/value) exposed to the LLM; consult
+   `yfinance.const.EQUITY_SCREENER_FIELDS` / `EQUITY_SCREENER_EQ_MAP`.
+4. **`Lookup`** (`yf.Lookup`) — richer search (price/type per hit). Overlaps the
+   existing `search`; likely an **extension of `search`** (or a typed variant)
+   rather than a separate tool, to avoid two near-duplicate tools.
+
+Decisions still apply: read-only only; native Yahoo tickers; grouped tools;
+empirically probe each method live before building; one reviewable PR per phase;
+keep responses row/symbol-capped for the token budget.

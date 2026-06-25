@@ -23,6 +23,7 @@ from yahoo_finance_mcp.server import mcp
 TOOL_ARGS: dict[str, dict[str, object]] = {
     "search": {"query": "apple"},
     "get_quote": {"symbol": "AAPL"},
+    "get_quotes": {"symbols": ["AAPL", "MSFT"]},
     "get_history": {"symbol": "AAPL"},
     "get_company_info": {"symbol": "AAPL"},
     "get_financials": {"symbol": "AAPL"},

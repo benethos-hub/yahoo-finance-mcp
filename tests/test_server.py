@@ -9,6 +9,7 @@ from yahoo_finance_mcp.server import mcp
 EXPECTED_TOOLS = {
     "search",
     "get_quote",
+    "get_quotes",
     "get_history",
     "get_company_info",
     "get_financials",

@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- Tool `get_quotes` — compact current quotes for several symbols in one call,
+  with a per-symbol `not_found` list instead of failing the whole request.
 - Tools `get_earnings` (upcoming + historical earnings with EPS estimate/actual
   and surprise), `get_estimates` (forward analyst earnings/revenue/EPS/growth
   estimates), and `get_upgrades_downgrades` (analyst rating changes). All are

@@ -138,6 +138,81 @@ def get_quote(symbol: str) -> dict[str, Any]:
     return quote
 
 
+# Compact field subset for multi-symbol quotes (smaller per-symbol payload than
+# get_quote, so many symbols stay within the client's token budget).
+_QUOTES_FAST_FIELDS = (
+    "currency",
+    "lastPrice",
+    "previousClose",
+    "open",
+    "dayHigh",
+    "dayLow",
+    "marketCap",
+)
+
+# Hard cap on the number of symbols a single get_quotes call may return.
+_MAX_QUOTES = 50
+
+
+@cache.cached("quotes")
+def get_quotes(symbols: list[str], *, max_symbols: int = _MAX_QUOTES) -> dict[str, Any]:
+    """Return compact current quotes for several symbols at once.
+
+    Each symbol is looked up individually; symbols that return no data are
+    reported under ``not_found`` instead of failing the whole call.
+    """
+    if not symbols:
+        raise ToolError("At least one symbol is required.")
+
+    max_symbols = max(1, min(int(max_symbols), _MAX_QUOTES))
+    # Normalize, drop blanks, de-duplicate (preserving order), and cap.
+    seen: set[str] = set()
+    cleaned: list[str] = []
+    for raw in symbols:
+        sym = (raw or "").strip().upper()
+        if sym and sym not in seen:
+            seen.add(sym)
+            cleaned.append(sym)
+    if not cleaned:
+        raise ToolError("At least one non-empty symbol is required.")
+    truncated = len(cleaned) > max_symbols
+    cleaned = cleaned[:max_symbols]
+
+    quotes: list[dict[str, Any]] = []
+    not_found: list[str] = []
+    for sym in cleaned:
+        ticker = _get_ticker(sym)
+        try:
+            fast = ticker.fast_info
+        except YFRateLimitError as exc:
+            raise RateLimitError() from exc
+        except Exception:  # noqa: BLE001 - treat as a per-symbol miss
+            not_found.append(sym)
+            continue
+
+        row: dict[str, Any] = {"symbol": sym}
+        for field in _QUOTES_FAST_FIELDS:
+            try:
+                value = fast.get(field)
+            except YFRateLimitError as exc:
+                raise RateLimitError() from exc
+            except Exception:  # noqa: BLE001 - some fields raise when unavailable
+                value = None
+            row[field] = to_jsonable(value)
+
+        if row.get("lastPrice") is None:
+            not_found.append(sym)
+        else:
+            quotes.append(row)
+
+    return {
+        "count": len(quotes),
+        "quotes": quotes,
+        "not_found": not_found,
+        "truncated": truncated,
+    }
+
+
 @cache.cached("history")
 def get_history(
     symbol: str,

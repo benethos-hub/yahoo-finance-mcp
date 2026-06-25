@@ -172,6 +172,96 @@ def test_get_quote_without_price_raises(patch_ticker):
         client.get_quote("nope")
 
 
+# --- get_quotes -----------------------------------------------------------
+
+
+def _patch_tickers(monkeypatch, mapping):
+    """Patch _get_ticker to resolve each symbol from a {SYMBOL: FakeTicker} map."""
+    monkeypatch.setattr(client, "_get_ticker", lambda s: mapping[s.strip().upper()])
+
+
+def test_get_quotes_returns_rows(monkeypatch):
+    _patch_tickers(
+        monkeypatch,
+        {
+            "AAPL": FakeTicker(fast_info={"lastPrice": 100.0, "currency": "USD"}),
+            "MSFT": FakeTicker(fast_info={"lastPrice": 200.0, "currency": "USD"}),
+        },
+    )
+    out = client.get_quotes(["aapl", "msft"])
+    assert out["count"] == 2
+    assert out["not_found"] == []
+    assert out["truncated"] is False
+    assert {q["symbol"] for q in out["quotes"]} == {"AAPL", "MSFT"}
+
+
+def test_get_quotes_reports_not_found_per_symbol(monkeypatch):
+    _patch_tickers(
+        monkeypatch,
+        {
+            "AAPL": FakeTicker(fast_info={"lastPrice": 100.0}),
+            "BADSYM": FakeTicker(fast_info={"currency": "USD"}),  # no lastPrice
+        },
+    )
+    out = client.get_quotes(["AAPL", "BADSYM"])
+    assert out["count"] == 1
+    assert out["quotes"][0]["symbol"] == "AAPL"
+    assert out["not_found"] == ["BADSYM"]
+
+
+def test_get_quotes_dedupes_and_is_case_insensitive(monkeypatch):
+    _patch_tickers(
+        monkeypatch,
+        {"AAPL": FakeTicker(fast_info={"lastPrice": 100.0})},
+    )
+    out = client.get_quotes(["aapl", "AAPL", " aapl "])
+    assert out["count"] == 1
+
+
+def test_get_quotes_caps_symbols(monkeypatch):
+    _patch_tickers(
+        monkeypatch,
+        {f"S{i}": FakeTicker(fast_info={"lastPrice": float(i)}) for i in range(10)},
+    )
+    out = client.get_quotes([f"s{i}" for i in range(10)], max_symbols=3)
+    assert out["count"] == 3
+    assert out["truncated"] is True
+
+
+def test_get_quotes_empty_input_raises():
+    with pytest.raises(ToolError):
+        client.get_quotes([])
+
+
+def test_get_quotes_blank_only_raises():
+    with pytest.raises(ToolError):
+        client.get_quotes(["   ", ""])
+
+
+def test_get_quotes_rate_limit(monkeypatch):
+    class Throttled(FakeTicker):
+        @property
+        def fast_info(self):
+            raise YFRateLimitError()
+
+    monkeypatch.setattr(client, "_get_ticker", lambda s: Throttled())
+    with pytest.raises(RateLimitError):
+        client.get_quotes(["AAPL"])
+
+
+def test_get_quotes_upstream_miss_is_per_symbol(monkeypatch):
+    class Boom(FakeTicker):
+        @property
+        def fast_info(self):
+            raise RuntimeError("network")
+
+    monkeypatch.setattr(client, "_get_ticker", lambda s: Boom())
+    out = client.get_quotes(["AAPL"])
+    # A generic error is a per-symbol miss, not a hard failure.
+    assert out["count"] == 0
+    assert out["not_found"] == ["AAPL"]
+
+
 # --- get_history ----------------------------------------------------------
 
 
