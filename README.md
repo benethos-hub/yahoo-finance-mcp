@@ -40,56 +40,120 @@ name or ISIN into a symbol first.
 
 ## Requirements
 
-- Python 3.11+
-- A virtual environment (all work is done inside `.venv`)
+- [uv](https://docs.astral.sh/uv/) (recommended) — manages Python, the virtual
+  environment, and dependencies in one tool.
+- `git` — required for the `uvx` git-URL install below.
+- Or, without uv: Python 3.11+ with `pip` / `venv`.
 
-## Setup
+## Installation
 
-The only platform difference is the venv interpreter path: Windows uses
-`.venv\Scripts\python.exe`, Linux/macOS use `.venv/bin/python`.
+### Quick start: uv + Claude Desktop
 
-Windows (PowerShell):
+The simplest way to use the server with Claude Desktop — no clone, no manual
+virtual environment. `uvx` fetches, builds, and runs it on demand straight from
+GitHub.
+
+1. **Install uv** (see the [uv install docs](https://docs.astral.sh/uv/getting-started/installation/)):
+
+   ```bash
+   # macOS / Linux
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+   ```powershell
+   # Windows (PowerShell)
+   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+
+2. **Add the server** to `claude_desktop_config.json` (Claude Desktop →
+   Settings → Developer → Edit Config):
+
+   ```json
+   {
+     "mcpServers": {
+       "yahoo-finance": {
+         "command": "uvx",
+         "args": [
+           "--from",
+           "git+https://github.com/benethos-hub/yahoo-finance-mcp.git@v0.1.0",
+           "yahoo-finance-mcp"
+         ]
+       }
+     }
+   }
+   ```
+
+   Pin a release tag (`@v0.1.0`) for stability, or use `@main` for the latest.
+   To enable the optional result cache, add an `env` block, e.g.
+   `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
+
+3. **Restart Claude Desktop** (quit from the tray, not just close the window).
+   The tools then appear in the client.
+
+> `uvx` must be on `PATH` for Claude Desktop. After installing uv, fully restart
+> the app — or use the absolute path to `uvx` as `command`. `git` must be
+> installed for the git-URL install. The first launch builds from source (clone
+> + dependencies), so it takes a moment; subsequent launches use the cache.
+
+### Other ways to install
+
+**From source with uv** (for development or local changes):
+
+```bash
+git clone https://github.com/benethos-hub/yahoo-finance-mcp.git
+cd yahoo-finance-mcp
+uv sync --extra dev          # creates .venv + installs deps from uv.lock
+uv run yahoo-finance-mcp     # run over stdio
+```
+
+Point Claude Desktop at the checkout:
+
+```json
+{
+  "mcpServers": {
+    "yahoo-finance": {
+      "command": "uv",
+      "args": ["run", "--project", "/abs/path/to/yahoo-finance-mcp", "yahoo-finance-mcp"]
+    }
+  }
+}
+```
+
+**From source with venv + pip** (no uv). The only platform difference is the
+venv interpreter path: Windows uses `.venv\Scripts\python.exe`, Linux/macOS use
+`.venv/bin/python`.
 
 ```powershell
+# Windows (PowerShell)
 py -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e .
 ```
 
-Linux / macOS (bash):
-
 ```bash
+# Linux / macOS (bash)
 python3 -m venv .venv
 .venv/bin/python -m pip install -e .
 ```
 
-## Running
+Claude Desktop config uses the absolute path to the venv interpreter:
 
-The transport is chosen on the command line. **stdio** is the default (used by
-Claude Desktop and other local clients):
-
-Windows (PowerShell):
-
-```powershell
-.\.venv\Scripts\python.exe -m yahoo_finance_mcp
+```json
+{
+  "mcpServers": {
+    "yahoo-finance": {
+      "command": "/abs/path/to/.venv/bin/python",
+      "args": ["-m", "yahoo_finance_mcp"]
+    }
+  }
+}
 ```
 
-Linux / macOS (bash):
+(On Windows use `C:\\abs\\path\\to\\.venv\\Scripts\\python.exe` as `command`.)
 
-```bash
-.venv/bin/python -m yahoo_finance_mcp
-```
+## Running as a standalone server
 
-To run it as a standalone, network-reachable service, use an HTTP transport
-(same flags on every OS, only the interpreter path differs):
-
-```bash
-# Streamable HTTP on http://127.0.0.1:8000/mcp
-.venv/bin/python -m yahoo_finance_mcp --transport streamable-http
-
-# Bind all interfaces on a custom port / path
-.venv/bin/python -m yahoo_finance_mcp \
-    --transport streamable-http --host 0.0.0.0 --port 9000 --path /yf
-```
+For use outside Claude Desktop — a network-reachable HTTP service — run an HTTP
+transport (`streamable-http` or `sse`). **Docker is the simplest way.**
 
 Every option has both a CLI flag and an environment variable (handy for
 containers). Precedence is **CLI > environment > default** (`--help` for the
@@ -113,11 +177,11 @@ JSON-RPC protocol.
 > built-in authentication. Only bind to `0.0.0.0` on trusted networks, and put
 > a reverse proxy / auth layer in front for any real deployment.
 
-## Docker
+### Docker
 
-A `Dockerfile` builds a small image that hosts the server over the
-streamable-HTTP transport (the stdio transport is for local subprocess use and
-is not what you containerize).
+A `Dockerfile` builds a small image (dependencies installed reproducibly from
+`uv.lock` via uv) that hosts the server over the streamable-HTTP transport (the
+stdio transport is for local subprocess use and is not what you containerize).
 
 The image is **configured entirely through environment variables** (see the
 options table above) — it carries no default command arguments, so overriding a
@@ -143,9 +207,9 @@ docker run --rm -p 9000:9000 \
 The image runs as a non-root user and includes a healthcheck on the configured
 HTTP port. The cache is off by default; enable it with `-e YF_MCP_CACHE=1`, in
 which case it is written to `/cache` (declared as a volume) — mount a named
-volume there to keep it across container restarts. As with any
-HTTP deployment, there is no built-in authentication — front it with a reverse
-proxy / auth layer before exposing it publicly.
+volume there to keep it across container restarts. As with any HTTP deployment,
+there is no built-in authentication — front it with a reverse proxy / auth layer
+before exposing it publicly.
 
 ### Docker Compose
 
@@ -161,35 +225,23 @@ docker compose down       # stop and remove
 This requires Docker Compose v2 (the `compose` CLI plugin). The server is then
 reachable at `http://localhost:8000/mcp`.
 
-## Claude Desktop configuration
+### Manual (uv or venv)
 
-Add the server to your `claude_desktop_config.json`, using the absolute path to
-the venv interpreter.
+With uv (any OS):
 
-Windows:
+```bash
+# Streamable HTTP on http://127.0.0.1:8000/mcp
+uv run yahoo-finance-mcp --transport streamable-http
 
-```json
-{
-  "mcpServers": {
-    "yahoo-finance": {
-      "command": "C:\\path\\to\\xt-yahoo-finance-mcp\\.venv\\Scripts\\python.exe",
-      "args": ["-m", "yahoo_finance_mcp"]
-    }
-  }
-}
+# Bind all interfaces on a custom port / path
+uv run yahoo-finance-mcp \
+    --transport streamable-http --host 0.0.0.0 --port 9000 --path /yf
 ```
 
-Linux / macOS:
+With the venv interpreter directly (Windows: `.venv\Scripts\python.exe`):
 
-```json
-{
-  "mcpServers": {
-    "yahoo-finance": {
-      "command": "/path/to/xt-yahoo-finance-mcp/.venv/bin/python",
-      "args": ["-m", "yahoo_finance_mcp"]
-    }
-  }
-}
+```bash
+.venv/bin/python -m yahoo_finance_mcp --transport streamable-http
 ```
 
 ## Example prompts
@@ -305,8 +357,22 @@ Leave it off (the default) if you:
 ## Development
 
 Install the dev extras, then run the test, lint, and type-check steps (the same
-ones CI runs). Replace `.venv/bin/python` with `.venv\Scripts\python.exe` on
-Windows:
+ones CI runs).
+
+With uv (any OS):
+
+```bash
+uv sync --extra dev
+
+uv run pytest -q                 # unit tests (offline)
+uv run ruff check .              # lint
+uv run ruff format .             # format
+uv run mypy                      # type check
+uv run pytest --cov=yahoo_finance_mcp   # coverage
+```
+
+With the venv interpreter directly (replace `.venv/bin/python` with
+`.venv\Scripts\python.exe` on Windows):
 
 ```bash
 .venv/bin/python -m pip install -e ".[dev]"

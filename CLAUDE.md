@@ -5,11 +5,12 @@ How to work in this repository. Read this before making changes. See
 
 ## Golden rules
 
-1. **Virtual environment only.** Never use the global Python/pip. Always invoke
-   the project venv interpreter:
+1. **Virtual environment only.** Never use the global Python/pip. Work inside a
+   virtual environment — a `uv`-created `.venv` counts as one, so `uv run ...`
+   satisfies this rule. Without uv, invoke the project venv interpreter:
    - `.\.venv\Scripts\python.exe ...` (PowerShell)
    - `.venv/Scripts/python.exe ...` (Bash on Windows)
-   Install deps into the venv (`-e .` or `-e ".[dev]"`).
+   Install deps into the venv (`uv sync --extra dev`, or `-e .` / `-e ".[dev]"`).
 2. **English in the repo.** All code, comments, docstrings, and docs are in
    English. (Conversation with the user may be in German.)
 3. **stdio is sacred.** stdout carries the MCP JSON-RPC stream. Never `print()`
@@ -20,10 +21,13 @@ How to work in this repository. Read this before making changes. See
 ## Environment
 
 - Windows, PowerShell or Bash. Python 3.11+ (developed on 3.14).
-- Set up: `py -m venv .venv` then `.\.venv\Scripts\python.exe -m pip install -e ".[dev]"`.
-- Run the server (stdio): `.\.venv\Scripts\python.exe -m yahoo_finance_mcp`.
-  For HTTP transports and Docker/Compose hosting, see the README
-  (`--transport`, `Dockerfile`, `compose.yaml`).
+- Set up (recommended): `uv sync --extra dev` (creates `.venv`, installs the
+  versions pinned in `uv.lock`). Without uv: `py -m venv .venv` then
+  `.\.venv\Scripts\python.exe -m pip install -e ".[dev]"`.
+- Run the server (stdio): `uv run yahoo-finance-mcp`, or
+  `.\.venv\Scripts\python.exe -m yahoo_finance_mcp`. For HTTP transports and
+  Docker/Compose hosting, see the README (`--transport`, `Dockerfile`,
+  `compose.yaml`).
 
 ## Project layout
 

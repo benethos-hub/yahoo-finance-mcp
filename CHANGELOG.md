@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- `uv.lock` and a uv-based development workflow (`uv sync`, `uv run`) as the
+  recommended setup; the `venv` + `pip` path remains documented as an
+  alternative.
+
+### Changed
+- Docker image now installs dependencies reproducibly from `uv.lock` via uv
+  (instead of `pip`); runtime behavior is unchanged.
+- README reorganized: a uv + Claude Desktop quick start is now the primary
+  install example, followed by the other install methods; the standalone-server
+  section leads with Docker.
+
 ## [0.1.0] - 2026-06-24
 
 First public release.
