@@ -320,5 +320,25 @@ green).
   per-symbol `fast_info` (yfinance's `Tickers` is only a convenience wrapper, not
   true batching; `yf.download` is reserved for a possible future bulk-history
   tool, which needs hard payload caps).
-- **Later (larger):** `Market` / `Lookup`, the screener (`screen`/`EquityQuery`),
-  and a possible bulk-history tool (`yf.download`).
+
+### Remaining roadmap (optional, not yet built)
+
+All per-symbol `Ticker` methods that return real data are now exposed; what is
+left is a smaller, optional set. In rough priority / effort order:
+
+1. **`get_market`** (`yf.Market`, e.g. `"US"`) — market open/closed status and a
+   summary of major indices. Small, self-contained, no symbol. Good low-effort
+   next step.
+2. **Bulk history** (`yf.download`) — multi-symbol OHLCV. Heaviest payload
+   (symbols × rows), and `download` does not raise on bad symbols (silent NaN
+   columns), so it needs **hard symbol/row caps** and per-symbol presence checks.
+3. **Screener** (`yf.screen` / `EquityQuery`) — most design work: needs a JSON
+   query schema (field/operator/value) exposed to the LLM; consult
+   `yfinance.const.EQUITY_SCREENER_FIELDS` / `EQUITY_SCREENER_EQ_MAP`.
+4. **`Lookup`** (`yf.Lookup`) — richer search (price/type per hit). Overlaps the
+   existing `search`; likely an **extension of `search`** (or a typed variant)
+   rather than a separate tool, to avoid two near-duplicate tools.
+
+Decisions still apply: read-only only; native Yahoo tickers; grouped tools;
+empirically probe each method live before building; one reviewable PR per phase;
+keep responses row/symbol-capped for the token budget.
