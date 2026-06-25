@@ -23,6 +23,8 @@ EXPECTED_TOOLS = {
     "get_insider_activity",
     "get_sec_filings",
     "get_calendar",
+    "get_shares",
+    "get_fund_data",
 }
 
 

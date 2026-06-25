@@ -88,3 +88,15 @@ if __name__ == "__main__":
 
     show("get_sec_filings('AAPL', limit=3)", client.get_sec_filings("AAPL", limit=3))
     show("get_calendar('AAPL')", client.get_calendar("AAPL"))
+
+    show(
+        "get_financials('AAPL', income/ttm)",
+        client.get_financials("AAPL", statement="income", freq="ttm"),
+    )
+
+    shares = client.get_shares("AAPL", max_rows=3)
+    show("get_shares('AAPL', max_rows=3)", shares)
+
+    # Fund data is ETF/fund-only; use SPY.
+    fund = client.get_fund_data("SPY", max_rows=3)
+    show("get_fund_data('SPY', max_rows=3)", fund)

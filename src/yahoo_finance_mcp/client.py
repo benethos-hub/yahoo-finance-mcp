@@ -14,7 +14,7 @@ from threading import Lock
 from typing import Any
 
 import yfinance as yf
-from yfinance.exceptions import YFRateLimitError
+from yfinance.exceptions import YFDataException, YFRateLimitError
 
 from . import cache
 from .errors import RateLimitError, SymbolNotFoundError, ToolError
@@ -210,12 +210,24 @@ _COMPANY_INFO_FIELDS = (
     "longBusinessSummary",
 )
 
-# Maps the public ``statement`` argument to the Ticker attribute names.
+# Maps the public ``statement`` argument to the Ticker attribute names. Only the
+# income and cash-flow statements have a trailing-twelve-month (``ttm``) variant
+# upstream; a balance sheet is a point-in-time snapshot, so it has none.
 _STATEMENT_ATTRS = {
-    "income": {"annual": "income_stmt", "quarterly": "quarterly_income_stmt"},
+    "income": {
+        "annual": "income_stmt",
+        "quarterly": "quarterly_income_stmt",
+        "ttm": "ttm_income_stmt",
+    },
     "balance": {"annual": "balance_sheet", "quarterly": "quarterly_balance_sheet"},
-    "cashflow": {"annual": "cashflow", "quarterly": "quarterly_cashflow"},
+    "cashflow": {
+        "annual": "cashflow",
+        "quarterly": "quarterly_cashflow",
+        "ttm": "ttm_cashflow",
+    },
 }
+
+_VALID_FREQS = ("annual", "quarterly", "ttm")
 
 
 @cache.cached("company_info")
@@ -250,8 +262,9 @@ def get_financials(
     """Return a financial statement for ``symbol``.
 
     ``statement`` is one of ``income``, ``balance``, ``cashflow``. ``freq`` is
-    ``annual`` or ``quarterly``. Each returned row is a line item; columns are
-    reporting periods (most recent first).
+    ``annual``, ``quarterly``, or ``ttm`` (trailing twelve months; income and
+    cash-flow only). Each returned row is a line item; columns are reporting
+    periods (most recent first).
     """
     statement = (statement or "").strip().lower()
     freq = (freq or "").strip().lower()
@@ -260,10 +273,19 @@ def get_financials(
             f"Invalid statement {statement!r}; expected one of "
             f"{', '.join(_STATEMENT_ATTRS)}."
         )
-    if freq not in ("annual", "quarterly"):
-        raise ToolError(f"Invalid freq {freq!r}; expected 'annual' or 'quarterly'.")
+    if freq not in _VALID_FREQS:
+        raise ToolError(
+            f"Invalid freq {freq!r}; expected one of {', '.join(_VALID_FREQS)}."
+        )
 
-    attr = _STATEMENT_ATTRS[statement][freq]
+    freq_map = _STATEMENT_ATTRS[statement]
+    if freq not in freq_map:
+        raise ToolError(
+            f"Frequency {freq!r} is not available for the {statement!r} "
+            f"statement; available: {', '.join(freq_map)}."
+        )
+
+    attr = freq_map[freq]
     ticker = _get_ticker(symbol)
     try:
         df = getattr(ticker, attr)
@@ -656,3 +678,73 @@ def get_calendar(symbol: str) -> dict[str, Any]:
         raise SymbolNotFoundError(symbol)
 
     return {"symbol": symbol.strip().upper(), "calendar": to_jsonable(cal)}
+
+
+@cache.cached("shares")
+def get_shares(
+    symbol: str,
+    *,
+    start: str | None = None,
+    end: str | None = None,
+    max_rows: int = 50,
+) -> dict[str, Any]:
+    """Return the shares-outstanding time series for ``symbol``.
+
+    Each point is a date and the reported shares outstanding. ``start`` / ``end``
+    (``YYYY-MM-DD``) optionally bound the range; otherwise the full available
+    history is used. Only the most recent ``max_rows`` points are returned.
+    """
+    ticker = _get_ticker(symbol)
+    try:
+        series = ticker.get_shares_full(start=start, end=end)
+    except Exception as exc:  # noqa: BLE001
+        raise _wrap_upstream(exc, f"Failed to load shares for {symbol!r}") from exc
+
+    if series is None or len(series) == 0:
+        raise SymbolNotFoundError(symbol)
+
+    tail = series.tail(max_rows)
+    rows = [
+        {"date": to_jsonable(idx), "shares": to_jsonable(val)}
+        for idx, val in tail.items()
+    ]
+    return {"symbol": symbol.strip().upper(), "count": len(rows), "shares": rows}
+
+
+@cache.cached("fund_data")
+def get_fund_data(symbol: str, *, max_rows: int = 25) -> dict[str, Any]:
+    """Return fund/ETF profile data for ``symbol``.
+
+    Includes the fund overview, asset-class and sector weightings, and the top
+    holdings. Fund/ETF-only; raises for stocks and crypto, which have no fund
+    data.
+    """
+    ticker = _get_ticker(symbol)
+    try:
+        fd = ticker.funds_data
+        description = fd.description
+        overview = fd.fund_overview
+        asset_classes = fd.asset_classes
+        sector_weightings = fd.sector_weightings
+        top_holdings = fd.top_holdings
+    except YFRateLimitError as exc:
+        raise RateLimitError() from exc
+    except YFDataException as exc:
+        # Raised for non-funds (stocks/crypto have no fund data).
+        raise SymbolNotFoundError(symbol) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise _wrap_upstream(exc, f"Failed to load fund data for {symbol!r}") from exc
+
+    holdings_rows = (
+        dataframe_to_records(top_holdings.head(max_rows), index_name="symbol")
+        if top_holdings is not None
+        else []
+    )
+    return {
+        "symbol": symbol.strip().upper(),
+        "description": description,
+        "fund_overview": to_jsonable(overview),
+        "asset_classes": to_jsonable(asset_classes),
+        "sector_weightings": to_jsonable(sector_weightings),
+        "top_holdings": holdings_rows,
+    }
