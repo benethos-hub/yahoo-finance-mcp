@@ -9,9 +9,12 @@ talks to Yahoo's unofficial endpoints.
 
 ## 2. Scope
 
-**In scope:** quotes, historical OHLCV, company profile/fundamentals, dividends
-and splits, news, analyst recommendations, options chains, and symbol lookup by
-name / ticker / ISIN.
+**In scope:** quotes (single and multi-symbol), historical OHLCV, company
+profile and fundamentals (financial statements incl. trailing-twelve-month),
+dividends and splits, shares outstanding, news, analyst recommendations,
+estimates and rating changes, earnings, holders and insider activity, SEC
+filings, the corporate calendar, options chains, fund/ETF profiles,
+sector/industry browsing, and symbol lookup by name / ticker / ISIN.
 
 **Out of scope (non-goals):** placing trades, real-time streaming, portfolio
 persistence, authentication/paid data feeds, write operations of any kind.
@@ -190,7 +193,7 @@ values).
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo; it is not part of
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
-  of 80% (currently ~90%).
+  of 80% (currently ~94%).
 - CI (GitHub Actions): a `lint` job (ruff + mypy) and a `test` matrix running
   `pytest` with coverage on Python 3.11-3.13, plus a `docker` job that builds
   the image and smoke-tests that the container serves HTTP. All jobs install

@@ -510,7 +510,7 @@ def _build_parser() -> argparse.ArgumentParser:
     """Build the command-line parser for the server entry point."""
     parser = argparse.ArgumentParser(
         prog="yahoo-finance-mcp",
-        description="Yahoo Finance MCP server. Defaults to stdio; pass "
+        description="Yahoo Finance MCP server. Defaults to stdio. Pass "
         "--transport for an HTTP transport.",
     )
     parser.add_argument(
