@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "benethos-yahoo-finance-mcp"
 version = "0.2.1"
-description = "An MCP server exposing Yahoo Finance data (via yfinance) over stdio."
+description = "Read-only MCP server exposing Yahoo Finance data (via yfinance) over stdio or HTTP."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
