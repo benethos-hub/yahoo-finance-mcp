@@ -1,8 +1,14 @@
-name: Publish to PyPI
+name: Publish
 
-# Builds the sdist + wheel and publishes them to PyPI when a GitHub release is
-# published. Authentication uses PyPI Trusted Publishing (OIDC) — no API token
-# or secret is stored in the repository.
+# Publishes the release artefacts when a GitHub release is published:
+#   * sdist + wheel to PyPI, via Trusted Publishing (OIDC, no stored token)
+#   * the container image to ghcr.io, via the automatic GITHUB_TOKEN
+#
+# The two jobs are independent, so a failure in one does not withhold the other.
+#
+# `workflow_dispatch` exercises the container half alone and tags the result
+# `edge`. PyPI is skipped there, because a version may only be uploaded once and
+# a manual run carries no release tag to derive one from.
 #
 # One-time setup on PyPI (project owner): add a "pending publisher" for the
 # project `benethos-yahoo-finance-mcp` with:
@@ -10,17 +16,25 @@ name: Publish to PyPI
 #   Repository: yahoo-finance-mcp
 #   Workflow filename: publish.yml
 #   Environment: pypi
+#
+# One-time setup for ghcr, only possible after the first successful push: a new
+# package is private even when its repository is public, so `docker pull` fails
+# for everyone but the maintainer until it is switched over under
+# Organisation -> Packages -> Package settings -> Change visibility -> Public.
 
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   pypi-publish:
-    name: Build and publish
+    name: Build and publish to PyPI
+    # A manual run has no version to publish, and PyPI rejects a re-upload.
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -38,3 +52,53 @@ jobs:
 
       - name: Publish to PyPI (Trusted Publishing)
         run: uv publish --trusted-publishing always
+
+  ghcr-publish:
+    name: Build and publish the image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # push to ghcr.io as the GITHUB_TOKEN identity
+    steps:
+      - uses: actions/checkout@v7
+
+      # arm64 is emulated on the amd64 runner. Nothing is compiled from source
+      # here (pandas and numpy ship aarch64 wheels), so the cost stays modest.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Derives the tags from the release tag (v0.4.0 -> 0.4.0, 0.4, latest)
+      # and emits the OCI labels, among them org.opencontainers.image.source,
+      # which is what links the package to this repository on GitHub.
+      - name: Derive image tags and labels
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}
+          flavor: latest=false
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+            type=raw,value=edge,enable=${{ github.event_name == 'workflow_dispatch' }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

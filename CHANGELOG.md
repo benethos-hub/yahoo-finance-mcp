@@ -37,6 +37,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   plus price, previous close and change for the headline indices. Only `US`
   serves a trading status upstream, so `status` is `null` for the other keys
   while the index summary works for all of them.
+- The container image is **published to the GitHub Container Registry** on every
+  release, as `ghcr.io/benethos-hub/yahoo-finance-mcp`, built for `linux/amd64`
+  and `linux/arm64`. Tags follow the release: `0.4.0`, `0.4` and `latest`. Until
+  now the image existed only for whoever cloned the repository and built it
+  themselves. Authentication uses the automatic `GITHUB_TOKEN`, so the project
+  stores no registry credentials. The workflow can also be triggered by hand,
+  which builds and pushes `edge` from `main` without touching PyPI.
 - The server now reports a human-readable `title` ("Unofficial Yahoo Finance
   MCP Server") next to its programmatic `name`. The 1.x SDK defined the field
   but never passed it through, so clients had only the name to display.
