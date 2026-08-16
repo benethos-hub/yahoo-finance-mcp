@@ -150,7 +150,7 @@ virtual environment, no `git`. `uvx` fetches and runs it on demand from
    The tools then appear in the client.
 
 > **Installing from source instead?** You can run the unreleased `main` branch
-> with `uvx --from "git+https://github.com/benethos-hub/yahoo-finance-mcp.git" yahoo-finance-mcp`.
+> with `uvx --from "git+https://github.com/benethos-hub/yahoo-finance-mcp.git" benethos-yahoo-finance-mcp`.
 > That path needs `git` on the `PATH` of the process the client spawns — some
 > GUI clients don't pass a full `PATH`, so prefer the PyPI install above.
 

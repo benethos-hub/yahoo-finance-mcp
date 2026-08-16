@@ -61,6 +61,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   buried among five other bullet points.
 
 ### Fixed
+- The README's install-from-source example invoked `yahoo-finance-mcp`, a console
+  script that was removed in 0.3.0 when the package was renamed, so the command
+  as printed could only fail. It now uses `benethos-yahoo-finance-mcp`, verified
+  by running it.
 - Three statements in the documentation were false and are corrected. **WKNs**
   were described as something `search` resolves — it resolves none of them, so
   the advice led into a guaranteed-empty call. **Plain ISINs** were declared
