@@ -1,0 +1,117 @@
+name: Bug report
+description: Something does not behave as documented
+title: "[Bug]: "
+labels: ["bug"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this.
+
+        This server reads Yahoo Finance through the unofficial endpoints that
+        `yfinance` uses. Two things are therefore normal rather than bugs, and
+        the checks below exist to sort them out quickly.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Please confirm first
+      options:
+        - label: >-
+            The error is not `RateLimitError`. Yahoo throttles aggressively and
+            the fix is to wait and retry, not a change here.
+          required: true
+        - label: >-
+            The field is not simply empty for this kind of instrument. Analyst,
+            holder, earnings and calendar data are equity-only and come back
+            empty for ETFs, funds and crypto. `get_fund_data` is the inverse and
+            raises for stocks.
+          required: true
+        - label: >-
+            The symbol is a native Yahoo ticker such as `AAPL` or `SAP.DE`, not
+            an ISIN, a WKN or a company name. Use the `search` tool to resolve
+            those first.
+          required: true
+        - label: I can still reproduce this on the latest released version.
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `benethos-yahoo-finance-mcp --help` header, or the version you installed.
+      placeholder: "0.3.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it
+      options:
+        - uvx
+        - pip into a virtual environment
+        - Docker or Compose
+        - from source
+    validations:
+      required: true
+
+  - type: dropdown
+    id: transport
+    attributes:
+      label: Transport
+      options:
+        - stdio
+        - streamable-http
+        - sse
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Python and operating system
+      placeholder: "Python 3.12 on Windows 11"
+    validations:
+      required: true
+
+  - type: input
+    id: call
+    attributes:
+      label: Tool and arguments
+      description: Which tool was called, with which values.
+      placeholder: "get_financials, symbol=SAP.DE, statement=cashflow, freq=ttm"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server log
+      description: >-
+        Logging always goes to stderr. Start the server with `--log-level DEBUG`
+        for more detail. Please remove anything you do not want to share.
+      render: text
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: >-
+        Useful to know: whether it happens with other symbols, whether it started
+        after an upgrade, and which MCP client you use.
