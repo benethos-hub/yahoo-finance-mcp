@@ -79,6 +79,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   The two had already drifted apart.
 
 ### Maintenance
+- Broadened the package keywords from five to ten, adding `mcp-server`,
+  `model-context-protocol`, `financial-data`, `market-data` and `stock-market`.
+  They now mirror the GitHub repository topics, minus `python`, which says
+  nothing on a Python index. Four classifiers were added alongside them —
+  `Environment :: Console`, `Financial :: Investment`, `Artificial Intelligence`
+  and `Information Analysis` — because PyPI lets visitors filter by classifier
+  but not by keyword.
 - Refreshed the lockfile: 29 packages moved to current releases, among them
   ruff 0.16.3, mypy 2.3.1, pandas 3.0.5, numpy 2.5.2, starlette 1.6.0 and
   uvicorn 0.52.3.
