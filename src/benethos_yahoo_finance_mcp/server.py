@@ -211,7 +211,7 @@ def get_quotes(
         list[str],
         Field(
             description="Yahoo tickers or ISINs, e.g. ['AAPL', 'MSFT', "
-            "'SAP.DE']. Not company names. Up to 50; extras are dropped."
+            "'SAP.DE']. Not company names. Up to 50, extras are dropped."
         ),
     ],
 ) -> dict[str, Any]:
@@ -289,7 +289,7 @@ def get_financials(
         str,
         Field(
             description="Reporting frequency: 'annual', 'quarterly', or 'ttm' "
-            "(trailing twelve months; income and cashflow only)."
+            "(trailing twelve months, income and cashflow only)."
         ),
     ] = "annual",
 ) -> dict[str, Any]:
@@ -298,7 +298,7 @@ def get_financials(
     ``statement`` is one of ``income`` (income statement), ``balance`` (balance
     sheet), or ``cashflow`` (cash flow statement). ``freq`` is ``annual``,
     ``quarterly``, or ``ttm`` (trailing twelve months, available for the income
-    and cash-flow statements only). Each row is a line item; columns are
+    and cash-flow statements only). Each row is a line item and each column a
     reporting periods.
     """
     return client.get_financials(symbol, statement=statement, freq=freq)
@@ -367,7 +367,7 @@ def get_earnings(
     """Get upcoming and historical earnings for a Yahoo symbol.
 
     Returns the earnings calendar (upcoming and past dates with EPS estimate,
-    reported EPS, and surprise %) plus the recent earnings history. Equity-only;
+    reported EPS, and surprise %) plus the recent earnings history. Equity-only,
     empty for ETFs, funds, and crypto.
     """
     return client.get_earnings(symbol, limit=limit)
@@ -378,7 +378,7 @@ def get_estimates(symbol: Symbol) -> dict[str, Any]:
     """Get forward analyst estimates for a Yahoo symbol.
 
     Returns earnings and revenue estimates, EPS trend and revisions, and growth
-    estimates (small tables keyed by period). Equity-only; empty for ETFs,
+    estimates (small tables keyed by period). Equity-only, empty for ETFs,
     funds, and crypto.
     """
     return client.get_estimates(symbol)
@@ -395,7 +395,7 @@ def get_upgrades_downgrades(
     """Get recent analyst rating changes (upgrades/downgrades) for a Yahoo symbol.
 
     Each entry is a firm's rating change with the from/to grade and action, most
-    recent first. Equity-only; empty for ETFs, funds, and crypto.
+    recent first. Equity-only, empty for ETFs, funds, and crypto.
     """
     return client.get_upgrades_downgrades(symbol, max_rows=limit)
 
@@ -416,7 +416,7 @@ def get_holders(
     """Get the ownership breakdown for a Yahoo symbol.
 
     Returns the high-level holder summary (insider/institutional percentages)
-    plus the top institutional and mutual-fund holders. Equity-only; empty for
+    plus the top institutional and mutual-fund holders. Equity-only, empty for
     ETFs, funds, and crypto.
     """
     return client.get_holders(symbol, max_rows=limit)
@@ -437,7 +437,7 @@ def get_insider_activity(
     """Get insider trading activity for a Yahoo symbol.
 
     Returns individual insider transactions, a 6-month purchases/sales summary,
-    and the current insider roster. Equity-only; empty for ETFs, funds, and
+    and the current insider roster. Equity-only, empty for ETFs, funds, and
     crypto.
     """
     return client.get_insider_activity(symbol, max_rows=limit)
@@ -466,7 +466,7 @@ def get_calendar(symbol: Symbol) -> dict[str, Any]:
     """Get upcoming corporate-calendar events for a Yahoo symbol.
 
     Returns the next earnings date(s) with analyst estimate ranges and the next
-    dividend / ex-dividend dates. Equity-only; empty for ETFs, funds, and crypto.
+    dividend / ex-dividend dates. Equity-only, empty for ETFs, funds, and crypto.
     """
     return client.get_calendar(symbol)
 
@@ -493,7 +493,7 @@ def get_shares(
 ) -> dict[str, Any]:
     """Get the shares-outstanding history for a Yahoo symbol.
 
-    Each point is a date and the reported shares outstanding; only the most
+    Each point is a date and the reported shares outstanding. Only the most
     recent ``limit`` points are returned. Optionally bound the range with
     ``start`` / ``end`` (``YYYY-MM-DD``).
     """
@@ -511,7 +511,7 @@ def get_fund_data(
     """Get fund/ETF profile data for a Yahoo symbol.
 
     Returns the fund overview, asset-class and sector weightings, and the top
-    holdings. Fund/ETF-only; raises for stocks and crypto, which have no fund
+    holdings. Fund/ETF-only, raises for stocks and crypto, which have no fund
     data.
     """
     return client.get_fund_data(symbol, max_rows=limit)
@@ -579,7 +579,7 @@ def get_market(
         Field(
             description="A Yahoo market key (uppercase). One of: "
             + ", ".join(client.MARKET_KEYS)
-            + ". Only 'US' reports a trading status; the others return the index "
+            + ". Only 'US' reports a trading status, the others return the index "
             "summary with 'status' set to null."
         ),
     ] = "US",
@@ -607,25 +607,25 @@ def _build_parser() -> argparse.ArgumentParser:
         "--transport",
         choices=_TRANSPORTS,
         default=_default_transport(),
-        help="Transport to serve on (default: stdio; set via YF_MCP_TRANSPORT).",
+        help="Transport to serve on (default: stdio, set via YF_MCP_TRANSPORT).",
     )
     parser.add_argument(
         "--host",
         default=os.environ.get("YF_MCP_HOST", "127.0.0.1"),
-        help="Host to bind for HTTP transports (default: 127.0.0.1; set via "
+        help="Host to bind for HTTP transports (default: 127.0.0.1, set via "
         "YF_MCP_HOST). Use 0.0.0.0 to accept remote connections.",
     )
     parser.add_argument(
         "--port",
         type=int,
         default=_default_port(),
-        help="Port for HTTP transports (default: 8000; set via YF_MCP_PORT).",
+        help="Port for HTTP transports (default: 8000, set via YF_MCP_PORT).",
     )
     parser.add_argument(
         "--path",
         default=os.environ.get("YF_MCP_PATH"),
         help="URL path to serve MCP on for HTTP transports (default: /mcp for "
-        "streamable-http, /sse for sse; set via YF_MCP_PATH).",
+        "streamable-http, /sse for sse, set via YF_MCP_PATH).",
     )
     parser.add_argument(
         "--allowed-hosts",
@@ -655,13 +655,13 @@ def _build_parser() -> argparse.ArgumentParser:
         "--cache",
         action=argparse.BooleanOptionalAction,
         default=cache.env_enabled(),
-        help="Enable the persistent result cache (default: off; "
+        help="Enable the persistent result cache (default: off, "
         "set via YF_MCP_CACHE). Use --cache to enable.",
     )
     parser.add_argument(
         "--cache-dir",
         default=os.environ.get("YF_MCP_CACHE_DIR"),
-        help="Directory for the cache file (default: the OS user cache dir; "
+        help="Directory for the cache file (default: the OS user cache dir, "
         "set via YF_MCP_CACHE_DIR).",
     )
     parser.add_argument(
@@ -685,7 +685,7 @@ def _parse_ttl_overrides(
         name = name.strip().lower()
         if not sep or name not in cache.DEFAULT_TTLS:
             parser.error(
-                f"invalid --cache-ttl {item!r}; expected <NAME>=<SECONDS> with <NAME> "
+                f"invalid --cache-ttl {item!r}, expected <NAME>=<SECONDS> with <NAME> "
                 f"one of {', '.join(cache.DEFAULT_TTLS)}"
             )
         try:

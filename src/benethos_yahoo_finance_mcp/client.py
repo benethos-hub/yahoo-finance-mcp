@@ -355,19 +355,19 @@ def get_financials(
     freq = (freq or "").strip().lower()
     if statement not in _STATEMENT_ATTRS:
         raise ToolError(
-            f"Invalid statement {statement!r}; expected one of "
+            f"Invalid statement {statement!r}, expected one of "
             f"{', '.join(_STATEMENT_ATTRS)}."
         )
     if freq not in _VALID_FREQS:
         raise ToolError(
-            f"Invalid freq {freq!r}; expected one of {', '.join(_VALID_FREQS)}."
+            f"Invalid freq {freq!r}, expected one of {', '.join(_VALID_FREQS)}."
         )
 
     freq_map = _STATEMENT_ATTRS[statement]
     if freq not in freq_map:
         raise ToolError(
             f"Frequency {freq!r} is not available for the {statement!r} "
-            f"statement; available: {', '.join(freq_map)}."
+            f"statement. Available: {', '.join(freq_map)}."
         )
 
     attr = freq_map[freq]

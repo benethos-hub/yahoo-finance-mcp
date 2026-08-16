@@ -77,6 +77,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   — so an ISIN gains the information instead of losing it. A plain ticker
   resolves to itself and the extra field is omitted, which is why this was
   invisible unless you passed an ISIN.
+- Semicolons are gone from everything the user or the model reads — nine tool
+  descriptions, three parameter descriptions, seven CLI help texts and four
+  error messages. A house style rule that the text had drifted away from.
 - The `get_options` and `get_sec_filings` descriptions now name the restriction
   that makes their results empty, so a model knows before calling rather than
   only from the error. `get_sec_filings` had said "equity-only", which is true
