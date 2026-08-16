@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- The container package page on GitHub said "No description provided". The
+  description was never missing — `metadata-action` writes the OCI labels into
+  the image configuration, and 0.4.0 carries all of them, but for a multi-arch
+  image the package page reads the annotations on the **index**, the manifest
+  list above the per-architecture manifests. Those were empty, because
+  annotations default to the manifest level only. The release workflow now sets
+  `DOCKER_METADATA_ANNOTATIONS_LEVELS: index,manifest` and passes the
+  annotations to the build, so description, source, licence and version appear
+  where GitHub looks for them. This takes effect with the next published
+  release. The already-pushed 0.4.0 tags are not changed retroactively.
+
 ## [0.4.0] - 2026-08-16
 
 ### Changed
