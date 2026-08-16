@@ -59,7 +59,7 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   cache vars `YF_MCP_CACHE`, `YF_MCP_CACHE_DIR`, `YF_MCP_CACHE_TTL_<NAME>`.
 - **Entry points:** `python -m benethos_yahoo_finance_mcp` or the
   `benethos-yahoo-finance-mcp` console script.
-- **Python:** 3.11+ (developed/verified on 3.14).
+- **Python:** 3.11-3.14, all covered by the CI matrix.
 - **HTTP security:** the HTTP transports have no built-in auth; bind to
   `0.0.0.0` only on trusted networks and front them with a proxy/auth layer.
   The MCP HTTP transport also runs a DNS-rebinding `Host`/`Origin` guard. It is
@@ -72,7 +72,9 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   dependencies installed reproducibly from `uv.lock` via uv) and a
   `compose.yaml` host the server over streamable-HTTP on port 8000. The image
   is configured entirely via env vars (no default CMD args) and persists its
-  cache to a `/cache` volume.
+  cache to a `/cache` volume. Compose publishes the port on **127.0.0.1 only**,
+  because the server has no authentication of its own. Drop that prefix only
+  behind a reverse proxy that provides one.
 
 ## 5. Data source rules
 
@@ -201,11 +203,20 @@ values).
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
   of 80% (currently ~94%).
-- CI (GitHub Actions): a `lint` job (ruff + mypy) and a `test` matrix running
-  `pytest` with coverage on Python 3.11-3.13, plus a `docker` job that builds
-  the image and smoke-tests that the container serves HTTP. All jobs install
-  dependencies via uv from `uv.lock` (`uv sync --frozen`). Dependabot keeps pip
-  and Actions dependencies updated.
+- CI (GitHub Actions): a `lint` job (ruff + mypy), a `test` matrix running
+  `pytest` with coverage on Python 3.11-3.14, a `docker` job that builds the
+  image and smoke-tests that the container serves HTTP, and a `fresh-install`
+  job. The first three install from `uv.lock` (`uv sync --frozen`) for
+  reproducibility. `fresh-install` deliberately does **not**: it builds the
+  wheel and installs it into a clean environment with no lockfile, then imports
+  the package, lists the tools and runs the entry point. That is the path a user
+  takes, and a lockfile hides breakage in the *declared* dependency ranges —
+  0.3.0 shipped an unbounded `mcp` requirement, resolved to an incompatible major
+  on a fresh install and failed at import while every other job stayed green.
+- Dependabot covers GitHub Actions. It does little for the Python dependencies,
+  because the requirements here are open `>=` ranges and new releases fall inside
+  them, so there is nothing for it to bump. It also does not touch `uv.lock`.
+  Keeping the lockfile current is a manual `uv lock --upgrade`.
 - A separate `publish` workflow builds the sdist + wheel (`uv build`) and uploads
   them to **PyPI via Trusted Publishing (OIDC)** when a GitHub release is
   published — no API token is stored. One name is used throughout: the PyPI

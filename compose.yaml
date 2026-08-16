@@ -44,7 +44,7 @@ services:
       # YF_MCP_CACHE_TTL_QUOTE: "15"
     volumes:
       # Used only when the cache is enabled; persists it across restarts.
-      - benethos-yahoo-finance-mcp-cache:/cache
+      - cache:/cache
 
 volumes:
-  benethos-yahoo-finance-mcp-cache:
+  cache:
