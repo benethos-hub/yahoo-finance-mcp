@@ -983,3 +983,90 @@ def get_industry(key: str, *, max_rows: int = 25) -> dict[str, Any]:
             else []
         ),
     }
+
+
+# Market keys accepted by yfinance's ``Market``. There is no upstream constant to
+# import, so this mirrors the list its own validation reports. Probed live: only
+# "US" serves a market status — the other keys raise upstream when asked for one,
+# while the index summary works for all eight.
+MARKET_KEYS: tuple[str, ...] = (
+    "US",
+    "GB",
+    "ASIA",
+    "EUROPE",
+    "RATES",
+    "COMMODITIES",
+    "CURRENCIES",
+    "CRYPTOCURRENCIES",
+)
+
+# Curated subsets. The raw payloads carry a lot of noise (language, region,
+# triggerable, esgPopulated and so on) that costs tokens without informing.
+_MARKET_STATUS_FIELDS = ("id", "name", "status", "open", "close", "tz", "message")
+_MARKET_INDEX_FIELDS = (
+    "symbol",
+    "shortName",
+    "fullExchangeName",
+    "marketState",
+    "regularMarketPrice",
+    "regularMarketPreviousClose",
+    "regularMarketChange",
+    "regularMarketChangePercent",
+)
+
+
+@cache.cached("market")
+def get_market(key: str = "US") -> dict[str, Any]:
+    """Return the trading status and index summary for a market.
+
+    ``key`` is one of Yahoo's fixed market keys (see :data:`MARKET_KEYS`).
+    ``status`` is only served for ``US`` and comes back ``None`` elsewhere, which
+    is an upstream limitation rather than an error. The index summary is
+    available for every key.
+    """
+    key = (key or "").strip().upper()
+    if not key:
+        raise ToolError("A non-empty market key is required.")
+    if key not in MARKET_KEYS:
+        raise ToolError(
+            f"Unknown market key {key!r}. Valid keys: {', '.join(MARKET_KEYS)}."
+        )
+
+    try:
+        market = yf.Market(key)
+    except Exception as exc:  # noqa: BLE001
+        raise _wrap_upstream(exc, f"Failed to load market {key!r}") from exc
+
+    # Yahoo only serves the markettime endpoint for "US". Every other key raises
+    # here instead of returning nothing, so treat a failure as "unavailable".
+    status: dict[str, Any] | None = None
+    try:
+        raw = market.status or {}
+        # Normalize an empty selection to None. Upstream is inconsistent about
+        # how it reports "no status": it raises for some keys and returns None
+        # for others, and an empty dict would be a third, ambiguous answer.
+        status = {
+            f: to_jsonable(raw.get(f)) for f in _MARKET_STATUS_FIELDS if f in raw
+        } or None
+    except YFRateLimitError as exc:
+        raise RateLimitError() from exc
+    except Exception:  # noqa: BLE001 - status is optional, the summary is not
+        status = None
+
+    try:
+        summary = market.summary or {}
+    except YFRateLimitError as exc:
+        raise RateLimitError() from exc
+    except Exception as exc:  # noqa: BLE001
+        raise _wrap_upstream(exc, f"Failed to load market summary for {key!r}") from exc
+
+    indices: list[dict[str, Any]] = []
+    for entry in summary.values():
+        if not isinstance(entry, dict):
+            continue
+        indices.append({f: to_jsonable(entry.get(f)) for f in _MARKET_INDEX_FIELDS})
+
+    if not indices and not status:
+        raise SymbolNotFoundError(key)
+
+    return {"key": key, "status": status, "count": len(indices), "indices": indices}

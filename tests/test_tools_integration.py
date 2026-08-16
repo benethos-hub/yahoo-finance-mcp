@@ -42,6 +42,7 @@ TOOL_ARGS: dict[str, dict[str, object]] = {
     "get_fund_data": {"symbol": "AAPL"},
     "get_sector": {"key": "technology"},
     "get_industry": {"key": "semiconductors"},
+    "get_market": {"key": "US"},
 }
 
 
@@ -83,6 +84,8 @@ def test_tool_invokes_client_and_result_serializes(monkeypatch, tool, args):
 
 
 # Tools whose ``limit`` parameter must be forwarded as the client's ``max_rows``.
+# get_market is absent on purpose: it takes no limit, its payload is a handful of
+# headline indices.
 LIMIT_AS_MAX_ROWS = {
     "get_upgrades_downgrades": {"symbol": "AAPL"},
     "get_holders": {"symbol": "AAPL"},

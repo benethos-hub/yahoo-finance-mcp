@@ -16,6 +16,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   cause of the HTTP 421 bug fixed in 0.3.0 rather than compensating for it.
 
 ### Added
+- Tool **`get_market`** — trading status and headline index summary for a
+  market, taking one of eight fixed market keys (`US`, `GB`, `ASIA`, `EUROPE`,
+  `RATES`, `COMMODITIES`, `CURRENCIES`, `CRYPTOCURRENCIES`) rather than a
+  ticker. Answers whether a market is open and when it next opens or closes,
+  plus price, previous close and change for the headline indices. Only `US`
+  serves a trading status upstream, so `status` is `null` for the other keys
+  while the index summary works for all of them.
 - The server now reports a human-readable `title` ("Unofficial Yahoo Finance
   MCP Server") next to its programmatic `name`. The 1.x SDK defined the field
   but never passed it through, so clients had only the name to display.
