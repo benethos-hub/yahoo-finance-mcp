@@ -22,7 +22,7 @@ persistence, authentication/paid data feeds, write operations of any kind.
 ## 3. Architecture
 
 ```
-MCP client (Claude)  --stdio/JSON-RPC-->  server.py (FastMCP)
+MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
                                               |
                           +-------------------+--------------------+
                           v                   v                    v
@@ -35,7 +35,7 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (FastMCP)
 
 | Module | Responsibility |
 |--------|----------------|
-| `server.py` | FastMCP instance, tool definitions (signatures + docstrings), CLI/`main()`. |
+| `server.py` | MCPServer instance, tool definitions (signatures + docstrings), CLI/`main()`. |
 | `__main__.py` | Enables `python -m benethos_yahoo_finance_mcp` (delegates to `server.main`). |
 | `client.py` | All direct yfinance usage; ticker cache; error normalization. |
 | `cache.py` | Persistent result cache (SQLite) with per-tool TTLs. |
@@ -63,11 +63,11 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (FastMCP)
 - **HTTP security:** the HTTP transports have no built-in auth; bind to
   `0.0.0.0` only on trusted networks and front them with a proxy/auth layer.
   The MCP HTTP transport also runs a DNS-rebinding `Host`/`Origin` guard. It is
-  computed from the actual bind host in `main()` (FastMCP fixes it at
-  construction from the default host, so it must be recomputed): a localhost
-  bind keeps the protective localhost allow-list, an exposed bind accepts any
-  `Host` unless `--allowed-hosts`/`--allowed-origins` narrow it (mismatches get
-  HTTP 421).
+  derived from the actual bind host and passed to `MCPServer.run()` as an
+  explicit argument: a localhost bind keeps the protective localhost allow-list,
+  an exposed bind accepts any `Host` unless `--allowed-hosts` /
+  `--allowed-origins` narrow it (mismatches get HTTP 421). stdio has no HTTP
+  surface and is handed no transport options at all.
 - **Deployment:** a `Dockerfile` (multi-stage, non-root, healthcheck;
   dependencies installed reproducibly from `uv.lock` via uv) and a
   `compose.yaml` host the server over streamable-HTTP on port 8000. The image

@@ -91,9 +91,11 @@ jobs:
       - name: Build image
         run: docker build -t benethos-yahoo-finance-mcp:ci .
 
-      # Start the container and confirm the HTTP server actually serves: a bare
-      # GET on the streamable-HTTP endpoint returns 406 (it needs specific
-      # headers), so any HTTP response means the server is up.
+      # Start the container and confirm the HTTP server actually serves. A bare
+      # GET on the streamable-HTTP endpoint is rejected for missing headers, so
+      # the status varies by SDK version (406 on mcp 1.x, 400 on 2.x). Any HTTP
+      # response at all is what proves the server is up, so do not assert on a
+      # specific code here.
       - name: Smoke test (server boots and serves HTTP)
         run: |
           docker run -d --rm -p 8000:8000 --name benethos-yahoo-finance-mcp benethos-yahoo-finance-mcp:ci

@@ -33,7 +33,7 @@ How to work in this repository. Read this before making changes. See
 
 ```
 src/benethos_yahoo_finance_mcp/
-  server.py       # FastMCP instance + @mcp.tool() definitions + CLI main()
+  server.py       # MCPServer instance + @mcp.tool() definitions + CLI main()
   __main__.py     # enables `python -m benethos_yahoo_finance_mcp`
   client.py       # all yfinance access, in-memory ticker cache, error mapping
   cache.py        # opt-in persistent result cache (SQLite) with per-tool TTLs

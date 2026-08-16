@@ -47,7 +47,7 @@ def test_every_tool_has_a_description():
 
 def test_every_parameter_has_a_description():
     for tool in _list_tools():
-        props = (tool.inputSchema or {}).get("properties", {})
+        props = (tool.input_schema or {}).get("properties", {})
         assert props, f"{tool.name} has no parameters in its schema"
         for param, spec in props.items():
             assert spec.get("description"), f"{tool.name}.{param} missing description"
