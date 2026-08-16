@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-16
+
 ### Changed
 - Migrated to the **mcp 2.x SDK**. `mcp.server.fastmcp.FastMCP` was removed
   upstream and replaced by `mcp.server.mcpserver.MCPServer`. The requirement is
@@ -318,7 +320,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.2.1...v0.2.2
