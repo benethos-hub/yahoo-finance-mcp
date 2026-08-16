@@ -3,6 +3,7 @@
 [![CI](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/benethos-yahoo-finance-mcp)](https://pypi.org/project/benethos-yahoo-finance-mcp/)
 [![Python](https://img.shields.io/pypi/pyversions/benethos-yahoo-finance-mcp)](https://pypi.org/project/benethos-yahoo-finance-mcp/)
+[![Coverage](https://img.shields.io/badge/coverage-94%25-brightgreen)](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 An [MCP](https://modelcontextprotocol.io) server that exposes Yahoo Finance

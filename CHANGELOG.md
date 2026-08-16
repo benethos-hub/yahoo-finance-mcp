@@ -14,6 +14,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   port, URL path and the DNS-rebinding guard are passed to `MCPServer.run()` as
   explicit arguments, and stdio is handed none of them at all. This removes the
   cause of the HTTP 421 bug fixed in 0.3.0 rather than compensating for it.
+  Tools, options and output shapes are unchanged by the migration itself.
+- **Docker Compose now publishes the port on `127.0.0.1` only.** The server has
+  no authentication of its own and has no business on the LAN. It stays reachable
+  from the host, including from Windows when Compose runs in WSL. To expose it,
+  remove the prefix from the `ports:` entry and put a reverse proxy with
+  authentication in front.
+- **The tool descriptions are roughly a third smaller**, from about 23,200 to
+  16,400 characters. That is what an MCP client places in the model's context on
+  every single request, so it is paid continuously. Almost none of it came from
+  rewording: a quarter of the payload was one paragraph repeated 17 times,
+  warning that a ticker is not an ISIN, and that warning no longer applies.
+- The compose volume is declared as `cache` rather than
+  `benethos-yahoo-finance-mcp-cache`, since Compose prefixes it with the project
+  name anyway. An existing volume is not carried over.
 
 ### Added
 - Tool **`get_market`** — trading status and headline index summary for a
@@ -30,8 +44,39 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   empty string.
 - Two tests covering gaps found during the migration: the default URL path of
   each HTTP transport, and that stdio receives no transport security settings.
+- Server-level `instructions`, sent once at handshake rather than per request.
+  They collect what holds across the whole server: the symbol rules, that empty
+  results are normal for the wrong instrument type, that rate limits are
+  temporary, that **currencies are never converted**, and that most tools cap
+  their results **silently** — only `get_history` and `get_quotes` report a
+  `truncated` flag. Note that not every client surfaces this field.
+- **Python 3.14** in the CI matrix and the package classifiers. Both had stopped
+  at 3.13 while the documentation claimed the project was verified on 3.14.
+- README badges for CI status, PyPI version, supported Python versions, test
+  coverage and licence.
+- A bug report issue form. Most reports this project can expect are not defects,
+  so it asks up front to rule out rate limiting, fields that are empty by design
+  for the instrument type, and symbols that are neither a ticker nor an ISIN.
+- A `## Trademarks` section in the README. The disclaimer already named them,
+  buried among five other bullet points.
 
-Tools, options, output shapes and behaviour are unchanged.
+### Fixed
+- Three statements in the documentation were false and are corrected. **WKNs**
+  were described as something `search` resolves — it resolves none of them, so
+  the advice led into a guaranteed-empty call. **Plain ISINs** were declared
+  invalid as symbols, while all 18 symbol-taking tools return correct data for
+  one, because Yahoo resolves them server-side. This is new upstream behaviour,
+  so the claim was accurate when written. The bug report form repeated the ISIN
+  claim, asking reporters to rule out a call that works.
+- The specification claimed all CI jobs install from `uv.lock`, which stopped
+  being true when the `fresh-install` job was added, and that Dependabot keeps
+  the Python dependencies current, which it cannot do while every requirement is
+  an open `>=` range.
+
+### Removed
+- `TODO.md`. Untouched since June, referenced by nothing, and its "Future
+  features" section duplicated SPECS §11 under a heading pointing at SPECS §11.
+  The two had already drifted apart.
 
 ### Maintenance
 - Refreshed the lockfile: 29 packages moved to current releases, among them
