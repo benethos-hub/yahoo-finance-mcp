@@ -53,10 +53,11 @@ Yahoo's unofficial endpoints.
 | `get_industry` | Browse an industry by key: overview, parent sector, top/top-performing/top-growth companies. |
 | `get_market` | Trading status and headline index summary for a market (US, EUROPE, ASIA, …). |
 
-Most `get_*` tools take a Yahoo Finance **symbol**; use `search` to resolve a
-name or ISIN into a symbol first. The two exceptions are `get_sector` and
-`get_industry`, which take a sector/industry **key** (e.g. `technology`,
-`semiconductors`) rather than a ticker.
+Most `get_*` tools take a Yahoo Finance **symbol** — either a ticker (`AAPL`,
+`SAP.DE`) or a plain ISIN. Use `search` to turn a company name into one. Three
+tools are exceptions: `get_sector` and `get_industry` take a sector or industry
+**key** (e.g. `technology`, `semiconductors`), and `get_market` takes a market
+key (e.g. `US`).
 
 <details>
 <summary><b>📊 Sector &amp; industry keys</b> — click to expand (11 sectors, 145 industries, generated)</summary>
@@ -450,9 +451,21 @@ questions and it will pick the right tools. Replace the bracketed placeholders
 
 ## Symbol resolution
 
-All `get_*` tools expect a Yahoo Finance **symbol** (e.g. `AAPL`, `SAP.DE`).
-To resolve a company name or an ISIN to a symbol, call `search` first — the
-same Yahoo search endpoint handles free text, tickers, and ISINs.
+All `get_*` tools expect a Yahoo Finance **symbol**. Both a ticker (`AAPL`,
+`SAP.DE`) and a plain ISIN (`US0378331005`) work, since Yahoo resolves ISINs
+server-side. The server passes whatever it is given straight through and never
+rewrites it.
+
+To turn a **company name** into a symbol, call `search` first — the same Yahoo
+search endpoint handles free text, tickers, and ISINs. A ticker is preferable to
+an ISIN in any case, because the `symbol` reported back then stays consistent
+across tools.
+
+Two caveats. That ISINs work is **observed behaviour of an unofficial endpoint**,
+not a guarantee: it did not work in earlier versions and it may stop again.
+And German **WKNs resolve nowhere**, not through the tools and not through
+`search` — Yahoo has no lookup for them, so ask for a ticker, an ISIN or the
+company name instead.
 
 ## Caching
 
