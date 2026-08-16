@@ -120,7 +120,7 @@ exceptions are `get_sector` / `get_industry`, which take a sector/industry
 | `get_quote` | `symbol` | `{symbol, currency, exchange, quoteType, lastPrice, previousClose, open, dayHigh, dayLow, lastVolume, marketCap, 50/200d avg, yearHigh/Low, yearChange}` |
 | `get_quotes` | `symbols[]` (≤50) | `{count, quotes[{symbol, currency, lastPrice, previousClose, open, dayHigh, dayLow, marketCap}], not_found[], truncated}` |
 | `get_history` | `symbol`, `period` (=1mo), `interval` (=1d), `start?`, `end?` | `{symbol, interval, period, start, end, count, truncated, rows[]}` (OHLCV; ≤250 rows, tail kept) |
-| `get_company_info` | `symbol` | curated profile + key statistics |
+| `get_company_info` | `symbol` | curated profile + key statistics, plus `resolved_symbol` when Yahoo resolves the input to a different ticker (i.e. for an ISIN) |
 | `get_financials` | `symbol`, `statement` (income/balance/cashflow), `freq` (annual/quarterly/ttm — ttm income/cashflow only) | `{symbol, statement, freq, rows[]}` (rows = line items, columns = periods) |
 | `get_dividends` | `symbol` | `{symbol, dividends[], splits[]}` |
 | `get_news` | `symbol`, `limit` 1-30 (=10) | `{symbol, count, articles[{title, summary, publisher, published, url}]}` |

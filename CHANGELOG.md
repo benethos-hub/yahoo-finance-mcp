@@ -77,6 +77,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   — so an ISIN gains the information instead of losing it. A plain ticker
   resolves to itself and the extra field is omitted, which is why this was
   invisible unless you passed an ISIN.
+- The `get_options` and `get_sec_filings` descriptions now name the restriction
+  that makes their results empty, so a model knows before calling rather than
+  only from the error. `get_sec_filings` had said "equity-only", which is true
+  but misses the larger limit — a non-US equity is an equity and still has no
+  filings.
 - **`get_options` and `get_sec_filings` claimed that valid symbols do not
   exist.** Both raised the standard "No data found for symbol X, use the
   'search' tool to look it up" whenever a result was empty, but for these two

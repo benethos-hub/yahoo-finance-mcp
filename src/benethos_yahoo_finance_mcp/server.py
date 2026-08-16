@@ -350,7 +350,8 @@ def get_options(
 
     Call without ``expiration`` to list available expiration dates. Call with
     an ``expiration`` (``YYYY-MM-DD`` from that list) to get the calls and puts
-    for that date.
+    for that date. Yahoo carries chains for US-listed instruments only, so a
+    non-US symbol has none and that says nothing about the symbol.
     """
     return client.get_options(symbol, expiration=expiration)
 
@@ -453,8 +454,9 @@ def get_sec_filings(
     """Get recent SEC filings for a Yahoo symbol.
 
     Each entry has the filing date, type (e.g. ``10-K``, ``10-Q``, ``8-K``),
-    title, the Yahoo EDGAR URL, and exhibit links. Equity-only; empty for ETFs,
-    funds, and crypto.
+    title, the Yahoo EDGAR URL, and exhibit links. Only issuers registered with
+    the U.S. SEC file there, so a non-US symbol has none, and neither do ETFs,
+    funds or crypto. An empty result says nothing about the symbol.
     """
     return client.get_sec_filings(symbol, limit=limit)
 
