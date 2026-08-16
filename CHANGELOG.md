@@ -29,9 +29,13 @@ Tools, options, output shapes and behaviour are unchanged.
 ### Maintenance
 - Refreshed the lockfile: 29 packages moved to current releases, among them
   ruff 0.16.3, mypy 2.3.1, pandas 3.0.5, numpy 2.5.2, starlette 1.6.0 and
-  uvicorn 0.52.3. **yfinance is deliberately held at 1.4.1** and upgraded on its
-  own, because the unit tests mock it completely and therefore cannot detect a
-  behavioural change in it.
+  uvicorn 0.52.3.
+- **yfinance 1.4.1 → 1.6.0**, upgraded separately because the unit tests mock it
+  completely and cannot detect a behavioural change in it. Verified three ways:
+  the API surface this project uses is byte-for-byte identical between the two
+  versions, the upstream changelog for 1.5.1 through 1.6.0 contains only fixes
+  with no removals or renames, and a live run of `tests/smoke.py` returned real
+  data for all 21 tools before and after the bump.
 
 ## [0.3.1] - 2026-08-16
 
