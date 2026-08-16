@@ -83,6 +83,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   alone would also age badly, while the three transports do not.
 
 ### Fixed
+- **The example prompts were rewritten.** Several asked for things the tools do
+  not deliver as written — the 50/200-day moving averages, which `get_quote`
+  returns ready-made, an average daily volume that no tool reports, and a
+  drawdown "since inception" that the 250-row cap silently reduces to the last
+  year at the default daily interval. They now ask questions that hold, and the
+  two options and filings examples say `[US Ticker]`, since Yahoo carries
+  neither outside the United States.
+- The closing note claimed the server returns "only raw market data". It does
+  not compute anything itself, but it passes Yahoo's derived figures straight
+  through — moving averages, P/E, beta, dividend yield, yearly change. The note
+  now says what it meant.
 - **`get_company_info` answered with a different symbol than it was asked
   about.** `"symbol"` sat first in the curated field list, so the copy loop
   overwrote the echoed input with Yahoo's resolved ticker. Asking about
@@ -92,9 +103,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   — so an ISIN gains the information instead of losing it. A plain ticker
   resolves to itself and the extra field is omitted, which is why this was
   invisible unless you passed an ISIN.
-- Semicolons are gone from everything the user or the model reads — nine tool
-  descriptions, three parameter descriptions, seven CLI help texts and four
-  error messages. A house style rule that the text had drifted away from.
+- Semicolons are gone from everything a reader or the model sees — nine tool
+  descriptions, three parameter descriptions, seven CLI help texts, four error
+  messages, the README and the specification. A house style rule the text had
+  drifted away from. What remains sits inside code blocks, where a semicolon is
+  Python rather than prose.
 - The `get_options` and `get_sec_filings` descriptions now name the restriction
   that makes their results empty, so a model knows before calling rather than
   only from the error. `get_sec_filings` had said "equity-only", which is true

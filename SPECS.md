@@ -37,7 +37,7 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
 |--------|----------------|
 | `server.py` | MCPServer instance, tool definitions (signatures + docstrings), CLI/`main()`. |
 | `__main__.py` | Enables `python -m benethos_yahoo_finance_mcp` (delegates to `server.main`). |
-| `client.py` | All direct yfinance usage; ticker cache; error normalization. |
+| `client.py` | All direct yfinance usage, ticker cache, error normalization. |
 | `cache.py` | Persistent result cache (SQLite) with per-tool TTLs. |
 | `formatting.py` | Convert pandas/yfinance output to compact, JSON-safe values. |
 | `errors.py` | `ToolError`, `SymbolNotFoundError`, `RateLimitError`. |
@@ -52,7 +52,7 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
 - **CLI flags:** `--transport`, `--host` (default 127.0.0.1), `--port`
   (default 8000), `--path` (default `/mcp`, `/sse` for sse), `--allowed-hosts`,
   `--allowed-origins`, `--log-level`. Host/port/path/allow-list apply to the
-  HTTP transports only; for stdio they are ignored.
+  HTTP transports only. For stdio they are ignored.
 - **Environment:** every CLI flag has an env-var equivalent (CLI > env >
   default): `YF_MCP_TRANSPORT`, `YF_MCP_HOST`, `YF_MCP_PORT`, `YF_MCP_PATH`,
   `YF_MCP_ALLOWED_HOSTS`, `YF_MCP_ALLOWED_ORIGINS`, `YF_MCP_LOG_LEVEL`, and the
@@ -60,7 +60,7 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
 - **Entry points:** `python -m benethos_yahoo_finance_mcp` or the
   `benethos-yahoo-finance-mcp` console script.
 - **Python:** 3.11-3.14, all covered by the CI matrix.
-- **HTTP security:** the HTTP transports have no built-in auth; bind to
+- **HTTP security:** the HTTP transports have no built-in auth. Bind to
   `0.0.0.0` only on trusted networks and front them with a proxy/auth layer.
   The MCP HTTP transport also runs a DNS-rebinding `Host`/`Origin` guard. It is
   derived from the actual bind host and passed to `MCPServer.run()` as an
@@ -68,7 +68,7 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   an exposed bind accepts any `Host` unless `--allowed-hosts` /
   `--allowed-origins` narrow it (mismatches get HTTP 421). stdio has no HTTP
   surface and is handed no transport options at all.
-- **Deployment:** a `Dockerfile` (multi-stage, non-root, healthcheck;
+- **Deployment:** a `Dockerfile` (multi-stage, non-root, healthcheck,
   dependencies installed reproducibly from `uv.lock` via uv) and a
   `compose.yaml` host the server over streamable-HTTP on port 8000. The image
   is configured entirely via env vars (no default CMD args) and persists its
@@ -80,11 +80,11 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
 
 - Single source: `yfinance`. No other provider, no direct HTTP scraping.
 - Two cache layers: `Ticker` objects are cached in-memory for `_TICKER_TTL`
-  (60 s) to coalesce bursts within a process; successful tool **results** are
+  (60 s) to coalesce bursts within a process. Successful tool **results** are
   cached persistently with per-tool TTLs (see §8a). requests-cache is **not**
   usable here — yfinance uses curl_cffi and rejects caching sessions — so the
   result cache operates on our normalized output, not on HTTP responses.
-- Symbol resolution (name / ticker / ISIN) uses `yfinance.Search`; the same
+- Symbol resolution (name / ticker / ISIN) uses `yfinance.Search`, and the same
   endpoint handles all three input kinds.
 
 ## 6. Symbol model
@@ -119,25 +119,25 @@ exceptions are `get_sector` / `get_industry`, which take a sector/industry
 | `search` | `query` (name/ticker/ISIN), `limit` 1-25 (=8) | list of `{symbol, name, exchange, type, sector, industry}` |
 | `get_quote` | `symbol` | `{symbol, currency, exchange, quoteType, lastPrice, previousClose, open, dayHigh, dayLow, lastVolume, marketCap, 50/200d avg, yearHigh/Low, yearChange}` |
 | `get_quotes` | `symbols[]` (≤50) | `{count, quotes[{symbol, currency, lastPrice, previousClose, open, dayHigh, dayLow, marketCap}], not_found[], truncated}` |
-| `get_history` | `symbol`, `period` (=1mo), `interval` (=1d), `start?`, `end?` | `{symbol, interval, period, start, end, count, truncated, rows[]}` (OHLCV; ≤250 rows, tail kept) |
+| `get_history` | `symbol`, `period` (=1mo), `interval` (=1d), `start?`, `end?` | `{symbol, interval, period, start, end, count, truncated, rows[]}` (OHLCV, ≤250 rows, tail kept) |
 | `get_company_info` | `symbol` | curated profile + key statistics, plus `resolved_symbol` when Yahoo resolves the input to a different ticker (i.e. for an ISIN) |
 | `get_financials` | `symbol`, `statement` (income/balance/cashflow), `freq` (annual/quarterly/ttm — ttm income/cashflow only) | `{symbol, statement, freq, rows[]}` (rows = line items, columns = periods) |
 | `get_dividends` | `symbol` | `{symbol, dividends[], splits[]}` |
 | `get_news` | `symbol`, `limit` 1-30 (=10) | `{symbol, count, articles[{title, summary, publisher, published, url}]}` |
 | `get_recommendations` | `symbol` | `{symbol, price_targets, recommendation_trend[]}` |
-| `get_options` | `symbol`, `expiration?` | without `expiration`: `{symbol, expirations[]}`; with it: `{symbol, expiration, calls[], puts[]}` |
+| `get_options` | `symbol`, `expiration?` | without `expiration`: `{symbol, expirations[]}`, with it: `{symbol, expiration, calls[], puts[]}` |
 | `get_earnings` | `symbol`, `limit` 1-50 (=12) | `{symbol, earnings_dates[], earnings_history[]}` (equity-only) |
 | `get_estimates` | `symbol` | `{symbol, earnings_estimate[], revenue_estimate[], eps_trend[], eps_revisions[], growth_estimates[]}` (equity-only) |
-| `get_upgrades_downgrades` | `symbol`, `limit` 1-100 (=50) | `{symbol, changes[]}` (rating changes, newest first; equity-only) |
-| `get_holders` | `symbol`, `limit` 1-100 (=25) | `{symbol, major_holders[], institutional_holders[], mutualfund_holders[]}` (top holders first; equity-only) |
-| `get_insider_activity` | `symbol`, `limit` 1-100 (=50) | `{symbol, transactions[], purchases_summary[], roster[]}` (transactions newest first; equity-only) |
+| `get_upgrades_downgrades` | `symbol`, `limit` 1-100 (=50) | `{symbol, changes[]}` (rating changes, newest first, equity-only) |
+| `get_holders` | `symbol`, `limit` 1-100 (=25) | `{symbol, major_holders[], institutional_holders[], mutualfund_holders[]}` (top holders first, equity-only) |
+| `get_insider_activity` | `symbol`, `limit` 1-100 (=50) | `{symbol, transactions[], purchases_summary[], roster[]}` (transactions newest first, equity-only) |
 | `get_sec_filings` | `symbol`, `limit` 1-100 (=25) | `{symbol, count, filings[{date, type, title, url, exhibits}]}` (equity-only) |
-| `get_calendar` | `symbol` | `{symbol, calendar{}}` (next earnings/dividend dates + estimate ranges; equity-only) |
+| `get_calendar` | `symbol` | `{symbol, calendar{}}` (next earnings/dividend dates + estimate ranges, equity-only) |
 | `get_shares` | `symbol`, `start?`, `end?`, `limit` 1-250 (=50) | `{symbol, count, shares[{date, shares}]}` (most recent kept) |
 | `get_fund_data` | `symbol`, `limit` 1-100 (=25) | `{symbol, description, fund_overview, asset_classes, sector_weightings, top_holdings[]}` (fund/ETF-only) |
-| `get_sector` | `key` (sector key), `limit` 1-100 (=25) | `{key, name, index_symbol, overview, top_companies[], top_etfs, top_mutual_funds, industries[]}` (module-level; not a symbol) |
-| `get_industry` | `key` (industry key), `limit` 1-100 (=25) | `{key, name, index_symbol, sector_key, sector_name, overview, top_companies[], top_performing_companies[], top_growth_companies[]}` (module-level; not a symbol) |
-| `get_market` | `key` (market key, =US) | `{key, status, count, indices[{symbol, shortName, fullExchangeName, marketState, price, previous close, change, change %}]}` (module-level; `status` only for `US`, null elsewhere) |
+| `get_sector` | `key` (sector key), `limit` 1-100 (=25) | `{key, name, index_symbol, overview, top_companies[], top_etfs, top_mutual_funds, industries[]}` (module-level, not a symbol) |
+| `get_industry` | `key` (industry key), `limit` 1-100 (=25) | `{key, name, index_symbol, sector_key, sector_name, overview, top_companies[], top_performing_companies[], top_growth_companies[]}` (module-level, not a symbol) |
+| `get_market` | `key` (market key, =US) | `{key, status, count, indices[{symbol, shortName, fullExchangeName, marketState, price, previous close, change, change %}]}` (module-level, `status` only for `US`, null elsewhere) |
 
 ### Parameter descriptions
 
@@ -153,12 +153,12 @@ values).
   `datetime` -> ISO-8601 string, numpy scalars -> native, and recurses through
   containers.
 - Tabular results are row-capped (`MAX_ROWS = 250`, tighter per tool) to stay
-  within the client's token budget; truncation keeps the most recent rows.
+  within the client's token budget. Truncation keeps the most recent rows.
 
 ## 8a. Result cache (`cache.py`)
 
 - Caches the **normalized tool results** (not HTTP responses) in a SQLite file
-  so they survive restarts; each tool category has its own TTL.
+  so they survive restarts, and each tool category has its own TTL.
 - Cache names (the `<NAME>` in `--cache-ttl <NAME>=<SECONDS>` /
   `YF_MCP_CACHE_TTL_<NAME>`) and default TTLs:
 
@@ -188,21 +188,21 @@ values).
   | `market` | `get_market` | 60 s |
 - **Opt-in: off by default.** Within a single process yfinance already reuses
   identical requests, so the cache mainly helps across restarts and as
-  rate-limit protection; enable it with `--cache` / `YF_MCP_CACHE=1`.
+  rate-limit protection. Enable it with `--cache` / `YF_MCP_CACHE=1`.
 - Disabled until `configure()` is called (which `server.main` does), so
   importing the package or calling client functions in tests/library use does
   not touch disk unless caching is explicitly enabled.
 - Config precedence CLI > env > default: `--cache/--no-cache` (`YF_MCP_CACHE`),
   `--cache-dir` (`YF_MCP_CACHE_DIR`), `--cache-ttl <NAME>=<SECONDS>`
   (`YF_MCP_CACHE_TTL_<NAME>`). A TTL of `0` bypasses caching for that tool.
-- Only successful, non-empty returns are cached; exceptions propagate and are
+- Only successful, non-empty returns are cached. Exceptions propagate and are
   never cached, and empty results (e.g. a search with no matches) are not
   pinned for the TTL.
 
 ## 9. Error handling
 
 - Expected failures raise a `ToolError` subclass with a concise message
-  (surfaced to the client; never a raw traceback).
+  (surfaced to the client, never a raw traceback).
   - `SymbolNotFoundError` — unknown symbol / empty result.
   - `RateLimitError` — Yahoo throttling (`YFRateLimitError` is mapped to it via
     `client._wrap_upstream`).
@@ -216,7 +216,7 @@ values).
   registration/schema, and end-to-end tool invocation via `mcp.call_tool`
   (`tests/test_client.py`, `test_formatting.py`, `test_cache.py`, `test_cli.py`,
   `test_server.py`, `test_tools_integration.py`).
-- `tests/smoke.py` is an ad-hoc **live** check against Yahoo; it is not part of
+- `tests/smoke.py` is an ad-hoc **live** check against Yahoo, and it is not part of
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
   of 80% (currently ~94%).
@@ -265,7 +265,7 @@ values).
 
 Goal: expose every **working** yfinance method as an MCP tool. "Working" was
 verified empirically (probed live on a stock `AAPL`, an ETF `SPY`, and a crypto
-pair `BTC-USD`); only methods that return real data are in scope. Availability
+pair `BTC-USD`). Only methods that return real data are in scope. Availability
 is symbol-dependent (equity fields are empty for ETFs/crypto and vice versa) —
 tools surface that as an empty result, not an error.
 
@@ -298,16 +298,16 @@ wrapped via `_wrap_upstream`, cached with a per-tool TTL, and row-capped.
 
 | Tool | Backed by | Notes |
 |------|-----------|-------|
-| `get_earnings` | `get_earnings_dates`, `earnings_history` | upcoming + historical EPS estimate/actual/surprise; **needs `lxml`** |
+| `get_earnings` | `get_earnings_dates`, `earnings_history` | upcoming + historical EPS estimate/actual/surprise, **needs `lxml`** |
 | `get_estimates` | `earnings_estimate`, `revenue_estimate`, `eps_trend`, `eps_revisions`, `growth_estimates` | forward analyst estimates |
-| `get_upgrades_downgrades` | `upgrades_downgrades` | analyst rating changes (large; row-capped) |
+| `get_upgrades_downgrades` | `upgrades_downgrades` | analyst rating changes (large, row-capped) |
 | `get_holders` | `major_holders`, `institutional_holders`, `mutualfund_holders` | ownership breakdown |
 | `get_insider_activity` | `insider_transactions`, `insider_purchases`, `insider_roster_holders` | insider trading |
 | `get_sec_filings` | `sec_filings` | recent filings |
 | `get_calendar` | `calendar` | next earnings/ex-div dates |
 | `get_shares` | `get_shares_full` | shares outstanding over time |
 | `get_fund_data` | `funds_data` | holdings/sector weights — ETFs & funds |
-| extend `get_financials` | `ttm_income_stmt`, `ttm_cashflow` | add a `ttm` frequency (income/cashflow only; no `ttm_balance_sheet` upstream) |
+| extend `get_financials` | `ttm_income_stmt`, `ttm_cashflow` | add a `ttm` frequency (income/cashflow only, no `ttm_balance_sheet` upstream) |
 
 Excluded from tools: `sustainability`, `capital_gains` (empty). `isin`/
 `history_metadata` are minor and may be folded into existing tools rather than
@@ -370,17 +370,17 @@ green).
   `get_recommendations`/`recommendations_summary` extension was dropped as
   redundant (see above).
 - **Phase 4 — done:** module-level sector/industry browsing — `get_sector`
-  (`yf.Sector`) and `get_industry` (`yf.Industry`); these take a sector/industry
+  (`yf.Sector`) and `get_industry` (`yf.Industry`). These take a sector/industry
   key, not a symbol.
 - **Phase 5 — done:** `get_quotes` — compact multi-symbol quotes in one call
   (per-symbol `not_found`), covering the §11 multi-symbol-quote item. Backed by
   per-symbol `fast_info` (yfinance's `Tickers` is only a convenience wrapper, not
-  true batching; `yf.download` is reserved for a possible future bulk-history
+  true batching, and `yf.download` is reserved for a possible future bulk-history
   tool, which needs hard payload caps).
 
 ### Remaining roadmap (optional, not yet built)
 
-All per-symbol `Ticker` methods that return real data are now exposed; what is
+All per-symbol `Ticker` methods that return real data are now exposed. What is
 left is a smaller, optional set. In rough priority / effort order:
 
 - **`get_market`** (`yf.Market`) — **done.** Eight fixed market keys. Probed
@@ -409,6 +409,6 @@ technically possible". With 22 tools already registered, every additional
 description competes for the model's attention on every single request. A tool
 that only saves a loop is a net loss.
 
-Decisions still apply: read-only only; native Yahoo tickers; grouped tools;
-empirically probe each method live before building; one reviewable PR per phase;
+Decisions still apply: read-only only, native Yahoo tickers, grouped tools,
+empirically probe each method live before building, one reviewable PR per phase,
 keep responses row/symbol-capped for the token budget.

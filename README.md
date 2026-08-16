@@ -31,7 +31,7 @@ Yahoo's unofficial endpoints.
 
 | Tool | Description |
 |------|-------------|
-| `search` | Find instruments by name, ticker, or ISIN; returns Yahoo symbols. |
+| `search` | Find instruments by name, ticker, or ISIN, returning Yahoo symbols. |
 | `get_quote` | Current price and key intraday figures for a symbol. |
 | `get_quotes` | Compact current quotes for several symbols at once (per-symbol not-found list). |
 | `get_history` | Historical OHLCV data (period/interval or explicit date range). |
@@ -193,7 +193,7 @@ virtual environment, no `git`. `uvx` fetches and runs it on demand from
 
 > `uvx` must be on the `PATH` the client uses. After installing uv, fully restart
 > the app — or use the absolute path to `uvx` as `command`. The first launch
-> downloads the package and its dependencies, so it takes a moment; subsequent
+> downloads the package and its dependencies, so it takes a moment. Later
 > launches use the cache.
 
 ### Other ways to install
@@ -351,7 +351,7 @@ docker build -t benethos-yahoo-finance-mcp .
 docker run --rm -p 8000:8000 benethos-yahoo-finance-mcp
 # Server is now reachable at http://localhost:8000/mcp
 
-# Override settings via -e; opt into the cache and persist it in a named volume
+# Override settings via -e, opt into the cache and persist it in a named volume
 docker run --rm -p 9000:9000 \
     -e YF_MCP_PORT=9000 \
     -e YF_MCP_LOG_LEVEL=DEBUG \
@@ -361,7 +361,7 @@ docker run --rm -p 9000:9000 \
 ```
 
 The image runs as a non-root user and includes a healthcheck on the configured
-HTTP port. The cache is off by default; enable it with `-e YF_MCP_CACHE=1`, in
+HTTP port. The cache is off by default. Enable it with `-e YF_MCP_CACHE=1`, in
 which case it is written to `/cache` (declared as a volume) — mount a named
 volume there to keep it across container restarts. As with any HTTP deployment,
 there is no built-in authentication — front it with a reverse proxy / auth layer
@@ -413,97 +413,84 @@ With the venv interpreter directly (Windows: `.venv\Scripts\python.exe`):
 
 ## Example prompts
 
-Once the server is connected, you can ask the client natural-language
-questions and it will pick the right tools. Replace the bracketed placeholders
-(e.g. `[Ticker]`, `[ISIN]`) with concrete values.
+Once the server is connected, ask the client in plain language and it will pick
+the tools. Replace the bracketed placeholders with concrete values.
 
-**Price & quote** (`get_quote`, `get_history`)
+**Price & quote**
 
-- "What's the current price of [Ticker] and how has it moved over the last 24h?"
-- "Get the daily closing prices of [Ticker] for the last 6 months and compute
-  RSI, MACD, and the 50/200-day moving averages."
-- "What was the max drawdown of [Ticker] since inception, and how long was it
-  underwater?"
-- "Compare the performance of [Ticker A] against [Index] over 1, 3, and 6
-  months (relative strength)."
-- "How far is [Ticker] currently from its 52-week high?"
+- "What's the current price of [Ticker], and how far is it from its 52-week high?"
+- "Is [Ticker] trading above or below its 50- and 200-day moving averages?"
+- "Get the daily closes of [Ticker] for the last 6 months and compute RSI and MACD."
+- "What was the deepest drawdown of [Ticker] in the last 12 months?"
+- "Compare [Ticker A] and [Ticker B] over the last 3 months and show which held up better."
+- "Get current quotes for [Ticker A], [Ticker B] and [Ticker C] and compare them in a table."
 
-**Company data & valuation** (`get_company_info`, `get_financials`)
+**Company & valuation**
 
-- "Give me P/E, beta, market cap, and dividend yield for [Ticker]."
-- "Are the fundamentals (ROE, leverage, margins) for [Ticker] available via
-  Yahoo? If not, flag the metric as unavailable."
-- "How liquid is [Ticker]? Average daily volume and market cap."
+- "Give me P/E, beta, market cap and dividend yield for [Ticker]."
+- "What does [Company name] actually do, and which sector and industry is it in?"
+- "Show the last three annual income statements for [Ticker] and how revenue developed."
+- "How has [Ticker]'s share count changed over the past years, and does that mean buybacks or dilution?"
 
-**Analysts & sentiment** (`get_recommendations`, `get_news`)
+**Analysts & news**
 
-- "What's the current analyst consensus for [Ticker], and any up-/downgrades
-  from the last few weeks?"
-- "How far is the average price target for [Ticker] above/below the current
-  price?"
-- "Any recent news on [Ticker], and is the sentiment positive or negative?"
+- "What's the analyst consensus for [Ticker], and how far is the average price target from the current price?"
+- "Any upgrades or downgrades for [Ticker] in the last few weeks?"
+- "What are the forward revenue and EPS estimates for [Ticker], and how were they revised recently?"
+- "Summarize the recent news on [Ticker]."
 
-**Dividends** (`get_dividends`)
+**Earnings & calendar**
 
-- "List the distribution history of [Ticker] and compute the total-return
-  recovery including reinvested dividends from [year]."
-- "From which year does Yahoo cover dividends for [Ticker]?"
-
-**Earnings & estimates** (`get_earnings`, `get_estimates`, `get_upgrades_downgrades`)
-
-- "When is [Ticker]'s next earnings date, and what's the EPS estimate?"
-- "Show [Ticker]'s earnings surprises over the last few quarters."
-- "What are the forward revenue and EPS estimates for [Ticker], and how have
-  they been revised recently?"
-- "List the latest analyst upgrades and downgrades for [Ticker]."
-
-**Ownership & insiders** (`get_holders`, `get_insider_activity`)
-
-- "Who are the largest institutional holders of [Ticker]?"
-- "What share of [Ticker] is held by insiders vs institutions?"
-- "Has there been notable insider buying or selling in [Ticker] recently?"
-
-**Filings & calendar** (`get_sec_filings`, `get_calendar`)
-
-- "Show the most recent SEC filings for [Ticker] with links."
+- "When does [Ticker] report next, and what EPS is expected?"
+- "How did [Ticker] do against estimates in the last few quarters?"
 - "When are [Ticker]'s next earnings and ex-dividend dates?"
 
-**Shares & fund profiles** (`get_shares`, `get_fund_data`)
+**Dividends**
 
-- "How has [Ticker]'s shares outstanding changed over time (buybacks/dilution)?"
+- "Show [Ticker]'s dividends over the last ten years and the current yield."
+- "Has [Ticker] cut its dividend in the last 20 years, and did it split the stock?"
+
+**Ownership & insiders**
+
+- "Who are the largest institutional holders of [Ticker]?"
+- "What share of [Ticker] is held by insiders versus institutions?"
+- "Has there been notable insider buying or selling in [Ticker] recently?"
+
+**Funds & ETFs**
+
 - "What are the top holdings and sector weightings of the ETF [Ticker]?"
+- "What's the asset-class split of [ETF Ticker], and which fund family runs it?"
 
-**Sector & industry browsing** (`get_sector`, `get_industry`)
+**Filings**
+
+- "Show the most recent SEC filings for [US Ticker] with links."
+
+**Options**
+
+- "Which option expiration dates are available for [US Ticker]?"
+- "Show the calls and puts for [US Ticker] expiring [Date]."
+
+**Sectors & markets**
 
 - "What are the top companies and industries in the technology sector?"
-- "Show the top-performing and top-growth companies in the semiconductors
-  industry."
-
-**Multiple quotes at once** (`get_quotes`)
-
-- "Get current quotes for [Ticker A], [Ticker B], and [Ticker C] and compare
-  them in a table."
-
-**Market status & indices** (`get_market`)
-
+- "Show the top-performing companies in the semiconductors industry."
 - "Is the US market open right now, and when does it open next?"
-- "How did the major US indices close today?"
-- "Compare the headline indices in Europe and Asia."
+- "How did the major indices in Europe and Asia close?"
 
-**Search / resolution** (`search`)
+**Finding a symbol**
 
+- "Which Yahoo ticker belongs to [Company name] on [Exchange]?"
 - "Resolve the ISIN [ISIN] to a Yahoo ticker."
-- "Which Yahoo ticker belongs to [security name] on [exchange]?"
 
-**Combined daily update** (multiple tools)
+**A daily round-up**
 
-- "For the asset list [Ticker, Ticker, …]: for each name, pull the price history
-  (6 months), quote, company info, and analyst recommendations, then summarize
-  the current technical and sentiment picture per asset."
+- "For [Ticker A], [Ticker B] and [Ticker C]: pull quote, six months of history,
+  company info and analyst recommendations, then give me a short picture of each."
 
-> The server only returns raw market data; any derived metrics (RSI, MACD,
-> drawdown, sentiment, total return) are computed by the client/model from that
-> data, not by the tools themselves.
+> **The server computes nothing itself.** It passes through what Yahoo returns,
+> which already includes derived figures such as moving averages, P/E, beta and
+> dividend yield. Anything Yahoo does not carry — RSI, MACD, drawdown,
+> sentiment, total return — the model works out from the raw series.
 
 ## Symbol resolution
 
@@ -562,7 +549,7 @@ Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 | `industry` | `get_industry` | 24 h |
 | `market` | `get_market` | 60 s |
 
-- Off by default; enable with `--cache` or `YF_MCP_CACHE=1`.
+- Off by default. Enable with `--cache` or `YF_MCP_CACHE=1`.
 - Location: the OS user cache directory, or `--cache-dir` / `YF_MCP_CACHE_DIR`.
 - Override a TTL: `--cache-ttl quote=15` (repeatable) or the
   `YF_MCP_CACHE_TTL_<NAME>` env var (e.g. `YF_MCP_CACHE_TTL_QUOTE=15`).
@@ -575,16 +562,16 @@ Precedence is CLI > environment > default. Errors are never cached.
 Enable the cache (`--cache` / `YF_MCP_CACHE=1`) if you:
 
 - run the server as a long-running or **containerized HTTP service** that
-  restarts periodically (the cache survives restarts → instant repeat results);
-- **hit Yahoo rate limits** or make many repeated identical requests over time;
+  restarts periodically (the cache survives restarts → instant repeat results).
+- **hit Yahoo rate limits** or make many repeated identical requests over time.
 - mostly query **slow-changing data** (search, company info, financials), where
   staleness is irrelevant.
 
 Leave it off (the default) if you:
 
 - run it **locally over stdio** for interactive sessions — yfinance already
-  reuses identical requests within a single process, so the cache adds little;
-- need the **freshest possible** data;
+  reuses identical requests within a single process, so the cache adds little.
+- need the **freshest possible** data.
 - use it only occasionally.
 
 ## Development
