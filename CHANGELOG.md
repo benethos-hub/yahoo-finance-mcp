@@ -4,7 +4,10 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-08-16
+
+Version 0.2.3 was prepared but never published, so its entries are folded in
+here.
 
 ### Changed
 - **Breaking:** the import package is now `benethos_yahoo_finance_mcp` (was
@@ -22,8 +25,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The README title, the specification title, and the package description now
   lead with "Unofficial", making the absence of any affiliation with Yahoo
   explicit at first glance.
-
-## [0.2.3] - 2026-07-31
 
 ### Fixed
 - HTTP transports bound to a non-localhost host (e.g. `0.0.0.0` in Docker) no
@@ -136,8 +137,7 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.2.3...HEAD
-[0.2.3]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.2.2...v0.2.3
+[0.3.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.1.1...v0.2.0
