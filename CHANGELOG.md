@@ -9,7 +9,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 - Migrated to the **mcp 2.x SDK**. `mcp.server.fastmcp.FastMCP` was removed
   upstream and replaced by `mcp.server.mcpserver.MCPServer`. The requirement is
-  now `mcp[cli]>=2.0.0,<3`, so the temporary cap from 0.3.1 is gone.
+  now `mcp>=2.0.0,<3`, so the temporary cap from 0.3.1 is gone.
 - Transport options are no longer written into mutable global settings. Host,
   port, URL path and the DNS-rebinding guard are passed to `MCPServer.run()` as
   explicit arguments, and stdio is handed none of them at all. This removes the
@@ -90,6 +90,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   The two had already drifted apart.
 
 ### Maintenance
+- **The runtime dependency is plain `mcp` instead of `mcp[cli]`.** The extra
+  exists for the `mcp` command (`dev`, `run`, `install`) and drags typer, rich,
+  pygments, markdown-it-py, mdurl, shellingham and python-dotenv along with it.
+  None of them is imported anywhere in this package, which brings its own
+  argparse entry point, so a clean install drops from 59 packages to 51 and the
+  container image loses roughly 14 MB. `mcp[cli]` moved to the `dev` extra, so
+  `mcp dev` and the MCP Inspector stay available while working on the project.
+  Verified with a full stdio round trip — handshake, tool listing and a live
+  `get_market` call — against a fresh install of the built wheel.
 - Broadened the package keywords from five to ten, adding `mcp-server`,
   `model-context-protocol`, `financial-data`, `market-data` and `stock-market`.
   They now mirror the GitHub repository topics, minus `python`, which says
