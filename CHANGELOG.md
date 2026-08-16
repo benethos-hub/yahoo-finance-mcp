@@ -68,6 +68,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   buried among five other bullet points.
 
 ### Fixed
+- **`get_options` and `get_sec_filings` claimed that valid symbols do not
+  exist.** Both raised the standard "No data found for symbol X, use the
+  'search' tool to look it up" whenever a result was empty, but for these two
+  an empty result is the normal case for everything outside the United States.
+  Yahoo lists option chains for US instruments only, and only SEC registrants
+  file with the SEC. Probed live: `SAP.DE`, `NESN.SW` and `7203.T` — SAP, Nestlé
+  and Toyota — were all reported as not found by both tools. A model asking
+  about options on Toyota was told its ticker was wrong and sent to look up a
+  symbol that was already correct. The message now names the reason and states
+  that an empty result does not show the symbol is wrong. Telling the two cases
+  apart for certain would need a second upstream request per failure, which is
+  not spent here — the message stays accurate either way, just not decisive.
 - The README's install-from-source example invoked `yahoo-finance-mcp`, a console
   script that was removed in 0.3.0 when the package was renamed, so the command
   as printed could only fail. It now uses `benethos-yahoo-finance-mcp`, verified

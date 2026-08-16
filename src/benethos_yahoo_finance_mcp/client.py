@@ -462,6 +462,15 @@ def get_recommendations(symbol: str) -> dict[str, Any]:
     }
 
 
+# Yahoo carries option chains for US-listed instruments only, so an empty
+# result is the norm for the rest of the world rather than a sign of a bad
+# symbol. Probed 2026-08-16: SAP.DE, NESN.SW and 7203.T all come back empty.
+_NO_OPTIONS_REASON = (
+    "Yahoo lists option chains for US-listed instruments only, so a non-US "
+    "symbol is expected to have none."
+)
+
+
 @cache.cached("options")
 def get_options(
     symbol: str,
@@ -482,7 +491,7 @@ def get_options(
         raise _wrap_upstream(exc, f"Failed to load options for {symbol!r}") from exc
 
     if not expirations:
-        raise SymbolNotFoundError(symbol)
+        raise SymbolNotFoundError(symbol, reason=_NO_OPTIONS_REASON)
 
     if not expiration:
         return {"symbol": symbol.strip().upper(), "expirations": expirations}
@@ -702,6 +711,15 @@ def get_insider_activity(symbol: str, *, max_rows: int = 50) -> dict[str, Any]:
     }
 
 
+# Only issuers registered with the U.S. SEC file there. A German, Swiss or
+# Japanese listing has no filings by construction, and neither do most
+# ETFs/funds/crypto — none of which says anything about the symbol.
+_NO_SEC_FILINGS_REASON = (
+    "Only issuers registered with the U.S. SEC file there, so a non-US symbol "
+    "is expected to have no filings. ETFs, funds and crypto have none either."
+)
+
+
 @cache.cached("sec_filings")
 def get_sec_filings(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     """Return recent SEC filings for ``symbol``.
@@ -731,7 +749,7 @@ def get_sec_filings(symbol: str, *, limit: int = 25) -> dict[str, Any]:
             }
         )
     if not items:
-        raise SymbolNotFoundError(symbol)
+        raise SymbolNotFoundError(symbol, reason=_NO_SEC_FILINGS_REASON)
 
     return {"symbol": symbol.strip().upper(), "count": len(items), "filings": items}
 

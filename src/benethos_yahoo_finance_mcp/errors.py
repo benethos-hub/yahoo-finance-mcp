@@ -18,14 +18,32 @@ class ToolError(Exception):
 
 
 class SymbolNotFoundError(ToolError):
-    """Raised when a symbol cannot be resolved or returns no data."""
+    """Raised when a symbol cannot be resolved or returns no data.
 
-    def __init__(self, symbol: str) -> None:
-        super().__init__(
-            f"No data found for symbol {symbol!r}. "
-            "Use the 'search' tool to look it up by name, ticker, or ISIN."
-        )
+    Some data is structurally unavailable for whole classes of perfectly valid
+    symbols — Yahoo lists option chains for US instruments only, and only SEC
+    registrants file with the SEC. For those, an empty result says nothing about
+    whether the symbol exists, and the default advice to go and look it up sends
+    the caller hunting for a ticker that was already correct. Pass ``reason`` to
+    say so instead. Distinguishing the two cases for certain would take a second
+    upstream request, which is deliberately not spent here.
+    """
+
+    def __init__(self, symbol: str, reason: str | None = None) -> None:
+        if reason is None:
+            message = (
+                f"No data found for symbol {symbol!r}. "
+                "Use the 'search' tool to look it up by name, ticker, or ISIN."
+            )
+        else:
+            message = (
+                f"No data for symbol {symbol!r}. {reason} An empty result here "
+                "therefore does not show that the symbol is wrong. Use the "
+                "'search' tool only if you doubt the symbol itself."
+            )
+        super().__init__(message)
         self.symbol = symbol
+        self.reason = reason
 
 
 class RateLimitError(ToolError):
