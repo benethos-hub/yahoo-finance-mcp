@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from yahoo_finance_mcp import cache
+from benethos_yahoo_finance_mcp import cache
 
 
 @pytest.fixture(autouse=True)

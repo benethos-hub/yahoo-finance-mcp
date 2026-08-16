@@ -65,4 +65,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 # still be appended (they override the env), e.g.:
 #   docker run -e YF_MCP_PORT=9000 -p 9000:9000 IMAGE
 #   docker run IMAGE --log-level DEBUG
-ENTRYPOINT ["yahoo-finance-mcp"]
+ENTRYPOINT ["benethos-yahoo-finance-mcp"]

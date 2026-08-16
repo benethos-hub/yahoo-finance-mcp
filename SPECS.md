@@ -1,4 +1,4 @@
-# Specification — Yahoo Finance MCP Server
+# Specification — Unofficial Yahoo Finance MCP Server
 
 ## 1. Purpose
 
@@ -36,7 +36,7 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (FastMCP)
 | Module | Responsibility |
 |--------|----------------|
 | `server.py` | FastMCP instance, tool definitions (signatures + docstrings), CLI/`main()`. |
-| `__main__.py` | Enables `python -m yahoo_finance_mcp` (delegates to `server.main`). |
+| `__main__.py` | Enables `python -m benethos_yahoo_finance_mcp` (delegates to `server.main`). |
 | `client.py` | All direct yfinance usage; ticker cache; error normalization. |
 | `cache.py` | Persistent result cache (SQLite) with per-tool TTLs. |
 | `formatting.py` | Convert pandas/yfinance output to compact, JSON-safe values. |
@@ -50,17 +50,24 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (FastMCP)
 - **Logging:** always to stderr (`logging.basicConfig(stream=sys.stderr)`), so
   under stdio stdout carries JSON-RPC only.
 - **CLI flags:** `--transport`, `--host` (default 127.0.0.1), `--port`
-  (default 8000), `--path` (default `/mcp`, `/sse` for sse), `--log-level`.
-  Host/port/path apply to the HTTP transports only; for stdio they are ignored.
+  (default 8000), `--path` (default `/mcp`, `/sse` for sse), `--allowed-hosts`,
+  `--allowed-origins`, `--log-level`. Host/port/path/allow-list apply to the
+  HTTP transports only; for stdio they are ignored.
 - **Environment:** every CLI flag has an env-var equivalent (CLI > env >
   default): `YF_MCP_TRANSPORT`, `YF_MCP_HOST`, `YF_MCP_PORT`, `YF_MCP_PATH`,
-  `YF_MCP_LOG_LEVEL`, and the cache vars `YF_MCP_CACHE`, `YF_MCP_CACHE_DIR`,
-  `YF_MCP_CACHE_TTL_<NAME>`.
-- **Entry points:** `python -m yahoo_finance_mcp` or the `yahoo-finance-mcp`
-  console script.
+  `YF_MCP_ALLOWED_HOSTS`, `YF_MCP_ALLOWED_ORIGINS`, `YF_MCP_LOG_LEVEL`, and the
+  cache vars `YF_MCP_CACHE`, `YF_MCP_CACHE_DIR`, `YF_MCP_CACHE_TTL_<NAME>`.
+- **Entry points:** `python -m benethos_yahoo_finance_mcp` or the
+  `benethos-yahoo-finance-mcp` console script.
 - **Python:** 3.11+ (developed/verified on 3.14).
 - **HTTP security:** the HTTP transports have no built-in auth; bind to
   `0.0.0.0` only on trusted networks and front them with a proxy/auth layer.
+  The MCP HTTP transport also runs a DNS-rebinding `Host`/`Origin` guard. It is
+  computed from the actual bind host in `main()` (FastMCP fixes it at
+  construction from the default host, so it must be recomputed): a localhost
+  bind keeps the protective localhost allow-list, an exposed bind accepts any
+  `Host` unless `--allowed-hosts`/`--allowed-origins` narrow it (mismatches get
+  HTTP 421).
 - **Deployment:** a `Dockerfile` (multi-stage, non-root, healthcheck;
   dependencies installed reproducibly from `uv.lock` via uv) and a
   `compose.yaml` host the server over streamable-HTTP on port 8000. The image
@@ -201,14 +208,18 @@ values).
   and Actions dependencies updated.
 - A separate `publish` workflow builds the sdist + wheel (`uv build`) and uploads
   them to **PyPI via Trusted Publishing (OIDC)** when a GitHub release is
-  published — no API token is stored. The PyPI distribution name is
-  `benethos-yahoo-finance-mcp` (the `yahoo-finance-mcp` name was already taken);
-  the import package (`yahoo_finance_mcp`) and the `yahoo-finance-mcp` console
-  script are unchanged, with `benethos-yahoo-finance-mcp` added as an alias.
+  published — no API token is stored. One name is used throughout: the PyPI
+  distribution, the import package (`benethos_yahoo_finance_mcp`, underscores
+  because a module name cannot contain hyphens), the console script, and the
+  MCP server identity are all `benethos-yahoo-finance-mcp`. Only the GitHub
+  repository keeps the plain `yahoo-finance-mcp`, deliberately, for
+  discoverability.
 
 ## 11. Future work (not yet implemented)
 
-- Input validation of `period`/`interval`/`freq` against known value sets.
+- Input validation of `period`/`interval` against known value sets. The
+  `statement` and `freq` arguments of `get_financials` are already validated,
+  as are the sector and industry keys.
 - Stale-on-error: serve an expired cache entry when Yahoo is rate limiting.
 
 (Multi-symbol batch quoting is implemented as `get_quotes` — see §7 and §12.)
@@ -240,8 +251,8 @@ tools surface that as an empty result, not an error.
 - **Excluded — upstream empty for all probed symbols:** `sustainability` (ESG),
   `capital_gains`.
 - **Out of scope (non-goals, §2):** `live`/`WebSocket` (streaming), `Auth`.
-- **Dependency note:** `get_earnings_dates` requires `lxml` (not currently a
-  dependency); adding the earnings tool means adding `lxml` to `dependencies`.
+- **Dependency note:** `get_earnings_dates` requires `lxml`. It was added to
+  `dependencies` when Phase 1 landed.
 
 ### Proposed new tools (grouped, not one-per-method)
 

@@ -7,14 +7,21 @@
 # The modern canonical filename is compose.yaml; `docker compose` also still
 # reads the legacy docker-compose.yml name.
 
+# Project name for all resources compose creates (network, volume, default
+# container names). Without this it would default to the directory name.
+name: benethos-yahoo-finance-mcp
+
 services:
-  yahoo-finance-mcp:
+  benethos-yahoo-finance-mcp:
     build: .
-    image: yahoo-finance-mcp:latest
-    container_name: yahoo-finance-mcp
+    image: benethos-yahoo-finance-mcp:latest
+    container_name: benethos-yahoo-finance-mcp
     ports:
-      # host:container — change the host port if 8000 is taken.
-      - "8000:8000"
+      # bind:host:container — published on the loopback interface only, because
+      # the server has no authentication and has no business on the LAN. Drop
+      # the 127.0.0.1 prefix only behind a reverse proxy that handles auth.
+      # Change the host port (the middle number) if 8000 is already taken.
+      - "127.0.0.1:8000:8000"
     restart: unless-stopped
     # All configuration is via environment variables. The image already sets
     # sensible defaults (streamable-HTTP on 0.0.0.0:8000, cache at /cache);
@@ -24,6 +31,10 @@ services:
       # YF_MCP_HOST: "0.0.0.0"
       # YF_MCP_PORT: "8000"
       # YF_MCP_PATH: /mcp
+      # An exposed bind (0.0.0.0) accepts any Host header by default. Lock the
+      # DNS-rebinding guard down to specific hosts if you want to (clients with
+      # another Host then get HTTP 421):
+      # YF_MCP_ALLOWED_HOSTS: "benethos-yahoo-finance-mcp:8000"
       YF_MCP_LOG_LEVEL: INFO
       # The result cache is opt-in (off by default). Enable it and it persists
       # to the /cache volume below:
@@ -33,7 +44,7 @@ services:
       # YF_MCP_CACHE_TTL_QUOTE: "15"
     volumes:
       # Used only when the cache is enabled; persists it across restarts.
-      - yfmcp-cache:/cache
+      - benethos-yahoo-finance-mcp-cache:/cache
 
 volumes:
-  yfmcp-cache:
+  benethos-yahoo-finance-mcp-cache:

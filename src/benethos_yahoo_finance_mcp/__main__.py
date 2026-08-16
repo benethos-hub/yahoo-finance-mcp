@@ -1,4 +1,4 @@
-"""Enable ``python -m yahoo_finance_mcp`` as an alias for the server entry point."""
+"""Alias entry point for ``python -m benethos_yahoo_finance_mcp``."""
 
 from __future__ import annotations
 

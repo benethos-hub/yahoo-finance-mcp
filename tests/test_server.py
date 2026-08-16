@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 
-from yahoo_finance_mcp.server import mcp
+from benethos_yahoo_finance_mcp.server import mcp
 
 EXPECTED_TOOLS = {
     "search",

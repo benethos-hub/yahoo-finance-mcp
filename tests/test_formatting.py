@@ -6,7 +6,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from yahoo_finance_mcp import formatting
+from benethos_yahoo_finance_mcp import formatting
 
 
 def test_to_jsonable_handles_missing_and_special_floats():
