@@ -82,6 +82,14 @@ Commands use uv (recommended); the venv interpreter forms
 - After changing tool signatures/docstrings, **fully restart Claude Desktop**
   (quit from the tray, not just close the window) to reload the tools.
 
+**The gates above do not cover a `yfinance` upgrade.** The unit tests mock
+yfinance completely and stay green through any change in its behaviour, field
+names or response shapes, and the `fresh-install` CI job only catches import
+errors. Bump it on its own, run `tests/smoke.py` **before** the bump as a
+baseline and again afterwards, and check that every section returned data rather
+than trusting the exit code. Without the baseline a green run afterwards cannot
+be told apart from Yahoo simply having a good day.
+
 ## Conventions
 
 - Type hints everywhere; `from __future__ import annotations` at the top.

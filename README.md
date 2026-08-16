@@ -328,6 +328,12 @@ docker compose down       # stop and remove
 This requires Docker Compose v2 (the `compose` CLI plugin). The server is then
 reachable at `http://localhost:8000/mcp`.
 
+The port is published on **`127.0.0.1` only**, so the service is reachable from
+the host but not from the rest of the network. That is deliberate, since the
+server has no authentication of its own. To expose it, remove the `127.0.0.1:`
+prefix from the `ports:` entry in `compose.yaml` — and put a reverse proxy with
+authentication in front of it.
+
 ### Manual (uv or venv)
 
 With uv (any OS):
