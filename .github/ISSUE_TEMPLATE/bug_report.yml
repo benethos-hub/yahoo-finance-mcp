@@ -29,9 +29,10 @@ body:
             raises for stocks.
           required: true
         - label: >-
-            The symbol is a native Yahoo ticker such as `AAPL` or `SAP.DE`, not
-            an ISIN, a WKN or a company name. Use the `search` tool to resolve
-            those first.
+            The symbol is a Yahoo ticker such as `AAPL` or `SAP.DE`, or a plain
+            ISIN such as `US0378331005` — Yahoo resolves those too. A company
+            name is not a symbol, so use the `search` tool for one. German WKNs
+            resolve nowhere, not even through `search`.
           required: true
         - label: I can still reproduce this on the latest released version.
           required: true
