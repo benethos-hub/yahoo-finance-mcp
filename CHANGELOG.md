@@ -26,6 +26,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Tools, options, output shapes and behaviour are unchanged.
 
+### Maintenance
+- Refreshed the lockfile: 29 packages moved to current releases, among them
+  ruff 0.16.3, mypy 2.3.1, pandas 3.0.5, numpy 2.5.2, starlette 1.6.0 and
+  uvicorn 0.52.3. **yfinance is deliberately held at 1.4.1** and upgraded on its
+  own, because the unit tests mock it completely and therefore cannot detect a
+  behavioural change in it.
+
 ## [0.3.1] - 2026-08-16
 
 ### Fixed
