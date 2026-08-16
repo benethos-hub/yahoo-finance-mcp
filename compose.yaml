@@ -13,8 +13,25 @@ name: benethos-yahoo-finance-mcp
 
 services:
   benethos-yahoo-finance-mcp:
+    # ---- Build from this checkout, or pull the published image? ----
+    #
+    # As shipped: BUILD. `docker compose up -d` builds from the Dockerfile the
+    # first time and reuses that image afterwards. Rebuild explicitly with
+    # `docker compose build`. This is what you want while developing, and it is
+    # the only option that can run an unreleased `main`.
+    #
+    # To OPERATE the released server instead, comment the two lines below and
+    # uncomment the two after them. You then need nothing from this repository
+    # except this file — no clone, no Dockerfile, no Python.
     build: .
     image: benethos-yahoo-finance-mcp:latest
+    # image: ghcr.io/benethos-hub/yahoo-finance-mcp:latest
+    # pull_policy: always
+    #
+    # `pull_policy` decides when compose contacts the registry: `always` on
+    # every `up`, `missing` only when the image is absent locally, `never` not
+    # at all. Pin a version (`:0.4.0`) or a minor line (`:0.4`) instead of
+    # `latest` for anything you depend on.
     container_name: benethos-yahoo-finance-mcp
     ports:
       # bind:host:container — published on the loopback interface only, because

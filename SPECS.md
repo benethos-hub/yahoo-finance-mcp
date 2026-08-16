@@ -230,9 +230,18 @@ values).
   because the requirements here are open `>=` ranges and new releases fall inside
   them, so there is nothing for it to bump. It also does not touch `uv.lock`.
   Keeping the lockfile current is a manual `uv lock --upgrade`.
-- A separate `publish` workflow builds the sdist + wheel (`uv build`) and uploads
-  them to **PyPI via Trusted Publishing (OIDC)** when a GitHub release is
-  published — no API token is stored. One name is used throughout: the PyPI
+- A separate `publish` workflow runs when a GitHub release is published and does
+  two independent things. It builds the sdist + wheel (`uv build`) and uploads
+  them to **PyPI via Trusted Publishing (OIDC)**, and it builds the container
+  image for `linux/amd64` and `linux/arm64` and pushes it to **ghcr.io** as
+  `ghcr.io/benethos-hub/yahoo-finance-mcp`, authenticating with the automatic
+  `GITHUB_TOKEN`. Neither half stores a secret, and a failure in one does not
+  withhold the other. Release tags become `X.Y.Z`, `X.Y` and `latest`. The
+  workflow can also be started by hand, which pushes the image as `edge` and
+  skips PyPI, because a version may only be uploaded there once. Note that a
+  ghcr package is private when first created and has to be made public by an
+  organisation owner, which is also gated by an organisation-level setting.
+  One name is used throughout: the PyPI
   distribution, the import package (`benethos_yahoo_finance_mcp`, underscores
   because a module name cannot contain hyphens), the console script, and the
   MCP server identity are all `benethos-yahoo-finance-mcp`. Only the GitHub

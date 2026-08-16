@@ -100,6 +100,43 @@ key (e.g. `US`).
 
 </details>
 
+## Compatible clients
+
+MCP is an open protocol, so this server is not tied to one application. Every
+MCP client can use it. What differs is only which transport the client speaks,
+and that decides how you start the server.
+
+**Locally, over stdio.** The client launches the server as a subprocess and
+talks to it over stdin and stdout. This is the default transport and needs no
+network. Claude Desktop, Claude Code, Cursor, VS Code (Copilot agent mode), Zed,
+Windsurf, the JetBrains AI assistants, Cline, Roo Code, Continue and Goose all
+work this way. The configuration file differs per client, but the command is
+always the one shown under [Quick start](#quick-start-uv--claude-desktop):
+
+```json
+{ "command": "uvx", "args": ["benethos-yahoo-finance-mcp"] }
+```
+
+**Over the network, streamable-HTTP.** The server runs once and clients connect
+to `http://<host>:8000/mcp`. Start it with `--transport streamable-http`, or use
+the Docker image, which serves this transport by default. Browser-based and
+multi-user front ends need it — Open WebUI supports MCP natively over
+streamable-HTTP and over no other transport, because a shared web front end
+cannot hold one stdio process per user. LibreChat and Windsurf accept it
+alongside stdio.
+
+**Over the network, SSE.** The older HTTP transport, still expected by some
+clients. Start it with `--transport sse` and point the client at
+`http://<host>:8000/sse`. The **MCP Client Tool** node in n8n connects this way.
+
+> Both HTTP transports ship without authentication of their own. Read the note
+> under [Running as a standalone server](#running-as-a-standalone-server) before
+> exposing either one.
+
+**Not listed?** Client support moves quickly. Check which transport yours
+speaks, then use the matching command above — the transports are stable even
+when the list of names is not.
+
 ## Requirements
 
 - [uv](https://docs.astral.sh/uv/) (recommended) — manages Python, the virtual
@@ -285,16 +322,29 @@ JSON-RPC protocol.
 
 ### Docker
 
-A `Dockerfile` builds a small image (dependencies installed reproducibly from
-`uv.lock` via uv) that hosts the server over the streamable-HTTP transport (the
-stdio transport is for local subprocess use and is not what you containerize).
+The published image is the shortest path to a running server — no Python, no
+clone, no build. Every release is pushed to the GitHub Container Registry for
+`linux/amd64` and `linux/arm64`:
+
+```bash
+docker run --rm -p 8000:8000 ghcr.io/benethos-hub/yahoo-finance-mcp:latest
+# Server is now reachable at http://localhost:8000/mcp
+```
+
+Pin a version for anything you depend on — `:0.4.0` for an exact release, `:0.4`
+to follow its patch releases. `:latest` moves with every release, and `:edge` is
+built from `main` on demand and is not a release at all.
+
+The image hosts the server over the streamable-HTTP transport. The stdio
+transport is for local subprocess use and is not what you containerize.
+Dependencies are installed reproducibly from `uv.lock` via uv.
 
 The image is **configured entirely through environment variables** (see the
 options table above) — it carries no default command arguments, so overriding a
 single setting with `-e` does not disturb the others.
 
 ```bash
-# Build
+# Build it yourself instead of pulling (e.g. to run an unreleased main)
 docker build -t benethos-yahoo-finance-mcp .
 
 # Run with the built-in defaults (streamable-HTTP on 0.0.0.0:8000)
@@ -320,7 +370,12 @@ before exposing it publicly.
 ### Docker Compose
 
 A `compose.yaml` is provided (settings under `environment:`, cache in a named
-volume):
+volume). As shipped it **builds** from this checkout, which is what you want
+while developing and the only way to run an unreleased `main`. To **operate**
+the released server instead, swap two commented lines at the top of the service
+so it pulls `ghcr.io/benethos-hub/yahoo-finance-mcp` — the file is then all you
+need, with no clone and no Dockerfile. The choice and the `pull_policy` values
+are documented in the file itself.
 
 ```bash
 docker compose up -d      # build (if needed) and start in the background

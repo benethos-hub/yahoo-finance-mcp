@@ -91,6 +91,26 @@ jobs:
       - name: Build image
         run: docker build -t benethos-yahoo-finance-mcp:ci .
 
+      # The release workflow publishes linux/amd64 *and* linux/arm64, but only
+      # amd64 is built above, so an arm64-only break would first surface during
+      # a release. Build it here as well. Nothing is loaded or pushed — that the
+      # build completes is the assertion, and running it is what the smoke test
+      # below covers on the native architecture.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build for arm64 as well
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       # Start the container and confirm the HTTP server actually serves. A bare
       # GET on the streamable-HTTP endpoint is rejected for missing headers, so
       # the status varies by SDK version (406 on mcp 1.x, 400 on 2.x). Any HTTP

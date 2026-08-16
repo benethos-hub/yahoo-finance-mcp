@@ -66,6 +66,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   for the instrument type, and symbols that are neither a ticker nor an ISIN.
 - A `## Trademarks` section in the README. The disclaimer already named them,
   buried among five other bullet points.
+- `compose.yaml` now states the build-or-pull choice instead of only supporting
+  one of them. It still builds as shipped, and swapping two commented lines
+  makes it pull the published image, at which point the file is all an operator
+  needs. A single file was kept deliberately: there is one service and exactly
+  one thing that differs between developing and operating, so a second file
+  would duplicate ports, volumes and environment for the sake of two lines.
+- A `docker run ghcr.io/...` example in the README. Pulling the published image
+  is now the shortest path to a running server, so it leads the Docker section
+  and building it yourself follows as the alternative.
+- A `## Compatible clients` section in the README, grouped by transport rather
+  than by product name. MCP is not tied to one application, and the question a
+  reader actually has is which start command their client needs. Naming clients
+  alone would also age badly, while the three transports do not.
 
 ### Fixed
 - The README's install-from-source example invoked `yahoo-finance-mcp`, a console
@@ -90,6 +103,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   The two had already drifted apart.
 
 ### Maintenance
+- **The container base image moves from `python:3.12-slim` to
+  `python:3.14-slim`**, and the pinned uv image from 0.11 to 0.12. The image had
+  been two Python releases behind the version the project is developed and
+  tested on. The three slim images are the same size to within a megabyte, so
+  nothing is traded here. Verified by building it, importing the full stack
+  (pandas 3.0.5, numpy 2.5.2, lxml, curl_cffi), registering all 22 tools and
+  serving HTTP from the running container.
+- The `docker` CI job now also builds for **linux/arm64**. The release workflow
+  publishes both architectures while CI only ever built amd64, so an
+  arm64-specific break would have surfaced during a release rather than in the
+  pull request that caused it.
 - **The runtime dependency is plain `mcp` instead of `mcp[cli]`.** The extra
   exists for the `mcp` command (`dev`, `run`, `install`) and drags typer, rich,
   pygments, markdown-it-py, mdurl, shellingham and python-dotenv along with it.
