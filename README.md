@@ -100,6 +100,43 @@ key (e.g. `US`).
 
 </details>
 
+## Compatible clients
+
+MCP is an open protocol, so this server is not tied to one application. Every
+MCP client can use it. What differs is only which transport the client speaks,
+and that decides how you start the server.
+
+**Locally, over stdio.** The client launches the server as a subprocess and
+talks to it over stdin and stdout. This is the default transport and needs no
+network. Claude Desktop, Claude Code, Cursor, VS Code (Copilot agent mode), Zed,
+Windsurf, the JetBrains AI assistants, Cline, Roo Code, Continue and Goose all
+work this way. The configuration file differs per client, but the command is
+always the one shown under [Quick start](#quick-start-uv--claude-desktop):
+
+```json
+{ "command": "uvx", "args": ["benethos-yahoo-finance-mcp"] }
+```
+
+**Over the network, streamable-HTTP.** The server runs once and clients connect
+to `http://<host>:8000/mcp`. Start it with `--transport streamable-http`, or use
+the Docker image, which serves this transport by default. Browser-based and
+multi-user front ends need it — Open WebUI supports MCP natively over
+streamable-HTTP and over no other transport, because a shared web front end
+cannot hold one stdio process per user. LibreChat and Windsurf accept it
+alongside stdio.
+
+**Over the network, SSE.** The older HTTP transport, still expected by some
+clients. Start it with `--transport sse` and point the client at
+`http://<host>:8000/sse`. The **MCP Client Tool** node in n8n connects this way.
+
+> Both HTTP transports ship without authentication of their own. Read the note
+> under [Running as a standalone server](#running-as-a-standalone-server) before
+> exposing either one.
+
+**Not listed?** Client support moves quickly. Check which transport yours
+speaks, then use the matching command above — the transports are stable even
+when the list of names is not.
+
 ## Requirements
 
 - [uv](https://docs.astral.sh/uv/) (recommended) — manages Python, the virtual

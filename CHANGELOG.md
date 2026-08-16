@@ -66,6 +66,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   for the instrument type, and symbols that are neither a ticker nor an ISIN.
 - A `## Trademarks` section in the README. The disclaimer already named them,
   buried among five other bullet points.
+- A `## Compatible clients` section in the README, grouped by transport rather
+  than by product name. MCP is not tied to one application, and the question a
+  reader actually has is which start command their client needs. Naming clients
+  alone would also age badly, while the three transports do not.
 
 ### Fixed
 - The README's install-from-source example invoked `yahoo-finance-mcp`, a console
