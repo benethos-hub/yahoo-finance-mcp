@@ -81,6 +81,35 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   alone would also age badly, while the three transports do not.
 
 ### Fixed
+- **`get_company_info` answered with a different symbol than it was asked
+  about.** `"symbol"` sat first in the curated field list, so the copy loop
+  overwrote the echoed input with Yahoo's resolved ticker. Asking about
+  `US0378331005` returned `AAPL` while every other tool echoed the ISIN, which
+  made results from different tools impossible to line up. The input is echoed
+  now, and the resolved ticker is reported as `resolved_symbol` when it differs
+  — so an ISIN gains the information instead of losing it. A plain ticker
+  resolves to itself and the extra field is omitted, which is why this was
+  invisible unless you passed an ISIN.
+- Semicolons are gone from everything the user or the model reads — nine tool
+  descriptions, three parameter descriptions, seven CLI help texts and four
+  error messages. A house style rule that the text had drifted away from.
+- The `get_options` and `get_sec_filings` descriptions now name the restriction
+  that makes their results empty, so a model knows before calling rather than
+  only from the error. `get_sec_filings` had said "equity-only", which is true
+  but misses the larger limit — a non-US equity is an equity and still has no
+  filings.
+- **`get_options` and `get_sec_filings` claimed that valid symbols do not
+  exist.** Both raised the standard "No data found for symbol X, use the
+  'search' tool to look it up" whenever a result was empty, but for these two
+  an empty result is the normal case for everything outside the United States.
+  Yahoo lists option chains for US instruments only, and only SEC registrants
+  file with the SEC. Probed live: `SAP.DE`, `NESN.SW` and `7203.T` — SAP, Nestlé
+  and Toyota — were all reported as not found by both tools. A model asking
+  about options on Toyota was told its ticker was wrong and sent to look up a
+  symbol that was already correct. The message now names the reason and states
+  that an empty result does not show the symbol is wrong. Telling the two cases
+  apart for certain would need a second upstream request per failure, which is
+  not spent here — the message stays accurate either way, just not decisive.
 - The README's install-from-source example invoked `yahoo-finance-mcp`, a console
   script that was removed in 0.3.0 when the package was renamed, so the command
   as printed could only fail. It now uses `benethos-yahoo-finance-mcp`, verified

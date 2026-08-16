@@ -425,6 +425,31 @@ def test_get_options_no_options_raises(patch_ticker):
         client.get_options("aapl")
 
 
+def test_get_options_no_options_explains_why(patch_ticker):
+    """Yahoo lists chains for US instruments only, so empty is the norm abroad.
+
+    Probed live: SAP.DE, NESN.SW and 7203.T are all valid and all come back
+    without expirations, so the plain not-found message was misleading for the
+    entire non-US universe.
+    """
+    patch_ticker(FakeTicker(options=()))
+    with pytest.raises(SymbolNotFoundError) as excinfo:
+        client.get_options("7203.t")
+    message = str(excinfo.value)
+    assert "US-listed" in message
+    assert "does not show that the symbol is wrong" in message
+    assert excinfo.value.reason is not None
+
+
+def test_symbol_not_found_without_reason_keeps_the_search_advice(patch_ticker):
+    """A genuinely unknown symbol must still be sent to `search`."""
+    patch_ticker(FakeTicker(shares_full=None))
+    with pytest.raises(SymbolNotFoundError) as excinfo:
+        client.get_shares("xyzq123")
+    assert "Use the 'search' tool to look it up" in str(excinfo.value)
+    assert excinfo.value.reason is None
+
+
 def test_get_options_returns_chain(patch_ticker):
     import types
 
@@ -667,6 +692,21 @@ def test_get_sec_filings_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(sec_filings=[]))
     with pytest.raises(SymbolNotFoundError):
         client.get_sec_filings("nope")
+
+
+def test_get_sec_filings_empty_explains_why(patch_ticker):
+    """Only SEC registrants file, so empty says nothing about the symbol.
+
+    SAP.DE is a real, tradeable stock with no SEC filings by construction. The
+    error must not tell the caller to go and look the symbol up.
+    """
+    patch_ticker(FakeTicker(sec_filings=[]))
+    with pytest.raises(SymbolNotFoundError) as excinfo:
+        client.get_sec_filings("sap.de")
+    message = str(excinfo.value)
+    assert "U.S. SEC" in message
+    assert "does not show that the symbol is wrong" in message
+    assert excinfo.value.reason is not None
 
 
 # --- get_calendar ---------------------------------------------------------
@@ -1030,6 +1070,35 @@ def test_get_company_info_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(info={}))
     with pytest.raises(SymbolNotFoundError):
         client.get_company_info("nope")
+
+
+def test_get_company_info_echoes_the_input_symbol(patch_ticker):
+    """An ISIN in must not come back out as a ticker.
+
+    Yahoo resolves an ISIN server-side and reports the ticker in `info`. That
+    used to overwrite the echoed input, so this one tool answered `AAPL` to a
+    question asked about `US0378331005` while every other tool echoed the ISIN.
+    """
+    patch_ticker(
+        FakeTicker(
+            info={"quoteType": "EQUITY", "shortName": "Apple Inc.", "symbol": "AAPL"}
+        )
+    )
+    info = client.get_company_info("US0378331005")
+    assert info["symbol"] == "US0378331005"
+    assert info["resolved_symbol"] == "AAPL"
+
+
+def test_get_company_info_omits_resolved_symbol_when_identical(patch_ticker):
+    """A plain ticker resolves to itself, so the extra field is just noise."""
+    patch_ticker(
+        FakeTicker(
+            info={"quoteType": "EQUITY", "shortName": "Apple Inc.", "symbol": "AAPL"}
+        )
+    )
+    info = client.get_company_info("aapl")
+    assert info["symbol"] == "AAPL"
+    assert "resolved_symbol" not in info
 
 
 # --- search limit clamping ------------------------------------------------

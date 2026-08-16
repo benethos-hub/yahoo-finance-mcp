@@ -261,8 +261,13 @@ def get_history(
 
 # Fields surfaced from Ticker.info for get_company_info. A curated subset keeps
 # the response small; the full info dict is large and noisy.
+#
+# "symbol" is deliberately absent. It used to sit first here, which meant the
+# copy loop overwrote the echoed input with Yahoo's resolved ticker before
+# returning — invisible for a ticker, but an ISIN went in and AAPL came back,
+# while every other tool echoes what it was given. The resolved ticker is
+# reported as "resolved_symbol" instead, and only when it actually differs.
 _COMPANY_INFO_FIELDS = (
-    "symbol",
     "shortName",
     "longName",
     "quoteType",
@@ -320,6 +325,11 @@ def get_company_info(symbol: str) -> dict[str, Any]:
         raise SymbolNotFoundError(symbol)
 
     profile: dict[str, Any] = {"symbol": symbol.strip().upper()}
+    # Yahoo resolves an ISIN to a ticker server-side. Surface that, since the
+    # caller has no other way to learn it, but never in place of the echo.
+    resolved = info.get("symbol")
+    if resolved and resolved != profile["symbol"]:
+        profile["resolved_symbol"] = resolved
     for field in _COMPANY_INFO_FIELDS:
         if field in info:
             profile[field] = to_jsonable(info.get(field))
@@ -345,19 +355,19 @@ def get_financials(
     freq = (freq or "").strip().lower()
     if statement not in _STATEMENT_ATTRS:
         raise ToolError(
-            f"Invalid statement {statement!r}; expected one of "
+            f"Invalid statement {statement!r}, expected one of "
             f"{', '.join(_STATEMENT_ATTRS)}."
         )
     if freq not in _VALID_FREQS:
         raise ToolError(
-            f"Invalid freq {freq!r}; expected one of {', '.join(_VALID_FREQS)}."
+            f"Invalid freq {freq!r}, expected one of {', '.join(_VALID_FREQS)}."
         )
 
     freq_map = _STATEMENT_ATTRS[statement]
     if freq not in freq_map:
         raise ToolError(
             f"Frequency {freq!r} is not available for the {statement!r} "
-            f"statement; available: {', '.join(freq_map)}."
+            f"statement. Available: {', '.join(freq_map)}."
         )
 
     attr = freq_map[freq]
@@ -462,6 +472,15 @@ def get_recommendations(symbol: str) -> dict[str, Any]:
     }
 
 
+# Yahoo carries option chains for US-listed instruments only, so an empty
+# result is the norm for the rest of the world rather than a sign of a bad
+# symbol. Probed 2026-08-16: SAP.DE, NESN.SW and 7203.T all come back empty.
+_NO_OPTIONS_REASON = (
+    "Yahoo lists option chains for US-listed instruments only, so a non-US "
+    "symbol is expected to have none."
+)
+
+
 @cache.cached("options")
 def get_options(
     symbol: str,
@@ -482,7 +501,7 @@ def get_options(
         raise _wrap_upstream(exc, f"Failed to load options for {symbol!r}") from exc
 
     if not expirations:
-        raise SymbolNotFoundError(symbol)
+        raise SymbolNotFoundError(symbol, reason=_NO_OPTIONS_REASON)
 
     if not expiration:
         return {"symbol": symbol.strip().upper(), "expirations": expirations}
@@ -702,6 +721,15 @@ def get_insider_activity(symbol: str, *, max_rows: int = 50) -> dict[str, Any]:
     }
 
 
+# Only issuers registered with the U.S. SEC file there. A German, Swiss or
+# Japanese listing has no filings by construction, and neither do most
+# ETFs/funds/crypto — none of which says anything about the symbol.
+_NO_SEC_FILINGS_REASON = (
+    "Only issuers registered with the U.S. SEC file there, so a non-US symbol "
+    "is expected to have no filings. ETFs, funds and crypto have none either."
+)
+
+
 @cache.cached("sec_filings")
 def get_sec_filings(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     """Return recent SEC filings for ``symbol``.
@@ -731,7 +759,7 @@ def get_sec_filings(symbol: str, *, limit: int = 25) -> dict[str, Any]:
             }
         )
     if not items:
-        raise SymbolNotFoundError(symbol)
+        raise SymbolNotFoundError(symbol, reason=_NO_SEC_FILINGS_REASON)
 
     return {"symbol": symbol.strip().upper(), "count": len(items), "filings": items}
 
