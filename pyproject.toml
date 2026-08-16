@@ -39,7 +39,10 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dependencies = [
-    "mcp[cli]>=2.0.0,<3",
+    # Plain `mcp`, not `mcp[cli]`. The extra only adds the `mcp` command
+    # (dev/run/install) and pulls typer, rich and pygments with it. This package
+    # defines its own entry point and never imports them. It lives in `dev`.
+    "mcp>=2.0.0,<3",
     "yfinance>=1.4.1",
     # Required by yfinance for HTML-table scraping (e.g. earnings dates).
     "lxml>=5.0",
@@ -56,6 +59,10 @@ dev = [
     "pytest-cov>=7.1.0",
     "ruff>=0.15.19",
     "mypy>=2.1.0",
+    # Gives back the `mcp` command, whose `mcp dev` runs a server against the
+    # MCP Inspector. A development tool, so it belongs here and not in the
+    # runtime dependencies.
+    "mcp[cli]>=2.0.0,<3",
 ]
 
 [project.scripts]

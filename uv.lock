@@ -135,12 +135,13 @@ version = "0.3.1"
 source = { editable = "." }
 dependencies = [
     { name = "lxml" },
-    { name = "mcp", extra = ["cli"] },
+    { name = "mcp" },
     { name = "yfinance" },
 ]
 
 [package.optional-dependencies]
 dev = [
+    { name = "mcp", extra = ["cli"] },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -150,7 +151,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "lxml", specifier = ">=5.0" },
-    { name = "mcp", extras = ["cli"], specifier = ">=2.0.0,<3" },
+    { name = "mcp", specifier = ">=2.0.0,<3" },
+    { name = "mcp", extras = ["cli"], marker = "extra == 'dev'", specifier = ">=2.0.0,<3" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=2.1.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.1.1" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.1.0" },
