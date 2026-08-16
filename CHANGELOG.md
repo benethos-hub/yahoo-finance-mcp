@@ -94,6 +94,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   The two had already drifted apart.
 
 ### Maintenance
+- **The container base image moves from `python:3.12-slim` to
+  `python:3.14-slim`**, and the pinned uv image from 0.11 to 0.12. The image had
+  been two Python releases behind the version the project is developed and
+  tested on. The three slim images are the same size to within a megabyte, so
+  nothing is traded here. Verified by building it, importing the full stack
+  (pandas 3.0.5, numpy 2.5.2, lxml, curl_cffi), registering all 22 tools and
+  serving HTTP from the running container.
+- The `docker` CI job now also builds for **linux/arm64**. The release workflow
+  publishes both architectures while CI only ever built amd64, so an
+  arm64-specific break would have surfaced during a release rather than in the
+  pull request that caused it.
 - **The runtime dependency is plain `mcp` instead of `mcp[cli]`.** The extra
   exists for the `mcp` command (`dev`, `run`, `install`) and drags typer, rich,
   pygments, markdown-it-py, mdurl, shellingham and python-dotenv along with it.
