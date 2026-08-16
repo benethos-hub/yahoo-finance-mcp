@@ -59,7 +59,7 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   cache vars `YF_MCP_CACHE`, `YF_MCP_CACHE_DIR`, `YF_MCP_CACHE_TTL_<NAME>`.
 - **Entry points:** `python -m benethos_yahoo_finance_mcp` or the
   `benethos-yahoo-finance-mcp` console script.
-- **Python:** 3.11+ (developed/verified on 3.14).
+- **Python:** 3.11-3.14, all covered by the CI matrix.
 - **HTTP security:** the HTTP transports have no built-in auth; bind to
   `0.0.0.0` only on trusted networks and front them with a proxy/auth layer.
   The MCP HTTP transport also runs a DNS-rebinding `Host`/`Origin` guard. It is
@@ -204,7 +204,7 @@ values).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
   of 80% (currently ~94%).
 - CI (GitHub Actions): a `lint` job (ruff + mypy), a `test` matrix running
-  `pytest` with coverage on Python 3.11-3.13, a `docker` job that builds the
+  `pytest` with coverage on Python 3.11-3.14, a `docker` job that builds the
   image and smoke-tests that the container serves HTTP, and a `fresh-install`
   job. The first three install from `uv.lock` (`uv sync --frozen`) for
   reproducibility. `fresh-install` deliberately does **not**: it builds the

@@ -542,4 +542,18 @@ With the venv interpreter directly (replace `.venv/bin/python` with
 
 The unit tests mock `yfinance` and run fully offline. `tests/smoke.py` performs
 an ad-hoc check against live Yahoo Finance and is not part of the unit suite.
-CI also runs across Python 3.11–3.13 and enforces an 80% coverage floor.
+CI also runs across Python 3.11–3.14 and enforces an 80% coverage floor.
+
+## Trademarks
+
+"Yahoo" and "Yahoo Finance" are trademarks of Yahoo Inc. This project is not
+affiliated with, endorsed by, or sponsored by Yahoo, and it is not an official
+Yahoo product.
+
+The names are used here only to describe what the software does, namely read
+market data from Yahoo Finance through the `yfinance` library. That is the only
+accurate way to say it. All trademarks remain the property of their respective
+owners.
+
+The project itself is published as `benethos-yahoo-finance-mcp` and is
+maintained independently under the [MIT licence](LICENSE).
