@@ -66,6 +66,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   for the instrument type, and symbols that are neither a ticker nor an ISIN.
 - A `## Trademarks` section in the README. The disclaimer already named them,
   buried among five other bullet points.
+- `compose.yaml` now states the build-or-pull choice instead of only supporting
+  one of them. It still builds as shipped, and swapping two commented lines
+  makes it pull the published image, at which point the file is all an operator
+  needs. A single file was kept deliberately: there is one service and exactly
+  one thing that differs between developing and operating, so a second file
+  would duplicate ports, volumes and environment for the sake of two lines.
 - A `docker run ghcr.io/...` example in the README. Pulling the published image
   is now the shortest path to a running server, so it leads the Docker section
   and building it yourself follows as the alternative.

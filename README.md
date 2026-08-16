@@ -370,7 +370,12 @@ before exposing it publicly.
 ### Docker Compose
 
 A `compose.yaml` is provided (settings under `environment:`, cache in a named
-volume):
+volume). As shipped it **builds** from this checkout, which is what you want
+while developing and the only way to run an unreleased `main`. To **operate**
+the released server instead, swap two commented lines at the top of the service
+so it pulls `ghcr.io/benethos-hub/yahoo-finance-mcp` — the file is then all you
+need, with no clone and no Dockerfile. The choice and the `pull_policy` values
+are documented in the file itself.
 
 ```bash
 docker compose up -d      # build (if needed) and start in the background
