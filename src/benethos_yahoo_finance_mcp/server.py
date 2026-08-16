@@ -105,6 +105,51 @@ logging.basicConfig(
 )
 logger = logging.getLogger("benethos_yahoo_finance_mcp")
 
+# Sent once during the initialize handshake, not per tool, so this is the
+# natural place for rules that hold across the whole server.
+#
+# Do not rely on it. Verified against Claude Desktop 2026-08-16: the shortened
+# tool descriptions arrive, these instructions do not. Whether a client surfaces
+# them is entirely its own decision, and at least one major client does not.
+# Anything that must reach the model therefore also has to be stated at the tool
+# or parameter itself, however briefly. This block is kept because it costs
+# nothing per request and other clients may well use it.
+_INSTRUCTIONS = """\
+Read-only access to Yahoo Finance market data. Three things decide whether a \
+call succeeds, and two more decide whether its answer is read correctly.
+
+Symbols. Every tool taking a `symbol` accepts a Yahoo ticker such as `AAPL`, \
+`SAP.DE` or `BTC-USD`, or a plain ISIN such as `US0378331005`, which Yahoo \
+resolves server-side. Pass either through unchanged — a symbol should never be \
+assembled or transformed. A company name is not a symbol: resolve it with \
+`search` and pass back what that returns. German WKNs resolve nowhere, not even \
+through `search`, so ask for a ticker, an ISIN or the company name instead. \
+`get_sector`, `get_industry` and `get_market` are the exceptions: they take a \
+key, not a ticker.
+
+Empty results are normal. Analyst, holder, earnings, insider, filing and \
+calendar data exist for equities only and come back empty for ETFs, funds and \
+crypto. `get_fund_data` is the reverse and fails for anything that is not a \
+fund. An empty field usually means the instrument has no such data, not that \
+the call went wrong.
+
+Rate limits. Yahoo throttles aggressively and unpredictably. A rate-limit error \
+is temporary and says nothing about the arguments — wait and retry rather than \
+changing the call.
+
+Currencies are never converted. Every price, market cap and statement figure is \
+in the instrument's own currency, reported as `currency` where the tool has it. \
+Comparing `AAPL` with `SAP.DE`, or summing them, means mixing USD and EUR, and \
+nothing in the data will flag that.
+
+Results are capped, mostly in silence. Only `get_history` and `get_quotes` \
+report a `truncated` flag. Every other tool quietly returns at most its top or \
+most recent rows, so a short list is not evidence that the list is short. Where \
+a tool takes a `limit`, raise it rather than concluding there is no more.
+
+Data is delayed and may be incomplete. This is not investment advice.
+"""
+
 # Identity reported to clients during the MCP initialize handshake. ``name`` is
 # the programmatic identifier and is kept identical to the PyPI distribution
 # name, so the server a client lists is traceable to the package it came from.
@@ -113,6 +158,7 @@ mcp = MCPServer(
     name="benethos-yahoo-finance-mcp",
     title="Unofficial Yahoo Finance MCP Server",
     version=__version__,
+    instructions=_INSTRUCTIONS,
 )
 
 
@@ -135,16 +181,19 @@ def search(
     return client.search(query, limit=limit)
 
 
+# Repeated once per symbol-taking tool, so every character here is paid 17 times
+# in the client's context.
+#
+# This used to carry a long warning that an ISIN is not a symbol. Yahoo now
+# resolves plain ISINs server-side — measured 2026-08-16, all 18 symbol-taking
+# tools return correct data for one — so the warning guarded against a failure
+# mode that no longer exists. Only the company-name case still needs `search`.
 Symbol = Annotated[
     str,
     Field(
         description=(
-            "A native Yahoo Finance ticker symbol, e.g. 'AAPL', 'MSFT', "
-            "'SAP.DE', or 'BMW.DE'. This is NOT an ISIN, a WKN, or a company "
-            "name, and must NOT be built by appending an exchange suffix to an "
-            "ISIN (e.g. 'US0378331005.DE' is invalid). If you only have a name "
-            "or ISIN, call the 'search' tool first and pass the 'symbol' value "
-            "it returns."
+            "A Yahoo ticker or an ISIN, e.g. 'AAPL', 'SAP.DE' or "
+            "'US0378331005'. For a company name, use 'search' first."
         )
     ),
 ]
@@ -152,13 +201,7 @@ Symbol = Annotated[
 
 @mcp.tool()
 def get_quote(symbol: Symbol) -> dict[str, Any]:
-    """Get the current price and key intraday figures for a Yahoo symbol.
-
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name. Do not build a symbol by appending an
-    exchange suffix to an ISIN. If you only have a name or ISIN, call the
-    ``search`` tool first and use the ``symbol`` it returns.
-    """
+    """Get the current price and key intraday figures for a Yahoo symbol."""
     return client.get_quote(symbol)
 
 
@@ -167,10 +210,8 @@ def get_quotes(
     symbols: Annotated[
         list[str],
         Field(
-            description="A list of native Yahoo Finance ticker symbols, e.g. "
-            "['AAPL', 'MSFT', 'SAP.DE']. Each must be a native ticker, never an "
-            "ISIN, WKN, or company name; resolve those via 'search' first. Up to "
-            "50 symbols; extras are dropped (the result flags this as truncated)."
+            description="Yahoo tickers or ISINs, e.g. ['AAPL', 'MSFT', "
+            "'SAP.DE']. Not company names. Up to 50; extras are dropped."
         ),
     ],
 ) -> dict[str, Any]:
@@ -179,8 +220,7 @@ def get_quotes(
     Use this to compare or fetch prices for multiple tickers at once. Each symbol
     is looked up individually and returns currency, last price, previous close,
     open, day high/low, and market cap. Symbols that return no data are listed
-    under ``not_found`` rather than failing the whole call. Symbols must be native
-    Yahoo tickers (e.g. ``AAPL``, ``SAP.DE``), never ISINs, WKNs, or names.
+    under ``not_found`` rather than failing the whole call.
     """
     return client.get_quotes(symbols)
 
@@ -213,8 +253,6 @@ def get_history(
 ) -> dict[str, Any]:
     """Get historical OHLCV (open/high/low/close/volume) data for a symbol.
 
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     ``period`` accepts Yahoo values such as ``1d``, ``5d``, ``1mo``, ``6mo``,
     ``1y``, ``5y``, ``max``. ``interval`` accepts e.g. ``1m``, ``5m``, ``1h``,
     ``1d``, ``1wk``, ``1mo``. Provide ``start`` (and optional ``end``) as
@@ -232,9 +270,7 @@ def get_company_info(symbol: Symbol) -> dict[str, Any]:
 
     Returns name, sector/industry, location, employee count, and valuation
     metrics (market cap, P/E, beta, 52-week range, dividend yield) plus a
-    business summary. ``symbol`` must be a native Yahoo Finance ticker (e.g.
-    ``AAPL``, ``SAP.DE``), never an ISIN, WKN, or company name; resolve those
-    via ``search`` first.
+    business summary.
     """
     return client.get_company_info(symbol)
 
@@ -259,8 +295,6 @@ def get_financials(
 ) -> dict[str, Any]:
     """Get a financial statement for a Yahoo symbol.
 
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     ``statement`` is one of ``income`` (income statement), ``balance`` (balance
     sheet), or ``cashflow`` (cash flow statement). ``freq`` is ``annual``,
     ``quarterly``, or ``ttm`` (trailing twelve months, available for the income
@@ -272,11 +306,7 @@ def get_financials(
 
 @mcp.tool()
 def get_dividends(symbol: Symbol) -> dict[str, Any]:
-    """Get the dividend and stock-split history for a Yahoo symbol.
-
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
-    """
+    """Get the dividend and stock-split history for a Yahoo symbol."""
     return client.get_dividends(symbol)
 
 
@@ -290,8 +320,6 @@ def get_news(
 ) -> dict[str, Any]:
     """Get recent news headlines for a Yahoo symbol (up to ``limit``, 1-30).
 
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Each article includes title, summary, publisher, publish time, and URL.
     """
     return client.get_news(symbol, limit=limit)
@@ -301,8 +329,6 @@ def get_news(
 def get_recommendations(symbol: Symbol) -> dict[str, Any]:
     """Get analyst recommendation trends and price targets for a Yahoo symbol.
 
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Returns the buy/hold/sell trend over recent months plus current/high/low/
     mean/median analyst price targets when available.
     """
@@ -322,8 +348,6 @@ def get_options(
 ) -> dict[str, Any]:
     """Get the option chain for a Yahoo symbol.
 
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Call without ``expiration`` to list available expiration dates. Call with
     an ``expiration`` (``YYYY-MM-DD`` from that list) to get the calls and puts
     for that date.
@@ -341,8 +365,6 @@ def get_earnings(
 ) -> dict[str, Any]:
     """Get upcoming and historical earnings for a Yahoo symbol.
 
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Returns the earnings calendar (upcoming and past dates with EPS estimate,
     reported EPS, and surprise %) plus the recent earnings history. Equity-only;
     empty for ETFs, funds, and crypto.
@@ -354,8 +376,6 @@ def get_earnings(
 def get_estimates(symbol: Symbol) -> dict[str, Any]:
     """Get forward analyst estimates for a Yahoo symbol.
 
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Returns earnings and revenue estimates, EPS trend and revisions, and growth
     estimates (small tables keyed by period). Equity-only; empty for ETFs,
     funds, and crypto.
@@ -373,8 +393,6 @@ def get_upgrades_downgrades(
 ) -> dict[str, Any]:
     """Get recent analyst rating changes (upgrades/downgrades) for a Yahoo symbol.
 
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Each entry is a firm's rating change with the from/to grade and action, most
     recent first. Equity-only; empty for ETFs, funds, and crypto.
     """
@@ -396,8 +414,6 @@ def get_holders(
 ) -> dict[str, Any]:
     """Get the ownership breakdown for a Yahoo symbol.
 
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Returns the high-level holder summary (insider/institutional percentages)
     plus the top institutional and mutual-fund holders. Equity-only; empty for
     ETFs, funds, and crypto.
@@ -419,8 +435,6 @@ def get_insider_activity(
 ) -> dict[str, Any]:
     """Get insider trading activity for a Yahoo symbol.
 
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Returns individual insider transactions, a 6-month purchases/sales summary,
     and the current insider roster. Equity-only; empty for ETFs, funds, and
     crypto.
@@ -438,8 +452,6 @@ def get_sec_filings(
 ) -> dict[str, Any]:
     """Get recent SEC filings for a Yahoo symbol.
 
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Each entry has the filing date, type (e.g. ``10-K``, ``10-Q``, ``8-K``),
     title, the Yahoo EDGAR URL, and exhibit links. Equity-only; empty for ETFs,
     funds, and crypto.
@@ -451,8 +463,6 @@ def get_sec_filings(
 def get_calendar(symbol: Symbol) -> dict[str, Any]:
     """Get upcoming corporate-calendar events for a Yahoo symbol.
 
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Returns the next earnings date(s) with analyst estimate ranges and the next
     dividend / ex-dividend dates. Equity-only; empty for ETFs, funds, and crypto.
     """
@@ -481,8 +491,6 @@ def get_shares(
 ) -> dict[str, Any]:
     """Get the shares-outstanding history for a Yahoo symbol.
 
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``AAPL``, ``SAP.DE``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Each point is a date and the reported shares outstanding; only the most
     recent ``limit`` points are returned. Optionally bound the range with
     ``start`` / ``end`` (``YYYY-MM-DD``).
@@ -500,8 +508,6 @@ def get_fund_data(
 ) -> dict[str, Any]:
     """Get fund/ETF profile data for a Yahoo symbol.
 
-    ``symbol`` must be a native Yahoo Finance ticker (e.g. ``SPY``, ``VWRL.L``),
-    never an ISIN, WKN, or company name; resolve those via ``search`` first.
     Returns the fund overview, asset-class and sector weightings, and the top
     holdings. Fund/ETF-only; raises for stocks and crypto, which have no fund
     data.
