@@ -322,16 +322,29 @@ JSON-RPC protocol.
 
 ### Docker
 
-A `Dockerfile` builds a small image (dependencies installed reproducibly from
-`uv.lock` via uv) that hosts the server over the streamable-HTTP transport (the
-stdio transport is for local subprocess use and is not what you containerize).
+The published image is the shortest path to a running server — no Python, no
+clone, no build. Every release is pushed to the GitHub Container Registry for
+`linux/amd64` and `linux/arm64`:
+
+```bash
+docker run --rm -p 8000:8000 ghcr.io/benethos-hub/yahoo-finance-mcp:latest
+# Server is now reachable at http://localhost:8000/mcp
+```
+
+Pin a version for anything you depend on — `:0.4.0` for an exact release, `:0.4`
+to follow its patch releases. `:latest` moves with every release, and `:edge` is
+built from `main` on demand and is not a release at all.
+
+The image hosts the server over the streamable-HTTP transport. The stdio
+transport is for local subprocess use and is not what you containerize.
+Dependencies are installed reproducibly from `uv.lock` via uv.
 
 The image is **configured entirely through environment variables** (see the
 options table above) — it carries no default command arguments, so overriding a
 single setting with `-e` does not disturb the others.
 
 ```bash
-# Build
+# Build it yourself instead of pulling (e.g. to run an unreleased main)
 docker build -t benethos-yahoo-finance-mcp .
 
 # Run with the built-in defaults (streamable-HTTP on 0.0.0.0:8000)

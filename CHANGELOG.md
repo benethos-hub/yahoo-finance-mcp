@@ -66,6 +66,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   for the instrument type, and symbols that are neither a ticker nor an ISIN.
 - A `## Trademarks` section in the README. The disclaimer already named them,
   buried among five other bullet points.
+- A `docker run ghcr.io/...` example in the README. Pulling the published image
+  is now the shortest path to a running server, so it leads the Docker section
+  and building it yourself follows as the alternative.
 - A `## Compatible clients` section in the README, grouped by transport rather
   than by product name. MCP is not tied to one application, and the question a
   reader actually has is which start command their client needs. Naming clients
