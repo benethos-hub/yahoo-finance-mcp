@@ -89,9 +89,20 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
 
 ## 6. Symbol model
 
-- All `get_*` tools accept a **Yahoo Finance symbol** only (e.g. `AAPL`,
-  `SAP.DE`). They do **not** auto-resolve names/ISINs (Variant A).
-- Callers resolve names/ISINs to a symbol via `search` first.
+- All `get_*` tools pass the given `symbol` through to yfinance unchanged. The
+  server itself resolves nothing (Variant A) and never assembles or rewrites a
+  symbol.
+- In practice that accepts both a **Yahoo ticker** (`AAPL`, `SAP.DE`) and a
+  **plain ISIN** (`US0378331005`), because Yahoo resolves ISINs server-side.
+  Probed 2026-08-16: all 18 symbol-taking tools return correct data for an ISIN.
+  This is **observed behaviour of an unofficial endpoint, not a guarantee** — it
+  did not work at all when this section was first written, and it can change
+  back.
+- A **company name** is not a symbol. Callers resolve one via `search` and pass
+  back the `symbol` it returns. A ticker is preferable to an ISIN regardless,
+  since the reported `symbol` then stays consistent across tools.
+- **WKNs resolve nowhere**, not through the tools and not through `search`
+  (five probed, zero hits). Yahoo has no lookup for them.
 
 ## 7. Tools
 
