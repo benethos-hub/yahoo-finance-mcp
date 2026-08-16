@@ -54,6 +54,35 @@ jobs:
       - name: Run tests with coverage
         run: uv run pytest -q --cov=benethos_yahoo_finance_mcp --cov-fail-under=80
 
+  # Every other job installs from uv.lock, which pins the dependencies to a
+  # known-good set. That is what we want for reproducibility, but it hides a
+  # broken *declared* range: 0.3.0 shipped `mcp[cli]>=1.28.0` with no upper
+  # bound, resolved to mcp 2.0 on a fresh install and failed at import, while
+  # the whole suite stayed green. This job resolves dependencies the way a user
+  # does, with no lockfile involved.
+  fresh-install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Build the wheel
+        run: uv build --wheel
+
+      - name: Install it into a clean environment (no lockfile) and start it
+        run: |
+          uv venv /tmp/fresh
+          uv pip install --python /tmp/fresh/bin/python dist/*.whl
+          echo "--- resolved dependency versions ---"
+          uv pip list --python /tmp/fresh/bin/python
+          echo "--- import and entry point ---"
+          /tmp/fresh/bin/python -c "import benethos_yahoo_finance_mcp as p; print('version', p.__version__)"
+          /tmp/fresh/bin/python -c "from benethos_yahoo_finance_mcp.server import mcp; import asyncio; print('tools', len(asyncio.run(mcp.list_tools())))"
+          /tmp/fresh/bin/benethos-yahoo-finance-mcp --help > /dev/null
+          echo "OK: a fresh install imports, registers its tools and starts"
+
   docker:
     runs-on: ubuntu-latest
     steps:

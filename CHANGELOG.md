@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-08-16
+
+### Fixed
+- A fresh installation of 0.3.0 failed on startup with `ModuleNotFoundError: No
+  module named 'mcp.server.fastmcp'`. The dependency was declared as
+  `mcp[cli]>=1.28.0` with no upper bound, so a new install resolved to mcp 2.0,
+  which removed `mcp.server.fastmcp` entirely. The requirement is now
+  `mcp[cli]>=1.28.0,<2`. Support for mcp 2.x needs a real migration to its
+  `MCPServer` API and is tracked separately.
+
+### Added
+- A `fresh-install` CI job that installs the built wheel into a clean
+  environment **without** the lockfile and starts it. Every other job installs
+  from `uv.lock`, which pins mcp to a working version and therefore hid this
+  break from the entire test suite.
+
 ## [0.3.0] - 2026-08-16
 
 Version 0.2.3 was prepared but never published, so its entries are folded in
@@ -137,6 +153,7 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
+[0.3.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.2.0...v0.2.1
