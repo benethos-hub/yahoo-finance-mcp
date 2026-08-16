@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "benethos-yahoo-finance-mcp"
-version = "0.3.0"
+version = "0.3.1"
 description = "Unofficial read-only MCP server exposing Yahoo Finance data (via yfinance) over stdio or HTTP."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,7 +23,9 @@ classifiers = [
     "Topic :: Office/Business :: Financial",
 ]
 dependencies = [
-    "mcp[cli]>=1.28.0",
+    # Upper bound is deliberate: mcp 2.0 removed mcp.server.fastmcp entirely
+    # (MCPServer is its successor), so 2.x needs a real migration.
+    "mcp[cli]>=1.28.0,<2",
     "yfinance>=1.4.1",
     # Required by yfinance for HTML-table scraping (e.g. earnings dates).
     "lxml>=5.0",
