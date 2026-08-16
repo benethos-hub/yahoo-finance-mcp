@@ -59,6 +59,8 @@ DEFAULT_TTLS: dict[str, float] = {
     "fund_data": 24 * 3600,
     "sector": 24 * 3600,
     "industry": 24 * 3600,
+    # Index prices move constantly, the open/closed status changes twice a day.
+    "market": 60,
 }
 
 _FALSY = {"0", "false", "no", "off", ""}

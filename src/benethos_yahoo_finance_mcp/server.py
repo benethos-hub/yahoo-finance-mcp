@@ -564,6 +564,30 @@ def get_industry(
     return client.get_industry(key, max_rows=limit)
 
 
+@mcp.tool()
+def get_market(
+    key: Annotated[
+        str,
+        Field(
+            description="A Yahoo market key (uppercase). One of: "
+            + ", ".join(client.MARKET_KEYS)
+            + ". Only 'US' reports a trading status; the others return the index "
+            "summary with 'status' set to null."
+        ),
+    ] = "US",
+) -> dict[str, Any]:
+    """Get the trading status and headline index summary for a market.
+
+    Answers questions like whether the market is open, when it opens or closes
+    next, and how the major indices are doing. Takes a market key such as
+    ``US`` or ``EUROPE`` — not a ticker symbol. ``status`` (open/closed plus the
+    next open and close times) is only available for ``US`` and is ``null`` for
+    every other key, which is an upstream limitation rather than an error. The
+    index summary, with price, previous close and change, works for all keys.
+    """
+    return client.get_market(key)
+
+
 def _build_parser() -> argparse.ArgumentParser:
     """Build the command-line parser for the server entry point."""
     parser = argparse.ArgumentParser(

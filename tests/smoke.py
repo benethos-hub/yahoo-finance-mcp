@@ -128,3 +128,15 @@ if __name__ == "__main__":
             "top_performing_companies": industry["top_performing_companies"],
         },
     )
+
+    for market_key in ("US", "EUROPE"):
+        market = client.get_market(market_key)
+        show(
+            f"get_market({market_key!r})",
+            {
+                "key": market["key"],
+                "status": market["status"],
+                "count": market["count"],
+                "indices": market["indices"][:3],
+            },
+        )

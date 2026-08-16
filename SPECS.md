@@ -122,6 +122,7 @@ exceptions are `get_sector` / `get_industry`, which take a sector/industry
 | `get_fund_data` | `symbol`, `limit` 1-100 (=25) | `{symbol, description, fund_overview, asset_classes, sector_weightings, top_holdings[]}` (fund/ETF-only) |
 | `get_sector` | `key` (sector key), `limit` 1-100 (=25) | `{key, name, index_symbol, overview, top_companies[], top_etfs, top_mutual_funds, industries[]}` (module-level; not a symbol) |
 | `get_industry` | `key` (industry key), `limit` 1-100 (=25) | `{key, name, index_symbol, sector_key, sector_name, overview, top_companies[], top_performing_companies[], top_growth_companies[]}` (module-level; not a symbol) |
+| `get_market` | `key` (market key, =US) | `{key, status, count, indices[{symbol, shortName, fullExchangeName, marketState, price, previous close, change, change %}]}` (module-level; `status` only for `US`, null elsewhere) |
 
 ### Parameter descriptions
 
@@ -169,6 +170,7 @@ values).
   | `fund_data` | `get_fund_data` | 24 h |
   | `sector` | `get_sector` | 24 h |
   | `industry` | `get_industry` | 24 h |
+  | `market` | `get_market` | 60 s |
 - **Opt-in: off by default.** Within a single process yfinance already reuses
   identical requests, so the cache mainly helps across restarts and as
   rate-limit protection; enable it with `--cache` / `YF_MCP_CACHE=1`.
@@ -357,18 +359,31 @@ green).
 All per-symbol `Ticker` methods that return real data are now exposed; what is
 left is a smaller, optional set. In rough priority / effort order:
 
-1. **`get_market`** (`yf.Market`, e.g. `"US"`) — market open/closed status and a
-   summary of major indices. Small, self-contained, no symbol. Good low-effort
-   next step.
-2. **Bulk history** (`yf.download`) — multi-symbol OHLCV. Heaviest payload
-   (symbols × rows), and `download` does not raise on bad symbols (silent NaN
-   columns), so it needs **hard symbol/row caps** and per-symbol presence checks.
-3. **Screener** (`yf.screen` / `EquityQuery`) — most design work: needs a JSON
-   query schema (field/operator/value) exposed to the LLM; consult
-   `yfinance.const.EQUITY_SCREENER_FIELDS` / `EQUITY_SCREENER_EQ_MAP`.
-4. **`Lookup`** (`yf.Lookup`) — richer search (price/type per hit). Overlaps the
-   existing `search`; likely an **extension of `search`** (or a typed variant)
-   rather than a separate tool, to avoid two near-duplicate tools.
+- **`get_market`** (`yf.Market`) — **done.** Eight fixed market keys. Probed
+  live: only `US` serves a trading status, every other key raises upstream when
+  asked for one, so `status` is `null` there. The index summary works for all
+  eight, which is why the tool leads with it and treats the status as optional.
+- **Screener** (`yf.screen` / `EquityQuery`) — **next.** The only remaining
+  candidate that adds a capability rather than convenience: filtering the market
+  by criteria is impossible with any current tool. Probed live and working. Most
+  design work of the four, since it needs a query schema (field/operator/value)
+  exposed to the LLM, and the raw hits carry a lot of noise that wants curating.
+  Consult `yfinance.const.EQUITY_SCREENER_FIELDS` / `EQUITY_SCREENER_EQ_MAP`.
+- **Bulk history** (`yf.download`) — deferred. Probed live and working, but it
+  returns a **MultiIndex** over columns (`('Close', 'AAPL')`) that
+  `dataframe_to_records` does not handle, the payload grows with symbols × rows,
+  and `download` does not raise on bad symbols (silent NaN columns). The model
+  can already loop over `get_history`, so this buys convenience, not capability.
+- **`Lookup`** (`yf.Lookup`) — deferred. Probed live: 25 rows carrying
+  `regularMarketPrice`, `industryName` and `rank`, so genuinely richer than
+  `search`. But it overlaps `search` almost entirely, and two near-duplicate
+  tools make the toolset harder for a model to navigate. If ever, extend
+  `search` rather than adding a tool.
+
+A note on the ordering above: it is deliberately not "everything that is
+technically possible". With 22 tools already registered, every additional
+description competes for the model's attention on every single request. A tool
+that only saves a loop is a net loss.
 
 Decisions still apply: read-only only; native Yahoo tickers; grouped tools;
 empirically probe each method live before building; one reviewable PR per phase;

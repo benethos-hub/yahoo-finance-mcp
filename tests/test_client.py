@@ -1163,3 +1163,149 @@ def test_get_options_chain_rate_limit(monkeypatch):
     monkeypatch.setattr(client, "_get_ticker", lambda s: ticker)
     with pytest.raises(RateLimitError):
         client.get_options("AAPL", expiration="2024-01-19")
+
+
+# --- get_market -------------------------------------------------------------
+
+
+def _fake_market(status=None, summary=None, status_raises=False):
+    import types
+
+    class _M:
+        @property
+        def status(self):
+            if status_raises:
+                # Mirrors upstream: every key other than "US" raises here.
+                raise AttributeError("'NoneType' object has no attribute 'get'")
+            return status
+
+        @property
+        def summary(self):
+            return summary
+
+    _ = types
+    return _M()
+
+
+_STATUS_US = {
+    "id": "us",
+    "name": "U.S. markets",
+    "status": "closed",
+    "open": "2026-08-17 13:30:00+00:00",
+    "close": "2026-08-17 20:00:00+00:00",
+    "tz": "EDT",
+    "timezone": {"short": "EDT"},  # noise, must be dropped
+}
+
+_SUMMARY = {
+    "SNP": {
+        "symbol": "^GSPC",
+        "shortName": "S&P 500",
+        "fullExchangeName": "SNP",
+        "marketState": "CLOSED",
+        "regularMarketPrice": 7785.76,
+        "regularMarketPreviousClose": 7798.99,
+        "regularMarketChange": -13.23,
+        "regularMarketChangePercent": -0.17,
+        "language": "en-US",  # noise, must be dropped
+        "triggerable": False,  # noise, must be dropped
+    }
+}
+
+
+def test_get_market_returns_status_and_indices(monkeypatch):
+    monkeypatch.setattr(
+        client.yf, "Market", lambda key: _fake_market(_STATUS_US, _SUMMARY)
+    )
+    out = client.get_market("US")
+    assert out["key"] == "US"
+    assert out["status"]["status"] == "closed"
+    assert out["status"]["name"] == "U.S. markets"
+    assert "timezone" not in out["status"], "noisy nested field must be dropped"
+    assert out["count"] == 1
+    index = out["indices"][0]
+    assert index["symbol"] == "^GSPC"
+    assert index["regularMarketPrice"] == 7785.76
+    assert "language" not in index and "triggerable" not in index
+
+
+def test_get_market_lowercase_key_is_accepted(monkeypatch):
+    monkeypatch.setattr(
+        client.yf, "Market", lambda key: _fake_market(_STATUS_US, _SUMMARY)
+    )
+    assert client.get_market("us")["key"] == "US"
+
+
+def test_get_market_status_unavailable_is_not_an_error(monkeypatch):
+    """Only "US" serves a status upstream. Everything else must still work."""
+    monkeypatch.setattr(
+        client.yf,
+        "Market",
+        lambda key: _fake_market(None, _SUMMARY, status_raises=True),
+    )
+    out = client.get_market("EUROPE")
+    assert out["status"] is None
+    assert out["count"] == 1
+
+
+def test_get_market_rate_limit_propagates(monkeypatch):
+    class _M:
+        @property
+        def status(self):
+            raise YFRateLimitError()
+
+        @property
+        def summary(self):
+            return _SUMMARY
+
+    monkeypatch.setattr(client.yf, "Market", lambda key: _M())
+    with pytest.raises(RateLimitError):
+        client.get_market("US")
+
+
+def test_get_market_unknown_key_raises():
+    with pytest.raises(ToolError) as exc:
+        client.get_market("MARS")
+    assert "MARS" in str(exc.value)
+    assert "US" in str(exc.value), "the error must list the valid keys"
+
+
+def test_get_market_empty_key_raises():
+    with pytest.raises(ToolError):
+        client.get_market("   ")
+
+
+def test_get_market_no_data_raises_not_found(monkeypatch):
+    monkeypatch.setattr(
+        client.yf, "Market", lambda key: _fake_market(None, {}, status_raises=True)
+    )
+    with pytest.raises(SymbolNotFoundError):
+        client.get_market("US")
+
+
+def test_get_market_summary_error_is_wrapped(monkeypatch):
+    class _M:
+        @property
+        def status(self):
+            return _STATUS_US
+
+        @property
+        def summary(self):
+            raise RuntimeError("upstream broke")
+
+    monkeypatch.setattr(client.yf, "Market", lambda key: _M())
+    with pytest.raises(ToolError) as exc:
+        client.get_market("US")
+    assert "market summary" in str(exc.value)
+
+
+def test_get_market_status_none_becomes_null_not_empty_dict(monkeypatch):
+    """Upstream returns None for some keys instead of raising.
+
+    Both paths must produce the same answer, otherwise callers see an empty dict
+    for one market and null for another.
+    """
+    monkeypatch.setattr(client.yf, "Market", lambda key: _fake_market(None, _SUMMARY))
+    out = client.get_market("EUROPE")
+    assert out["status"] is None
+    assert out["count"] == 1

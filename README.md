@@ -51,6 +51,7 @@ Yahoo's unofficial endpoints.
 | `get_fund_data` | Fund/ETF profile: overview, asset-class & sector weightings, top holdings. |
 | `get_sector` | Browse a market sector by key: overview, top companies/ETFs/funds, industries. |
 | `get_industry` | Browse an industry by key: overview, parent sector, top/top-performing/top-growth companies. |
+| `get_market` | Trading status and headline index summary for a market (US, EUROPE, ASIA, …). |
 
 Most `get_*` tools take a Yahoo Finance **symbol**; use `search` to resolve a
 name or ISIN into a symbol first. The two exceptions are `get_sector` and
@@ -426,6 +427,12 @@ questions and it will pick the right tools. Replace the bracketed placeholders
 - "Get current quotes for [Ticker A], [Ticker B], and [Ticker C] and compare
   them in a table."
 
+**Market status & indices** (`get_market`)
+
+- "Is the US market open right now, and when does it open next?"
+- "How did the major US indices close today?"
+- "Compare the headline indices in Europe and Asia."
+
 **Search / resolution** (`search`)
 
 - "Resolve the ISIN [ISIN] to a Yahoo ticker."
@@ -484,6 +491,7 @@ Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 | `fund_data` | `get_fund_data` | 24 h |
 | `sector` | `get_sector` | 24 h |
 | `industry` | `get_industry` | 24 h |
+| `market` | `get_market` | 60 s |
 
 - Off by default; enable with `--cache` or `YF_MCP_CACHE=1`.
 - Location: the OS user cache directory, or `--cache-dir` / `YF_MCP_CACHE_DIR`.
