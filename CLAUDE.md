@@ -24,17 +24,17 @@ How to work in this repository. Read this before making changes. See
 - Set up (recommended): `uv sync --extra dev` (creates `.venv`, installs the
   versions pinned in `uv.lock`). Without uv: `py -m venv .venv` then
   `.\.venv\Scripts\python.exe -m pip install -e ".[dev]"`.
-- Run the server (stdio): `uv run yahoo-finance-mcp`, or
-  `.\.venv\Scripts\python.exe -m yahoo_finance_mcp`. For HTTP transports and
-  Docker/Compose hosting, see the README (`--transport`, `Dockerfile`,
-  `compose.yaml`).
+- Run the server (stdio): `uv run benethos-yahoo-finance-mcp`, or
+  `.\.venv\Scripts\python.exe -m benethos_yahoo_finance_mcp`. For HTTP
+  transports and Docker/Compose hosting, see the README (`--transport`,
+  `Dockerfile`, `compose.yaml`).
 
 ## Project layout
 
 ```
-src/yahoo_finance_mcp/
+src/benethos_yahoo_finance_mcp/
   server.py       # FastMCP instance + @mcp.tool() definitions + CLI main()
-  __main__.py     # enables `python -m yahoo_finance_mcp` (delegates to main())
+  __main__.py     # enables `python -m benethos_yahoo_finance_mcp`
   client.py       # all yfinance access, in-memory ticker cache, error mapping
   cache.py        # opt-in persistent result cache (SQLite) with per-tool TTLs
   formatting.py   # pandas/yfinance -> compact JSON-safe values
@@ -72,10 +72,11 @@ Commands use uv (recommended); the venv interpreter forms
 - Lint + format: `uv run ruff check .` and `uv run ruff format .`
   (CI checks `ruff format --check`).
 - Types: `uv run mypy`.
-- Coverage (CI floor 80%): `uv run pytest --cov=yahoo_finance_mcp --cov-fail-under=80`.
+- Coverage (CI floor 80%):
+  `uv run pytest --cov=benethos_yahoo_finance_mcp --cov-fail-under=80`.
 - Inspect what the client sends to Claude (no Desktop restart needed):
   ```
-  uv run python -c "import asyncio,json;from yahoo_finance_mcp.server import mcp;print(json.dumps([t.model_dump() for t in asyncio.run(mcp.list_tools())],indent=2,default=str))"
+  uv run python -c "import asyncio,json;from benethos_yahoo_finance_mcp.server import mcp;print(json.dumps([t.model_dump() for t in asyncio.run(mcp.list_tools())],indent=2,default=str))"
   ```
 - Live check against Yahoo: `uv run python tests/smoke.py`.
 - After changing tool signatures/docstrings, **fully restart Claude Desktop**

@@ -1,7 +1,7 @@
 """MCP server entry point exposing Yahoo Finance tools.
 
-Run directly (``python -m yahoo_finance_mcp``) or via the installed
-``yahoo-finance-mcp`` console script. The transport is selectable on the
+Run directly (``python -m benethos_yahoo_finance_mcp``) or via the installed
+``benethos-yahoo-finance-mcp`` console script. The transport is selectable on the
 command line (``--transport``): ``stdio`` (default, for Claude Desktop and
 other local clients) or an HTTP transport (``streamable-http`` / ``sse``) for
 running the server as a standalone, network-reachable service.
@@ -19,6 +19,7 @@ import sys
 from typing import Annotated, Any
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import Field
 
 from . import cache, client
@@ -47,15 +48,70 @@ def _default_port() -> int:
         return 8000
 
 
+# Host values for which we keep DNS-rebinding protection on by default.
+_LOCALHOST_BINDS = frozenset({"127.0.0.1", "localhost", "::1", ""})
+
+
+def _split_csv(value: str | None) -> list[str]:
+    """Split a comma-separated option value into a clean list of items."""
+    if not value:
+        return []
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _transport_security_for(
+    host: str, allowed_hosts: list[str], allowed_origins: list[str]
+) -> TransportSecuritySettings:
+    """Compute the transport security policy for the host the server binds.
+
+    FastMCP fixes ``transport_security`` at construction time from the *default*
+    host (127.0.0.1), so binding a non-localhost host for the HTTP transports
+    would otherwise keep the localhost-only allow-list and reject every remote
+    client with HTTP 421 ("Invalid Host header"). Recompute it from the host the
+    server actually binds:
+
+    - An explicit allow-list always wins: enable protection with those values.
+    - A localhost bind keeps the protective localhost defaults.
+    - A deliberately exposed bind (e.g. 0.0.0.0) with no allow-list turns
+      DNS-rebinding protection off, mirroring the SDK's own default for a
+      non-localhost bind.
+    """
+    if allowed_hosts or allowed_origins:
+        origins = allowed_origins or [
+            f"{scheme}://{h}" for h in allowed_hosts for scheme in ("http", "https")
+        ]
+        return TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=allowed_hosts,
+            allowed_origins=origins,
+        )
+    if host in _LOCALHOST_BINDS:
+        return TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=["127.0.0.1:*", "localhost:*", "[::1]:*"],
+            allowed_origins=[
+                "http://127.0.0.1:*",
+                "http://localhost:*",
+                "http://[::1]:*",
+            ],
+        )
+    return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+
+
 # Log to stderr only: stdout carries the MCP JSON-RPC protocol.
 logging.basicConfig(
     level=_default_log_level(),
     stream=sys.stderr,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
-logger = logging.getLogger("yahoo_finance_mcp")
+logger = logging.getLogger("benethos_yahoo_finance_mcp")
 
-mcp = FastMCP("yahoo-finance")
+# Server identity reported to clients during the MCP initialize handshake
+# (serverInfo.name). Kept identical to the PyPI distribution name, so the server
+# a client lists is traceable to the package it was installed from. MCP also
+# defines a human-readable ``title``, but no layer of the SDK passes it through
+# yet, and clients fall back to the name for display when it is absent.
+mcp = FastMCP("benethos-yahoo-finance-mcp")
 
 
 @mcp.tool()
@@ -509,7 +565,7 @@ def get_industry(
 def _build_parser() -> argparse.ArgumentParser:
     """Build the command-line parser for the server entry point."""
     parser = argparse.ArgumentParser(
-        prog="yahoo-finance-mcp",
+        prog="benethos-yahoo-finance-mcp",
         description="Yahoo Finance MCP server. Defaults to stdio. Pass "
         "--transport for an HTTP transport.",
     )
@@ -536,6 +592,23 @@ def _build_parser() -> argparse.ArgumentParser:
         default=os.environ.get("YF_MCP_PATH"),
         help="URL path to serve MCP on for HTTP transports (default: /mcp for "
         "streamable-http, /sse for sse; set via YF_MCP_PATH).",
+    )
+    parser.add_argument(
+        "--allowed-hosts",
+        default=os.environ.get("YF_MCP_ALLOWED_HOSTS"),
+        metavar="HOST[,HOST...]",
+        help="Comma-separated Host header allow-list for the DNS-rebinding "
+        "guard on HTTP transports (e.g. benethos-yahoo-finance-mcp:8000). Set via "
+        "YF_MCP_ALLOWED_HOSTS. A localhost bind keeps its protective default. "
+        "An exposed bind (e.g. 0.0.0.0) with no list accepts any Host.",
+    )
+    parser.add_argument(
+        "--allowed-origins",
+        default=os.environ.get("YF_MCP_ALLOWED_ORIGINS"),
+        metavar="ORIGIN[,ORIGIN...]",
+        help="Comma-separated Origin header allow-list for HTTP transports. "
+        "Set via YF_MCP_ALLOWED_ORIGINS. Defaults to http(s) origins derived "
+        "from --allowed-hosts.",
     )
     parser.add_argument(
         "--log-level",
@@ -613,6 +686,15 @@ def main(argv: list[str] | None = None) -> None:
             mcp.settings.sse_path = args.path
         else:
             mcp.settings.streamable_http_path = args.path
+
+    # Recompute the DNS-rebinding guard for the host we actually bind. FastMCP
+    # locked it to localhost at construction time, so without this an HTTP
+    # transport bound to 0.0.0.0 would reject every remote client with HTTP 421.
+    mcp.settings.transport_security = _transport_security_for(
+        args.host,
+        _split_csv(args.allowed_hosts),
+        _split_csv(args.allowed_origins),
+    )
 
     if args.transport == "stdio":
         logger.info("Starting Yahoo Finance MCP server (stdio)")

@@ -15,8 +15,8 @@ import json
 
 import pytest
 
-from yahoo_finance_mcp import client
-from yahoo_finance_mcp.server import mcp
+from benethos_yahoo_finance_mcp import client
+from benethos_yahoo_finance_mcp.server import mcp
 
 # Minimal valid arguments to invoke each tool (one per registered tool). Optional
 # parameters are omitted; required ones use a representative value.

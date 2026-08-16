@@ -1,4 +1,4 @@
-# Yahoo Finance MCP Server
+# Unofficial Yahoo Finance MCP Server
 
 An [MCP](https://modelcontextprotocol.io) server that exposes Yahoo Finance
 data to MCP clients (such as Claude Desktop). It runs over **stdio** (default,
@@ -126,7 +126,7 @@ virtual environment, no `git`. `uvx` fetches and runs it on demand from
    ```json
    {
      "mcpServers": {
-       "yahoo-finance": {
+       "benethos-yahoo-finance-mcp": {
          "command": "uvx",
          "args": ["benethos-yahoo-finance-mcp"]
        }
@@ -134,7 +134,7 @@ virtual environment, no `git`. `uvx` fetches and runs it on demand from
    }
    ```
 
-   Pin a version for stability with `benethos-yahoo-finance-mcp==0.2.2`. To
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.2.3`. To
    enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
@@ -153,13 +153,46 @@ virtual environment, no `git`. `uvx` fetches and runs it on demand from
 
 ### Other ways to install
 
+**From PyPI with pip** (no uv, no clone). Install the published package into a
+virtual environment and run it as a module. The only platform difference is the
+venv interpreter path: Windows uses `.venv\Scripts\python.exe`, Linux/macOS use
+`.venv/bin/python`.
+
+```powershell
+# Windows (PowerShell)
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install benethos-yahoo-finance-mcp
+```
+
+```bash
+# Linux / macOS (bash)
+python3 -m venv .venv
+.venv/bin/python -m pip install benethos-yahoo-finance-mcp
+```
+
+Point Claude Desktop at the absolute path of the venv interpreter and run the
+module (no generated console script involved):
+
+```json
+{
+  "mcpServers": {
+    "benethos-yahoo-finance-mcp": {
+      "command": "/abs/path/to/.venv/bin/python",
+      "args": ["-m", "benethos_yahoo_finance_mcp"]
+    }
+  }
+}
+```
+
+(On Windows use `C:\\abs\\path\\to\\.venv\\Scripts\\python.exe` as `command`.)
+
 **From source with uv** (for development or local changes):
 
 ```bash
 git clone https://github.com/benethos-hub/yahoo-finance-mcp.git
 cd yahoo-finance-mcp
 uv sync --extra dev          # creates .venv + installs deps from uv.lock
-uv run yahoo-finance-mcp     # run over stdio
+uv run benethos-yahoo-finance-mcp     # run over stdio
 ```
 
 Point Claude Desktop at the checkout:
@@ -167,9 +200,9 @@ Point Claude Desktop at the checkout:
 ```json
 {
   "mcpServers": {
-    "yahoo-finance": {
+    "benethos-yahoo-finance-mcp": {
       "command": "uv",
-      "args": ["run", "--project", "/abs/path/to/yahoo-finance-mcp", "yahoo-finance-mcp"]
+      "args": ["run", "--project", "/abs/path/to/yahoo-finance-mcp", "benethos-yahoo-finance-mcp"]
     }
   }
 }
@@ -196,9 +229,9 @@ Claude Desktop config uses the absolute path to the venv interpreter:
 ```json
 {
   "mcpServers": {
-    "yahoo-finance": {
+    "benethos-yahoo-finance-mcp": {
       "command": "/abs/path/to/.venv/bin/python",
-      "args": ["-m", "yahoo_finance_mcp"]
+      "args": ["-m", "benethos_yahoo_finance_mcp"]
     }
   }
 }
@@ -221,6 +254,8 @@ full list):
 | `--host` | `YF_MCP_HOST` | `127.0.0.1` | Bind host for HTTP transports (`0.0.0.0` for remote). |
 | `--port` | `YF_MCP_PORT` | `8000` | Port for HTTP transports. |
 | `--path` | `YF_MCP_PATH` | `/mcp` (`/sse` for sse) | URL path for HTTP transports. |
+| `--allowed-hosts` | `YF_MCP_ALLOWED_HOSTS` | see below | Comma-separated `Host` header allow-list for the DNS-rebinding guard. |
+| `--allowed-origins` | `YF_MCP_ALLOWED_ORIGINS` | derived from hosts | Comma-separated `Origin` header allow-list. |
 | `--log-level` | `YF_MCP_LOG_LEVEL` | `INFO` | `DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`. |
 | `--cache` / `--no-cache` | `YF_MCP_CACHE` | off | Enable/disable the persistent result cache. |
 | `--cache-dir` | `YF_MCP_CACHE_DIR` | OS cache dir | Directory for the cache file. |
@@ -232,6 +267,13 @@ JSON-RPC protocol.
 > **Note:** The HTTP transports expose the server over the network without
 > built-in authentication. Only bind to `0.0.0.0` on trusted networks, and put
 > a reverse proxy / auth layer in front for any real deployment.
+
+> **`Host` header / DNS-rebinding guard.** The MCP HTTP transport validates the
+> `Host` header. A **localhost** bind keeps a protective allow-list
+> (`localhost`/`127.0.0.1`). An **exposed** bind (`0.0.0.0`) accepts any `Host`
+> by default, so containers and other hosts can reach it out of the box. To lock
+> it down again, set `--allowed-hosts` (e.g. `benethos-yahoo-finance-mcp:8000`) — clients
+> whose `Host` is not on the list then get **HTTP 421**.
 
 ### Docker
 
@@ -245,10 +287,10 @@ single setting with `-e` does not disturb the others.
 
 ```bash
 # Build
-docker build -t yahoo-finance-mcp .
+docker build -t benethos-yahoo-finance-mcp .
 
 # Run with the built-in defaults (streamable-HTTP on 0.0.0.0:8000)
-docker run --rm -p 8000:8000 yahoo-finance-mcp
+docker run --rm -p 8000:8000 benethos-yahoo-finance-mcp
 # Server is now reachable at http://localhost:8000/mcp
 
 # Override settings via -e; opt into the cache and persist it in a named volume
@@ -256,8 +298,8 @@ docker run --rm -p 9000:9000 \
     -e YF_MCP_PORT=9000 \
     -e YF_MCP_LOG_LEVEL=DEBUG \
     -e YF_MCP_CACHE=1 \
-    -v yahoo-finance-cache:/cache \
-    yahoo-finance-mcp
+    -v benethos-yahoo-finance-mcp-cache:/cache \
+    benethos-yahoo-finance-mcp
 ```
 
 The image runs as a non-root user and includes a healthcheck on the configured
@@ -287,17 +329,17 @@ With uv (any OS):
 
 ```bash
 # Streamable HTTP on http://127.0.0.1:8000/mcp
-uv run yahoo-finance-mcp --transport streamable-http
+uv run benethos-yahoo-finance-mcp --transport streamable-http
 
 # Bind all interfaces on a custom port / path
-uv run yahoo-finance-mcp \
+uv run benethos-yahoo-finance-mcp \
     --transport streamable-http --host 0.0.0.0 --port 9000 --path /yf
 ```
 
 With the venv interpreter directly (Windows: `.venv\Scripts\python.exe`):
 
 ```bash
-.venv/bin/python -m yahoo_finance_mcp --transport streamable-http
+.venv/bin/python -m benethos_yahoo_finance_mcp --transport streamable-http
 ```
 
 ## Example prompts
@@ -471,7 +513,7 @@ uv run pytest -q                 # unit tests (offline)
 uv run ruff check .              # lint
 uv run ruff format .             # format
 uv run mypy                      # type check
-uv run pytest --cov=yahoo_finance_mcp   # coverage
+uv run pytest --cov=benethos_yahoo_finance_mcp   # coverage
 ```
 
 With the venv interpreter directly (replace `.venv/bin/python` with
@@ -484,7 +526,7 @@ With the venv interpreter directly (replace `.venv/bin/python` with
 .venv/bin/python -m ruff check .              # lint
 .venv/bin/python -m ruff format .             # format
 .venv/bin/python -m mypy                      # type check
-.venv/bin/python -m pytest --cov=yahoo_finance_mcp   # coverage
+.venv/bin/python -m pytest --cov=benethos_yahoo_finance_mcp   # coverage
 ```
 
 The unit tests mock `yfinance` and run fully offline. `tests/smoke.py` performs

@@ -111,7 +111,7 @@ def default_cache_dir() -> Path:
         base = str(Path.home() / "Library" / "Caches")
     else:
         base = os.environ.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
-    return Path(base) / "yahoo-finance-mcp"
+    return Path(base) / "benethos-yahoo-finance-mcp"
 
 
 class ResultCache:

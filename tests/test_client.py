@@ -6,8 +6,12 @@ import pandas as pd
 import pytest
 from yfinance.exceptions import YFDataException, YFRateLimitError
 
-from yahoo_finance_mcp import client
-from yahoo_finance_mcp.errors import RateLimitError, SymbolNotFoundError, ToolError
+from benethos_yahoo_finance_mcp import client
+from benethos_yahoo_finance_mcp.errors import (
+    RateLimitError,
+    SymbolNotFoundError,
+    ToolError,
+)
 
 
 class FakeTicker:

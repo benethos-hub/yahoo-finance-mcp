@@ -2,7 +2,7 @@
 
 import json
 
-from yahoo_finance_mcp import client
+from benethos_yahoo_finance_mcp import client
 
 
 def show(title, value):
