@@ -78,20 +78,32 @@ def test_rejects_unknown_transport():
         server._build_parser().parse_args(["--transport", "carrier-pigeon"])
 
 
+def _capture_run(monkeypatch):
+    """Replace ``mcp.run`` with a spy and return the dict it records into.
+
+    The server passes every transport option to ``run`` as a keyword argument,
+    so capturing the call is what verifies the wiring.
+    """
+    called: dict = {}
+
+    def fake_run(transport, **kwargs):
+        called["transport"] = transport
+        called["kwargs"] = kwargs
+
+    monkeypatch.setattr(server.mcp, "run", fake_run)
+    return called
+
+
 def test_main_runs_stdio_by_default(monkeypatch):
-    called = {}
-    monkeypatch.setattr(
-        server.mcp, "run", lambda transport: called.setdefault("t", transport)
-    )
+    called = _capture_run(monkeypatch)
     server.main([])
-    assert called["t"] == "stdio"
+    assert called["transport"] == "stdio"
+    # stdio takes no host, port or path.
+    assert called["kwargs"] == {}
 
 
 def test_main_applies_http_settings(monkeypatch):
-    called = {}
-    monkeypatch.setattr(
-        server.mcp, "run", lambda transport: called.setdefault("t", transport)
-    )
+    called = _capture_run(monkeypatch)
     server.main(
         [
             "--transport",
@@ -104,16 +116,26 @@ def test_main_applies_http_settings(monkeypatch):
             "/yf",
         ]
     )
-    assert called["t"] == "streamable-http"
-    assert server.mcp.settings.host == "0.0.0.0"
-    assert server.mcp.settings.port == 9001
-    assert server.mcp.settings.streamable_http_path == "/yf"
+    assert called["transport"] == "streamable-http"
+    assert called["kwargs"]["host"] == "0.0.0.0"
+    assert called["kwargs"]["port"] == 9001
+    assert called["kwargs"]["streamable_http_path"] == "/yf"
 
 
 def test_main_applies_sse_path(monkeypatch):
-    monkeypatch.setattr(server.mcp, "run", lambda transport: None)
+    called = _capture_run(monkeypatch)
     server.main(["--transport", "sse", "--path", "/events"])
-    assert server.mcp.settings.sse_path == "/events"
+    assert called["kwargs"]["sse_path"] == "/events"
+
+
+def test_http_transports_get_their_default_path(monkeypatch):
+    called = _capture_run(monkeypatch)
+    server.main(["--transport", "streamable-http"])
+    assert called["kwargs"]["streamable_http_path"] == "/mcp"
+
+    called = _capture_run(monkeypatch)
+    server.main(["--transport", "sse"])
+    assert called["kwargs"]["sse_path"] == "/sse"
 
 
 # --- DNS-rebinding guard / allowed hosts ------------------------------------
@@ -164,14 +186,21 @@ def test_transport_security_explicit_origins_are_kept():
 
 
 def test_main_exposed_bind_disables_rebinding_guard(monkeypatch):
-    monkeypatch.setattr(server.mcp, "run", lambda transport: None)
+    called = _capture_run(monkeypatch)
     server.main(["--transport", "streamable-http", "--host", "0.0.0.0"])
-    ts = server.mcp.settings.transport_security
+    ts = called["kwargs"]["transport_security"]
     assert ts.enable_dns_rebinding_protection is False
 
 
+def test_stdio_gets_no_transport_security(monkeypatch):
+    """stdio has no HTTP surface, so it must not be handed a guard at all."""
+    called = _capture_run(monkeypatch)
+    server.main([])
+    assert "transport_security" not in called["kwargs"]
+
+
 def test_main_allowed_hosts_enables_guard_with_list(monkeypatch):
-    monkeypatch.setattr(server.mcp, "run", lambda transport: None)
+    called = _capture_run(monkeypatch)
     server.main(
         [
             "--transport",
@@ -182,6 +211,6 @@ def test_main_allowed_hosts_enables_guard_with_list(monkeypatch):
             "benethos-yahoo-finance-mcp:8000",
         ]
     )
-    ts = server.mcp.settings.transport_security
+    ts = called["kwargs"]["transport_security"]
     assert ts.enable_dns_rebinding_protection is True
     assert ts.allowed_hosts == ["benethos-yahoo-finance-mcp:8000"]

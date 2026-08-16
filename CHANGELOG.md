@@ -4,6 +4,28 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Migrated to the **mcp 2.x SDK**. `mcp.server.fastmcp.FastMCP` was removed
+  upstream and replaced by `mcp.server.mcpserver.MCPServer`. The requirement is
+  now `mcp[cli]>=2.0.0,<3`, so the temporary cap from 0.3.1 is gone.
+- Transport options are no longer written into mutable global settings. Host,
+  port, URL path and the DNS-rebinding guard are passed to `MCPServer.run()` as
+  explicit arguments, and stdio is handed none of them at all. This removes the
+  cause of the HTTP 421 bug fixed in 0.3.0 rather than compensating for it.
+
+### Added
+- The server now reports a human-readable `title` ("Unofficial Yahoo Finance
+  MCP Server") next to its programmatic `name`. The 1.x SDK defined the field
+  but never passed it through, so clients had only the name to display.
+- The server now reports its own package version in the handshake instead of an
+  empty string.
+- Two tests covering gaps found during the migration: the default URL path of
+  each HTTP transport, and that stdio receives no transport security settings.
+
+Tools, options, output shapes and behaviour are unchanged.
+
 ## [0.3.1] - 2026-08-16
 
 ### Fixed
@@ -153,6 +175,7 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.3.1...HEAD
 [0.3.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.2.1...v0.2.2

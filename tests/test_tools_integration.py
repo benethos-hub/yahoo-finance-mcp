@@ -2,7 +2,7 @@
 
 These complement ``test_client.py`` (which tests the client functions directly)
 and ``test_server.py`` (which tests tool registration). Here every tool is
-invoked through the FastMCP machinery with the client mocked, so the thin
+invoked through the MCPServer machinery with the client mocked, so the thin
 ``@mcp.tool()`` wrappers are actually exercised. This catches wiring bugs the
 other suites miss — e.g. forwarding ``limit`` to the wrong client keyword — and
 asserts each tool's result is JSON-serializable.
@@ -74,11 +74,12 @@ def test_tool_invokes_client_and_result_serializes(monkeypatch, tool, args):
     # of the right name suffices.
     monkeypatch.setattr(client, tool, spy)
 
-    content, structured = _call(tool, args)
+    result = _call(tool, args)
 
     assert len(calls) == 1, f"{tool} did not forward to its client function once"
-    # call_tool returns (content_blocks, structured_result); both must serialize.
-    json.dumps(structured)
+    assert not result.is_error, f"{tool} reported an error result"
+    # The structured result is what a client consumes, so it must serialize.
+    json.dumps(result.structured_content)
 
 
 # Tools whose ``limit`` parameter must be forwarded as the client's ``max_rows``.

@@ -23,9 +23,7 @@ classifiers = [
     "Topic :: Office/Business :: Financial",
 ]
 dependencies = [
-    # Upper bound is deliberate: mcp 2.0 removed mcp.server.fastmcp entirely
-    # (MCPServer is its successor), so 2.x needs a real migration.
-    "mcp[cli]>=1.28.0,<2",
+    "mcp[cli]>=2.0.0,<3",
     "yfinance>=1.4.1",
     # Required by yfinance for HTML-table scraping (e.g. earnings dates).
     "lxml>=5.0",

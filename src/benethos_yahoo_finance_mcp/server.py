@@ -18,11 +18,11 @@ import os
 import sys
 from typing import Annotated, Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import Field
 
-from . import cache, client
+from . import __version__, cache, client
 
 _LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 _TRANSPORTS = ["stdio", "streamable-http", "sse"]
@@ -64,11 +64,10 @@ def _transport_security_for(
 ) -> TransportSecuritySettings:
     """Compute the transport security policy for the host the server binds.
 
-    FastMCP fixes ``transport_security`` at construction time from the *default*
-    host (127.0.0.1), so binding a non-localhost host for the HTTP transports
-    would otherwise keep the localhost-only allow-list and reject every remote
-    client with HTTP 421 ("Invalid Host header"). Recompute it from the host the
-    server actually binds:
+    The SDK defaults this to a localhost-only allow-list. Left alone, an HTTP
+    transport bound to a non-localhost host would reject every remote client
+    with HTTP 421 ("Invalid Host header"), which is exactly what containers and
+    gateways run into. Derive it from the host actually being bound:
 
     - An explicit allow-list always wins: enable protection with those values.
     - A localhost bind keeps the protective localhost defaults.
@@ -106,12 +105,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger("benethos_yahoo_finance_mcp")
 
-# Server identity reported to clients during the MCP initialize handshake
-# (serverInfo.name). Kept identical to the PyPI distribution name, so the server
-# a client lists is traceable to the package it was installed from. MCP also
-# defines a human-readable ``title``, but no layer of the SDK passes it through
-# yet, and clients fall back to the name for display when it is absent.
-mcp = FastMCP("benethos-yahoo-finance-mcp")
+# Identity reported to clients during the MCP initialize handshake. ``name`` is
+# the programmatic identifier and is kept identical to the PyPI distribution
+# name, so the server a client lists is traceable to the package it came from.
+# ``title`` is what a client shows to a person.
+mcp = MCPServer(
+    name="benethos-yahoo-finance-mcp",
+    title="Unofficial Yahoo Finance MCP Server",
+    version=__version__,
+)
 
 
 @mcp.tool()
@@ -661,6 +663,32 @@ def _parse_ttl_overrides(
     return overrides
 
 
+def _transport_kwargs(args: argparse.Namespace) -> dict[str, Any]:
+    """Build the transport-specific keyword arguments for ``MCPServer.run``.
+
+    stdio takes none. The HTTP transports take the bind host and port, their URL
+    path, and the DNS-rebinding guard — all as explicit arguments, so nothing
+    depends on mutable global settings.
+    """
+    if args.transport == "stdio":
+        return {}
+
+    kwargs: dict[str, Any] = {
+        "host": args.host,
+        "port": args.port,
+        "transport_security": _transport_security_for(
+            args.host,
+            _split_csv(args.allowed_hosts),
+            _split_csv(args.allowed_origins),
+        ),
+    }
+    if args.transport == "sse":
+        kwargs["sse_path"] = args.path or "/sse"
+    else:
+        kwargs["streamable_http_path"] = args.path or "/mcp"
+    return kwargs
+
+
 def main(argv: list[str] | None = None) -> None:
     """Console-script entry point: parse CLI args and run the MCP server."""
     parser = _build_parser()
@@ -677,25 +705,6 @@ def main(argv: list[str] | None = None) -> None:
         enabled=args.cache, cache_dir=args.cache_dir, ttl_overrides=ttl_overrides
     )
 
-    # Host/port/path only matter for the HTTP transports; setting them for
-    # stdio is harmless.
-    mcp.settings.host = args.host
-    mcp.settings.port = args.port
-    if args.path:
-        if args.transport == "sse":
-            mcp.settings.sse_path = args.path
-        else:
-            mcp.settings.streamable_http_path = args.path
-
-    # Recompute the DNS-rebinding guard for the host we actually bind. FastMCP
-    # locked it to localhost at construction time, so without this an HTTP
-    # transport bound to 0.0.0.0 would reject every remote client with HTTP 421.
-    mcp.settings.transport_security = _transport_security_for(
-        args.host,
-        _split_csv(args.allowed_hosts),
-        _split_csv(args.allowed_origins),
-    )
-
     if args.transport == "stdio":
         logger.info("Starting Yahoo Finance MCP server (stdio)")
     else:
@@ -706,7 +715,7 @@ def main(argv: list[str] | None = None) -> None:
             args.port,
         )
 
-    mcp.run(transport=args.transport)
+    mcp.run(transport=args.transport, **_transport_kwargs(args))
 
 
 if __name__ == "__main__":
