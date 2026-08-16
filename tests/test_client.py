@@ -1072,6 +1072,35 @@ def test_get_company_info_empty_raises(patch_ticker):
         client.get_company_info("nope")
 
 
+def test_get_company_info_echoes_the_input_symbol(patch_ticker):
+    """An ISIN in must not come back out as a ticker.
+
+    Yahoo resolves an ISIN server-side and reports the ticker in `info`. That
+    used to overwrite the echoed input, so this one tool answered `AAPL` to a
+    question asked about `US0378331005` while every other tool echoed the ISIN.
+    """
+    patch_ticker(
+        FakeTicker(
+            info={"quoteType": "EQUITY", "shortName": "Apple Inc.", "symbol": "AAPL"}
+        )
+    )
+    info = client.get_company_info("US0378331005")
+    assert info["symbol"] == "US0378331005"
+    assert info["resolved_symbol"] == "AAPL"
+
+
+def test_get_company_info_omits_resolved_symbol_when_identical(patch_ticker):
+    """A plain ticker resolves to itself, so the extra field is just noise."""
+    patch_ticker(
+        FakeTicker(
+            info={"quoteType": "EQUITY", "shortName": "Apple Inc.", "symbol": "AAPL"}
+        )
+    )
+    info = client.get_company_info("aapl")
+    assert info["symbol"] == "AAPL"
+    assert "resolved_symbol" not in info
+
+
 # --- search limit clamping ------------------------------------------------
 
 

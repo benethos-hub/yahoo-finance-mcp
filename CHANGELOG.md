@@ -68,6 +68,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   buried among five other bullet points.
 
 ### Fixed
+- **`get_company_info` answered with a different symbol than it was asked
+  about.** `"symbol"` sat first in the curated field list, so the copy loop
+  overwrote the echoed input with Yahoo's resolved ticker. Asking about
+  `US0378331005` returned `AAPL` while every other tool echoed the ISIN, which
+  made results from different tools impossible to line up. The input is echoed
+  now, and the resolved ticker is reported as `resolved_symbol` when it differs
+  — so an ISIN gains the information instead of losing it. A plain ticker
+  resolves to itself and the extra field is omitted, which is why this was
+  invisible unless you passed an ISIN.
 - **`get_options` and `get_sec_filings` claimed that valid symbols do not
   exist.** Both raised the standard "No data found for symbol X, use the
   'search' tool to look it up" whenever a result was empty, but for these two

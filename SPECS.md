@@ -99,8 +99,12 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   did not work at all when this section was first written, and it can change
   back.
 - A **company name** is not a symbol. Callers resolve one via `search` and pass
-  back the `symbol` it returns. A ticker is preferable to an ISIN regardless,
-  since the reported `symbol` then stays consistent across tools.
+  back the `symbol` it returns.
+- Every tool echoes the `symbol` it was given, uppercased, so the answer can
+  always be matched to the question. `get_company_info` is the one tool that
+  also learns Yahoo's resolved ticker, and reports it as `resolved_symbol` when
+  it differs from the input — an ISIN in returns the ISIN plus the ticker it
+  stands for.
 - **WKNs resolve nowhere**, not through the tools and not through `search`
   (five probed, zero hits). Yahoo has no lookup for them.
 

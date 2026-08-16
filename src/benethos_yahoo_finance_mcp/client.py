@@ -261,8 +261,13 @@ def get_history(
 
 # Fields surfaced from Ticker.info for get_company_info. A curated subset keeps
 # the response small; the full info dict is large and noisy.
+#
+# "symbol" is deliberately absent. It used to sit first here, which meant the
+# copy loop overwrote the echoed input with Yahoo's resolved ticker before
+# returning — invisible for a ticker, but an ISIN went in and AAPL came back,
+# while every other tool echoes what it was given. The resolved ticker is
+# reported as "resolved_symbol" instead, and only when it actually differs.
 _COMPANY_INFO_FIELDS = (
-    "symbol",
     "shortName",
     "longName",
     "quoteType",
@@ -320,6 +325,11 @@ def get_company_info(symbol: str) -> dict[str, Any]:
         raise SymbolNotFoundError(symbol)
 
     profile: dict[str, Any] = {"symbol": symbol.strip().upper()}
+    # Yahoo resolves an ISIN to a ticker server-side. Surface that, since the
+    # caller has no other way to learn it, but never in place of the echo.
+    resolved = info.get("symbol")
+    if resolved and resolved != profile["symbol"]:
+        profile["resolved_symbol"] = resolved
     for field in _COMPANY_INFO_FIELDS:
         if field in info:
             profile[field] = to_jsonable(info.get(field))
