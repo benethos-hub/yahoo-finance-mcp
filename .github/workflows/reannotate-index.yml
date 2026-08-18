@@ -74,15 +74,19 @@ jobs:
           for tag in ${TAGS//,/ }; do
             args+=(--tag "${IMAGE}:${tag}")
           done
-          for key in \
-            "description=${DESCRIPTION}" \
-            "source=${URL}" \n            "url=${URL}" \n            "title=${TITLE}" \n            "licenses=MIT" \
-            "version=${VERSION}" \
-            "revision=${REVISION}"
-          do
-            args+=(--annotation "index:org.opencontainers.image.${key}")
-          done
 
+          annotate() {
+            args+=(--annotation "index:org.opencontainers.image.$1")
+          }
+          annotate "description=${DESCRIPTION}"
+          annotate "source=${URL}"
+          annotate "url=${URL}"
+          annotate "title=${TITLE}"
+          annotate "licenses=MIT"
+          annotate "version=${VERSION}"
+          annotate "revision=${REVISION}"
+
+          printf 'arg: %s\n' "${args[@]}"
           docker buildx imagetools create "${args[@]}" "${IMAGE}@${SOURCE}"
 
       - name: Verify the annotations are on the index
@@ -92,6 +96,6 @@ jobs:
           set -euo pipefail
           for tag in ${TAGS//,/ }; do
             echo "=== ${IMAGE}:${tag} ==="
-            docker buildx imagetools inspect --raw "${IMAGE}:${tag}" \
-              | jq -e '.annotations["org.opencontainers.image.description"]'
+            raw=$(docker buildx imagetools inspect --raw "${IMAGE}:${tag}")
+            echo "${raw}" | jq -e '.annotations["org.opencontainers.image.description"]'
           done
