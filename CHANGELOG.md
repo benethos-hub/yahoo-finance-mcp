@@ -16,7 +16,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `DOCKER_METADATA_ANNOTATIONS_LEVELS: index,manifest` and passes the
   annotations to the build, so description, source, licence and version appear
   where GitHub looks for them. This takes effect with the next published
-  release. The already-pushed 0.4.0 tags are not changed retroactively.
+  release.
+- The already-published 0.4.0 index was repaired in place with a one-shot
+  `workflow_dispatch` job that rewrites it through `docker buildx imagetools
+  create`. Nothing is rebuilt and no layer is re-uploaded — the per-architecture
+  manifests keep their digests and only the index is written anew, so the
+  `0.4.0`, `0.4` and `latest` tags now resolve to a new index digest. Anyone who
+  pinned the old one has to repin. The job is removed again afterwards, since
+  every release from here on annotates the index by itself.
 
 ## [0.4.0] - 2026-08-16
 
