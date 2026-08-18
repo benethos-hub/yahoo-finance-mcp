@@ -7,6 +7,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Fixed
+- **The licence links on the PyPI project page led nowhere.** The README is
+  shipped verbatim as the package description, and PyPI renders that text
+  without the repository around it, so the three relative `](LICENSE)` targets
+  resolved to `pypi.org/project/benethos-yahoo-finance-mcp/LICENSE`. They now
+  point at the file on GitHub. Anchor links are unaffected, PyPI rewrites those
+  to `#user-content-…` and they work.
+
+  A unit test now rejects any relative link target in the README, because this
+  class of mistake cannot be repaired after the fact: PyPI re-renders the
+  description only when a new distribution is uploaded.
 - The container package page on GitHub said "No description provided". The
   description was never missing — `metadata-action` writes the OCI labels into
   the image configuration, and 0.4.0 carries all of them, but for a multi-arch

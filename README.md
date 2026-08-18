@@ -4,7 +4,7 @@
 [![PyPI](https://img.shields.io/pypi/v/benethos-yahoo-finance-mcp)](https://pypi.org/project/benethos-yahoo-finance-mcp/)
 [![Python](https://img.shields.io/pypi/pyversions/benethos-yahoo-finance-mcp)](https://pypi.org/project/benethos-yahoo-finance-mcp/)
 [![Coverage](https://img.shields.io/badge/coverage-94%25-brightgreen)](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/LICENSE)
 
 An [MCP](https://modelcontextprotocol.io) server that exposes Yahoo Finance
 data to MCP clients (such as Claude Desktop). It runs over **stdio** (default,
@@ -23,7 +23,7 @@ Yahoo's unofficial endpoints.
 > - Data may be delayed, incomplete, or inaccurate. **Nothing here is financial
 >   advice.** Do not rely on it for trading or investment decisions.
 > - Provided "as is", without warranty. Intended for personal and educational
->   use. You use it at your own risk. See [LICENSE](LICENSE).
+>   use. You use it at your own risk. See [LICENSE](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/LICENSE).
 > - For **commercial use**, review Yahoo's Terms of Service and consider a
 >   properly licensed market-data provider instead of the unofficial endpoints.
 
@@ -620,4 +620,4 @@ accurate way to say it. All trademarks remain the property of their respective
 owners.
 
 The project itself is published as `benethos-yahoo-finance-mcp` and is
-maintained independently under the [MIT licence](LICENSE).
+maintained independently under the [MIT licence](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/LICENSE).
