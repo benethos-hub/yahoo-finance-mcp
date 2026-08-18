@@ -18,12 +18,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   where GitHub looks for them. This takes effect with the next published
   release.
 - The already-published 0.4.0 index was repaired in place with a one-shot
-  `workflow_dispatch` job that rewrites it through `docker buildx imagetools
-  create`. Nothing is rebuilt and no layer is re-uploaded — the per-architecture
-  manifests keep their digests and only the index is written anew, so the
-  `0.4.0`, `0.4` and `latest` tags now resolve to a new index digest. Anyone who
-  pinned the old one has to repin. The job is removed again afterwards, since
-  every release from here on annotates the index by itself.
+  `workflow_dispatch` job that rewrote it through `docker buildx imagetools
+  create`. Nothing was rebuilt and no layer was re-uploaded — the
+  per-architecture manifests kept their digests, the `created` label still reads
+  `2026-08-16T20:56:00.877Z`, and only the index itself was written anew.
+
+  **The `0.4.0`, `0.4` and `latest` tags therefore resolve to a new index
+  digest**, `sha256:284e11e5…` instead of `sha256:8b184a89…`. Anyone who pinned
+  the old digest has to repin. The description picked up on the way is the
+  current repository description, which has grown since the release, so the
+  image now advertises "read-only, stdio or HTTP".
+
+  The job was removed again once it had run, since every release from here on
+  annotates the index by itself.
 
 ## [0.4.0] - 2026-08-16
 
