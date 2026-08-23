@@ -14,7 +14,10 @@ that exists is not the same as a file that ships.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
+
+import pytest
 
 import benethos_yahoo_finance_mcp
 
@@ -35,4 +38,42 @@ def test_py_typed_marker_is_empty() -> None:
     assert MARKER.read_bytes() == b"", (
         "py.typed is a marker, not a configuration file. Content in it is at "
         "best ignored and at worst misleading."
+    )
+
+
+# The documentation quotes the current version in a handful of places, as an
+# example to copy. Three of them were missed during a release and found only by
+# sweeping the repository a second time, which is not a method. A reader
+# copying a stale example pins the version before the one they are reading
+# about, which is worse than no example.
+#
+# The failure mode here is forgetting, not difficulty, so this asserts rather
+# than generates: nothing is rewritten, the suite simply goes red until the
+# examples agree with the package.
+REPO = PACKAGE_DIR.parent.parent
+VERSION_EXAMPLES = (
+    # An exact pin of the distribution, as the install section shows it.
+    ("README.md", r"benethos-yahoo-finance-mcp==(\d+\.\d+\.\d+)"),
+    # An exact image tag in backticks. `:0.4` names a minor line on purpose and
+    # has only two components, so it is not matched.
+    ("README.md", r"`:(\d+\.\d+\.\d+)`"),
+    ("compose.yaml", r"`:(\d+\.\d+\.\d+)`"),
+    # The version people are asked to report in a bug.
+    (".github/ISSUE_TEMPLATE/bug_report.yml", r'placeholder: "(\d+\.\d+\.\d+)"'),
+)
+
+
+@pytest.mark.parametrize(("relative_path", "pattern"), VERSION_EXAMPLES)
+def test_documented_version_examples_are_current(relative_path, pattern):
+    text = (REPO / relative_path).read_text(encoding="utf-8")
+    found = re.findall(pattern, text)
+
+    # A pattern that stops matching would let this pass while checking nothing.
+    assert found, f"{relative_path} no longer contains {pattern!r}"
+
+    stale = sorted({v for v in found if v != benethos_yahoo_finance_mcp.__version__})
+    assert not stale, (
+        f"{relative_path} still shows {stale}, the package is at "
+        f"{benethos_yahoo_finance_mcp.__version__}. Anyone copying that example "
+        "pins an older release than the one they are reading about."
     )

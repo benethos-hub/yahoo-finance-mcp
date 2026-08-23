@@ -603,6 +603,15 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Yahoo Finance MCP server. Defaults to stdio. Pass "
         "--transport for an HTTP transport.",
     )
+    # The same version the server reports in the MCP handshake, which is
+    # otherwise only reachable by opening a session. Someone running this from
+    # a container has no `pip show` to fall back on.
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Print the version and exit.",
+    )
     parser.add_argument(
         "--transport",
         choices=_TRANSPORTS,

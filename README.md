@@ -295,6 +295,7 @@ full list):
 
 | Flag | Env var | Default | Description |
 |------|---------|---------|-------------|
+| `--version` | — | — | Print the version and exit. Same value the server reports in the MCP handshake. |
 | `--transport` | `YF_MCP_TRANSPORT` | `stdio` | `stdio`, `streamable-http`, or `sse`. |
 | `--host` | `YF_MCP_HOST` | `127.0.0.1` | Bind host for HTTP transports (`0.0.0.0` for remote). |
 | `--port` | `YF_MCP_PORT` | `8000` | Port for HTTP transports. |

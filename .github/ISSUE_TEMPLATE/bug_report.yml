@@ -41,7 +41,7 @@ body:
     id: version
     attributes:
       label: Version
-      description: "`pip show benethos-yahoo-finance-mcp`, or for the container the image tag you pulled."
+      description: "Output of `benethos-yahoo-finance-mcp --version`, or for the container `docker run --rm <image> --version`."
       placeholder: "0.4.1"
     validations:
       required: true
