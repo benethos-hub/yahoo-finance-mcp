@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-08-23
+
 ### Changed
 - Refreshed the locked dependencies. Ten packages moved, all of them patch or
   minor and all of them transitive — `curl-cffi`, `httpx2`/`httpcore2`, `lxml`,
@@ -393,7 +395,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.2.2...v0.3.0

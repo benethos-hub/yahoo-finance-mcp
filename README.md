@@ -179,7 +179,7 @@ virtual environment, no `git`. `uvx` fetches and runs it on demand from
    }
    ```
 
-   Pin a version for stability with `benethos-yahoo-finance-mcp==0.4.0`. To
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.4.1`. To
    enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
