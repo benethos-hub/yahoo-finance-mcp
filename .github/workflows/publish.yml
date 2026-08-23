@@ -128,3 +128,44 @@ jobs:
           annotations: ${{ steps.meta.outputs.annotations }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Read the published index back instead of trusting that the annotations
+      # above arrived. Setting them and assuming is exactly what produced a
+      # package page reading "No description provided" while the image carried
+      # the description in its configuration all along, and by the time anyone
+      # looks at that page the release has already happened.
+      - name: The published index carries what the package page reads
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set -euo pipefail
+          ref=$(printf '%s\n' "$TAGS" | head -1)
+          echo "inspecting ${ref}"
+          docker buildx imagetools inspect "$ref" --raw > /tmp/index.json
+          python3 - <<'PY'
+          import json
+
+          index = json.load(open("/tmp/index.json"))
+          annotations = index.get("annotations") or {}
+          # The unknown/unknown entries are the provenance attestations, one per
+          # real platform. They are expected and are not architectures.
+          platforms = sorted(
+              f"{m['platform']['os']}/{m['platform']['architecture']}"
+              for m in index.get("manifests", [])
+              if m.get("platform", {}).get("architecture") != "unknown"
+          )
+          missing = [
+              key
+              for key in (
+                  "org.opencontainers.image.description",
+                  "org.opencontainers.image.source",
+                  "org.opencontainers.image.version",
+              )
+              if not annotations.get(key)
+          ]
+          assert not missing, f"the index carries no {missing}, so the package page shows nothing"
+          assert "linux/amd64" in platforms, f"amd64 is missing, the index holds {platforms}"
+          assert "linux/arm64" in platforms, f"arm64 is missing, the index holds {platforms}"
+          print("OK:", ", ".join(platforms))
+          print("   ", annotations["org.opencontainers.image.description"])
+          PY
