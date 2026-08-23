@@ -41,8 +41,8 @@ body:
     id: version
     attributes:
       label: Version
-      description: Output of `benethos-yahoo-finance-mcp --help` header, or the version you installed.
-      placeholder: "0.3.1"
+      description: "`pip show benethos-yahoo-finance-mcp`, or for the container the image tag you pulled."
+      placeholder: "0.4.1"
     validations:
       required: true
 
