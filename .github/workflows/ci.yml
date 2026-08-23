@@ -117,6 +117,36 @@ jobs:
       - name: Build image
         run: docker build -t benethos-yahoo-finance-mcp:ci .
 
+      # No test reaches the Compose file: the suite is offline Python and a
+      # Compose file is neither. Two things are asserted. That it is valid at
+      # all, and that the published port stays on the loopback address, which
+      # is a deliberate choice - the server has no authentication of its own
+      # and no business on the LAN. Until now that decision lived in a comment,
+      # and a comment is not something a change can trip over.
+      #
+      # This constrains the file in this repository and nothing else. Anyone
+      # running it stays free to publish on the LAN by editing their copy or
+      # adding an override file, neither of which CI ever sees.
+      - name: Compose is valid and keeps the port on the loopback address
+        run: |
+          set -euo pipefail
+          docker compose config -q
+          docker compose config --format json > /tmp/compose.json
+          python3 - <<'PY'
+          import json
+
+          services = json.load(open("/tmp/compose.json"))["services"]
+          assert services, "the Compose file defines no services"
+          for name, service in services.items():
+              for port in service.get("ports") or []:
+                  host_ip = port.get("host_ip")
+                  assert host_ip in ("127.0.0.1", "::1"), (
+                      f"{name} publishes port {port.get('published')} on "
+                      f"{host_ip or 'every interface'}, not on the loopback address"
+                  )
+                  print(f"OK: {name} publishes {host_ip}:{port.get('published')}")
+          PY
+
       # The release workflow publishes linux/amd64 *and* linux/arm64, but only
       # amd64 is built above, so an arm64-only break would first surface during
       # a release. Build it here as well. Nothing is loaded or pushed — that the
