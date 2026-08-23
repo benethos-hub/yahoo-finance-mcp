@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-23
+
 ### Added
 - **An optional bearer token for the HTTP transports.** Set
   `YF_MCP_BEARER_TOKEN` and every HTTP request must carry
@@ -435,7 +437,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.3.0...v0.3.1

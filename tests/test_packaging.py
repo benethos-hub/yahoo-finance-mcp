@@ -62,6 +62,16 @@ VERSION_EXAMPLES = (
     (".github/ISSUE_TEMPLATE/bug_report.yml", r'placeholder: "(\d+\.\d+\.\d+)"'),
 )
 
+# The minor-line tag, `:0.5`, which follows patch releases rather than naming
+# one. It is right for it to stay put across a patch bump and wrong for it to
+# stay put across a minor one, so it is compared against the first two
+# components instead of the whole version. Missed by eye on the 0.5.0 bump,
+# where both of these still said `:0.4`.
+MINOR_LINE_EXAMPLES = (
+    ("README.md", r"`:(\d+\.\d+)`"),
+    ("compose.yaml", r"`:(\d+\.\d+)`"),
+)
+
 
 @pytest.mark.parametrize(("relative_path", "pattern"), VERSION_EXAMPLES)
 def test_documented_version_examples_are_current(relative_path, pattern):
@@ -76,4 +86,21 @@ def test_documented_version_examples_are_current(relative_path, pattern):
         f"{relative_path} still shows {stale}, the package is at "
         f"{benethos_yahoo_finance_mcp.__version__}. Anyone copying that example "
         "pins an older release than the one they are reading about."
+    )
+
+
+@pytest.mark.parametrize(("relative_path", "pattern"), MINOR_LINE_EXAMPLES)
+def test_documented_minor_line_examples_are_current(relative_path, pattern):
+    text = (REPO / relative_path).read_text(encoding="utf-8")
+    found = re.findall(pattern, text)
+
+    assert found, f"{relative_path} no longer contains {pattern!r}"
+
+    major, minor, *_ = benethos_yahoo_finance_mcp.__version__.split(".")
+    current = f"{major}.{minor}"
+    stale = sorted({v for v in found if v != current})
+    assert not stale, (
+        f"{relative_path} still offers {stale} as the minor line to follow, but "
+        f"the package is on {current}. That tag stops at the previous minor and "
+        "never sees this release."
     )

@@ -226,9 +226,10 @@ values).
   and error normalization, formatting, the cache, CLI/transport selection, tool
   registration/schema, and end-to-end tool invocation via `mcp.call_tool`
   (`tests/test_client.py`, `test_formatting.py`, `test_cache.py`, `test_cli.py`,
-  `test_server.py`, `test_tools_integration.py`). Two more guard what ships
-  rather than what runs: `test_packaging.py` on the PEP 561 marker and
-  `test_readme.py` on link targets that PyPI cannot resolve.
+  `test_server.py`, `test_tools_integration.py`, `test_transport.py`). Two
+  more guard what ships rather than what runs: `test_packaging.py` on the
+  PEP 561 marker and the version examples, `test_readme.py` on link targets
+  PyPI cannot resolve and on the tool list matching the registry.
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo, and it is not part of
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
