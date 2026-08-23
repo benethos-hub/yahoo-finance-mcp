@@ -293,6 +293,7 @@ full list):
 | `--host` | `YF_MCP_HOST` | `127.0.0.1` | Bind host for HTTP transports (`0.0.0.0` for remote). |
 | `--port` | `YF_MCP_PORT` | `8000` | Port for HTTP transports. |
 | `--path` | `YF_MCP_PATH` | `/mcp` (`/sse` for sse) | URL path for HTTP transports. |
+| _(none)_ | `YF_MCP_BEARER_TOKEN` | unset | Require this bearer token on every HTTP request. Environment only, deliberately: an argument is visible in the process list. |
 | `--allowed-hosts` | `YF_MCP_ALLOWED_HOSTS` | see below | Comma-separated `Host` header allow-list for the DNS-rebinding guard. |
 | `--allowed-origins` | `YF_MCP_ALLOWED_ORIGINS` | derived from hosts | Comma-separated `Origin` header allow-list. |
 | `--log-level` | `YF_MCP_LOG_LEVEL` | `INFO` | `DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`. |
@@ -303,9 +304,18 @@ full list):
 Logging always goes to stderr, so under stdio stdout stays reserved for the
 JSON-RPC protocol.
 
-> **Note:** The HTTP transports expose the server over the network without
-> built-in authentication. Only bind to `0.0.0.0` on trusted networks, and put
-> a reverse proxy / auth layer in front for any real deployment.
+> **Bearer token (optional).** Set `YF_MCP_BEARER_TOKEN` and every HTTP request
+> must carry `Authorization: Bearer <token>`. Anything else gets **HTTP 401**.
+> It is off by default, because the ordinary case is a server on the loopback
+> address of the machine that uses it, where a token guards against nothing. It
+> is a single shared secret compared in constant time, not an OAuth flow — the
+> question is only whether the caller is expected. stdio ignores it: the client
+> owns that process and nothing else can reach it.
+>
+> A token does not make a port safe to publish. The data here is public and
+> read-only, so the realistic damage is somebody spending your Yahoo rate limit,
+> not reading something private. Beyond a trusted network, put a reverse proxy
+> with real authentication in front.
 
 > **`Host` header / DNS-rebinding guard.** The MCP HTTP transport validates the
 > `Host` header. A **localhost** bind keeps a protective allow-list
@@ -357,9 +367,9 @@ docker run --rm -p 9000:9000 \
 The image runs as a non-root user and includes a healthcheck on the configured
 HTTP port. The cache is off by default. Enable it with `-e YF_MCP_CACHE=1`, in
 which case it is written to `/cache` (declared as a volume) — mount a named
-volume there to keep it across container restarts. As with any HTTP deployment,
-there is no built-in authentication — front it with a reverse proxy / auth layer
-before exposing it publicly.
+volume there to keep it across container restarts. Pass `-e YF_MCP_BEARER_TOKEN=...`
+to require a bearer token on every request. Beyond a trusted network, front it
+with a reverse proxy that authenticates.
 
 ### Docker Compose
 

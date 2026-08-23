@@ -17,7 +17,8 @@ filings, the corporate calendar, options chains, fund/ETF profiles,
 sector/industry browsing, and symbol lookup by name / ticker / ISIN.
 
 **Out of scope (non-goals):** placing trades, real-time streaming, portfolio
-persistence, authentication/paid data feeds, write operations of any kind.
+persistence, authenticating to Yahoo or any paid data feed, write operations
+of any kind.
 
 ## 3. Architecture
 
@@ -40,6 +41,7 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
 | `client.py` | All direct yfinance usage, ticker cache, error normalization. |
 | `cache.py` | Persistent result cache (SQLite) with per-tool TTLs. |
 | `formatting.py` | Convert pandas/yfinance output to compact, JSON-safe values. |
+| `transport.py` | Builds the HTTP app and serves it, with the optional bearer guard in front. stdio never touches this. |
 | `errors.py` | `ToolError`, `SymbolNotFoundError`, `RateLimitError`. |
 | `py.typed` | PEP 561 marker. Without it a type checker skips the installed package and every annotation in it goes unused. |
 
@@ -58,11 +60,19 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   default): `YF_MCP_TRANSPORT`, `YF_MCP_HOST`, `YF_MCP_PORT`, `YF_MCP_PATH`,
   `YF_MCP_ALLOWED_HOSTS`, `YF_MCP_ALLOWED_ORIGINS`, `YF_MCP_LOG_LEVEL`, and the
   cache vars `YF_MCP_CACHE`, `YF_MCP_CACHE_DIR`, `YF_MCP_CACHE_TTL_<NAME>`.
+  `YF_MCP_BEARER_TOKEN` is the one exception with no flag: an argument is
+  visible in the process list to every other user on the machine.
 - **Entry points:** `python -m benethos_yahoo_finance_mcp` or the
   `benethos-yahoo-finance-mcp` console script.
 - **Python:** 3.11-3.14, all covered by the CI matrix.
-- **HTTP security:** the HTTP transports have no built-in auth. Bind to
-  `0.0.0.0` only on trusted networks and front them with a proxy/auth layer.
+- **HTTP security:** an **optional** bearer token. With
+  `YF_MCP_BEARER_TOKEN` set, every HTTP request must carry
+  `Authorization: Bearer <token>` or gets HTTP 401. A single shared secret
+  compared in constant time, not an OAuth flow: this server speaks for nobody
+  and has no user to authorize. Off by default, since the ordinary case is a
+  loopback bind on the machine that uses it. stdio ignores it. A token does not
+  make a port safe to publish - bind to `0.0.0.0` only on trusted networks and
+  front it with a proxy that authenticates.
   The MCP HTTP transport also runs a DNS-rebinding `Host`/`Origin` guard. It is
   derived from the actual bind host and passed to `MCPServer.run()` as an
   explicit argument: a localhost bind keeps the protective localhost allow-list,
@@ -73,9 +83,9 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   dependencies installed reproducibly from `uv.lock` via uv) and a
   `compose.yaml` host the server over streamable-HTTP on port 8000. The image
   is configured entirely via env vars (no default CMD args) and persists its
-  cache to a `/cache` volume. Compose publishes the port on **127.0.0.1 only**,
-  because the server has no authentication of its own. Drop that prefix only
-  behind a reverse proxy that provides one.
+  cache to a `/cache` volume. Compose publishes the port on **127.0.0.1 only**.
+  Drop that prefix only behind a reverse proxy that authenticates, or at the
+  very least with `YF_MCP_BEARER_TOKEN` set.
 
 ## 5. Data source rules
 
@@ -290,7 +300,8 @@ tools surface that as an empty result, not an error.
   are empty, so the new tools return empty for crypto.
 - **Excluded — upstream empty for all probed symbols:** `sustainability` (ESG),
   `capital_gains`.
-- **Out of scope (non-goals, §2):** `live`/`WebSocket` (streaming), `Auth`.
+- **Out of scope (non-goals, §2):** `live`/`WebSocket` (streaming), and the SDK's
+  OAuth `Auth` machinery, which presumes a user to authorize and an issuer.
 - **Dependency note:** `get_earnings_dates` requires `lxml`. It was added to
   `dependencies` when Phase 1 landed.
 

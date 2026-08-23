@@ -81,8 +81,9 @@ def test_rejects_unknown_transport():
 def _capture_run(monkeypatch):
     """Replace ``mcp.run`` with a spy and return the dict it records into.
 
-    The server passes every transport option to ``run`` as a keyword argument,
-    so capturing the call is what verifies the wiring.
+    Only stdio still goes through ``run``. The HTTP transports are built and
+    served here so that the bearer guard has somewhere to sit, and are captured
+    by ``_capture_http`` instead.
     """
     called: dict = {}
 
@@ -91,6 +92,28 @@ def _capture_run(monkeypatch):
         called["kwargs"] = kwargs
 
     monkeypatch.setattr(server.mcp, "run", fake_run)
+    return called
+
+
+def _capture_http(monkeypatch):
+    """Replace the HTTP app builder and the server loop with spies.
+
+    Without this a test would build a real app and hand it to uvicorn, which
+    binds a port and never returns.
+    """
+    monkeypatch.delenv(server.transport.ENV_VAR, raising=False)
+    called: dict = {}
+
+    def fake_http_app(mcp_server, **kwargs):
+        called["app_kwargs"] = kwargs
+        return "the-app"
+
+    def fake_run_http(app, **kwargs):
+        called["app"] = app
+        called["run_kwargs"] = kwargs
+
+    monkeypatch.setattr(server.transport, "http_app", fake_http_app)
+    monkeypatch.setattr(server.transport, "run_http", fake_run_http)
     return called
 
 
@@ -103,7 +126,7 @@ def test_main_runs_stdio_by_default(monkeypatch):
 
 
 def test_main_applies_http_settings(monkeypatch):
-    called = _capture_run(monkeypatch)
+    called = _capture_http(monkeypatch)
     server.main(
         [
             "--transport",
@@ -116,26 +139,28 @@ def test_main_applies_http_settings(monkeypatch):
             "/yf",
         ]
     )
-    assert called["transport"] == "streamable-http"
-    assert called["kwargs"]["host"] == "0.0.0.0"
-    assert called["kwargs"]["port"] == 9001
-    assert called["kwargs"]["streamable_http_path"] == "/yf"
+    assert called["app_kwargs"]["transport"] == "streamable-http"
+    assert called["app_kwargs"]["host"] == "0.0.0.0"
+    assert called["app_kwargs"]["path"] == "/yf"
+    assert called["run_kwargs"]["host"] == "0.0.0.0"
+    assert called["run_kwargs"]["port"] == 9001
+    assert called["app"] == "the-app"
 
 
 def test_main_applies_sse_path(monkeypatch):
-    called = _capture_run(monkeypatch)
+    called = _capture_http(monkeypatch)
     server.main(["--transport", "sse", "--path", "/events"])
-    assert called["kwargs"]["sse_path"] == "/events"
+    assert called["app_kwargs"]["path"] == "/events"
 
 
 def test_http_transports_get_their_default_path(monkeypatch):
-    called = _capture_run(monkeypatch)
+    called = _capture_http(monkeypatch)
     server.main(["--transport", "streamable-http"])
-    assert called["kwargs"]["streamable_http_path"] == "/mcp"
+    assert called["app_kwargs"]["path"] == "/mcp"
 
-    called = _capture_run(monkeypatch)
+    called = _capture_http(monkeypatch)
     server.main(["--transport", "sse"])
-    assert called["kwargs"]["sse_path"] == "/sse"
+    assert called["app_kwargs"]["path"] == "/sse"
 
 
 # --- DNS-rebinding guard / allowed hosts ------------------------------------
@@ -186,9 +211,9 @@ def test_transport_security_explicit_origins_are_kept():
 
 
 def test_main_exposed_bind_disables_rebinding_guard(monkeypatch):
-    called = _capture_run(monkeypatch)
+    called = _capture_http(monkeypatch)
     server.main(["--transport", "streamable-http", "--host", "0.0.0.0"])
-    ts = called["kwargs"]["transport_security"]
+    ts = called["app_kwargs"]["transport_security"]
     assert ts.enable_dns_rebinding_protection is False
 
 
@@ -200,7 +225,7 @@ def test_stdio_gets_no_transport_security(monkeypatch):
 
 
 def test_main_allowed_hosts_enables_guard_with_list(monkeypatch):
-    called = _capture_run(monkeypatch)
+    called = _capture_http(monkeypatch)
     server.main(
         [
             "--transport",
@@ -211,7 +236,7 @@ def test_main_allowed_hosts_enables_guard_with_list(monkeypatch):
             "benethos-yahoo-finance-mcp:8000",
         ]
     )
-    ts = called["kwargs"]["transport_security"]
+    ts = called["app_kwargs"]["transport_security"]
     assert ts.enable_dns_rebinding_protection is True
     assert ts.allowed_hosts == ["benethos-yahoo-finance-mcp:8000"]
 
@@ -238,3 +263,42 @@ def test_version_flag_agrees_with_the_handshake():
     from benethos_yahoo_finance_mcp import __version__
 
     assert server.mcp.version == __version__
+
+
+# --- optional bearer token ---------------------------------------------------
+
+
+def test_http_without_a_token_serves_unguarded(monkeypatch):
+    """The default stays what it was: no token, no guard, nothing to configure."""
+    called = _capture_http(monkeypatch)
+    server.main(["--transport", "streamable-http"])
+    assert called["app_kwargs"]["token"] is None
+
+
+def test_http_picks_the_token_up_from_the_environment(monkeypatch):
+    called = _capture_http(monkeypatch)
+    monkeypatch.setenv(server.transport.ENV_VAR, "s3cret")
+    server.main(["--transport", "streamable-http"])
+    assert called["app_kwargs"]["token"] == "s3cret"
+
+
+def test_serving_http_unguarded_says_so(monkeypatch, caplog):
+    """An open port is worth a line in the log, since nothing else shows it."""
+    _capture_http(monkeypatch)
+    with caplog.at_level("WARNING"):
+        server.main(["--transport", "streamable-http", "--host", "0.0.0.0"])
+    assert any(
+        server.transport.ENV_VAR in record.getMessage()
+        for record in caplog.records
+        if record.levelname == "WARNING"
+    )
+
+
+def test_a_token_under_stdio_is_ignored_and_reported(monkeypatch, caplog):
+    """stdio has no port, so a token there is a misunderstanding worth naming."""
+    called = _capture_run(monkeypatch)
+    monkeypatch.setenv(server.transport.ENV_VAR, "s3cret")
+    with caplog.at_level("WARNING"):
+        server.main([])
+    assert called["transport"] == "stdio"
+    assert any(record.levelname == "WARNING" for record in caplog.records)

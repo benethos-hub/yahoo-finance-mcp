@@ -35,7 +35,8 @@ services:
     container_name: benethos-yahoo-finance-mcp
     ports:
       # bind:host:container — published on the loopback interface only, because
-      # the server has no authentication and has no business on the LAN. Drop
+      # the server is unauthenticated by default and has no business on the
+      # LAN. Set YF_MCP_BEARER_TOKEN below to require a token per request. Drop
       # the 127.0.0.1 prefix only behind a reverse proxy that handles auth.
       # Change the host port (the middle number) if 8000 is already taken.
       - "127.0.0.1:8000:8000"
@@ -52,6 +53,10 @@ services:
       # DNS-rebinding guard down to specific hosts if you want to (clients with
       # another Host then get HTTP 421):
       # YF_MCP_ALLOWED_HOSTS: "benethos-yahoo-finance-mcp:8000"
+      # Require a bearer token on every HTTP request. Off by default: on a
+      # loopback-published port it guards against nothing. Anything that can
+      # reach the port can otherwise call every tool.
+      # YF_MCP_BEARER_TOKEN: "change-me-to-something-long-and-random"
       YF_MCP_LOG_LEVEL: INFO
       # The result cache is opt-in (off by default). Enable it and it persists
       # to the /cache volume below:

@@ -15,8 +15,10 @@ How to work in this repository. Read this before making changes. See
    English. (Conversation with the user may be in German.)
 3. **stdio is sacred.** stdout carries the MCP JSON-RPC stream. Never `print()`
    to stdout from server/library code; log to **stderr** only.
-4. **Read-only domain.** This server only reads market data. Do not add write,
-   trade, or auth operations (see non-goals in SPECS.md).
+4. **Read-only domain.** This server only reads market data. Do not add write
+   or trade operations, and do not authenticate to Yahoo or any paid feed (see
+   non-goals in SPECS.md). Guarding this server's own HTTP port is a different
+   thing and is allowed — see `transport.py`.
 
 ## Environment
 

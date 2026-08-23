@@ -7,6 +7,28 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **An optional bearer token for the HTTP transports.** Set
+  `YF_MCP_BEARER_TOKEN` and every HTTP request must carry
+  `Authorization: Bearer <token>`, or it gets HTTP 401 with
+  `WWW-Authenticate: Bearer` and a body that reveals nothing about why. Until
+  now anything that could route to the port could call every tool, and the only
+  thing standing in front of it was the choice to bind to the loopback address.
+
+  It stays **off by default**, because the ordinary case is a server on the
+  machine that uses it, where a token guards against nothing. It is a single
+  shared secret compared in constant time, not an OAuth flow — this server
+  speaks for nobody and has no user to authorize. stdio ignores it and says so
+  in the log: the client owns that process and nothing else can reach it.
+  Serving HTTP without one now logs a warning naming the address anyone could
+  reach.
+
+  There is deliberately no command-line flag. An argument is visible in the
+  process list to every other user on the machine and lands in shell history.
+
+  A token does not make a port safe to publish. The data here is public and
+  read-only, so the realistic damage is somebody spending your Yahoo rate
+  limit. Beyond a trusted network, a reverse proxy that authenticates is still
+  the answer.
 - **`--version`.** The version was published in two places already, in the
   package metadata and in the MCP handshake, and neither is reachable from a
   shell: one needs an import, the other needs an open session. Anyone running
