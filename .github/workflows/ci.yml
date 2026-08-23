@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# Nothing here writes anything back. Without this the token gets whatever the
+# repository default happens to be, which is a wider grant than any job needs.
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
