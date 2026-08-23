@@ -22,7 +22,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import Field
 
-from . import __version__, cache, client
+from . import __version__, cache, client, transport
 
 _LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 _TRANSPORTS = ["stdio", "streamable-http", "sse"]
@@ -36,8 +36,8 @@ def _default_log_level() -> str:
 
 def _default_transport() -> str:
     """Default transport from the YF_MCP_TRANSPORT env var, falling back to stdio."""
-    transport = os.environ.get("YF_MCP_TRANSPORT", "stdio").strip().lower()
-    return transport if transport in _TRANSPORTS else "stdio"
+    name = os.environ.get("YF_MCP_TRANSPORT", "stdio").strip().lower()
+    return name if name in _TRANSPORTS else "stdio"
 
 
 def _default_port() -> int:
@@ -704,30 +704,11 @@ def _parse_ttl_overrides(
     return overrides
 
 
-def _transport_kwargs(args: argparse.Namespace) -> dict[str, Any]:
-    """Build the transport-specific keyword arguments for ``MCPServer.run``.
-
-    stdio takes none. The HTTP transports take the bind host and port, their URL
-    path, and the DNS-rebinding guard — all as explicit arguments, so nothing
-    depends on mutable global settings.
-    """
-    if args.transport == "stdio":
-        return {}
-
-    kwargs: dict[str, Any] = {
-        "host": args.host,
-        "port": args.port,
-        "transport_security": _transport_security_for(
-            args.host,
-            _split_csv(args.allowed_hosts),
-            _split_csv(args.allowed_origins),
-        ),
-    }
-    if args.transport == "sse":
-        kwargs["sse_path"] = args.path or "/sse"
-    else:
-        kwargs["streamable_http_path"] = args.path or "/mcp"
-    return kwargs
+def _http_path(args: argparse.Namespace) -> str:
+    """The URL path an HTTP transport serves on, defaulted per transport."""
+    if args.path:
+        return args.path
+    return "/sse" if args.transport == "sse" else "/mcp"
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -746,17 +727,52 @@ def main(argv: list[str] | None = None) -> None:
         enabled=args.cache, cache_dir=args.cache_dir, ttl_overrides=ttl_overrides
     )
 
+    token = transport.token_from_env()
+
     if args.transport == "stdio":
         logger.info("Starting Yahoo Finance MCP server (stdio)")
-    else:
-        logger.info(
-            "Starting Yahoo Finance MCP server (%s) on http://%s:%s",
-            args.transport,
+        if token is not None:
+            logger.warning(
+                "%s is set, but stdio has no port for anyone to reach. The "
+                "client owns this process, so the token is ignored.",
+                transport.ENV_VAR,
+            )
+        mcp.run(transport="stdio")
+        return
+
+    path = _http_path(args)
+    logger.info(
+        "Starting Yahoo Finance MCP server (%s) on http://%s:%s%s",
+        args.transport,
+        args.host,
+        args.port,
+        path,
+    )
+    if token is None:
+        logger.warning(
+            "No %s set: anything that can reach %s:%s can call every tool. "
+            "That is fine for a loopback bind on your own machine and is not "
+            "fine anywhere else.",
+            transport.ENV_VAR,
             args.host,
             args.port,
         )
+    else:
+        logger.info("Bearer token required: requests without it get HTTP 401.")
 
-    mcp.run(transport=args.transport, **_transport_kwargs(args))
+    app = transport.http_app(
+        mcp,
+        transport=args.transport,
+        path=path,
+        host=args.host,
+        transport_security=_transport_security_for(
+            args.host,
+            _split_csv(args.allowed_hosts),
+            _split_csv(args.allowed_origins),
+        ),
+        token=token,
+    )
+    transport.run_http(app, host=args.host, port=args.port, log_level=args.log_level)
 
 
 if __name__ == "__main__":
