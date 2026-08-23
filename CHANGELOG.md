@@ -14,6 +14,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   all. `benethos-yahoo-finance-mcp --version` now prints it, and
   `docker run --rm <image> --version` works the same way. The bug report
   template asks for exactly that, which is what brought the gap to light.
+- A test keeps the README's tool list in step with the registry, in both
+  directions. Adding a tool and forgetting its row leaves it working, tested and
+  invisible to anyone reading the documentation, and a row left behind after a
+  rename sends readers after something that does not exist.
 - A test keeps the version examples in the documentation honest. The README
   install pin, the image tags in README and Compose file, and the placeholder in
   the bug report template must all name the current version, or the suite goes
