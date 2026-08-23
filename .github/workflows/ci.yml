@@ -91,7 +91,21 @@ jobs:
           uv pip list --python /tmp/fresh/bin/python
           echo "--- import and entry point ---"
           /tmp/fresh/bin/python -c "import benethos_yahoo_finance_mcp as p; print('version', p.__version__)"
-          /tmp/fresh/bin/python -c "from benethos_yahoo_finance_mcp.server import mcp; import asyncio; print('tools', len(asyncio.run(mcp.list_tools())))"
+          echo "--- registered tools ---"
+          # An assertion, not a report. Printing the count would stay green at
+          # zero, and zero is exactly the interesting failure: it means the
+          # import worked but the decorators never registered anything. Naming
+          # one tool catches a registry that is populated but wrong.
+          /tmp/fresh/bin/python - <<'PY'
+          import asyncio
+
+          from benethos_yahoo_finance_mcp.server import mcp
+
+          names = sorted(tool.name for tool in asyncio.run(mcp.list_tools()))
+          assert names, "no tools registered: the import succeeded but registration did not"
+          assert "get_quote" in names, f"get_quote is not among the registered tools: {names}"
+          print(f"tools {len(names)}, including get_quote")
+          PY
           /tmp/fresh/bin/benethos-yahoo-finance-mcp --help > /dev/null
           echo "OK: a fresh install imports, registers its tools and starts"
 
