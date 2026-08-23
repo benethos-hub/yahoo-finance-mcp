@@ -7,7 +7,14 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
 
-  # GitHub Actions used in workflows
+  # The actions the workflows use. They follow their moving major tag, so
+  # fixes arrive without a pull request for every patch.
+  #
+  # astral-sh/setup-uv is the exception, and not by choice: it stopped
+  # publishing major tags after v7. There is no v8, v9 or v10, only exact
+  # versions, so it has to name one. That is also how this repository came to
+  # sit three majors behind without noticing - `@v7` kept working and nothing
+  # said anything newer existed. Dependabot is what notices now.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
