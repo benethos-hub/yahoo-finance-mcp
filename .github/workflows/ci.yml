@@ -118,17 +118,42 @@ jobs:
       # specific code here.
       - name: Smoke test (server boots and serves HTTP)
         run: |
-          docker run -d --rm -p 8000:8000 --name benethos-yahoo-finance-mcp benethos-yahoo-finance-mcp:ci
+          set -euo pipefail
+          name=benethos-yahoo-finance-mcp-ci
+
+          # Deliberately no --rm. A container that crashes has to stay around,
+          # otherwise `docker logs` finds nothing exactly when there is
+          # something to read.
+          docker run -d -p 8000:8000 --name "$name" benethos-yahoo-finance-mcp:ci
+
           code=000
           for _ in $(seq 1 20); do
-            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/mcp || echo 000)
-            [ "$code" != "000" ] && break
+            # On a connection failure curl prints 000 for %{http_code} *and*
+            # exits non-zero, so a `|| echo 000` inside the substitution would
+            # leave two values in the variable and every later comparison
+            # against "000" would be false. The fallback has to be an
+            # assignment outside the substitution.
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/mcp) || code=000
+            if [ "$code" != "000" ]; then
+              break
+            fi
             sleep 1
           done
-          docker logs benethos-yahoo-finance-mcp || true
-          docker stop benethos-yahoo-finance-mcp || true
+
+          status=$(docker inspect -f '{{.State.Status}}' "$name") || status=missing
+          docker logs "$name" || true
+          echo "container status: $status"
+          docker rm -f "$name" > /dev/null || true
+
+          # A port that answers is one half, a process that is still alive is
+          # the other. A server that serves one request and then dies would
+          # pass on the status code alone.
           if [ "$code" = "000" ]; then
-            echo "::error::server did not respond on :8000"
+            echo "::error::server did not respond on :8000 (container status: $status)"
             exit 1
           fi
-          echo "OK: server responded with HTTP $code"
+          if [ "$status" != "running" ]; then
+            echo "::error::container is not running (status: $status)"
+            exit 1
+          fi
+          echo "OK: server responded with HTTP $code and the container is running"
