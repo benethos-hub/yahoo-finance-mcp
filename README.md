@@ -148,22 +148,15 @@ when the list of names is not.
 
 ### Quick start: uv + Claude Desktop
 
-The simplest way to use the server with Claude Desktop — no clone, no manual
-virtual environment, no `git`. `uvx` fetches and runs it on demand from
+The simplest way to run the server — no clone, no manual virtual environment,
+no `git`. `uvx` fetches and runs it on demand from
 [PyPI](https://pypi.org/project/benethos-yahoo-finance-mcp/) (published as
 `benethos-yahoo-finance-mcp`).
 
-1. **Install uv** (see the [uv install docs](https://docs.astral.sh/uv/getting-started/installation/)):
-
-   ```bash
-   # macOS / Linux
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
-
-   ```powershell
-   # Windows (PowerShell)
-   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-   ```
+1. **Install uv**, if you have not already — the
+   [uv installation page](https://docs.astral.sh/uv/getting-started/installation/)
+   covers every platform. It brings `uvx`, and that is the only thing needed
+   here.
 
 2. **Add the server** to `claude_desktop_config.json` (Claude Desktop →
    Settings → Developer → Edit Config):
