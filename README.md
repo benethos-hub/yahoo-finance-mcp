@@ -148,8 +148,8 @@ when the list of names is not.
 
 ### Quick start: uv + Claude Desktop
 
-The simplest way to use the server with Claude Desktop — no clone, no manual
-virtual environment, no `git`. `uvx` fetches and runs it on demand from
+The simplest way to run the server — no clone, no manual virtual environment,
+no `git`. `uvx` fetches and runs it on demand from
 [PyPI](https://pypi.org/project/benethos-yahoo-finance-mcp/) (published as
 `benethos-yahoo-finance-mcp`).
 
