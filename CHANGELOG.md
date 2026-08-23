@@ -6,6 +6,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **The package now ships a PEP 561 `py.typed` marker.** Every module here is
+  annotated and mypy runs as a CI gate, but none of that reached anyone who
+  installed the package: a type checker treats an installed package without the
+  marker as untyped and skips it entirely, however complete the annotations are.
+  Checking a file that calls `client.get_quote(123)` against the installed
+  wheel now reports `Argument 1 to "get_quote" has incompatible type "int"`
+  where it previously reported only `module is installed, but missing library
+  stubs or py.typed marker` and looked no further.
+
+  Two separate guards, because a file that exists is not a file that ships. A
+  test asserts the marker sits beside the code and is empty, and the release
+  workflow opens the built wheel and refuses to upload one that does not contain
+  it. Losing the marker breaks downstream type checking without failing a test,
+  an import or the build, and a version once on PyPI cannot be replaced.
+
 ### Fixed
 - **The licence links on the PyPI project page led nowhere.** The README is
   shipped verbatim as the package description, and PyPI renders that text

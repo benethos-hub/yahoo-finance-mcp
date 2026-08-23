@@ -50,6 +50,24 @@ jobs:
       - name: Build sdist and wheel
         run: uv build
 
+      # A file that exists in the repository is not a file that ships. The
+      # PEP 561 marker decides whether a type checker looks at this package at
+      # all once it is installed, and losing it from the wheel would break
+      # downstream type checking without failing a test, an import or the
+      # build. Once a version is on PyPI it cannot be replaced, so the check
+      # belongs here, in front of the upload.
+      - name: Check the wheel ships the py.typed marker
+        run: |
+          set -euo pipefail
+          wheel=$(ls dist/*.whl)
+          if ! unzip -l "${wheel}" | grep -q "benethos_yahoo_finance_mcp/py.typed"; then
+            echo "::error::${wheel} does not contain benethos_yahoo_finance_mcp/py.typed."
+            echo "::error::Without the marker every annotation in this package is ignored by type checkers."
+            unzip -l "${wheel}"
+            exit 1
+          fi
+          echo "py.typed is present in ${wheel}"
+
       - name: Publish to PyPI (Trusted Publishing)
         run: uv publish --trusted-publishing always
 
