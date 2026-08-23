@@ -196,14 +196,29 @@ jobs:
             sleep 1
           done
 
-          status=$(docker inspect -f '{{.State.Status}}' "$name") || status=missing
+          # The Dockerfile declares a HEALTHCHECK and the Compose service leans
+          # on it, but it is a shell command inside a string that nothing else
+          # here ever runs. The loop leaves early when the container is gone,
+          # so a crash is not paid for with the full wait.
+          status=missing
+          health=missing
+          for _ in $(seq 1 20); do
+            status=$(docker inspect -f '{{.State.Status}}' "$name") || status=missing
+            health=$(docker inspect -f '{{.State.Health.Status}}' "$name") || health=missing
+            if [ "$status" != "running" ] || [ "$health" != "starting" ]; then
+              break
+            fi
+            sleep 3
+          done
+
           docker logs "$name" || true
-          echo "container status: $status"
+          echo "container status: $status, health: $health"
           docker rm -f "$name" > /dev/null || true
 
-          # A port that answers is one half, a process that is still alive is
-          # the other. A server that serves one request and then dies would
-          # pass on the status code alone.
+          # A port that answers is one part, a process that is still alive is
+          # the second, and a health check that agrees is the third. A server
+          # that serves one request and then dies would pass on the status
+          # code alone.
           if [ "$code" = "000" ]; then
             echo "::error::server did not respond on :8000 (container status: $status)"
             exit 1
@@ -212,4 +227,8 @@ jobs:
             echo "::error::container is not running (status: $status)"
             exit 1
           fi
-          echo "OK: server responded with HTTP $code and the container is running"
+          if [ "$health" != "healthy" ]; then
+            echo "::error::the container health check reports $health"
+            exit 1
+          fi
+          echo "OK: HTTP $code, container running, health check $health"
