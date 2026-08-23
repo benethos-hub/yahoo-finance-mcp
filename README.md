@@ -283,8 +283,8 @@ For use outside Claude Desktop — a network-reachable HTTP service — run an H
 transport (`streamable-http` or `sse`). **Docker is the simplest way.**
 
 Every option has both a CLI flag and an environment variable (handy for
-containers). Precedence is **CLI > environment > default** (`--help` for the
-full list):
+containers), with one deliberate exception noted below. Precedence is
+**CLI > environment > default** (`--help` lists the flags):
 
 | Flag | Env var | Default | Description |
 |------|---------|---------|-------------|
