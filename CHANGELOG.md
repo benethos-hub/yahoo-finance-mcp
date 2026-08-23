@@ -6,6 +6,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **`--version`.** The version was published in two places already, in the
+  package metadata and in the MCP handshake, and neither is reachable from a
+  shell: one needs an import, the other needs an open session. Anyone running
+  the server from a container had no way to answer "which version is this?" at
+  all. `benethos-yahoo-finance-mcp --version` now prints it, and
+  `docker run --rm <image> --version` works the same way. The bug report
+  template asks for exactly that, which is what brought the gap to light.
+- A test keeps the version examples in the documentation honest. The README
+  install pin, the image tags in README and Compose file, and the placeholder in
+  the bug report template must all name the current version, or the suite goes
+  red. Three of them were missed during a release and caught only by sweeping
+  the repository a second time.
+
 ## [0.4.1] - 2026-08-23
 
 ### Changed

@@ -214,3 +214,27 @@ def test_main_allowed_hosts_enables_guard_with_list(monkeypatch):
     ts = called["kwargs"]["transport_security"]
     assert ts.enable_dns_rebinding_protection is True
     assert ts.allowed_hosts == ["benethos-yahoo-finance-mcp:8000"]
+
+
+def test_version_flag_prints_the_package_version(capsys):
+    """`--version` exits straight away and reports the installed version.
+
+    The same value the server reports in the MCP handshake, which otherwise
+    needs a session to reach. Anyone running this from a container has no
+    `pip show` to fall back on.
+    """
+    from benethos_yahoo_finance_mcp import __version__
+
+    with pytest.raises(SystemExit) as exit_info:
+        server._build_parser().parse_args(["--version"])
+
+    assert exit_info.value.code == 0
+    out = capsys.readouterr().out
+    assert out.strip() == f"benethos-yahoo-finance-mcp {__version__}"
+
+
+def test_version_flag_agrees_with_the_handshake():
+    """The two places a version is published must not drift apart."""
+    from benethos_yahoo_finance_mcp import __version__
+
+    assert server.mcp.version == __version__

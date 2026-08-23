@@ -50,7 +50,7 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   - `streamable-http` / `sse` — standalone, network-reachable HTTP service.
 - **Logging:** always to stderr (`logging.basicConfig(stream=sys.stderr)`), so
   under stdio stdout carries JSON-RPC only.
-- **CLI flags:** `--transport`, `--host` (default 127.0.0.1), `--port`
+- **CLI flags:** `--version`, `--transport`, `--host` (default 127.0.0.1), `--port`
   (default 8000), `--path` (default `/mcp`, `/sse` for sse), `--allowed-hosts`,
   `--allowed-origins`, `--log-level`. Host/port/path/allow-list apply to the
   HTTP transports only. For stdio they are ignored.
