@@ -13,3 +13,13 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+
+  # The base image in the Dockerfile. It was pinned to python:3.12-slim long
+  # after 3.14 was out, and nothing said so: the image built, the container ran
+  # and every gate stayed green on a base two releases behind. A stale base is
+  # not a build failure, it is unpatched packages in something people pull.
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

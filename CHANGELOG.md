@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- Refreshed the locked dependencies. Ten packages moved, all of them patch or
+  minor and all of them transitive — `curl-cffi`, `httpx2`/`httpcore2`, `lxml`,
+  `protobuf`, `idna`, `python-dotenv`, `pygments`, `ruff` and `uvicorn`. The
+  declared ranges in `pyproject.toml` are unchanged, so this reaches an
+  installation from PyPI not at all and the container image by way of its
+  locked build. `mcp`, `yfinance` and `pandas` were already current.
+
 ### Added
 - **The package now ships a PEP 561 `py.typed` marker.** Every module here is
   annotated and mypy runs as a CI gate, but none of that reached anyone who
