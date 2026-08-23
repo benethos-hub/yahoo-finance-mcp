@@ -41,6 +41,8 @@ src/benethos_yahoo_finance_mcp/
   cache.py        # opt-in persistent result cache (SQLite) with per-tool TTLs
   formatting.py   # pandas/yfinance -> compact JSON-safe values
   errors.py       # ToolError / SymbolNotFoundError / RateLimitError
+  transport.py    # HTTP app + optional bearer guard (stdio never uses it)
+  py.typed        # PEP 561 marker, without it the annotations reach nobody
 tests/            # mocked, offline unit tests (+ live smoke.py, not collected)
 ```
 
