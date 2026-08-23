@@ -30,7 +30,7 @@ services:
     #
     # `pull_policy` decides when compose contacts the registry: `always` on
     # every `up`, `missing` only when the image is absent locally, `never` not
-    # at all. Pin a version (`:0.4.0`) or a minor line (`:0.4`) instead of
+    # at all. Pin a version (`:0.4.1`) or a minor line (`:0.4`) instead of
     # `latest` for anything you depend on.
     container_name: benethos-yahoo-finance-mcp
     ports:
