@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-09-02
+
 ### Changed
 - Refreshed the locked dependencies. Fourteen packages moved, all of them patch
   or minor: `mcp` and `mcp-types` 2.0.0 → 2.1.1, the linter `ruff`, and eleven
@@ -479,7 +481,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.3.1...v0.4.0
