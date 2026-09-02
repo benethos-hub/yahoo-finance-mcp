@@ -173,7 +173,7 @@ no `git`. `uvx` fetches and runs it on demand from
    }
    ```
 
-   Pin a version for stability with `benethos-yahoo-finance-mcp==0.5.0`. To
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.5.1`. To
    enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
@@ -336,7 +336,7 @@ docker run --rm -p 8000:8000 ghcr.io/benethos-hub/yahoo-finance-mcp:latest
 # Server is now reachable at http://localhost:8000/mcp
 ```
 
-Pin a version for anything you depend on — `:0.5.0` for an exact release, `:0.5`
+Pin a version for anything you depend on — `:0.5.1` for an exact release, `:0.5`
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
 built from `main` on demand and is not a release at all.
 

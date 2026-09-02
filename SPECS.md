@@ -39,7 +39,7 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
 | `server.py` | MCPServer instance, tool definitions (signatures + docstrings), CLI/`main()`. |
 | `__main__.py` | Enables `python -m benethos_yahoo_finance_mcp` (delegates to `server.main`). |
 | `client.py` | All direct yfinance usage, ticker cache, error normalization. |
-| `cache.py` | Persistent result cache (SQLite) with per-tool TTLs. |
+| `cache.py` | Opt-in persistent result cache (SQLite) with per-tool TTLs. Off until `configure()` enables it. |
 | `formatting.py` | Convert pandas/yfinance output to compact, JSON-safe values. |
 | `transport.py` | Builds the HTTP app and serves it, with the optional bearer guard in front. stdio never touches this. |
 | `errors.py` | `ToolError`, `SymbolNotFoundError`, `RateLimitError`. |
@@ -54,8 +54,10 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   under stdio stdout carries JSON-RPC only.
 - **CLI flags:** `--version`, `--transport`, `--host` (default 127.0.0.1), `--port`
   (default 8000), `--path` (default `/mcp`, `/sse` for sse), `--allowed-hosts`,
-  `--allowed-origins`, `--log-level`. Host/port/path/allow-list apply to the
-  HTTP transports only. For stdio they are ignored.
+  `--allowed-origins`, `--log-level`, and the cache flags `--cache`/`--no-cache`,
+  `--cache-dir`, `--cache-ttl <NAME>=<SECONDS>` (see §8a).
+  Host/port/path/allow-list apply to the HTTP transports only. For stdio they
+  are ignored.
 - **Environment:** every CLI flag has an env-var equivalent (CLI > env >
   default): `YF_MCP_TRANSPORT`, `YF_MCP_HOST`, `YF_MCP_PORT`, `YF_MCP_PATH`,
   `YF_MCP_ALLOWED_HOSTS`, `YF_MCP_ALLOWED_ORIGINS`, `YF_MCP_LOG_LEVEL`, and the
@@ -219,6 +221,12 @@ values).
     `client._wrap_upstream`).
 - All upstream yfinance exceptions are normalized through `_wrap_upstream`,
   which preserves operation-specific context for non-rate-limit errors.
+- `ToolError` derives from the SDK's own `ToolError`, and that is what carries
+  the text. Since `mcp` 2.1.0 anything else raised from a tool is treated as
+  unexpected: logged with a traceback, and reported to the client as
+  `Error executing tool <name>` with the message dropped. A plain `Exception`
+  base therefore silences every message in `errors.py`, which is what happened
+  in 0.5.0 and is fixed in 0.5.1.
 
 ## 10. Testing
 
@@ -234,6 +242,12 @@ values).
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
   of 80% (currently ~94%).
+- **What the gates cannot see.** The suite mocks yfinance and stops at
+  `client.py`, so a behaviour change in either boundary passes every gate. For
+  `yfinance` the answer is `tests/smoke.py` run before and after a bump, with a
+  baseline to compare against. For `mcp` it is `tests/test_tools_integration.py`,
+  which travels through `mcp.call_tool` and asserts a `ToolError`'s message
+  arrives, since 2.1.0 dropped exactly that while 246 tests stayed green.
 - CI (GitHub Actions): a `lint` job (ruff + mypy), a `test` matrix running
   `pytest` with coverage on Python 3.11-3.14, a `docker` job that builds the
   image and smoke-tests that the container serves HTTP, and a `fresh-install`
@@ -244,10 +258,14 @@ values).
   takes, and a lockfile hides breakage in the *declared* dependency ranges —
   0.3.0 shipped an unbounded `mcp` requirement, resolved to an incompatible major
   on a fresh install and failed at import while every other job stayed green.
-- Dependabot covers GitHub Actions. It does little for the Python dependencies,
-  because the requirements here are open `>=` ranges and new releases fall inside
-  them, so there is nothing for it to bump. It also does not touch `uv.lock`.
-  Keeping the lockfile current is a manual `uv lock --upgrade`.
+- Dependabot covers GitHub Actions, the Docker base image and, since 0.5.1, the
+  Python dependencies in `uv.lock`. That last entry used to name the `pip`
+  ecosystem, which does not read `uv.lock` — and with every requirement declared
+  as an open `>=` range there was no constraint for it to raise either, so it
+  proposed nothing at all while the lockfile drifted fourteen packages behind.
+  The ecosystem is `uv` now. It still only proposes **direct** dependencies, and
+  transitive ones move only when a direct bump drags them along, so a periodic
+  `uv lock --upgrade` remains the way to refresh the rest.
 - A separate `publish` workflow runs when a GitHub release is published and does
   two independent things. It builds the sdist + wheel (`uv build`) and uploads
   them to **PyPI via Trusted Publishing (OIDC)**, and it builds the container
@@ -258,7 +276,11 @@ values).
   workflow can also be started by hand, which pushes the image as `edge` and
   skips PyPI, because a version may only be uploaded there once. Note that a
   ghcr package is private when first created and has to be made public by an
-  organisation owner, which is also gated by an organisation-level setting.
+  organisation owner, which is also gated by an organisation-level setting. A
+  public package is still absent from the repository sidebar for a logged-out
+  visitor, because that block is fed by an API with no anonymous access. That is
+  not a misconfiguration and there is no setting for it, so the README badge row
+  carries the image link instead.
   One name is used throughout: the PyPI
   distribution, the import package (`benethos_yahoo_finance_mcp`, underscores
   because a module name cannot contain hyphens), the console script, and the
