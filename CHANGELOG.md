@@ -6,6 +6,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- Refreshed the locked dependencies. Fourteen packages moved, all of them patch
+  or minor: `mcp` and `mcp-types` 2.0.0 → 2.1.1, the linter `ruff`, and eleven
+  transitive ones, among them `cryptography`, `pydantic`, `curl-cffi`,
+  `protobuf`, `peewee` and `websockets`. The declared ranges in
+  `pyproject.toml` are unchanged, so this reaches an installation from PyPI not
+  at all and the container image by way of its locked build.
+
+  `yfinance` stays where it is and gets its own change. The unit tests mock it
+  completely, so they stay green through any shift in its behaviour and cannot
+  say whether an upgrade broke something.
+
+  The drift is what made the size of this refresh possible. Dependabot was
+  watching the `pip` ecosystem, which does not read `uv.lock`, and every
+  requirement in `pyproject.toml` is a `>=`, so there was never a constraint to
+  raise either. The entry now names `uv`.
+
 ## [0.5.0] - 2026-08-23
 
 ### Added
