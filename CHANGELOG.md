@@ -22,6 +22,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   watching the `pip` ecosystem, which does not read `uv.lock`, and every
   requirement in `pyproject.toml` is a `>=`, so there was never a constraint to
   raise either. The entry now names `uv`.
+- **`yfinance` 1.6.0 → 1.7.0**, kept out of the refresh above and upgraded on
+  its own. The unit tests mock yfinance completely, so they stay green through
+  any change in its behaviour, field names or response shapes and say nothing
+  about an upgrade at all. `tests/smoke.py` does, run against Yahoo once on
+  either side of the bump: all 26 sections returned data both times and no
+  field went missing. The two runs differ only where they must, in the market
+  overviews, whose futures and European indices kept moving between them.
 
 ## [0.5.0] - 2026-08-23
 
