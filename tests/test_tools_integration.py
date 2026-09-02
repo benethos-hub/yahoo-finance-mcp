@@ -16,6 +16,7 @@ import json
 import pytest
 
 from benethos_yahoo_finance_mcp import client
+from benethos_yahoo_finance_mcp.errors import SymbolNotFoundError
 from benethos_yahoo_finance_mcp.server import mcp
 
 # Minimal valid arguments to invoke each tool (one per registered tool). Optional
@@ -160,3 +161,27 @@ def test_get_financials_forwards_statement_and_freq(monkeypatch):
     _call("get_financials", {"symbol": "AAPL", "statement": "cashflow", "freq": "ttm"})
     assert captured["statement"] == "cashflow"
     assert captured["freq"] == "ttm"
+
+
+def test_tool_error_message_reaches_the_caller(monkeypatch):
+    """A ToolError must arrive with its text, not just as a failed call.
+
+    The SDK forwards the message only for errors deriving from its own
+    ``ToolError``. Everything else counts as unexpected: it is logged with a
+    traceback and the caller learns nothing beyond the name of the tool that
+    failed. These messages exist to tell the model what to do next, so losing
+    them turns a precise answer into a guess. It happened once already, in
+    silence, because every other test stops at the client layer.
+    """
+
+    def boom(*a, **k):
+        raise SymbolNotFoundError("NOPE")
+
+    monkeypatch.setattr(client, "get_quote", boom)
+
+    with pytest.raises(Exception) as excinfo:  # noqa: B017 - the type is the SDK's
+        _call("get_quote", {"symbol": "NOPE"})
+
+    message = str(excinfo.value)
+    assert "No data found for symbol 'NOPE'" in message, message
+    assert "'search' tool" in message, message

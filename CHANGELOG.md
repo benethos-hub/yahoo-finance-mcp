@@ -30,6 +30,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   field went missing. The two runs differ only where they must, in the market
   overviews, whose futures and European indices kept moving between them.
 
+### Fixed
+- **Tool error messages reach the model again.** `ToolError` derived from
+  plain `Exception`, and since `mcp` 2.1.0 the SDK forwards the text only for
+  errors deriving from its own `ToolError`. Everything else counts as
+  unexpected: it is logged with a traceback and the caller is told
+  `Error executing tool <name>` and nothing more.
+
+  What went missing is the part that tells the model what to do next. The
+  advice to look a symbol up with the `search` tool, the distinction between a
+  wrong symbol and data that does not exist for that class of instrument at
+  all, and the note that a rate limit simply needs a retry later. All of it was
+  replaced by a bare statement that something failed, which leaves the model to
+  guess.
+
+  The mocked suite could not see it, because it stops at the client layer and
+  never travels through the SDK. A test now makes that trip and asserts the
+  text arrives.
+
 ## [0.5.0] - 2026-08-23
 
 ### Added
