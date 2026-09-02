@@ -7,13 +7,21 @@ stack trace.
 
 from __future__ import annotations
 
+from mcp.server.mcpserver.exceptions import ToolError as _McpToolError
 
-class ToolError(Exception):
+
+class ToolError(_McpToolError):
     """An error that should be surfaced to the MCP client as-is.
 
     Raise this for expected failure modes (unknown symbol, empty result set,
     invalid argument, upstream rate limiting) so the client receives a concise
     message rather than an internal traceback.
+
+    The base class is the SDK's own ``ToolError``, and that is what makes the
+    message travel. Anything else raised from a tool is treated as unexpected:
+    it is logged with a traceback and the client is told only that the tool
+    failed, without a word of what to do about it. Deriving from a plain
+    ``Exception`` therefore hid every message in this module from the model.
     """
 
 
