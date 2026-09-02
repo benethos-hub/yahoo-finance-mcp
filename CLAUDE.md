@@ -94,11 +94,25 @@ baseline and again afterwards, and check that every section returned data rather
 than trusting the exit code. Without the baseline a green run afterwards cannot
 be told apart from Yahoo simply having a good day.
 
+**They do not cover an `mcp` upgrade either.** The suite stops at `client.py`
+and never travels through the SDK, so a change in the layer between the tools
+and the client passes every gate. Version 2.1.0 did exactly that: it began
+forwarding a tool's error text only for exceptions deriving from the SDK's own
+`ToolError`, and the messages here reached the model as
+`Error executing tool <name>` and nothing else, with 246 tests green. On any
+`mcp` bump, read the release notes for behaviour changes around tool results,
+errors and schemas, and exercise a tool through `mcp.call_tool` rather than
+trusting the suite. `tests/test_tools_integration.py` is where that happens,
+and it now asserts the message text as well.
+
 ## Conventions
 
 - Type hints everywhere; `from __future__ import annotations` at the top.
 - Surface expected failures as `ToolError` subclasses with concise messages —
-  never leak a raw traceback to the client.
+  never leak a raw traceback to the client. `errors.ToolError` derives from the
+  SDK's own `ToolError`, and that is what carries the message: anything else
+  raised from a tool is reported to the client as `Error executing tool <name>`
+  with the text dropped.
 - Default tool output is compact JSON; keep responses small (row caps) to
   respect the client's token budget.
 
