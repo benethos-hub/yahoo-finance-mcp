@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- Locked dependency updates: `lxml` 6.1.2 → 6.1.3 and the linter `ruff`
+  0.16.5 → 0.16.6. Both are patch releases and only `uv.lock` moved, so the
+  declared ranges in `pyproject.toml` are untouched and an installation from
+  PyPI resolves the same way it did before. The container image builds against
+  the lockfile and is therefore the one place the new versions actually land.
+  The formatter is the part of a `ruff` bump that can change a repository
+  without anyone asking for it, and `ruff format --check` reports every file
+  unchanged.
+
 ## [0.5.1] - 2026-09-02
 
 ### Changed
