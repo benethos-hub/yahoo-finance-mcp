@@ -6,13 +6,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-09-14
+
 ### Changed
 - Locked dependency updates: `mcp` and `mcp-types` 2.1.1 → 2.2.0, `lxml`
   6.1.2 → 6.1.3 and the linter `ruff` 0.16.5 → 0.16.7. Only `uv.lock` moved,
   so the declared ranges in `pyproject.toml` are untouched and an installation
   from PyPI resolves the same way it did before. The container image builds
   against the lockfile and is therefore the one place the new versions
-  actually land.
+  actually land, which is what this release is for: the `:latest` image
+  still carried the lockfile of 0.5.1.
+
+  `lxml` 6.1.3 stops parsing external parameter entities when only internal
+  ones were asked for, the XXE class of problem. It sits under the HTML table
+  scraping in `yfinance`, so reaching it would take control of Yahoo's
+  response, but an image without a known hardening is an image to rebuild.
 
   The `mcp` step is the one that needed a look, since the unit tests never
   travel through the SDK. The tool schemas are byte-identical across the two
@@ -502,7 +510,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.4.0...v0.4.1
