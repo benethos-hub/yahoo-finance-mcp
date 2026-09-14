@@ -10,12 +10,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - Locked dependency updates: `mcp` and `mcp-types` 2.1.1 → 2.2.0, `lxml`
-  6.1.2 → 6.1.3 and the linter `ruff` 0.16.5 → 0.16.7. Only `uv.lock` moved,
-  so the declared ranges in `pyproject.toml` are untouched and an installation
-  from PyPI resolves the same way it did before. The container image builds
-  against the lockfile and is therefore the one place the new versions
-  actually land, which is what this release is for: the `:latest` image
-  still carried the lockfile of 0.5.1.
+  6.1.2 → 6.1.3 and the linter `ruff` 0.16.5 → 0.16.7, plus the eleven
+  transitive packages that had moved underneath them since the last refresh,
+  among them `uvicorn` 0.52 → 0.53, `sse-starlette`, `anyio`, `curl-cffi`,
+  `numpy` and `peewee`. Dependabot raises direct dependencies only, so the
+  rest moves when someone asks. Only `uv.lock` moved, so the declared ranges
+  in `pyproject.toml` are untouched and an installation from PyPI resolves
+  the same way it did before. The container image builds against the
+  lockfile and is therefore the one place the new versions actually land,
+  which is what this release is for: the `:latest` image still carried the
+  lockfile of 0.5.1.
 
   `lxml` 6.1.3 stops parsing external parameter entities when only internal
   ones were asked for, the XXE class of problem. It sits under the HTML table
@@ -30,6 +34,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   most 10 000 of them. A client that keeps the GET stream open, as the SDK's
   own does, never notices. Any other client gets a 404 after half an hour of
   silence and initialises again.
+
+  The packages under `yfinance` got the treatment a `yfinance` bump gets: a
+  live smoke run before and after, 26 sections with data both times, 24 of
+  them byte-identical, and the two that differ are the market overviews,
+  which carry live prices.
 
   The formatter is the part of a `ruff` bump that can change a repository
   without anyone asking for it, and `ruff format --check` reports every file
