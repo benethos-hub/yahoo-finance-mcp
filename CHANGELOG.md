@@ -7,14 +7,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
-- Locked dependency updates: `lxml` 6.1.2 → 6.1.3 and the linter `ruff`
-  0.16.5 → 0.16.6. Both are patch releases and only `uv.lock` moved, so the
-  declared ranges in `pyproject.toml` are untouched and an installation from
-  PyPI resolves the same way it did before. The container image builds against
-  the lockfile and is therefore the one place the new versions actually land.
+- Locked dependency updates: `mcp` and `mcp-types` 2.1.1 → 2.2.0, `lxml`
+  6.1.2 → 6.1.3 and the linter `ruff` 0.16.5 → 0.16.7. Only `uv.lock` moved,
+  so the declared ranges in `pyproject.toml` are untouched and an installation
+  from PyPI resolves the same way it did before. The container image builds
+  against the lockfile and is therefore the one place the new versions
+  actually land.
+
+  The `mcp` step is the one that needed a look, since the unit tests never
+  travel through the SDK. The tool schemas are byte-identical across the two
+  versions, and a tool error's text still reaches the caller, in-process and
+  over streamable-http alike. One server default did change: an idle stateful
+  streamable-http session now expires after 30 minutes, and a server holds at
+  most 10 000 of them. A client that keeps the GET stream open, as the SDK's
+  own does, never notices. Any other client gets a 404 after half an hour of
+  silence and initialises again.
+
   The formatter is the part of a `ruff` bump that can change a repository
   without anyone asking for it, and `ruff format --check` reports every file
-  unchanged.
+  unchanged on both steps.
 
 ## [0.5.1] - 2026-09-02
 
