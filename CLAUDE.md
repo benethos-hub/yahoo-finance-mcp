@@ -120,3 +120,34 @@ and it now asserts the message text as well.
 
 - Commit only when the user asks. Use clear, descriptive messages.
 - Do not commit `.venv/`, `__pycache__/`, or `*.egg-info/` (already gitignored).
+
+## Releasing
+
+A release is its own `release/X.Y.Z` branch and PR. In this order:
+
+1. **`uv lock --upgrade --dry-run` first.** Dependabot lifts direct
+   dependencies only, and the transitive ones underneath move only when a
+   direct bump happens to drag them along. An index installation (`uvx`,
+   `pip`) resolves the newest of everything at install time, the container
+   image freezes whatever `uv.lock` says, so a release is the moment the image
+   catches up with what every index user already has. Refresh with
+   `uv lock --upgrade` as its own commit, then the gates, plus the `yfinance`
+   or `mcp` checks above for anything that sits under those. A security hole
+   does not wait for this step: Dependabot's security updates read the whole
+   lockfile, transitive packages included, and arrive on their own.
+2. Bump `version` in `pyproject.toml`, then `uv lock` and `uv sync --extra dev`
+   (the packaging tests read the *installed* metadata). Let
+   `tests/test_packaging.py` name every stale version example instead of
+   hunting for them by eye.
+3. Close `[Unreleased]` in `CHANGELOG.md` as `[X.Y.Z] - <date>` and add the
+   compare links.
+4. After the squash merge: annotated tag `vX.Y.Z`, push it, then
+   `gh release create vX.Y.Z --verify-tag` with the changelog section as the
+   notes. Publishing the release is what triggers `publish.yml`.
+5. **Check what shipped, not the build.** The three ghcr tags (`X.Y.Z`, `X.Y`,
+   `latest`) must carry the same `org.opencontainers.image.revision`
+   annotation, the versions *inside* the image must be what the lockfile says
+   (`docker run --rm --entrypoint python <image> -c "import
+   importlib.metadata as m; print(m.version('mcp'))"`), and PyPI's simple
+   index with a cache-buster must list the version — the JSON API reports the
+   old one for minutes after an upload.

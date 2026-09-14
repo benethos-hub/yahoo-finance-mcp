@@ -265,7 +265,11 @@ values).
   proposed nothing at all while the lockfile drifted fourteen packages behind.
   The ecosystem is `uv` now. It still only proposes **direct** dependencies, and
   transitive ones move only when a direct bump drags them along, so a periodic
-  `uv lock --upgrade` remains the way to refresh the rest.
+  `uv lock --upgrade` remains the way to refresh the rest. The moment for it is
+  **before every version bump**, as the first step of the release checklist in
+  CLAUDE.md. 0.5.2 is why: three direct packages had moved through Dependabot
+  and eleven transitive ones underneath had not, and an image that ships the
+  first without the second is half a rebuild.
 - A separate `publish` workflow runs when a GitHub release is published and does
   two independent things. It builds the sdist + wheel (`uv build`) and uploads
   them to **PyPI via Trusted Publishing (OIDC)**, and it builds the container
