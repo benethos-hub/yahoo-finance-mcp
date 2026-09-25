@@ -284,11 +284,8 @@ def get_history(
 ) -> dict[str, Any]:
     """Get historical OHLCV (open/high/low/close/volume) data for a symbol.
 
-    ``period`` accepts Yahoo values such as ``1d``, ``5d``, ``1mo``, ``6mo``,
-    ``1y``, ``5y``, ``max``. ``interval`` accepts e.g. ``1m``, ``5m``, ``1h``,
-    ``1d``, ``1wk``, ``1mo``. Provide ``start`` (and optional ``end``) as
-    ``YYYY-MM-DD`` to query an explicit date range instead of ``period``.
-    Results are capped at the most recent 250 rows.
+    Query a look-back ``period`` or an explicit ``start``/``end`` range. Results
+    are capped at the most recent 250 rows, with ``truncated`` set when cut.
     """
     return client.get_history(
         symbol, period=period, interval=interval, start=start, end=end
@@ -326,11 +323,8 @@ def get_financials(
 ) -> dict[str, Any]:
     """Get a financial statement for a Yahoo symbol.
 
-    ``statement`` is one of ``income`` (income statement), ``balance`` (balance
-    sheet), or ``cashflow`` (cash flow statement). ``freq`` is ``annual``,
-    ``quarterly``, or ``ttm`` (trailing twelve months, available for the income
-    and cash-flow statements only). Each row is a line item and each column a
-    reporting periods.
+    Each row is a line item and each column a reporting period, most recent
+    first.
     """
     return client.get_financials(symbol, statement=statement, freq=freq)
 

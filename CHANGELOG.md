@@ -10,6 +10,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `get_financials` names its period columns with a plain date,
   `2025-09-30`, where it used to print `2025-09-30 00:00:00`. The time was
   always midnight and said nothing, and every row repeats every column name.
+- The descriptions of `get_history` and `get_financials` no longer repeat the
+  allowed values their parameters already list. Every client pays for each
+  tool description on every request, and these two said everything twice.
 
 ### Fixed
 - `--allowed-origins` on its own (or `YF_MCP_ALLOWED_ORIGINS`) locked every
