@@ -446,6 +446,13 @@ def get_dividends(symbol: str, *, max_rows: int = 250) -> dict[str, Any]:
     except Exception as exc:  # noqa: BLE001
         raise _wrap_upstream(exc, f"Failed to load dividends for {symbol!r}") from exc
 
+    # yfinance tells the two empty cases apart, and so must the answer. A
+    # symbol it cannot find yields None for both series, while a real
+    # instrument that never paid or split, BRK-B or BTC-USD, yields empty
+    # series. Only the first is an error. Probed live 2026-09-25.
+    if dividends is None and splits is None:
+        raise SymbolNotFoundError(symbol)
+
     def _series_records(series: Any, value_key: str) -> list[dict[str, Any]]:
         if series is None or series.empty:
             return []

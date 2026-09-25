@@ -357,9 +357,18 @@ def test_get_financials_ttm_not_available_for_balance(patch_ticker):
 # --- get_dividends --------------------------------------------------------
 
 
-def test_get_dividends_handles_none(patch_ticker):
+def test_get_dividends_unknown_symbol_raises(patch_ticker):
+    """yfinance answers an unknown symbol with None for both series."""
     patch_ticker(FakeTicker(dividends=None, splits=None))
-    out = client.get_dividends("aapl")
+    with pytest.raises(SymbolNotFoundError):
+        client.get_dividends("nope")
+
+
+def test_get_dividends_non_payer_is_not_an_error(patch_ticker):
+    """A real instrument without dividends or splits gets empty lists."""
+    empty = pd.Series([], dtype=float)
+    patch_ticker(FakeTicker(dividends=empty, splits=empty))
+    out = client.get_dividends("brk-b")
     assert out["dividends"] == []
     assert out["splits"] == []
 

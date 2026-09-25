@@ -46,6 +46,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   left out. The 60 per side are now centred where the contracts switch
   between in and out of the money, and a new `truncated` flag says when a
   chain was cut.
+- `get_dividends` answered an unknown symbol with two empty lists, the same
+  answer a real company that never paid a dividend gets, while every other
+  tool says the symbol was not found. yfinance does tell the two apart, with
+  `None` for an unknown symbol and an empty series for a real one, and the
+  tool now does too.
 
 ## [0.5.2] - 2026-09-14
 
