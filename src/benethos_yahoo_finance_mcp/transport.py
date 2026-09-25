@@ -52,15 +52,24 @@ def token_from_env() -> str | None:
 def bearer_middleware(app: ASGIApp, token: str) -> ASGIApp:
     """Wrap an ASGI app so every HTTP request must carry the bearer token.
 
-    Non-HTTP scopes pass through untouched. The lifespan scope is one of them,
-    and swallowing it would leave the session manager unstarted and the server
-    answering nothing at all.
+    The lifespan scope passes through untouched, because swallowing it would
+    leave the session manager unstarted and the server answering nothing at
+    all. It is the only scope that does. The SDK serves no WebSocket route
+    today, but a guard that waves through every scope it was not written for
+    would open the door the day one appears, so anything else is refused: a
+    WebSocket handshake is closed with 1008 (policy violation) before it is
+    accepted, and an unknown scope type gets no answer at all.
     """
     expected = token.encode()
 
     async def guarded(scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http":
+        if scope["type"] == "lifespan":
             await app(scope, receive, send)
+            return
+        if scope["type"] == "websocket":
+            await send({"type": "websocket.close", "code": 1008})
+            return
+        if scope["type"] != "http":
             return
 
         headers = dict(scope.get("headers") or [])

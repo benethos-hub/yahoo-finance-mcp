@@ -68,6 +68,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   HTTP server kept every answer nobody asked for again. Every hundredth write
   now sweeps as well.
 
+### Security
+- The bearer guard checked HTTP requests and waved every other ASGI scope
+  through unchecked. The SDK serves no WebSocket route today, so nothing was
+  reachable that way, but the day one appears it would have been open. Only
+  the lifespan scope passes now. A WebSocket handshake is closed with 1008
+  before it is accepted, and any other scope type is not answered.
+
 ## [0.5.2] - 2026-09-14
 
 ### Changed
