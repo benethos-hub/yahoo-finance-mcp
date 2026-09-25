@@ -67,6 +67,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The result cache swept expired entries at startup only, so a long-running
   HTTP server kept every answer nobody asked for again. Every hundredth write
   now sweeps as well.
+- A port outside 1 to 65535, from `--port` or `YF_MCP_PORT`, got as far as
+  uvicorn and ended in a traceback. It is a usage error now, with a message
+  saying what the range is.
 
 ### Security
 - The bearer guard checked HTTP requests and waved every other ASGI scope

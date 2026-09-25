@@ -769,6 +769,12 @@ def main(argv: list[str] | None = None) -> None:
         mcp.run(transport="stdio")
         return
 
+    # Checked here rather than by argparse, because YF_MCP_PORT arrives as the
+    # parser's default and argparse never validates a default. Only an HTTP
+    # transport binds the port, so stdio does not trip over a stray value.
+    if not 1 <= args.port <= 65535:
+        parser.error(f"--port must be between 1 and 65535, got {args.port}")
+
     path = _http_path(args)
     logger.info(
         "Starting Yahoo Finance MCP server (%s) on http://%s:%s%s",

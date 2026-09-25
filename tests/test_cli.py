@@ -119,6 +119,30 @@ def _capture_http(monkeypatch):
     return called
 
 
+@pytest.mark.parametrize("port", ["0", "65536", "-1"])
+def test_http_rejects_a_port_out_of_range(monkeypatch, capsys, port):
+    """A bad port is a usage error, not a uvicorn traceback."""
+    called = _capture_http(monkeypatch)
+    with pytest.raises(SystemExit) as info:
+        server.main(["--transport", "streamable-http", "--port", port])
+    assert info.value.code == 2
+    assert "--port must be between 1 and 65535" in capsys.readouterr().err
+    assert "app" not in called
+
+
+def test_http_rejects_an_env_port_out_of_range(monkeypatch):
+    _capture_http(monkeypatch)
+    monkeypatch.setenv("YF_MCP_PORT", "99999")
+    with pytest.raises(SystemExit):
+        server.main(["--transport", "streamable-http"])
+
+
+def test_stdio_ignores_the_port(monkeypatch):
+    called = _capture_run(monkeypatch)
+    server.main(["--port", "0"])
+    assert called["transport"] == "stdio"
+
+
 def test_main_runs_stdio_by_default(monkeypatch):
     called = _capture_run(monkeypatch)
     server.main([])
