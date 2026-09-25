@@ -28,6 +28,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   resolves ISINs in the `Ticker` constructor and raises there, and the
   constructor was the one upstream call outside every `try`. It now answers
   as an unknown symbol, and a rate limit during the lookup as a rate limit.
+  In `get_quotes` such a symbol used to fail the whole batch, and it is now
+  listed under `not_found` like any other miss.
   The lookup no longer runs under the ticker cache's lock either, where one
   slow search held up every other tool call.
 - A failing result cache failed the tool with it. Two processes sharing one

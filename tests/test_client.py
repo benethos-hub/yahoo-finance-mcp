@@ -184,6 +184,21 @@ def _patch_tickers(monkeypatch, mapping):
     monkeypatch.setattr(client, "_get_ticker", lambda s: mapping[s.strip().upper()])
 
 
+def test_get_quotes_unresolvable_isin_is_a_per_symbol_miss(monkeypatch):
+    """One bad ISIN must not fail the whole batch."""
+    good = FakeTicker(fast_info={"lastPrice": 1.0})
+
+    def resolve(symbol):
+        if symbol == "ZZ0000000009":
+            raise SymbolNotFoundError(symbol)
+        return good
+
+    monkeypatch.setattr(client, "_get_ticker", resolve)
+    out = client.get_quotes(["AAPL", "ZZ0000000009"])
+    assert [q["symbol"] for q in out["quotes"]] == ["AAPL"]
+    assert out["not_found"] == ["ZZ0000000009"]
+
+
 def test_get_quotes_returns_rows(monkeypatch):
     _patch_tickers(
         monkeypatch,

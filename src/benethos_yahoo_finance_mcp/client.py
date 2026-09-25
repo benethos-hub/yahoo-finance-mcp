@@ -240,7 +240,12 @@ def get_quotes(symbols: list[str], *, max_symbols: int = _MAX_QUOTES) -> dict[st
     quotes: list[dict[str, Any]] = []
     not_found: list[str] = []
     for sym in cleaned:
-        ticker = _get_ticker(sym)
+        try:
+            ticker = _get_ticker(sym)
+        except SymbolNotFoundError:
+            # An ISIN-shaped symbol Yahoo cannot resolve fails already here.
+            not_found.append(sym)
+            continue
         try:
             fast = ticker.fast_info
         except YFRateLimitError as exc:
