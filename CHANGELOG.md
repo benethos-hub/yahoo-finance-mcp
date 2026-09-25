@@ -23,6 +23,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   one. Over HTTP a caller decides how many symbols that is. Expired entries
   are now dropped on every insert and the cache holds at most 256, least
   recently used first out.
+- A symbol shaped like an ISIN that Yahoo cannot resolve, say one with a wrong
+  check digit, reached the model as a bare `Error executing tool`. yfinance
+  resolves ISINs in the `Ticker` constructor and raises there, and the
+  constructor was the one upstream call outside every `try`. It now answers
+  as an unknown symbol, and a rate limit during the lookup as a rate limit.
+  The lookup no longer runs under the ticker cache's lock either, where one
+  slow search held up every other tool call.
 
 ## [0.5.2] - 2026-09-14
 

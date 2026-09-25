@@ -1194,6 +1194,32 @@ def test_get_ticker_cache_drops_expired_entries(monkeypatch):
     assert list(client._ticker_cache) == ["NEW"]
 
 
+def test_get_ticker_unresolvable_isin_is_symbol_not_found(monkeypatch):
+    """yfinance resolves ISIN-shaped input in the constructor and raises
+    ValueError when Yahoo knows no such ISIN. That must not escape raw."""
+    client._ticker_cache.clear()
+
+    def unresolvable(symbol):
+        raise ValueError(f"Invalid ISIN number: {symbol}")
+
+    monkeypatch.setattr(client.yf, "Ticker", unresolvable)
+    with pytest.raises(SymbolNotFoundError) as info:
+        client._get_ticker("zz0000000009")
+    assert info.value.symbol == "ZZ0000000009"
+    assert "ZZ0000000009" not in client._ticker_cache
+
+
+def test_get_ticker_rate_limit_while_resolving(monkeypatch):
+    client._ticker_cache.clear()
+
+    def throttled(symbol):
+        raise YFRateLimitError()
+
+    monkeypatch.setattr(client.yf, "Ticker", throttled)
+    with pytest.raises(RateLimitError):
+        client._get_ticker("US0378331005")
+
+
 def test_get_ticker_empty_symbol_raises():
     with pytest.raises(ToolError):
         client._get_ticker("   ")

@@ -80,11 +80,28 @@ def _get_ticker(symbol: str) -> yf.Ticker:
         if cached is not None and now - cached[0] < _TICKER_TTL:
             _ticker_cache.move_to_end(key)
             return cached[1]
+
+    # Built outside the lock. For anything shaped like an ISIN the constructor
+    # resolves it with a search request on the spot, and holding the lock
+    # through that would stall every other tool call in the meantime. Two
+    # threads may occasionally both build the same ticker, and the later one
+    # simply wins the slot.
+    #
+    # The constructor is also the one yfinance call that sat outside every
+    # try block. An ISIN-shaped string Yahoo cannot resolve raises ValueError
+    # there, which reached the model as a bare "Error executing tool".
+    try:
         ticker = yf.Ticker(key)
+    except ValueError as exc:
+        raise SymbolNotFoundError(key) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise _wrap_upstream(exc, f"Failed to resolve {key!r}") from exc
+
+    with _cache_lock:
         _ticker_cache[key] = (now, ticker)
         _ticker_cache.move_to_end(key)
         _evict_tickers(now)
-        return ticker
+    return ticker
 
 
 def _evict_tickers(now: float) -> None:
