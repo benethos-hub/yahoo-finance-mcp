@@ -609,6 +609,10 @@ def _around_the_money(
     """
     if df is None or df.empty:
         return [], False
+    if "contractSymbol" in df.columns:
+        # The frame's own index is a row counter. The contract symbol is what
+        # names a row, so it takes the counter's place.
+        df = df.set_index("contractSymbol")
     total = len(df)
     if total <= limit:
         return dataframe_to_records(df, max_rows=total), False

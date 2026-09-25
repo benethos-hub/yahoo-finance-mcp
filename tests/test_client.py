@@ -569,6 +569,17 @@ def test_get_options_window_stays_inside_the_chain(patch_ticker):
     assert [r["strike"] for r in out["puts"]] == [16.0, 17.0, 18.0, 19.0]
 
 
+def test_get_options_rows_are_keyed_by_contract(patch_ticker):
+    """No positional "index" column, the contract symbol names the row."""
+    import types
+
+    calls = pd.DataFrame({"contractSymbol": ["AAPL1C100"], "strike": [100.0]})
+    chain = types.SimpleNamespace(calls=calls, puts=pd.DataFrame())
+    patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
+    out = client.get_options("aapl", expiration="2024-01-19")
+    assert out["calls"] == [{"contractSymbol": "AAPL1C100", "strike": 100.0}]
+
+
 def test_get_options_short_chain_is_not_truncated(patch_ticker):
     import types
 
