@@ -59,6 +59,25 @@ def to_jsonable(value: Any) -> Any:
     return str(value)
 
 
+def _column_key(col: Any) -> str:
+    """A column label as a JSON object key.
+
+    Financial statements label their columns with the period end as a
+    midnight ``Timestamp``, which ``str()`` renders as ``2025-09-30 00:00:00``.
+    A plain ISO date says the same in ten characters, and every row repeats
+    every key. Anything else goes through :func:`to_jsonable` first, so a
+    timestamp with a time or a zone keeps its ISO form.
+    """
+    if (
+        isinstance(col, datetime)
+        and col.tzinfo is None
+        and col.time() == datetime.min.time()
+    ):
+        return col.date().isoformat()
+    key = to_jsonable(col)
+    return key if isinstance(key, str) else str(key)
+
+
 def dataframe_to_records(
     df: pd.DataFrame | None,
     *,
@@ -88,6 +107,6 @@ def dataframe_to_records(
     for idx, row in frame.iterrows():
         record: dict[str, Any] = {key: to_jsonable(idx)}
         for col, val in row.items():
-            record[str(col)] = to_jsonable(val)
+            record[_column_key(col)] = to_jsonable(val)
         records.append(record)
     return records

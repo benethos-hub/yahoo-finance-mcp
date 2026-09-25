@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- `get_financials` names its period columns with a plain date,
+  `2025-09-30`, where it used to print `2025-09-30 00:00:00`. The time was
+  always midnight and said nothing, and every row repeats every column name.
+
 ### Fixed
 - `--allowed-origins` on its own (or `YF_MCP_ALLOWED_ORIGINS`) locked every
   client out with HTTP 421. It switched the DNS-rebinding guard on with an
