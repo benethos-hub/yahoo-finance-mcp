@@ -18,6 +18,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   sheet has 69 rows, and Net Debt, Total Debt, Working Capital and Tangible
   Book Value were among the nine that went missing. Every line item is
   returned now, in the order Yahoo reports them.
+- The in-memory ticker cache grew without bound. Every distinct symbol left a
+  `yf.Ticker` behind, with whatever it had loaded, and nothing ever removed
+  one. Over HTTP a caller decides how many symbols that is. Expired entries
+  are now dropped on every insert and the cache holds at most 256, least
+  recently used first out.
 
 ## [0.5.2] - 2026-09-14
 

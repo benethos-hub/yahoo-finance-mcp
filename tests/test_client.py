@@ -1168,6 +1168,32 @@ def test_get_ticker_caches_and_is_case_insensitive(monkeypatch):
     assert constructed == ["AAPL"]  # built once, key upper-cased
 
 
+def test_get_ticker_cache_is_bounded(monkeypatch):
+    """Distinct symbols past the cap evict the least recently used one."""
+    client._ticker_cache.clear()
+    monkeypatch.setattr(client, "_TICKER_CACHE_MAX", 3)
+    monkeypatch.setattr(client.yf, "Ticker", lambda symbol: FakeTicker())
+
+    for sym in ("A", "B", "C"):
+        client._get_ticker(sym)
+    client._get_ticker("A")  # A is now the most recently used
+    client._get_ticker("D")
+    assert list(client._ticker_cache) == ["C", "A", "D"]
+
+
+def test_get_ticker_cache_drops_expired_entries(monkeypatch):
+    """A stale entry goes on the next insert, not only when it is asked for."""
+    client._ticker_cache.clear()
+    clock = [1000.0]
+    monkeypatch.setattr(client.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(client.yf, "Ticker", lambda symbol: FakeTicker())
+
+    client._get_ticker("OLD")
+    clock[0] += client._TICKER_TTL + 1
+    client._get_ticker("NEW")
+    assert list(client._ticker_cache) == ["NEW"]
+
+
 def test_get_ticker_empty_symbol_raises():
     with pytest.raises(ToolError):
         client._get_ticker("   ")

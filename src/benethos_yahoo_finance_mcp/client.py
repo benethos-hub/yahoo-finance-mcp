@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections import OrderedDict
 from threading import Lock
 from typing import Any
 
@@ -38,7 +39,13 @@ def _wrap_upstream(exc: Exception, message: str) -> ToolError:
 # stay fresh, long enough to coalesce bursts of related tool calls.
 _TICKER_TTL = 60.0
 
-_ticker_cache: dict[str, tuple[float, yf.Ticker]] = {}
+# Upper bound on cached Ticker objects. Each one keeps whatever it has loaded,
+# price history and statements included, so an unbounded cache grows with every
+# distinct symbol ever asked for. Over HTTP that is a caller's choice, and one
+# get_quotes call names 50 at a time. Least recently used goes first.
+_TICKER_CACHE_MAX = 256
+
+_ticker_cache: OrderedDict[str, tuple[float, yf.Ticker]] = OrderedDict()
 _cache_lock = Lock()
 
 # Fields surfaced from Ticker.fast_info for get_quote.
@@ -71,10 +78,26 @@ def _get_ticker(symbol: str) -> yf.Ticker:
     with _cache_lock:
         cached = _ticker_cache.get(key)
         if cached is not None and now - cached[0] < _TICKER_TTL:
+            _ticker_cache.move_to_end(key)
             return cached[1]
         ticker = yf.Ticker(key)
         _ticker_cache[key] = (now, ticker)
+        _ticker_cache.move_to_end(key)
+        _evict_tickers(now)
         return ticker
+
+
+def _evict_tickers(now: float) -> None:
+    """Drop expired entries, then the least recently used beyond the cap.
+
+    Called with the lock held. Expired entries are not ordered by age, since a
+    hit moves an entry to the end without renewing it, so they are found by a
+    full pass. At a few hundred entries that costs nothing.
+    """
+    for key in [k for k, (t, _) in _ticker_cache.items() if now - t >= _TICKER_TTL]:
+        del _ticker_cache[key]
+    while len(_ticker_cache) > _TICKER_CACHE_MAX:
+        _ticker_cache.popitem(last=False)
 
 
 @cache.cached("search")
