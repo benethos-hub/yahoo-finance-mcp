@@ -121,6 +121,13 @@ def _transport_security_for(
 
 
 # Log to stderr only: stdout carries the MCP JSON-RPC protocol.
+#
+# This runs at import and has to stay above the MCPServer construction below.
+# The SDK's constructor calls logging.basicConfig itself, with a RichHandler,
+# and basicConfig only ever takes effect once. Whoever calls it first decides
+# the format. Moved into main(), this call would come second and do nothing,
+# and every log line would come out in Rich's layout, wrapped to a terminal
+# width that a container log does not have.
 logging.basicConfig(
     level=_default_log_level(),
     stream=sys.stderr,

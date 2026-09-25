@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import subprocess
+import sys
 
 from benethos_yahoo_finance_mcp.server import mcp
 
@@ -52,3 +54,21 @@ def test_every_parameter_has_a_description():
         assert props, f"{tool.name} has no parameters in its schema"
         for param, spec in props.items():
             assert spec.get("description"), f"{tool.name}.{param} missing description"
+
+
+def test_root_logging_is_ours_not_the_sdks():
+    """Our plain stderr handler wins over the RichHandler the SDK installs.
+
+    Both call logging.basicConfig at import and only the first counts, so this
+    pins the ordering in server.py. Run in a fresh interpreter because pytest
+    has its own handlers on the root logger.
+    """
+    code = (
+        "import logging, sys, benethos_yahoo_finance_mcp.server; "
+        "h = logging.getLogger().handlers; "
+        "print(len(h), type(h[0]).__name__, h[0].stream is sys.stderr)"
+    )
+    out = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True
+    )
+    assert out.stdout.split() == ["1", "StreamHandler", "True"]
