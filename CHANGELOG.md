@@ -56,6 +56,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   counts five years ago got a series that silently began 18 months back. The
   description now says so and tells the caller to pass `start` for anything
   older.
+- `get_recommendations` carried a meaningless `index` of 0 to 3 on every row
+  of the trend table, the frame's row counter. The rows are now keyed by
+  `period` alone, which is what the counter stood next to.
 
 ## [0.5.2] - 2026-09-14
 

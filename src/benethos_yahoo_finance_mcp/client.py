@@ -518,7 +518,16 @@ def get_recommendations(symbol: str) -> dict[str, Any]:
             exc, f"Failed to load recommendations for {symbol!r}"
         ) from exc
 
-    trend = dataframe_to_records(recs, max_rows=12) if recs is not None else []
+    # The trend table has a plain RangeIndex, which would come out as an
+    # "index" of 0 to 3 on every row, while the column that names the row
+    # ("0m", "-1m", ...) is "period". Make that the key and drop the counter.
+    if recs is not None and "period" in recs.columns:
+        recs = recs.set_index("period")
+    trend = (
+        dataframe_to_records(recs, max_rows=12, index_name="period")
+        if recs is not None
+        else []
+    )
     if not trend and not targets:
         raise SymbolNotFoundError(symbol)
 

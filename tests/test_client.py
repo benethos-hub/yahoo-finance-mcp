@@ -435,6 +435,17 @@ def test_get_recommendations_combines_trend_and_targets(patch_ticker):
     assert out["recommendation_trend"][0]["buy"] == 10
 
 
+def test_get_recommendations_rows_are_keyed_by_period(patch_ticker):
+    """No positional "index" column, the period names the row."""
+    recs = pd.DataFrame({"period": ["0m", "-1m"], "buy": [10, 9]})
+    patch_ticker(FakeTicker(recommendations=recs, analyst_price_targets=None))
+    out = client.get_recommendations("aapl")
+    assert out["recommendation_trend"] == [
+        {"period": "0m", "buy": 10},
+        {"period": "-1m", "buy": 9},
+    ]
+
+
 def test_get_recommendations_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(recommendations=None, analyst_price_targets=None))
     with pytest.raises(SymbolNotFoundError):
