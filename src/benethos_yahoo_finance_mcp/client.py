@@ -224,7 +224,7 @@ _MAX_QUOTES = 50
 # test would store it, and a momentary upstream hiccup would then answer every
 # repeat of the call with "none found" for the whole TTL.
 @cache.cached("quotes", worth_keeping=lambda result: result["count"] > 0)
-def get_quotes(symbols: list[str], *, max_symbols: int = _MAX_QUOTES) -> dict[str, Any]:
+def get_quotes(symbols: list[str], *, limit: int = _MAX_QUOTES) -> dict[str, Any]:
     """Return compact current quotes for several symbols at once.
 
     Each symbol is looked up individually; symbols that return no data are
@@ -233,7 +233,7 @@ def get_quotes(symbols: list[str], *, max_symbols: int = _MAX_QUOTES) -> dict[st
     if not symbols:
         raise ToolError("At least one symbol is required.")
 
-    max_symbols = max(1, min(int(max_symbols), _MAX_QUOTES))
+    limit = max(1, min(int(limit), _MAX_QUOTES))
     # Normalize, drop blanks, de-duplicate (preserving order), and cap.
     seen: set[str] = set()
     cleaned: list[str] = []
@@ -244,8 +244,8 @@ def get_quotes(symbols: list[str], *, max_symbols: int = _MAX_QUOTES) -> dict[st
             cleaned.append(sym)
     if not cleaned:
         raise ToolError("At least one non-empty symbol is required.")
-    truncated = len(cleaned) > max_symbols
-    cleaned = cleaned[:max_symbols]
+    truncated = len(cleaned) > limit
+    cleaned = cleaned[:limit]
 
     quotes: list[dict[str, Any]] = []
     not_found: list[str] = []
@@ -286,7 +286,7 @@ def get_history(
     interval: str = "1d",
     start: str | None = None,
     end: str | None = None,
-    max_rows: int = 250,
+    limit: int = 250,
 ) -> dict[str, Any]:
     """Return historical OHLCV data for ``symbol``.
 
@@ -309,7 +309,7 @@ def get_history(
     if df is None or df.empty:
         raise SymbolNotFoundError(symbol)
 
-    rows = dataframe_to_records(df, max_rows=max_rows, index_name="date")
+    rows = dataframe_to_records(df, max_rows=limit, index_name="date")
     return {
         "symbol": _normalize_symbol(symbol),
         "interval": interval,
@@ -401,7 +401,7 @@ def get_financials(
     *,
     statement: str = "income",
     freq: str = "annual",
-    max_rows: int = MAX_ROWS,
+    limit: int = MAX_ROWS,
 ) -> dict[str, Any]:
     """Return a financial statement for ``symbol``.
 
@@ -442,7 +442,7 @@ def get_financials(
     # annual balance sheet has 69: Net Debt, Total Debt, Working Capital and
     # Tangible Book Value were among the nine that vanished without a word.
     # No statement comes near MAX_ROWS, so in practice nothing is cut now.
-    rows = dataframe_to_records(df, max_rows=max_rows, index_name="item", head=True)
+    rows = dataframe_to_records(df, max_rows=limit, index_name="item", head=True)
     return {
         "symbol": _normalize_symbol(symbol),
         "statement": statement,
@@ -452,7 +452,7 @@ def get_financials(
 
 
 @cache.cached("dividends")
-def get_dividends(symbol: str, *, max_rows: int = 250) -> dict[str, Any]:
+def get_dividends(symbol: str, *, limit: int = 250) -> dict[str, Any]:
     """Return historical dividends and stock splits for ``symbol``."""
     ticker = _get_ticker(symbol)
     with _upstream(f"Failed to load dividends for {symbol!r}"):
@@ -469,7 +469,7 @@ def get_dividends(symbol: str, *, max_rows: int = 250) -> dict[str, Any]:
     def _series_records(series: Any, value_key: str) -> list[dict[str, Any]]:
         if series is None or series.empty:
             return []
-        tail = series.tail(max_rows)
+        tail = series.tail(limit)
         return [
             {"date": to_jsonable(idx), value_key: to_jsonable(val)}
             for idx, val in tail.items()
@@ -555,13 +555,13 @@ def get_options(
     symbol: str,
     *,
     expiration: str | None = None,
-    max_rows: int = 60,
+    limit: int = 60,
 ) -> dict[str, Any]:
     """Return the option chain for ``symbol``.
 
     Without ``expiration`` the available expiration dates are returned. With an
     ``expiration`` (``YYYY-MM-DD``, one of the listed dates) the calls and puts
-    for that date are returned, at most ``max_rows`` each, centred on the money.
+    for that date are returned, at most ``limit`` each, centred on the money.
     """
     ticker = _get_ticker(symbol)
     with _upstream(f"Failed to load options for {symbol!r}"):
@@ -583,8 +583,8 @@ def get_options(
     with _upstream(f"Failed to load option chain for {symbol!r} {expiration}"):
         chain = ticker.option_chain(expiration)
 
-    calls, calls_cut = _around_the_money(chain.calls, max_rows, itm_below=True)
-    puts, puts_cut = _around_the_money(chain.puts, max_rows, itm_below=False)
+    calls, calls_cut = _around_the_money(chain.calls, limit, itm_below=True)
+    puts, puts_cut = _around_the_money(chain.puts, limit, itm_below=False)
     return {
         "symbol": _normalize_symbol(symbol),
         "expiration": expiration,
@@ -595,9 +595,9 @@ def get_options(
 
 
 def _around_the_money(
-    df: Any, max_rows: int, *, itm_below: bool
+    df: Any, limit: int, *, itm_below: bool
 ) -> tuple[list[dict[str, Any]], bool]:
-    """The ``max_rows`` contracts nearest the money, and whether any were cut.
+    """The ``limit`` contracts nearest the money, and whether any were cut.
 
     A chain comes sorted by strike, and a wide one (SPY has 300 strikes per
     expiry) used to be cut to its highest 60 strikes, which left out the
@@ -610,16 +610,16 @@ def _around_the_money(
     if df is None or df.empty:
         return [], False
     total = len(df)
-    if total <= max_rows:
+    if total <= limit:
         return dataframe_to_records(df, max_rows=total), False
     if "inTheMoney" in df.columns:
         itm = int(df["inTheMoney"].fillna(False).astype(bool).sum())
         pivot = itm if itm_below else total - itm
     else:
         pivot = total // 2
-    start = max(0, min(pivot - max_rows // 2, total - max_rows))
-    window = df.iloc[start : start + max_rows]
-    return dataframe_to_records(window, max_rows=max_rows), True
+    start = max(0, min(pivot - limit // 2, total - limit))
+    window = df.iloc[start : start + limit]
+    return dataframe_to_records(window, max_rows=limit), True
 
 
 @cache.cached("earnings")
@@ -683,7 +683,7 @@ def get_estimates(symbol: str) -> dict[str, Any]:
 
 
 @cache.cached("upgrades_downgrades")
-def get_upgrades_downgrades(symbol: str, *, max_rows: int = 50) -> dict[str, Any]:
+def get_upgrades_downgrades(symbol: str, *, limit: int = 50) -> dict[str, Any]:
     """Return recent analyst rating changes for ``symbol``.
 
     Each entry is a firm's upgrade/downgrade with the from/to grade and action,
@@ -696,7 +696,7 @@ def get_upgrades_downgrades(symbol: str, *, max_rows: int = 50) -> dict[str, Any
     if df is not None and not df.empty:
         # Source order varies, so sort newest-first before capping.
         df = df.sort_index(ascending=False)
-    rows = dataframe_to_records(df, max_rows=max_rows, index_name="date", head=True)
+    rows = dataframe_to_records(df, max_rows=limit, index_name="date", head=True)
     if not rows:
         raise SymbolNotFoundError(symbol)
 
@@ -704,7 +704,7 @@ def get_upgrades_downgrades(symbol: str, *, max_rows: int = 50) -> dict[str, Any
 
 
 @cache.cached("holders")
-def get_holders(symbol: str, *, max_rows: int = 25) -> dict[str, Any]:
+def get_holders(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     """Return the ownership breakdown for ``symbol``.
 
     Combines the high-level holder summary (insider/institutional percentages)
@@ -719,10 +719,8 @@ def get_holders(symbol: str, *, max_rows: int = 25) -> dict[str, Any]:
 
     major_rows = dataframe_to_records(major, max_rows=10, index_name="metric")
     # Both lists are sorted largest-holder-first, so the cap keeps the head.
-    institutional_rows = dataframe_to_records(
-        institutional, max_rows=max_rows, head=True
-    )
-    mutualfund_rows = dataframe_to_records(mutualfund, max_rows=max_rows, head=True)
+    institutional_rows = dataframe_to_records(institutional, max_rows=limit, head=True)
+    mutualfund_rows = dataframe_to_records(mutualfund, max_rows=limit, head=True)
     if not major_rows and not institutional_rows and not mutualfund_rows:
         raise SymbolNotFoundError(symbol)
 
@@ -735,7 +733,7 @@ def get_holders(symbol: str, *, max_rows: int = 25) -> dict[str, Any]:
 
 
 @cache.cached("insider_activity")
-def get_insider_activity(symbol: str, *, max_rows: int = 50) -> dict[str, Any]:
+def get_insider_activity(symbol: str, *, limit: int = 50) -> dict[str, Any]:
     """Return insider trading activity for ``symbol``.
 
     Combines individual insider transactions, a 6-month purchases/sales summary,
@@ -749,9 +747,9 @@ def get_insider_activity(symbol: str, *, max_rows: int = 50) -> dict[str, Any]:
         roster = ticker.insider_roster_holders
 
     # Transactions are newest-first, so the cap keeps the head.
-    transactions_rows = dataframe_to_records(transactions, max_rows=max_rows, head=True)
+    transactions_rows = dataframe_to_records(transactions, max_rows=limit, head=True)
     purchases_rows = dataframe_to_records(purchases, max_rows=10)
-    roster_rows = dataframe_to_records(roster, max_rows=max_rows, head=True)
+    roster_rows = dataframe_to_records(roster, max_rows=limit, head=True)
     if not transactions_rows and not purchases_rows and not roster_rows:
         raise SymbolNotFoundError(symbol)
 
@@ -827,14 +825,14 @@ def get_shares(
     *,
     start: str | None = None,
     end: str | None = None,
-    max_rows: int = 50,
+    limit: int = 50,
 ) -> dict[str, Any]:
     """Return the shares-outstanding time series for ``symbol``.
 
     Each point is a date and the reported shares outstanding. ``start`` / ``end``
     (``YYYY-MM-DD``) optionally bound the range. Without ``start``, yfinance
     looks back 548 days (18 months) from ``end``, not over the whole history.
-    Only the most recent ``max_rows`` points are returned.
+    Only the most recent ``limit`` points are returned.
     """
     ticker = _get_ticker(symbol)
     with _upstream(f"Failed to load shares for {symbol!r}"):
@@ -843,7 +841,7 @@ def get_shares(
     if series is None or len(series) == 0:
         raise SymbolNotFoundError(symbol)
 
-    tail = series.tail(max_rows)
+    tail = series.tail(limit)
     rows = [
         {"date": to_jsonable(idx), "shares": to_jsonable(val)}
         for idx, val in tail.items()
@@ -852,7 +850,7 @@ def get_shares(
 
 
 @cache.cached("fund_data")
-def get_fund_data(symbol: str, *, max_rows: int = 25) -> dict[str, Any]:
+def get_fund_data(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     """Return fund/ETF profile data for ``symbol``.
 
     Includes the fund overview, asset-class and sector weightings, and the top
@@ -876,7 +874,7 @@ def get_fund_data(symbol: str, *, max_rows: int = 25) -> dict[str, Any]:
         raise _wrap_upstream(exc, f"Failed to load fund data for {symbol!r}") from exc
 
     holdings_rows = dataframe_to_records(
-        top_holdings, max_rows=max_rows, index_name="symbol", head=True
+        top_holdings, max_rows=limit, index_name="symbol", head=True
     )
     return {
         "symbol": _normalize_symbol(symbol),
@@ -933,7 +931,7 @@ INDUSTRY_KEYS: frozenset[str] = frozenset(
 
 
 @cache.cached("sector")
-def get_sector(key: str, *, max_rows: int = 25) -> dict[str, Any]:
+def get_sector(key: str, *, limit: int = 25) -> dict[str, Any]:
     """Return an overview of a market sector by its Yahoo ``key``.
 
     ``key`` is one of Yahoo's fixed sector keys (e.g. ``technology``,
@@ -969,7 +967,7 @@ def get_sector(key: str, *, max_rows: int = 25) -> dict[str, Any]:
         "index_symbol": index_symbol,
         "overview": to_jsonable(overview),
         "top_companies": dataframe_to_records(
-            top_companies, max_rows=max_rows, index_name="symbol", head=True
+            top_companies, max_rows=limit, index_name="symbol", head=True
         ),
         "top_etfs": to_jsonable(top_etfs),
         "top_mutual_funds": to_jsonable(top_mutual_funds),
@@ -978,7 +976,7 @@ def get_sector(key: str, *, max_rows: int = 25) -> dict[str, Any]:
 
 
 @cache.cached("industry")
-def get_industry(key: str, *, max_rows: int = 25) -> dict[str, Any]:
+def get_industry(key: str, *, limit: int = 25) -> dict[str, Any]:
     """Return an overview of an industry by its Yahoo ``key``.
 
     ``key`` is a Yahoo industry key (e.g. ``semiconductors``,
@@ -1021,7 +1019,7 @@ def get_industry(key: str, *, max_rows: int = 25) -> dict[str, Any]:
         "sector_name": sector_name,
         "overview": to_jsonable(overview),
         "top_companies": dataframe_to_records(
-            top_companies, max_rows=max_rows, index_name="symbol", head=True
+            top_companies, max_rows=limit, index_name="symbol", head=True
         ),
         "top_performing_companies": dataframe_to_records(
             top_performing, index_name="symbol"

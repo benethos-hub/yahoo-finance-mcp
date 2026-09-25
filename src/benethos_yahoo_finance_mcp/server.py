@@ -423,7 +423,7 @@ def get_upgrades_downgrades(
     Each entry is a firm's rating change with the from/to grade and action, most
     recent first. Equity-only, empty for ETFs, funds, and crypto.
     """
-    return client.get_upgrades_downgrades(symbol, max_rows=limit)
+    return client.get_upgrades_downgrades(symbol, limit=limit)
 
 
 @mcp.tool()
@@ -445,7 +445,7 @@ def get_holders(
     plus the top institutional and mutual-fund holders. Equity-only, empty for
     ETFs, funds, and crypto.
     """
-    return client.get_holders(symbol, max_rows=limit)
+    return client.get_holders(symbol, limit=limit)
 
 
 @mcp.tool()
@@ -466,7 +466,7 @@ def get_insider_activity(
     and the current insider roster. Equity-only, empty for ETFs, funds, and
     crypto.
     """
-    return client.get_insider_activity(symbol, max_rows=limit)
+    return client.get_insider_activity(symbol, limit=limit)
 
 
 @mcp.tool()
@@ -526,7 +526,7 @@ def get_shares(
     recent ``limit`` points are returned. Without ``start`` the series covers
     the last 18 months, so pass one for anything older.
     """
-    return client.get_shares(symbol, start=start, end=end, max_rows=limit)
+    return client.get_shares(symbol, start=start, end=end, limit=limit)
 
 
 @mcp.tool()
@@ -543,7 +543,7 @@ def get_fund_data(
     holdings. Fund/ETF-only, raises for stocks and crypto, which have no fund
     data.
     """
-    return client.get_fund_data(symbol, max_rows=limit)
+    return client.get_fund_data(symbol, limit=limit)
 
 
 # Built from yfinance's own constant (via client) so the tool description the
@@ -573,7 +573,7 @@ def get_sector(
     Each industry's ``key`` can be passed to ``get_industry`` to drill down.
     This takes a sector key like ``technology`` or ``healthcare`` — not a ticker.
     """
-    return client.get_sector(key, max_rows=limit)
+    return client.get_sector(key, limit=limit)
 
 
 @mcp.tool()
@@ -598,7 +598,7 @@ def get_industry(
     the ``industries`` list returned by ``get_sector``. This takes an industry
     key like ``semiconductors`` — not a ticker symbol.
     """
-    return client.get_industry(key, max_rows=limit)
+    return client.get_industry(key, limit=limit)
 
 
 @mcp.tool()

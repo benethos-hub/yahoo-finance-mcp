@@ -242,7 +242,7 @@ def test_get_quotes_caps_symbols(monkeypatch):
         monkeypatch,
         {f"S{i}": FakeTicker(fast_info={"lastPrice": float(i)}) for i in range(10)},
     )
-    out = client.get_quotes([f"s{i}" for i in range(10)], max_symbols=3)
+    out = client.get_quotes([f"s{i}" for i in range(10)], limit=3)
     assert out["count"] == 3
     assert out["truncated"] is True
 
@@ -532,7 +532,7 @@ def test_get_options_caps_rows(patch_ticker):
     puts = pd.DataFrame({"strike": list(range(100))})
     chain = types.SimpleNamespace(calls=calls, puts=puts)
     patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
-    out = client.get_options("aapl", expiration="2024-01-19", max_rows=5)
+    out = client.get_options("aapl", expiration="2024-01-19", limit=5)
     assert len(out["calls"]) == 5
     assert len(out["puts"]) == 5
     assert out["truncated"] is True
@@ -550,7 +550,7 @@ def test_get_options_keeps_the_strikes_around_the_money(patch_ticker):
     puts = pd.DataFrame({"strike": strikes, "inTheMoney": [s > 50 for s in strikes]})
     chain = types.SimpleNamespace(calls=calls, puts=puts)
     patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
-    out = client.get_options("aapl", expiration="2024-01-19", max_rows=6)
+    out = client.get_options("aapl", expiration="2024-01-19", limit=6)
     assert [r["strike"] for r in out["calls"]] == [47.0, 48.0, 49.0, 50.0, 51.0, 52.0]
     assert [r["strike"] for r in out["puts"]] == [48.0, 49.0, 50.0, 51.0, 52.0, 53.0]
 
@@ -564,7 +564,7 @@ def test_get_options_window_stays_inside_the_chain(patch_ticker):
     puts = pd.DataFrame({"strike": strikes, "inTheMoney": [False] * 20})
     chain = types.SimpleNamespace(calls=calls, puts=puts)
     patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
-    out = client.get_options("aapl", expiration="2024-01-19", max_rows=4)
+    out = client.get_options("aapl", expiration="2024-01-19", limit=4)
     assert [r["strike"] for r in out["calls"]] == [16.0, 17.0, 18.0, 19.0]
     assert [r["strike"] for r in out["puts"]] == [16.0, 17.0, 18.0, 19.0]
 
@@ -649,7 +649,7 @@ def test_get_upgrades_downgrades_sorts_newest_first_and_caps(patch_ticker):
         {"Firm": ["A", "B", "C"], "ToGrade": ["Buy", "Hold", "Sell"]}, index=idx
     )
     patch_ticker(FakeTicker(upgrades_downgrades=df))
-    out = client.get_upgrades_downgrades("aapl", max_rows=2)
+    out = client.get_upgrades_downgrades("aapl", limit=2)
     assert len(out["changes"]) == 2
     # Newest first: 2024-03-01 (B) then 2024-02-01 (C).
     assert out["changes"][0]["Firm"] == "B"
@@ -695,7 +695,7 @@ def test_get_holders_caps_rows(patch_ticker):
             mutualfund_holders=None,
         )
     )
-    out = client.get_holders("aapl", max_rows=5)
+    out = client.get_holders("aapl", limit=5)
     assert len(out["institutional_holders"]) == 5
 
 
@@ -742,7 +742,7 @@ def test_get_insider_activity_caps_rows(patch_ticker):
             insider_roster_holders=None,
         )
     )
-    out = client.get_insider_activity("aapl", max_rows=5)
+    out = client.get_insider_activity("aapl", limit=5)
     assert len(out["transactions"]) == 5
 
 
@@ -847,7 +847,7 @@ def test_get_shares_returns_recent_points(patch_ticker):
     idx = pd.DatetimeIndex(["2024-01-01", "2024-06-01", "2024-12-01"])
     series = pd.Series([100, 110, 120], index=idx)
     ticker = patch_ticker(FakeTicker(shares_full=series))
-    out = client.get_shares("aapl", start="2024-01-01", max_rows=2)
+    out = client.get_shares("aapl", start="2024-01-01", limit=2)
     # Most recent points are kept (tail).
     assert out["count"] == 2
     assert out["shares"][-1]["shares"] == 120
@@ -930,7 +930,7 @@ def test_get_fund_data_caps_holdings(patch_ticker):
         top_holdings=top,
     )
     patch_ticker(FakeTicker(funds_data=fd))
-    out = client.get_fund_data("spy", max_rows=5)
+    out = client.get_fund_data("spy", limit=5)
     assert len(out["top_holdings"]) == 5
 
 
@@ -993,7 +993,7 @@ def test_get_sector_returns_overview(monkeypatch):
 
 def test_get_sector_caps_top_companies(monkeypatch):
     monkeypatch.setattr(client.yf, "Sector", lambda key: _fake_sector(n_companies=100))
-    out = client.get_sector("technology", max_rows=5)
+    out = client.get_sector("technology", limit=5)
     assert len(out["top_companies"]) == 5
 
 
@@ -1096,7 +1096,7 @@ def test_get_industry_caps_top_companies(monkeypatch):
     monkeypatch.setattr(
         client.yf, "Industry", lambda key: _fake_industry(n_companies=100)
     )
-    out = client.get_industry("semiconductors", max_rows=5)
+    out = client.get_industry("semiconductors", limit=5)
     assert len(out["top_companies"]) == 5
 
 
@@ -1235,7 +1235,7 @@ def test_get_history_truncates_and_flags(patch_ticker):
     idx = pd.date_range("2024-01-01", periods=10, freq="D")
     df = pd.DataFrame({"Close": list(range(10))}, index=idx)
     patch_ticker(FakeTicker(history=df))
-    out = client.get_history("aapl", max_rows=3)
+    out = client.get_history("aapl", limit=3)
     assert out["count"] == 3
     assert out["truncated"] is True
     # The most recent rows are kept (tail).
