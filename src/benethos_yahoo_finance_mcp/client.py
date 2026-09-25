@@ -380,7 +380,7 @@ def get_company_info(symbol: str) -> dict[str, Any]:
     with _upstream(f"Failed to load company info for {symbol!r}"):
         info = ticker.info or {}
 
-    if not info or info.get("quoteType") is None and info.get("shortName") is None:
+    if not info or (info.get("quoteType") is None and info.get("shortName") is None):
         raise SymbolNotFoundError(symbol)
 
     profile: dict[str, Any] = {"symbol": _normalize_symbol(symbol)}
