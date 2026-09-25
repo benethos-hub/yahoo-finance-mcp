@@ -117,7 +117,14 @@ def default_cache_dir() -> Path:
 
 
 class ResultCache:
-    """A tiny SQLite-backed key/value store with per-entry expiry."""
+    """A tiny SQLite-backed key/value store with per-entry expiry.
+
+    An expired entry is deleted when it is read, and every ``PURGE_EVERY``
+    writes the whole file is swept. Startup used to be the only sweep, and a
+    long-running HTTP server kept every entry nobody asked for again.
+    """
+
+    PURGE_EVERY = 100
 
     def __init__(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -128,6 +135,7 @@ class ResultCache:
         )
         self._conn.commit()
         self._lock = threading.Lock()
+        self._writes = 0
 
     def get(self, key: str) -> tuple[bool, Any]:
         """Return ``(hit, value)``; a miss or expired entry yields ``(False, None)``."""
@@ -157,13 +165,16 @@ class ResultCache:
         except (TypeError, ValueError):
             logger.debug("Skipping cache for non-serializable value under %s", key)
             return
-        expires_at = time.time() + ttl
+        now = time.time()
         with self._lock:
             self._conn.execute(
                 "INSERT OR REPLACE INTO cache (key, expires_at, value) "
                 "VALUES (?, ?, ?)",
-                (key, expires_at, payload),
+                (key, now + ttl, payload),
             )
+            self._writes += 1
+            if self._writes % self.PURGE_EVERY == 0:
+                self._conn.execute("DELETE FROM cache WHERE expires_at < ?", (now,))
             self._conn.commit()
 
     def purge_expired(self) -> None:

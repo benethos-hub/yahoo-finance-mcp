@@ -64,6 +64,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   returned the same empty result without asking Yahoo again. The cache
   skipped empty results, but this one is a dict with a `count` of zero and
   never looked empty. Such an answer is no longer stored.
+- The result cache swept expired entries at startup only, so a long-running
+  HTTP server kept every answer nobody asked for again. Every hundredth write
+  now sweeps as well.
 
 ## [0.5.2] - 2026-09-14
 

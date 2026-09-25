@@ -54,6 +54,25 @@ def test_result_cache_expiry(tmp_path):
         rc.close()
 
 
+def test_result_cache_sweeps_expired_entries_while_running(tmp_path, monkeypatch):
+    """Expired entries go on a regular write, not only at startup."""
+    monkeypatch.setattr(cache.ResultCache, "PURGE_EVERY", 3)
+    rc = cache.ResultCache(tmp_path / "c.sqlite")
+    try:
+        rc.set("stale", 1, ttl=60)
+        now = time.time()
+        monkeypatch.setattr(cache.time, "time", lambda: now + 120)
+        rc.set("a", 1, ttl=60)
+        count = "SELECT COUNT(*) FROM cache"
+        assert rc._conn.execute(count).fetchone()[0] == 2
+        rc.set("b", 1, ttl=60)  # third write sweeps
+        assert rc._conn.execute(count).fetchone()[0] == 2
+        keys = {row[0] for row in rc._conn.execute("SELECT key FROM cache")}
+        assert keys == {"a", "b"}
+    finally:
+        rc.close()
+
+
 def test_result_cache_zero_ttl_not_stored(tmp_path):
     rc = cache.ResultCache(tmp_path / "c.sqlite")
     try:
