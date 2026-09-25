@@ -323,6 +323,20 @@ def test_get_financials_returns_rows(patch_ticker):
     assert out["rows"][0]["item"] == "Total Revenue"
 
 
+def test_get_financials_keeps_every_line_item_from_the_top(patch_ticker):
+    """A long statement loses nothing, and the headline items come first.
+
+    Apple's annual balance sheet has 69 rows. The old cap of 60 kept the tail
+    and silently dropped Net Debt, Total Debt and seven more from the top.
+    """
+    items = ["Net Debt", "Total Debt"] + [f"Item {i}" for i in range(67)]
+    df = pd.DataFrame({pd.Timestamp("2025-09-27"): range(len(items))}, index=items)
+    patch_ticker(FakeTicker(balance_sheet=df))
+    out = client.get_financials("aapl", statement="balance")
+    assert len(out["rows"]) == 69
+    assert [r["item"] for r in out["rows"][:2]] == ["Net Debt", "Total Debt"]
+
+
 def test_get_financials_ttm_uses_ttm_attr(patch_ticker):
     df = pd.DataFrame(
         {pd.Timestamp("2026-03-31"): [129174.0]},

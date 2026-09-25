@@ -13,6 +13,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   that list, so nothing ever matched. The hosts are now derived from the
   origins, the same way the origins were already derived from
   `--allowed-hosts`.
+- `get_financials` returned at most 60 line items and kept the last ones, so
+  a longer statement lost its top without saying so. Apple's annual balance
+  sheet has 69 rows, and Net Debt, Total Debt, Working Capital and Tangible
+  Book Value were among the nine that went missing. Every line item is
+  returned now, in the order Yahoo reports them.
 
 ## [0.5.2] - 2026-09-14
 

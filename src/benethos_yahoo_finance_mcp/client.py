@@ -18,7 +18,7 @@ from yfinance.exceptions import YFDataException, YFRateLimitError
 
 from . import cache
 from .errors import RateLimitError, SymbolNotFoundError, ToolError
-from .formatting import dataframe_to_records, to_jsonable
+from .formatting import MAX_ROWS, dataframe_to_records, to_jsonable
 
 logger = logging.getLogger(__name__)
 
@@ -342,7 +342,7 @@ def get_financials(
     *,
     statement: str = "income",
     freq: str = "annual",
-    max_rows: int = 60,
+    max_rows: int = MAX_ROWS,
 ) -> dict[str, Any]:
     """Return a financial statement for ``symbol``.
 
@@ -382,7 +382,12 @@ def get_financials(
     if df is None or df.empty:
         raise SymbolNotFoundError(symbol)
 
-    rows = dataframe_to_records(df, max_rows=max_rows, index_name="item")
+    # Line items are ordered top-down, headline figures first, so a cap has to
+    # keep the head. It used to be 60 rows with the tail kept, and Apple's
+    # annual balance sheet has 69: Net Debt, Total Debt, Working Capital and
+    # Tangible Book Value were among the nine that vanished without a word.
+    # No statement comes near MAX_ROWS, so in practice nothing is cut now.
+    rows = dataframe_to_records(df.head(max_rows), index_name="item")
     return {
         "symbol": symbol.strip().upper(),
         "statement": statement,
