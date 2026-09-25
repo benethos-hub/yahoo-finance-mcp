@@ -437,11 +437,12 @@ def get_financials(
     if df is None or df.empty:
         raise SymbolNotFoundError(symbol)
 
-    # Line items are ordered top-down, headline figures first, so a cap has to
-    # keep the head. It used to be 60 rows with the tail kept, and Apple's
-    # annual balance sheet has 69: Net Debt, Total Debt, Working Capital and
-    # Tangible Book Value were among the nine that vanished without a word.
-    # No statement comes near MAX_ROWS, so in practice nothing is cut now.
+    # A statement is a set of line items, not a series, so no end of it is
+    # safe to drop. It used to be capped at 60 rows with the tail kept, and
+    # Apple's annual balance sheet has 69: Net Debt, Total Debt, Working
+    # Capital and Tangible Book Value were among the nine that vanished
+    # without a word. No statement comes near MAX_ROWS, so nothing is cut now,
+    # and should one ever get there the rows keep Yahoo's order from the top.
     rows = dataframe_to_records(df, max_rows=limit, index_name="item", head=True)
     return {
         "symbol": _normalize_symbol(symbol),
