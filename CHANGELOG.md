@@ -51,6 +51,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   tool says the symbol was not found. yfinance does tell the two apart, with
   `None` for an unknown symbol and an empty series for a real one, and the
   tool now does too.
+- `get_shares` described its default as the full history. Without `start`,
+  yfinance looks back 18 months and no further, so a question about share
+  counts five years ago got a series that silently began 18 months back. The
+  description now says so and tells the caller to pass `start` for anything
+  older.
 
 ## [0.5.2] - 2026-09-14
 

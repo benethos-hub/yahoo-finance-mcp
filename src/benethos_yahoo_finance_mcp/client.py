@@ -882,8 +882,9 @@ def get_shares(
     """Return the shares-outstanding time series for ``symbol``.
 
     Each point is a date and the reported shares outstanding. ``start`` / ``end``
-    (``YYYY-MM-DD``) optionally bound the range; otherwise the full available
-    history is used. Only the most recent ``max_rows`` points are returned.
+    (``YYYY-MM-DD``) optionally bound the range. Without ``start``, yfinance
+    looks back 548 days (18 months) from ``end``, not over the whole history.
+    Only the most recent ``max_rows`` points are returned.
     """
     ticker = _get_ticker(symbol)
     try:

@@ -502,7 +502,10 @@ def get_shares(
     symbol: Symbol,
     start: Annotated[
         str | None,
-        Field(description="Start date 'YYYY-MM-DD' to bound the series (optional)."),
+        Field(
+            description="Start date 'YYYY-MM-DD'. Without it the series covers "
+            "the last 18 months only."
+        ),
     ] = None,
     end: Annotated[
         str | None,
@@ -520,8 +523,8 @@ def get_shares(
     """Get the shares-outstanding history for a Yahoo symbol.
 
     Each point is a date and the reported shares outstanding. Only the most
-    recent ``limit`` points are returned. Optionally bound the range with
-    ``start`` / ``end`` (``YYYY-MM-DD``).
+    recent ``limit`` points are returned. Without ``start`` the series covers
+    the last 18 months, so pass one for anything older.
     """
     return client.get_shares(symbol, start=start, end=end, max_rows=limit)
 
