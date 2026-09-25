@@ -6,6 +6,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-25
+
+A minor release rather than a patch, because several tools answer
+differently now. `get_news` rejects a `limit` above 10, `get_options` returns
+different strikes for a wide chain and carries a `truncated` flag, statement
+columns and option rows have new keys, and `get_dividends` raises for a
+symbol it used to answer with empty lists. A caller that stored or parsed
+those shapes should look at the entries below.
+
+### Added
+- Every tool now carries the MCP annotations `readOnlyHint: true` and
+  `openWorldHint: true`. The server only reads, and every tool asks Yahoo, but
+  a client had no way to know either and had to treat each tool as one that
+  might change something. A client that honours the hints can call them
+  without a confirmation prompt. `destructiveHint` and `idempotentHint` are
+  left out, since the spec gives them meaning only for tools that are not
+  read-only. The tool list grows by about 1.4 KB.
+
 ### Changed
 - `get_financials` names its period columns with a plain date,
   `2025-09-30`, where it used to print `2025-09-30 00:00:00`. The time was
@@ -27,6 +45,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The descriptions of `get_history` and `get_financials` no longer repeat the
   allowed values their parameters already list. Every client pays for each
   tool description on every request, and these two said everything twice.
+- For anyone calling the `client` module from Python rather than through
+  MCP: the row cap is a keyword named `limit` in every function now. It used
+  to be `max_rows` in eleven of them and `limit` in the rest, and
+  `get_quotes` called its symbol cap `max_symbols`. The tools were always
+  `limit` and are unchanged. `formatting.dataframe_to_records` accepts
+  `None` and a `head=True` flag for frames ranked from the top, and the
+  cache decorator takes an optional `worth_keeping` predicate.
 
 ### Fixed
 - `--allowed-origins` on its own (or `YF_MCP_ALLOWED_ORIGINS`) locked every
@@ -51,9 +76,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   constructor was the one upstream call outside every `try`. It now answers
   as an unknown symbol, and a rate limit during the lookup as a rate limit.
   In `get_quotes` such a symbol used to fail the whole batch, and it is now
-  listed under `not_found` like any other miss.
-  The lookup no longer runs under the ticker cache's lock either, where one
-  slow search held up every other tool call.
+  listed under `not_found` like any other miss. The lookup no longer runs
+  under the ticker cache's lock either, where one slow search held up every
+  other tool call.
 - A failing result cache failed the tool with it. Two processes sharing one
   cache directory can hold the database locked, and a damaged file raises on
   every read, and either error reached the model as `Error executing tool`.
@@ -622,7 +647,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.4.1...v0.5.0

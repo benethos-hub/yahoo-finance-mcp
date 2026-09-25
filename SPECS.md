@@ -53,9 +53,10 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
 - **Logging:** always to stderr (`logging.basicConfig(stream=sys.stderr)`), so
   under stdio stdout carries JSON-RPC only.
 - **CLI flags:** `--version`, `--transport`, `--host` (default 127.0.0.1), `--port`
-  (default 8000), `--path` (default `/mcp`, `/sse` for sse), `--allowed-hosts`,
-  `--allowed-origins`, `--log-level`, and the cache flags `--cache`/`--no-cache`,
-  `--cache-dir`, `--cache-ttl <NAME>=<SECONDS>` (see §8a).
+  (default 8000, 1-65535, checked once an HTTP transport binds it), `--path`
+  (default `/mcp`, `/sse` for sse), `--allowed-hosts`, `--allowed-origins`,
+  `--log-level`, and the cache flags `--cache`/`--no-cache`, `--cache-dir`,
+  `--cache-ttl <NAME>=<SECONDS>` (see §8a).
   Host/port/path/allow-list apply to the HTTP transports only. For stdio they
   are ignored.
 - **Environment:** every CLI flag has an env-var equivalent (CLI > env >
@@ -74,7 +75,11 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   and has no user to authorize. Off by default, since the ordinary case is a
   loopback bind on the machine that uses it. stdio ignores it. A token does not
   make a port safe to publish - bind to `0.0.0.0` only on trusted networks and
-  front it with a proxy that authenticates.
+  front it with a proxy that authenticates. The guard sits in front of the
+  whole ASGI app and lets only the lifespan scope through unchecked. A
+  WebSocket handshake is closed with 1008 before it is accepted, and any
+  other scope type gets no answer, so a route the SDK adds later is not
+  open by default.
   The MCP HTTP transport also runs a DNS-rebinding `Host`/`Origin` guard. It is
   derived from the actual bind host and passed to `MCPServer.run()` as an
   explicit argument: a localhost bind keeps the protective localhost allow-list,
@@ -94,10 +99,16 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
 
 - Single source: `yfinance`. No other provider, no direct HTTP scraping.
 - Two cache layers: `Ticker` objects are cached in-memory for `_TICKER_TTL`
-  (60 s) to coalesce bursts within a process. Successful tool **results** are
-  cached persistently with per-tool TTLs (see §8a). requests-cache is **not**
-  usable here — yfinance uses curl_cffi and rejects caching sessions — so the
-  result cache operates on our normalized output, not on HTTP responses.
+  (60 s) to coalesce bursts within a process, at most `_TICKER_CACHE_MAX`
+  (256) of them: expired entries are dropped on every insert and beyond the
+  cap the least recently used goes first, since each `Ticker` keeps whatever
+  it has loaded and over HTTP a caller decides how many symbols that is.
+  The `Ticker` constructor runs outside the cache lock, because for an
+  ISIN-shaped symbol it performs a lookup request on the spot. Successful
+  tool **results** are cached persistently with per-tool TTLs (see §8a).
+  requests-cache is **not** usable here — yfinance uses curl_cffi and rejects
+  caching sessions — so the result cache operates on our normalized output,
+  not on HTTP responses.
 - Symbol resolution (name / ticker / ISIN) uses `yfinance.Search`, and the same
   endpoint handles all three input kinds.
 
@@ -124,9 +135,14 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
 
 ## 7. Tools
 
-All tools are read-only. `symbol` always means a Yahoo ticker. The two
+All tools are read-only, and each one carries the MCP annotations
+`readOnlyHint: true` and `openWorldHint: true` (one shared `ToolAnnotations`
+in `server.py`). `destructiveHint` and `idempotentHint` are omitted because
+the spec defines them only for tools that are not read-only. `symbol` always
+means a Yahoo ticker. The three
 exceptions are `get_sector` / `get_industry`, which take a sector/industry
-**key** (e.g. `technology`, `semiconductors`) rather than a symbol.
+**key** (e.g. `technology`, `semiconductors`), and `get_market`, which takes
+a market key (e.g. `US`), rather than a symbol.
 
 | Tool | Inputs | Output (shape) |
 |------|--------|----------------|
@@ -135,11 +151,11 @@ exceptions are `get_sector` / `get_industry`, which take a sector/industry
 | `get_quotes` | `symbols[]` (≤50) | `{count, quotes[{symbol, currency, lastPrice, previousClose, open, dayHigh, dayLow, marketCap}], not_found[], truncated}` |
 | `get_history` | `symbol`, `period` (=1mo), `interval` (=1d), `start?`, `end?` | `{symbol, interval, period, start, end, count, truncated, rows[]}` (OHLCV, ≤250 rows, tail kept) |
 | `get_company_info` | `symbol` | curated profile + key statistics, plus `resolved_symbol` when Yahoo resolves the input to a different ticker (i.e. for an ISIN) |
-| `get_financials` | `symbol`, `statement` (income/balance/cashflow), `freq` (annual/quarterly/ttm — ttm income/cashflow only) | `{symbol, statement, freq, rows[]}` (rows = line items, columns = periods) |
-| `get_dividends` | `symbol` | `{symbol, dividends[], splits[]}` |
+| `get_financials` | `symbol`, `statement` (income/balance/cashflow), `freq` (annual/quarterly/ttm — ttm income/cashflow only) | `{symbol, statement, freq, rows[]}` (every line item, columns = period-end dates as `YYYY-MM-DD`) |
+| `get_dividends` | `symbol` | `{symbol, dividends[], splits[]}` (both empty for an instrument that never paid or split, an unknown symbol raises) |
 | `get_news` | `symbol`, `limit` 1-10 (=10, Yahoo serves no more) | `{symbol, count, articles[{title, summary, publisher, published, url}]}` |
-| `get_recommendations` | `symbol` | `{symbol, price_targets, recommendation_trend[]}` |
-| `get_options` | `symbol`, `expiration?` | without `expiration`: `{symbol, expirations[]}`, with it: `{symbol, expiration, truncated, calls[], puts[]}` (≤60 strikes per side, centred on the money) |
+| `get_recommendations` | `symbol` | `{symbol, price_targets, recommendation_trend[]}` (trend rows keyed by `period`) |
+| `get_options` | `symbol`, `expiration?` | without `expiration`: `{symbol, expirations[]}`, with it: `{symbol, expiration, truncated, calls[], puts[]}` (≤60 strikes per side, centred on the money, rows keyed by `contractSymbol`) |
 | `get_earnings` | `symbol`, `limit` 1-50 (=12) | `{symbol, earnings_dates[], earnings_history[]}` (equity-only) |
 | `get_estimates` | `symbol` | `{symbol, earnings_estimate[], revenue_estimate[], eps_trend[], eps_revisions[], growth_estimates[]}` (equity-only) |
 | `get_upgrades_downgrades` | `symbol`, `limit` 1-100 (=50) | `{symbol, changes[]}` (rating changes, newest first, equity-only) |
@@ -167,7 +183,17 @@ values).
   `datetime` -> ISO-8601 string, numpy scalars -> native, and recurses through
   containers.
 - Tabular results are row-capped (`MAX_ROWS = 250`, tighter per tool) to stay
-  within the client's token budget. Truncation keeps the most recent rows.
+  within the client's token budget. Which rows survive a cut depends on the
+  shape: a time series keeps its tail (the most recent rows), a list ranked
+  from the top keeps its head (holders, insider transactions, rating
+  changes, top companies), and an option chain keeps the window around the
+  money. A financial statement is a set of line items with no safe end to
+  drop, so it is not cut at all. `get_history`, `get_quotes` and
+  `get_options` report a `truncated` flag, the rest cap silently, and the
+  server instructions say so.
+- Column labels that are midnight timestamps, the period ends of a
+  statement, are keyed by their plain ISO date (`2025-09-30`), since every
+  row repeats every key.
 
 ## 8a. Result cache (`cache.py`)
 
@@ -211,7 +237,15 @@ values).
   (`YF_MCP_CACHE_TTL_<NAME>`). A TTL of `0` bypasses caching for that tool.
 - Only successful, non-empty returns are cached. Exceptions propagate and are
   never cached, and empty results (e.g. a search with no matches) are not
-  pinned for the TTL.
+  pinned for the TTL. A function whose "nothing found" is a non-empty value
+  passes its own test via `cached(..., worth_keeping=...)`: a `get_quotes`
+  call in which every symbol missed is not stored.
+- The cache never fails a call. A database another process holds locked, or
+  a damaged file, is logged as a warning and the result is fetched and
+  returned as if caching were off.
+- Housekeeping: an expired entry is deleted when it is read, and every
+  hundredth write sweeps the whole file. Startup used to be the only sweep,
+  and a long-running HTTP server kept every entry nobody asked for again.
 
 ## 9. Error handling
 
@@ -222,6 +256,11 @@ values).
     `client._wrap_upstream`).
 - All upstream yfinance exceptions are normalized through `_wrap_upstream`,
   which preserves operation-specific context for non-rate-limit errors.
+  Client functions run their yfinance calls inside the `_upstream(message)`
+  context manager, which does exactly that. The `Ticker` constructor is
+  covered as well: an ISIN-shaped string Yahoo cannot resolve raises there
+  and becomes a `SymbolNotFoundError`, and in `get_quotes` such a symbol is
+  listed under `not_found` instead of failing the batch.
 - `ToolError` derives from the SDK's own `ToolError`, and that is what carries
   the text. Since `mcp` 2.1.0 anything else raised from a tool is treated as
   unexpected: logged with a traceback, and reported to the client as
@@ -242,7 +281,7 @@ values).
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo, and it is not part of
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
-  of 80% (currently ~94%).
+  of 80% (currently ~95%).
 - **What the gates cannot see.** The suite mocks yfinance and stops at
   `client.py`, so a behaviour change in either boundary passes every gate. For
   `yfinance` the answer is `tests/smoke.py` run before and after a bump, with a
@@ -259,6 +298,12 @@ values).
   takes, and a lockfile hides breakage in the *declared* dependency ranges —
   0.3.0 shipped an unbounded `mcp` requirement, resolved to an incompatible major
   on a fresh install and failed at import while every other job stayed green.
+- Every action in both workflows is pinned to a full commit SHA, with the
+  version it stands for in a trailing comment, and the two base images in the
+  `Dockerfile` by digest next to their tag. A tag is a pointer its owner can
+  move, and the publish workflow holds the credentials that push to PyPI and
+  ghcr. Dependabot reads the comment and raises SHA and comment together,
+  one pull request per release.
 - Dependabot covers GitHub Actions, the Docker base image and, since 0.5.1, the
   Python dependencies in `uv.lock`. That last entry used to name the `pip`
   ecosystem, which does not read `uv.lock` — and with every requirement declared
@@ -299,6 +344,10 @@ values).
   `statement` and `freq` arguments of `get_financials` are already validated,
   as are the sector and industry keys.
 - Stale-on-error: serve an expired cache entry when Yahoo is rate limiting.
+- Shared `Ticker` objects under concurrent calls. The SDK runs the sync tools
+  in worker threads, so two calls for the same symbol can use one cached
+  `yf.Ticker` at the same time, and yfinance does not promise that is safe.
+  Nothing has been observed, so this is a watch item, not a plan.
 
 (Multi-symbol batch quoting is implemented as `get_quotes` — see §7 and §12.)
 
