@@ -176,22 +176,32 @@ def get_quote(symbol: str) -> dict[str, Any]:
     with _upstream(f"Failed to load quote for {symbol!r}"):
         fast = ticker.fast_info
 
-    quote: dict[str, Any] = {"symbol": _normalize_symbol(symbol)}
-    have_data = False
-    for field in _QUOTE_FAST_FIELDS:
+    quote = {
+        "symbol": _normalize_symbol(symbol),
+        **_fast_fields(fast, _QUOTE_FAST_FIELDS),
+    }
+    if quote["lastPrice"] is None:
+        raise SymbolNotFoundError(symbol)
+    return quote
+
+
+def _fast_fields(fast: Any, fields: tuple[str, ...]) -> dict[str, Any]:
+    """Read ``fields`` from a ``fast_info``, JSON-safe, ``None`` where missing.
+
+    Some fields raise instead of returning nothing when Yahoo lacks them, and
+    one missing field must not cost the rest. A rate limit is the exception,
+    since every further field would hit it too.
+    """
+    out: dict[str, Any] = {}
+    for field in fields:
         try:
             value = fast.get(field)
         except YFRateLimitError as exc:
             raise RateLimitError() from exc
         except Exception:  # noqa: BLE001 - some fields raise when unavailable
             value = None
-        if value is not None:
-            have_data = True
-        quote[field] = to_jsonable(value)
-
-    if not have_data or quote.get("lastPrice") is None:
-        raise SymbolNotFoundError(symbol)
-    return quote
+        out[field] = to_jsonable(value)
+    return out
 
 
 # Compact field subset for multi-symbol quotes (smaller per-symbol payload than
@@ -254,17 +264,8 @@ def get_quotes(symbols: list[str], *, max_symbols: int = _MAX_QUOTES) -> dict[st
             not_found.append(sym)
             continue
 
-        row: dict[str, Any] = {"symbol": sym}
-        for field in _QUOTES_FAST_FIELDS:
-            try:
-                value = fast.get(field)
-            except YFRateLimitError as exc:
-                raise RateLimitError() from exc
-            except Exception:  # noqa: BLE001 - some fields raise when unavailable
-                value = None
-            row[field] = to_jsonable(value)
-
-        if row.get("lastPrice") is None:
+        row = {"symbol": sym, **_fast_fields(fast, _QUOTES_FAST_FIELDS)}
+        if row["lastPrice"] is None:
             not_found.append(sym)
         else:
             quotes.append(row)
