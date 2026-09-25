@@ -15,6 +15,15 @@ columns and option rows have new keys, and `get_dividends` raises for a
 symbol it used to answer with empty lists. A caller that stored or parsed
 those shapes should look at the entries below.
 
+### Added
+- Every tool now carries the MCP annotations `readOnlyHint: true` and
+  `openWorldHint: true`. The server only reads, and every tool asks Yahoo, but
+  a client had no way to know either and had to treat each tool as one that
+  might change something. A client that honours the hints can call them
+  without a confirmation prompt. `destructiveHint` and `idempotentHint` are
+  left out, since the spec gives them meaning only for tools that are not
+  read-only. The tool list grows by about 1.4 KB.
+
 ### Changed
 - `get_financials` names its period columns with a plain date,
   `2025-09-30`, where it used to print `2025-09-30 00:00:00`. The time was

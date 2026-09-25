@@ -21,6 +21,7 @@ from urllib.parse import urlsplit
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
+from mcp.types import ToolAnnotations
 from pydantic import Field
 
 from . import __version__, cache, client, transport
@@ -193,7 +194,16 @@ mcp = MCPServer(
 )
 
 
-@mcp.tool()
+# Every tool here only reads, and every one of them asks Yahoo, so they all
+# carry the same two hints. A client may use them to call a read-only tool
+# without asking the user first. destructiveHint and idempotentHint are left
+# out on purpose: the spec defines them only for tools that are not read-only,
+# and this server has none, so they would be bytes in every tool listing that
+# no client is meant to read.
+_READ_ONLY = ToolAnnotations(read_only_hint=True, open_world_hint=True)
+
+
+@mcp.tool(annotations=_READ_ONLY)
 def search(
     query: Annotated[
         str, Field(description="Company name, ticker symbol, or ISIN to look up.")
@@ -230,13 +240,13 @@ Symbol = Annotated[
 ]
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_quote(symbol: Symbol) -> dict[str, Any]:
     """Get the current price and key intraday figures for a Yahoo symbol."""
     return client.get_quote(symbol)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_quotes(
     symbols: Annotated[
         list[str],
@@ -256,7 +266,7 @@ def get_quotes(
     return client.get_quotes(symbols)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_history(
     symbol: Symbol,
     period: Annotated[
@@ -292,7 +302,7 @@ def get_history(
     )
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_company_info(symbol: Symbol) -> dict[str, Any]:
     """Get a company profile and key statistics for a Yahoo symbol.
 
@@ -303,7 +313,7 @@ def get_company_info(symbol: Symbol) -> dict[str, Any]:
     return client.get_company_info(symbol)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_financials(
     symbol: Symbol,
     statement: Annotated[
@@ -329,13 +339,13 @@ def get_financials(
     return client.get_financials(symbol, statement=statement, freq=freq)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_dividends(symbol: Symbol) -> dict[str, Any]:
     """Get the dividend and stock-split history for a Yahoo symbol."""
     return client.get_dividends(symbol)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_news(
     symbol: Symbol,
     limit: Annotated[
@@ -350,7 +360,7 @@ def get_news(
     return client.get_news(symbol, limit=limit)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_recommendations(symbol: Symbol) -> dict[str, Any]:
     """Get analyst recommendation trends and price targets for a Yahoo symbol.
 
@@ -360,7 +370,7 @@ def get_recommendations(symbol: Symbol) -> dict[str, Any]:
     return client.get_recommendations(symbol)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_options(
     symbol: Symbol,
     expiration: Annotated[
@@ -383,7 +393,7 @@ def get_options(
     return client.get_options(symbol, expiration=expiration)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_earnings(
     symbol: Symbol,
     limit: Annotated[
@@ -400,7 +410,7 @@ def get_earnings(
     return client.get_earnings(symbol, limit=limit)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_estimates(symbol: Symbol) -> dict[str, Any]:
     """Get forward analyst estimates for a Yahoo symbol.
 
@@ -411,7 +421,7 @@ def get_estimates(symbol: Symbol) -> dict[str, Any]:
     return client.get_estimates(symbol)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_upgrades_downgrades(
     symbol: Symbol,
     limit: Annotated[
@@ -427,7 +437,7 @@ def get_upgrades_downgrades(
     return client.get_upgrades_downgrades(symbol, limit=limit)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_holders(
     symbol: Symbol,
     limit: Annotated[
@@ -449,7 +459,7 @@ def get_holders(
     return client.get_holders(symbol, limit=limit)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_insider_activity(
     symbol: Symbol,
     limit: Annotated[
@@ -470,7 +480,7 @@ def get_insider_activity(
     return client.get_insider_activity(symbol, limit=limit)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_sec_filings(
     symbol: Symbol,
     limit: Annotated[
@@ -488,7 +498,7 @@ def get_sec_filings(
     return client.get_sec_filings(symbol, limit=limit)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_calendar(symbol: Symbol) -> dict[str, Any]:
     """Get upcoming corporate-calendar events for a Yahoo symbol.
 
@@ -498,7 +508,7 @@ def get_calendar(symbol: Symbol) -> dict[str, Any]:
     return client.get_calendar(symbol)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_shares(
     symbol: Symbol,
     start: Annotated[
@@ -530,7 +540,7 @@ def get_shares(
     return client.get_shares(symbol, start=start, end=end, limit=limit)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_fund_data(
     symbol: Symbol,
     limit: Annotated[
@@ -556,7 +566,7 @@ _SECTOR_KEYS_DESC = (
 )
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_sector(
     key: Annotated[
         str,
@@ -577,7 +587,7 @@ def get_sector(
     return client.get_sector(key, limit=limit)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_industry(
     key: Annotated[
         str,
@@ -602,7 +612,7 @@ def get_industry(
     return client.get_industry(key, limit=limit)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY)
 def get_market(
     key: Annotated[
         str,

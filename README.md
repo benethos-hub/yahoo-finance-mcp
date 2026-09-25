@@ -30,6 +30,10 @@ Yahoo's unofficial endpoints.
 
 ## Tools
 
+Every tool only reads, and each one says so to the client with the MCP
+annotations `readOnlyHint` and `openWorldHint`. A client that honours them may
+run the tools without asking for confirmation each time.
+
 | Tool | Description |
 |------|-------------|
 | `search` | Find instruments by name, ticker, or ISIN, returning Yahoo symbols. |

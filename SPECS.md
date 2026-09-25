@@ -135,7 +135,11 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
 
 ## 7. Tools
 
-All tools are read-only. `symbol` always means a Yahoo ticker. The three
+All tools are read-only, and each one carries the MCP annotations
+`readOnlyHint: true` and `openWorldHint: true` (one shared `ToolAnnotations`
+in `server.py`). `destructiveHint` and `idempotentHint` are omitted because
+the spec defines them only for tools that are not read-only. `symbol` always
+means a Yahoo ticker. The three
 exceptions are `get_sector` / `get_industry`, which take a sector/industry
 **key** (e.g. `technology`, `semiconductors`), and `get_market`, which takes
 a market key (e.g. `US`), rather than a symbol.

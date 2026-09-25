@@ -72,3 +72,14 @@ def test_root_logging_is_ours_not_the_sdks():
         [sys.executable, "-c", code], capture_output=True, text=True, check=True
     )
     assert out.stdout.split() == ["1", "StreamHandler", "True"]
+
+
+def test_every_tool_is_annotated_read_only_and_open_world():
+    """Clients read these hints, for example to skip a confirmation prompt."""
+    tools = asyncio.run(mcp.list_tools())
+    for tool in tools:
+        dumped = tool.model_dump(by_alias=True, exclude_none=True)
+        assert dumped.get("annotations") == {
+            "readOnlyHint": True,
+            "openWorldHint": True,
+        }, tool.name
