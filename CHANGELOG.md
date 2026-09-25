@@ -6,6 +6,95 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- `get_financials` names its period columns with a plain date,
+  `2025-09-30`, where it used to print `2025-09-30 00:00:00`. The time was
+  always midnight and said nothing, and every row repeats every column name.
+- The descriptions of `get_history` and `get_financials` no longer repeat the
+  allowed values their parameters already list. Every client pays for each
+  tool description on every request, and these two said everything twice.
+
+### Fixed
+- `--allowed-origins` on its own (or `YF_MCP_ALLOWED_ORIGINS`) locked every
+  client out with HTTP 421. It switched the DNS-rebinding guard on with an
+  empty `Host` allow-list, and the SDK matches every request's `Host` against
+  that list, so nothing ever matched. The hosts are now derived from the
+  origins, the same way the origins were already derived from
+  `--allowed-hosts`.
+- `get_financials` returned at most 60 line items and kept the last ones, so
+  a longer statement lost its top without saying so. Apple's annual balance
+  sheet has 69 rows, and Net Debt, Total Debt, Working Capital and Tangible
+  Book Value were among the nine that went missing. Every line item is
+  returned now, in the order Yahoo reports them.
+- The in-memory ticker cache grew without bound. Every distinct symbol left a
+  `yf.Ticker` behind, with whatever it had loaded, and nothing ever removed
+  one. Over HTTP a caller decides how many symbols that is. Expired entries
+  are now dropped on every insert and the cache holds at most 256, least
+  recently used first out.
+- A symbol shaped like an ISIN that Yahoo cannot resolve, say one with a wrong
+  check digit, reached the model as a bare `Error executing tool`. yfinance
+  resolves ISINs in the `Ticker` constructor and raises there, and the
+  constructor was the one upstream call outside every `try`. It now answers
+  as an unknown symbol, and a rate limit during the lookup as a rate limit.
+  In `get_quotes` such a symbol used to fail the whole batch, and it is now
+  listed under `not_found` like any other miss.
+  The lookup no longer runs under the ticker cache's lock either, where one
+  slow search held up every other tool call.
+- A failing result cache failed the tool with it. Two processes sharing one
+  cache directory can hold the database locked, and a damaged file raises on
+  every read, and either error reached the model as `Error executing tool`.
+  The cache now steps aside on its own errors: the data is fetched and
+  returned as if caching were off, with a warning in the log.
+- `get_news` offered up to 30 headlines and never delivered more than 10. It
+  read yfinance's `.news`, which always asks for its default of ten, and
+  Yahoo serves no more than ten per symbol anyway, whatever the request says.
+  The count now goes upstream, and the ceiling is 10, the most that can ever
+  arrive.
+- `get_options` cut a wide chain to its 60 highest strikes. Chains come sorted
+  by strike, and SPY carries some 300 per expiry, so the strikes around the
+  current price, the ones most questions are about, were exactly the ones
+  left out. The 60 per side are now centred where the contracts switch
+  between in and out of the money, and a new `truncated` flag says when a
+  chain was cut.
+- `get_dividends` answered an unknown symbol with two empty lists, the same
+  answer a real company that never paid a dividend gets, while every other
+  tool says the symbol was not found. yfinance does tell the two apart, with
+  `None` for an unknown symbol and an empty series for a real one, and the
+  tool now does too.
+- `get_shares` described its default as the full history. Without `start`,
+  yfinance looks back 18 months and no further, so a question about share
+  counts five years ago got a series that silently began 18 months back. The
+  description now says so and tells the caller to pass `start` for anything
+  older.
+- `get_recommendations` carried a meaningless `index` of 0 to 3 on every row
+  of the trend table, the frame's row counter. The rows are now keyed by
+  `period` alone, which is what the counter stood next to. Option contracts
+  from `get_options` carried the same counter and are now keyed by
+  `contractSymbol`.
+- With the result cache on, a `get_quotes` call in which every symbol missed
+  was stored like any other answer, and repeating it within 30 seconds
+  returned the same empty result without asking Yahoo again. The cache
+  skipped empty results, but this one is a dict with a `count` of zero and
+  never looked empty. Such an answer is no longer stored.
+- The result cache swept expired entries at startup only, so a long-running
+  HTTP server kept every answer nobody asked for again. Every hundredth write
+  now sweeps as well.
+- A port outside 1 to 65535, from `--port` or `YF_MCP_PORT`, got as far as
+  uvicorn and ended in a traceback. It is a usage error now, with a message
+  saying what the range is.
+
+### Security
+- Every action in the workflows is pinned to a full commit SHA, with the
+  version in a comment, and both base images in the `Dockerfile` by digest
+  next to their tag. A tag is a pointer its owner can move, and the publish
+  workflow holds the credentials that push to PyPI and ghcr. Dependabot keeps
+  SHAs and digests current, one pull request per release.
+- The bearer guard checked HTTP requests and waved every other ASGI scope
+  through unchecked. The SDK serves no WebSocket route today, so nothing was
+  reachable that way, but the day one appears it would have been open. Only
+  the lifespan scope passes now. A WebSocket handshake is closed with 1008
+  before it is accepted, and any other scope type is not answered.
+
 ## [0.5.2] - 2026-09-14
 
 ### Changed

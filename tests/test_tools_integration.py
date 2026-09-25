@@ -84,10 +84,14 @@ def test_tool_invokes_client_and_result_serializes(monkeypatch, tool, args):
     json.dumps(result.structured_content)
 
 
-# Tools whose ``limit`` parameter must be forwarded as the client's ``max_rows``.
-# get_market is absent on purpose: it takes no limit, its payload is a handful of
-# headline indices.
-LIMIT_AS_MAX_ROWS = {
+# Every tool with a ``limit`` parameter, forwarded under the same name. The
+# client used to call it ``max_rows`` for half of them. get_market is absent on
+# purpose: it takes no limit, its payload is a handful of headline indices.
+LIMIT_AS_LIMIT = {
+    "search": {"query": "apple"},
+    "get_news": {"symbol": "AAPL"},
+    "get_earnings": {"symbol": "AAPL"},
+    "get_sec_filings": {"symbol": "AAPL"},
     "get_upgrades_downgrades": {"symbol": "AAPL"},
     "get_holders": {"symbol": "AAPL"},
     "get_insider_activity": {"symbol": "AAPL"},
@@ -96,28 +100,6 @@ LIMIT_AS_MAX_ROWS = {
     "get_sector": {"key": "technology"},
     "get_industry": {"key": "semiconductors"},
 }
-
-# Tools whose ``limit`` parameter is forwarded as the client's ``limit``.
-LIMIT_AS_LIMIT = {
-    "search": {"query": "apple"},
-    "get_news": {"symbol": "AAPL"},
-    "get_earnings": {"symbol": "AAPL"},
-    "get_sec_filings": {"symbol": "AAPL"},
-}
-
-
-@pytest.mark.parametrize("tool,base", list(LIMIT_AS_MAX_ROWS.items()))
-def test_limit_is_forwarded_as_max_rows(monkeypatch, tool, base):
-    captured: dict[str, object] = {}
-
-    def spy(*a, **k):
-        captured.update(k)
-        return {"ok": True}
-
-    monkeypatch.setattr(client, tool, spy)
-    _call(tool, {**base, "limit": 7})
-    assert captured.get("max_rows") == 7, f"{tool} should forward limit as max_rows"
-    assert "limit" not in captured, f"{tool} must not pass a 'limit' kwarg"
 
 
 @pytest.mark.parametrize("tool,base", list(LIMIT_AS_LIMIT.items()))
@@ -147,7 +129,7 @@ def test_get_shares_forwards_start_end_and_limit(monkeypatch):
     )
     assert captured["start"] == "2024-01-01"
     assert captured["end"] == "2024-06-01"
-    assert captured["max_rows"] == 7
+    assert captured["limit"] == 7
 
 
 def test_get_financials_forwards_statement_and_freq(monkeypatch):

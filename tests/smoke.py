@@ -65,12 +65,12 @@ if __name__ == "__main__":
 
     show("get_estimates('AAPL')", client.get_estimates("AAPL"))
 
-    ud = client.get_upgrades_downgrades("AAPL", max_rows=3)
-    show("get_upgrades_downgrades('AAPL', max_rows=3)", ud)
+    ud = client.get_upgrades_downgrades("AAPL", limit=3)
+    show("get_upgrades_downgrades('AAPL', limit=3)", ud)
 
-    holders = client.get_holders("AAPL", max_rows=3)
+    holders = client.get_holders("AAPL", limit=3)
     show(
-        "get_holders('AAPL', max_rows=3)",
+        "get_holders('AAPL', limit=3)",
         {
             "symbol": holders["symbol"],
             "major_holders": holders["major_holders"],
@@ -79,9 +79,9 @@ if __name__ == "__main__":
         },
     )
 
-    insider = client.get_insider_activity("AAPL", max_rows=3)
+    insider = client.get_insider_activity("AAPL", limit=3)
     show(
-        "get_insider_activity('AAPL', max_rows=3)",
+        "get_insider_activity('AAPL', limit=3)",
         {
             "symbol": insider["symbol"],
             "transactions": insider["transactions"][:2],
@@ -98,16 +98,16 @@ if __name__ == "__main__":
         client.get_financials("AAPL", statement="income", freq="ttm"),
     )
 
-    shares = client.get_shares("AAPL", max_rows=3)
-    show("get_shares('AAPL', max_rows=3)", shares)
+    shares = client.get_shares("AAPL", limit=3)
+    show("get_shares('AAPL', limit=3)", shares)
 
     # Fund data is ETF/fund-only; use SPY.
-    fund = client.get_fund_data("SPY", max_rows=3)
-    show("get_fund_data('SPY', max_rows=3)", fund)
+    fund = client.get_fund_data("SPY", limit=3)
+    show("get_fund_data('SPY', limit=3)", fund)
 
-    sector = client.get_sector("technology", max_rows=3)
+    sector = client.get_sector("technology", limit=3)
     show(
-        "get_sector('technology', max_rows=3)",
+        "get_sector('technology', limit=3)",
         {
             "key": sector["key"],
             "name": sector["name"],
@@ -117,9 +117,9 @@ if __name__ == "__main__":
         },
     )
 
-    industry = client.get_industry("semiconductors", max_rows=3)
+    industry = client.get_industry("semiconductors", limit=3)
     show(
-        "get_industry('semiconductors', max_rows=3)",
+        "get_industry('semiconductors', limit=3)",
         {
             "key": industry["key"],
             "name": industry["name"],

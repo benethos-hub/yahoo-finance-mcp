@@ -117,7 +117,14 @@ def default_cache_dir() -> Path:
 
 
 class ResultCache:
-    """A tiny SQLite-backed key/value store with per-entry expiry."""
+    """A tiny SQLite-backed key/value store with per-entry expiry.
+
+    An expired entry is deleted when it is read, and every ``PURGE_EVERY``
+    writes the whole file is swept. Startup used to be the only sweep, and a
+    long-running HTTP server kept every entry nobody asked for again.
+    """
+
+    PURGE_EVERY = 100
 
     def __init__(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -128,6 +135,7 @@ class ResultCache:
         )
         self._conn.commit()
         self._lock = threading.Lock()
+        self._writes = 0
 
     def get(self, key: str) -> tuple[bool, Any]:
         """Return ``(hit, value)``; a miss or expired entry yields ``(False, None)``."""
@@ -157,13 +165,16 @@ class ResultCache:
         except (TypeError, ValueError):
             logger.debug("Skipping cache for non-serializable value under %s", key)
             return
-        expires_at = time.time() + ttl
+        now = time.time()
         with self._lock:
             self._conn.execute(
                 "INSERT OR REPLACE INTO cache (key, expires_at, value) "
                 "VALUES (?, ?, ?)",
-                (key, expires_at, payload),
+                (key, now + ttl, payload),
             )
+            self._writes += 1
+            if self._writes % self.PURGE_EVERY == 0:
+                self._conn.execute("DELETE FROM cache WHERE expires_at < ?", (now,))
             self._conn.commit()
 
     def purge_expired(self) -> None:
@@ -220,11 +231,23 @@ def _make_key(category: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> s
     return hashlib.sha1(blob.encode("utf-8")).hexdigest()
 
 
-def cached(category: str) -> Callable[[F], F]:
+def cached(
+    category: str, *, worth_keeping: Callable[[Any], bool] = bool
+) -> Callable[[F], F]:
     """Decorate a client function to cache its successful results under ``category``.
+
+    ``worth_keeping`` decides whether a result is stored. The default skips
+    empty ones, a search with no matches say, so a transient empty response is
+    not pinned for the whole TTL. A function whose "nothing found" is a
+    non-empty dict passes its own test.
 
     When caching is disabled the wrapper is a transparent pass-through. Only
     successful returns are stored; exceptions propagate and are never cached.
+
+    The cache is an optimisation, so its own failures never fail the call. A
+    second process on the same cache directory can hold the database locked,
+    and a file can be damaged. Either way the result is fetched and returned
+    as if caching were off, and a warning says why.
     """
 
     def decorator(fn: F) -> F:
@@ -232,15 +255,21 @@ def cached(category: str) -> Callable[[F], F]:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             if not _enabled or _cache is None:
                 return fn(*args, **kwargs)
+            store = _cache
             key = _make_key(category, args, kwargs)
-            hit, value = _cache.get(key)
+            try:
+                hit, value = store.get(key)
+            except sqlite3.Error as exc:
+                logger.warning("Result cache read failed, fetching directly: %s", exc)
+                hit, value = False, None
             if hit:
                 return value
             result = fn(*args, **kwargs)
-            # Skip empty results (e.g. a search with no matches) so a transient
-            # empty response is not pinned for the whole TTL.
-            if result:
-                _cache.set(key, result, _ttls.get(category, 0))
+            if worth_keeping(result):
+                try:
+                    store.set(key, result, _ttls.get(category, 0))
+                except sqlite3.Error as exc:
+                    logger.warning("Result cache write failed, not cached: %s", exc)
             return result
 
         return wrapper  # type: ignore[return-value]

@@ -17,6 +17,7 @@ import logging
 import os
 import sys
 from typing import Annotated, Any
+from urllib.parse import urlsplit
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
@@ -59,6 +60,21 @@ def _split_csv(value: str | None) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def _hosts_from_origins(origins: list[str]) -> list[str]:
+    """The Host header values the given origins imply, in order, deduplicated.
+
+    An origin's authority is exactly what a browser at that origin sends as
+    ``Host``, including a ``:*`` port wildcard, which the SDK understands in
+    both lists.
+    """
+    hosts: list[str] = []
+    for origin in origins:
+        netloc = urlsplit(origin).netloc
+        if netloc and netloc not in hosts:
+            hosts.append(netloc)
+    return hosts
+
+
 def _transport_security_for(
     host: str, allowed_hosts: list[str], allowed_origins: list[str]
 ) -> TransportSecuritySettings:
@@ -70,15 +86,22 @@ def _transport_security_for(
     gateways run into. Derive it from the host actually being bound:
 
     - An explicit allow-list always wins: enable protection with those values.
+      Either list is derived from the other when only one is given.
     - A localhost bind keeps the protective localhost defaults.
     - A deliberately exposed bind (e.g. 0.0.0.0) with no allow-list turns
       DNS-rebinding protection off, mirroring the SDK's own default for a
       non-localhost bind.
+
+    The hosts have to be derived, not left empty. With protection on, the SDK
+    checks the Host header of every request against the list, and an empty
+    list matches nothing: origins alone used to lock out every client with
+    HTTP 421, the browser the origins were meant for included.
     """
     if allowed_hosts or allowed_origins:
         origins = allowed_origins or [
             f"{scheme}://{h}" for h in allowed_hosts for scheme in ("http", "https")
         ]
+        allowed_hosts = allowed_hosts or _hosts_from_origins(allowed_origins)
         return TransportSecuritySettings(
             enable_dns_rebinding_protection=True,
             allowed_hosts=allowed_hosts,
@@ -98,6 +121,13 @@ def _transport_security_for(
 
 
 # Log to stderr only: stdout carries the MCP JSON-RPC protocol.
+#
+# This runs at import and has to stay above the MCPServer construction below.
+# The SDK's constructor calls logging.basicConfig itself, with a RichHandler,
+# and basicConfig only ever takes effect once. Whoever calls it first decides
+# the format. Moved into main(), this call would come second and do nothing,
+# and every log line would come out in Rich's layout, wrapped to a terminal
+# width that a container log does not have.
 logging.basicConfig(
     level=_default_log_level(),
     stream=sys.stderr,
@@ -142,10 +172,11 @@ in the instrument's own currency, reported as `currency` where the tool has it. 
 Comparing `AAPL` with `SAP.DE`, or summing them, means mixing USD and EUR, and \
 nothing in the data will flag that.
 
-Results are capped, mostly in silence. Only `get_history` and `get_quotes` \
-report a `truncated` flag. Every other tool quietly returns at most its top or \
-most recent rows, so a short list is not evidence that the list is short. Where \
-a tool takes a `limit`, raise it rather than concluding there is no more.
+Results are capped, mostly in silence. Only `get_history`, `get_quotes` and \
+`get_options` report a `truncated` flag. Every other tool quietly returns at \
+most its top or most recent rows, so a short list is not evidence that the list \
+is short. Where a tool takes a `limit`, raise it rather than concluding there is \
+no more.
 
 Data is delayed and may be incomplete. This is not investment advice.
 """
@@ -253,11 +284,8 @@ def get_history(
 ) -> dict[str, Any]:
     """Get historical OHLCV (open/high/low/close/volume) data for a symbol.
 
-    ``period`` accepts Yahoo values such as ``1d``, ``5d``, ``1mo``, ``6mo``,
-    ``1y``, ``5y``, ``max``. ``interval`` accepts e.g. ``1m``, ``5m``, ``1h``,
-    ``1d``, ``1wk``, ``1mo``. Provide ``start`` (and optional ``end``) as
-    ``YYYY-MM-DD`` to query an explicit date range instead of ``period``.
-    Results are capped at the most recent 250 rows.
+    Query a look-back ``period`` or an explicit ``start``/``end`` range. Results
+    are capped at the most recent 250 rows, with ``truncated`` set when cut.
     """
     return client.get_history(
         symbol, period=period, interval=interval, start=start, end=end
@@ -295,11 +323,8 @@ def get_financials(
 ) -> dict[str, Any]:
     """Get a financial statement for a Yahoo symbol.
 
-    ``statement`` is one of ``income`` (income statement), ``balance`` (balance
-    sheet), or ``cashflow`` (cash flow statement). ``freq`` is ``annual``,
-    ``quarterly``, or ``ttm`` (trailing twelve months, available for the income
-    and cash-flow statements only). Each row is a line item and each column a
-    reporting periods.
+    Each row is a line item and each column a reporting period, most recent
+    first.
     """
     return client.get_financials(symbol, statement=statement, freq=freq)
 
@@ -315,10 +340,10 @@ def get_news(
     symbol: Symbol,
     limit: Annotated[
         int,
-        Field(description="Maximum number of headlines to return.", ge=1, le=30),
+        Field(description="Maximum number of headlines to return.", ge=1, le=10),
     ] = 10,
 ) -> dict[str, Any]:
-    """Get recent news headlines for a Yahoo symbol (up to ``limit``, 1-30).
+    """Get recent news headlines for a Yahoo symbol (up to ``limit``, 1-10).
 
     Each article includes title, summary, publisher, publish time, and URL.
     """
@@ -350,8 +375,10 @@ def get_options(
 
     Call without ``expiration`` to list available expiration dates. Call with
     an ``expiration`` (``YYYY-MM-DD`` from that list) to get the calls and puts
-    for that date. Yahoo carries chains for US-listed instruments only, so a
-    non-US symbol has none and that says nothing about the symbol.
+    for that date, up to 60 strikes each centred on the current price, with
+    ``truncated`` set when a wider chain was cut. Yahoo carries chains for
+    US-listed instruments only, so a non-US symbol has none and that says
+    nothing about the symbol.
     """
     return client.get_options(symbol, expiration=expiration)
 
@@ -397,7 +424,7 @@ def get_upgrades_downgrades(
     Each entry is a firm's rating change with the from/to grade and action, most
     recent first. Equity-only, empty for ETFs, funds, and crypto.
     """
-    return client.get_upgrades_downgrades(symbol, max_rows=limit)
+    return client.get_upgrades_downgrades(symbol, limit=limit)
 
 
 @mcp.tool()
@@ -419,7 +446,7 @@ def get_holders(
     plus the top institutional and mutual-fund holders. Equity-only, empty for
     ETFs, funds, and crypto.
     """
-    return client.get_holders(symbol, max_rows=limit)
+    return client.get_holders(symbol, limit=limit)
 
 
 @mcp.tool()
@@ -440,7 +467,7 @@ def get_insider_activity(
     and the current insider roster. Equity-only, empty for ETFs, funds, and
     crypto.
     """
-    return client.get_insider_activity(symbol, max_rows=limit)
+    return client.get_insider_activity(symbol, limit=limit)
 
 
 @mcp.tool()
@@ -476,7 +503,10 @@ def get_shares(
     symbol: Symbol,
     start: Annotated[
         str | None,
-        Field(description="Start date 'YYYY-MM-DD' to bound the series (optional)."),
+        Field(
+            description="Start date 'YYYY-MM-DD'. Without it the series covers "
+            "the last 18 months only."
+        ),
     ] = None,
     end: Annotated[
         str | None,
@@ -494,10 +524,10 @@ def get_shares(
     """Get the shares-outstanding history for a Yahoo symbol.
 
     Each point is a date and the reported shares outstanding. Only the most
-    recent ``limit`` points are returned. Optionally bound the range with
-    ``start`` / ``end`` (``YYYY-MM-DD``).
+    recent ``limit`` points are returned. Without ``start`` the series covers
+    the last 18 months, so pass one for anything older.
     """
-    return client.get_shares(symbol, start=start, end=end, max_rows=limit)
+    return client.get_shares(symbol, start=start, end=end, limit=limit)
 
 
 @mcp.tool()
@@ -514,7 +544,7 @@ def get_fund_data(
     holdings. Fund/ETF-only, raises for stocks and crypto, which have no fund
     data.
     """
-    return client.get_fund_data(symbol, max_rows=limit)
+    return client.get_fund_data(symbol, limit=limit)
 
 
 # Built from yfinance's own constant (via client) so the tool description the
@@ -544,7 +574,7 @@ def get_sector(
     Each industry's ``key`` can be passed to ``get_industry`` to drill down.
     This takes a sector key like ``technology`` or ``healthcare`` — not a ticker.
     """
-    return client.get_sector(key, max_rows=limit)
+    return client.get_sector(key, limit=limit)
 
 
 @mcp.tool()
@@ -569,7 +599,7 @@ def get_industry(
     the ``industries`` list returned by ``get_sector``. This takes an industry
     key like ``semiconductors`` — not a ticker symbol.
     """
-    return client.get_industry(key, max_rows=limit)
+    return client.get_industry(key, limit=limit)
 
 
 @mcp.tool()
@@ -739,6 +769,12 @@ def main(argv: list[str] | None = None) -> None:
             )
         mcp.run(transport="stdio")
         return
+
+    # Checked here rather than by argparse, because YF_MCP_PORT arrives as the
+    # parser's default and argparse never validates a default. Only an HTTP
+    # transport binds the port, so stdio does not trip over a stray value.
+    if not 1 <= args.port <= 65535:
+        parser.error(f"--port must be between 1 and 65535, got {args.port}")
 
     path = _http_path(args)
     logger.info(

@@ -108,11 +108,35 @@ def test_refusal_says_nothing_about_the_token(guarded):
     assert close["body"] == absent["body"] == b'{"error":"unauthorized"}'
 
 
-def test_non_http_scopes_pass_through(guarded):
+def test_lifespan_passes_through(guarded):
     """The lifespan scope must reach the app or the session manager never starts."""
     app, reached = guarded
     _call(app, [], scope_type="lifespan")
     assert reached == ["lifespan"]
+
+
+def test_websocket_is_refused_even_with_the_token(guarded):
+    """No WebSocket route exists today, and none gets past the guard unchecked."""
+    app, reached = guarded
+    sent: list[dict[str, Any]] = []
+
+    async def send(message: dict[str, Any]) -> None:
+        sent.append(message)
+
+    async def receive() -> dict[str, Any]:  # pragma: no cover - never awaited
+        return {"type": "websocket.connect"}
+
+    scope = {"type": "websocket", "headers": [(b"authorization", b"Bearer s3cret")]}
+    asyncio.run(app(scope, receive, send))
+    assert reached == []
+    assert sent == [{"type": "websocket.close", "code": 1008}]
+
+
+def test_unknown_scope_never_reaches_the_app(guarded):
+    app, reached = guarded
+    out = _call(app, [(b"authorization", b"Bearer s3cret")], scope_type="future")
+    assert reached == []
+    assert out["status"] is None
 
 
 class TestTokenFromEnv:

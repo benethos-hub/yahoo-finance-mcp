@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from benethos_yahoo_finance_mcp import server
@@ -117,6 +119,30 @@ def _capture_http(monkeypatch):
     return called
 
 
+@pytest.mark.parametrize("port", ["0", "65536", "-1"])
+def test_http_rejects_a_port_out_of_range(monkeypatch, capsys, port):
+    """A bad port is a usage error, not a uvicorn traceback."""
+    called = _capture_http(monkeypatch)
+    with pytest.raises(SystemExit) as info:
+        server.main(["--transport", "streamable-http", "--port", port])
+    assert info.value.code == 2
+    assert "--port must be between 1 and 65535" in capsys.readouterr().err
+    assert "app" not in called
+
+
+def test_http_rejects_an_env_port_out_of_range(monkeypatch):
+    _capture_http(monkeypatch)
+    monkeypatch.setenv("YF_MCP_PORT", "99999")
+    with pytest.raises(SystemExit):
+        server.main(["--transport", "streamable-http"])
+
+
+def test_stdio_ignores_the_port(monkeypatch):
+    called = _capture_run(monkeypatch)
+    server.main(["--port", "0"])
+    assert called["transport"] == "stdio"
+
+
 def test_main_runs_stdio_by_default(monkeypatch):
     called = _capture_run(monkeypatch)
     server.main([])
@@ -208,6 +234,50 @@ def test_transport_security_explicit_allow_list_wins_even_when_exposed():
 def test_transport_security_explicit_origins_are_kept():
     ts = server._transport_security_for("0.0.0.0", ["mcp:8000"], ["http://mcp:8000"])
     assert ts.allowed_origins == ["http://mcp:8000"]
+
+
+def test_transport_security_origins_alone_derive_the_hosts():
+    """Origins without hosts must not leave the Host allow-list empty.
+
+    The SDK rejects every Host that is not on the list, so an empty list with
+    protection on answered every request with HTTP 421.
+    """
+    ts = server._transport_security_for(
+        "0.0.0.0",
+        [],
+        ["https://mcp.example.com", "http://mcp.example.com", "http://localhost:*"],
+    )
+    assert ts.enable_dns_rebinding_protection is True
+    assert ts.allowed_hosts == ["mcp.example.com", "localhost:*"]
+    assert ts.allowed_origins == [
+        "https://mcp.example.com",
+        "http://mcp.example.com",
+        "http://localhost:*",
+    ]
+
+
+def test_origins_alone_let_a_matching_request_through():
+    """End to end through the SDK's own check, not just the settings object."""
+    from mcp.server.transport_security import TransportSecurityMiddleware
+    from starlette.requests import Request
+
+    ts = server._transport_security_for("0.0.0.0", [], ["https://mcp.example.com"])
+    request = Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/mcp",
+            "headers": [
+                (b"host", b"mcp.example.com"),
+                (b"origin", b"https://mcp.example.com"),
+                (b"content-type", b"application/json"),
+            ],
+        }
+    )
+    response = asyncio.run(
+        TransportSecurityMiddleware(ts).validate_request(request, is_post=True)
+    )
+    assert response is None
 
 
 def test_main_exposed_bind_disables_rebinding_guard(monkeypatch):

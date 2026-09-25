@@ -59,28 +59,54 @@ def to_jsonable(value: Any) -> Any:
     return str(value)
 
 
+def _column_key(col: Any) -> str:
+    """A column label as a JSON object key.
+
+    Financial statements label their columns with the period end as a
+    midnight ``Timestamp``, which ``str()`` renders as ``2025-09-30 00:00:00``.
+    A plain ISO date says the same in ten characters, and every row repeats
+    every key. Anything else goes through :func:`to_jsonable` first, so a
+    timestamp with a time or a zone keeps its ISO form.
+    """
+    if (
+        isinstance(col, datetime)
+        and col.tzinfo is None
+        and col.time() == datetime.min.time()
+    ):
+        return col.date().isoformat()
+    key = to_jsonable(col)
+    return key if isinstance(key, str) else str(key)
+
+
 def dataframe_to_records(
-    df: pd.DataFrame,
+    df: pd.DataFrame | None,
     *,
     max_rows: int = MAX_ROWS,
     index_name: str | None = None,
+    head: bool = False,
 ) -> list[dict[str, Any]]:
     """Convert a DataFrame to a list of JSON-safe row dicts.
 
     The index is preserved as a column named ``index_name`` (or the frame's own
-    index name, defaulting to ``"index"``). At most ``max_rows`` rows are kept;
-    when truncated, the most recent rows (the tail) are returned.
+    index name, defaulting to ``"index"``). At most ``max_rows`` rows are kept.
+    By default those are the tail, the most recent rows of a time series. Pass
+    ``head=True`` for a frame ranked from the top, a holder list or a statement
+    whose headline items come first. ``None`` and an empty frame both give an
+    empty list, so callers need no guard of their own.
     """
     if df is None or df.empty:
         return []
 
-    frame = df.tail(max_rows) if len(df) > max_rows else df
+    if len(df) > max_rows:
+        frame = df.head(max_rows) if head else df.tail(max_rows)
+    else:
+        frame = df
     key = index_name or frame.index.name or "index"
 
     records: list[dict[str, Any]] = []
     for idx, row in frame.iterrows():
         record: dict[str, Any] = {key: to_jsonable(idx)}
         for col, val in row.items():
-            record[str(col)] = to_jsonable(val)
+            record[_column_key(col)] = to_jsonable(val)
         records.append(record)
     return records

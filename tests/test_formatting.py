@@ -89,3 +89,30 @@ def test_dataframe_to_records_custom_index_name():
     df = pd.DataFrame({"v": [1]}, index=["Revenue"])
     records = formatting.dataframe_to_records(df, index_name="item")
     assert records[0]["item"] == "Revenue"
+
+
+def test_dataframe_to_records_none_is_empty():
+    assert formatting.dataframe_to_records(None) == []
+
+
+def test_dataframe_to_records_head_keeps_the_top():
+    df = pd.DataFrame({"v": range(10)})
+    tail = formatting.dataframe_to_records(df, max_rows=3)
+    head = formatting.dataframe_to_records(df, max_rows=3, head=True)
+    assert [r["v"] for r in tail] == [7, 8, 9]
+    assert [r["v"] for r in head] == [0, 1, 2]
+
+
+def test_dataframe_to_records_date_columns_become_iso_dates():
+    """Statement periods are midnight timestamps and come out as plain dates."""
+    df = pd.DataFrame(
+        {pd.Timestamp("2025-09-30"): [1.0], pd.Timestamp("2025-09-30 16:00"): [2.0]},
+        index=["Total Debt"],
+    )
+    record = formatting.dataframe_to_records(df, index_name="item")[0]
+    assert list(record) == ["item", "2025-09-30", "2025-09-30T16:00:00"]
+
+
+def test_dataframe_to_records_non_string_columns_are_strings():
+    df = pd.DataFrame({0: [1], 1: [2]})
+    assert list(formatting.dataframe_to_records(df)[0]) == ["index", "0", "1"]

@@ -4,7 +4,7 @@
 [![PyPI](https://img.shields.io/pypi/v/benethos-yahoo-finance-mcp)](https://pypi.org/project/benethos-yahoo-finance-mcp/)
 [![Container](https://img.shields.io/badge/ghcr.io-yahoo--finance--mcp-2496ED?logo=docker&logoColor=white)](https://github.com/benethos-hub/yahoo-finance-mcp/pkgs/container/yahoo-finance-mcp)
 [![Python](https://img.shields.io/pypi/pyversions/benethos-yahoo-finance-mcp)](https://pypi.org/project/benethos-yahoo-finance-mcp/)
-[![Coverage](https://img.shields.io/badge/coverage-94%25-brightgreen)](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/LICENSE)
 
 An [MCP](https://modelcontextprotocol.io) server that exposes Yahoo Finance
@@ -295,7 +295,7 @@ containers), with one deliberate exception noted below. Precedence is
 | `--port` | `YF_MCP_PORT` | `8000` | Port for HTTP transports. |
 | `--path` | `YF_MCP_PATH` | `/mcp` (`/sse` for sse) | URL path for HTTP transports. |
 | _(none)_ | `YF_MCP_BEARER_TOKEN` | unset | Require this bearer token on every HTTP request. Environment only, deliberately: an argument is visible in the process list. |
-| `--allowed-hosts` | `YF_MCP_ALLOWED_HOSTS` | see below | Comma-separated `Host` header allow-list for the DNS-rebinding guard. |
+| `--allowed-hosts` | `YF_MCP_ALLOWED_HOSTS` | see below, or derived from origins | Comma-separated `Host` header allow-list for the DNS-rebinding guard. |
 | `--allowed-origins` | `YF_MCP_ALLOWED_ORIGINS` | derived from hosts | Comma-separated `Origin` header allow-list. |
 | `--log-level` | `YF_MCP_LOG_LEVEL` | `INFO` | `DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`. |
 | `--cache` / `--no-cache` | `YF_MCP_CACHE` | off | Enable/disable the persistent result cache. |

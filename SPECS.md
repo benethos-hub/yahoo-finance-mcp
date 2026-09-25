@@ -79,7 +79,8 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   derived from the actual bind host and passed to `MCPServer.run()` as an
   explicit argument: a localhost bind keeps the protective localhost allow-list,
   an exposed bind accepts any `Host` unless `--allowed-hosts` /
-  `--allowed-origins` narrow it (mismatches get HTTP 421). stdio has no HTTP
+  `--allowed-origins` narrow it (mismatches get HTTP 421). Either list is
+  derived from the other when only one is given. stdio has no HTTP
   surface and is handed no transport options at all.
 - **Deployment:** a `Dockerfile` (multi-stage, non-root, healthcheck,
   dependencies installed reproducibly from `uv.lock` via uv) and a
@@ -136,9 +137,9 @@ exceptions are `get_sector` / `get_industry`, which take a sector/industry
 | `get_company_info` | `symbol` | curated profile + key statistics, plus `resolved_symbol` when Yahoo resolves the input to a different ticker (i.e. for an ISIN) |
 | `get_financials` | `symbol`, `statement` (income/balance/cashflow), `freq` (annual/quarterly/ttm — ttm income/cashflow only) | `{symbol, statement, freq, rows[]}` (rows = line items, columns = periods) |
 | `get_dividends` | `symbol` | `{symbol, dividends[], splits[]}` |
-| `get_news` | `symbol`, `limit` 1-30 (=10) | `{symbol, count, articles[{title, summary, publisher, published, url}]}` |
+| `get_news` | `symbol`, `limit` 1-10 (=10, Yahoo serves no more) | `{symbol, count, articles[{title, summary, publisher, published, url}]}` |
 | `get_recommendations` | `symbol` | `{symbol, price_targets, recommendation_trend[]}` |
-| `get_options` | `symbol`, `expiration?` | without `expiration`: `{symbol, expirations[]}`, with it: `{symbol, expiration, calls[], puts[]}` |
+| `get_options` | `symbol`, `expiration?` | without `expiration`: `{symbol, expirations[]}`, with it: `{symbol, expiration, truncated, calls[], puts[]}` (≤60 strikes per side, centred on the money) |
 | `get_earnings` | `symbol`, `limit` 1-50 (=12) | `{symbol, earnings_dates[], earnings_history[]}` (equity-only) |
 | `get_estimates` | `symbol` | `{symbol, earnings_estimate[], revenue_estimate[], eps_trend[], eps_revisions[], growth_estimates[]}` (equity-only) |
 | `get_upgrades_downgrades` | `symbol`, `limit` 1-100 (=50) | `{symbol, changes[]}` (rating changes, newest first, equity-only) |
@@ -146,7 +147,7 @@ exceptions are `get_sector` / `get_industry`, which take a sector/industry
 | `get_insider_activity` | `symbol`, `limit` 1-100 (=50) | `{symbol, transactions[], purchases_summary[], roster[]}` (transactions newest first, equity-only) |
 | `get_sec_filings` | `symbol`, `limit` 1-100 (=25) | `{symbol, count, filings[{date, type, title, url, exhibits}]}` (equity-only) |
 | `get_calendar` | `symbol` | `{symbol, calendar{}}` (next earnings/dividend dates + estimate ranges, equity-only) |
-| `get_shares` | `symbol`, `start?`, `end?`, `limit` 1-250 (=50) | `{symbol, count, shares[{date, shares}]}` (most recent kept) |
+| `get_shares` | `symbol`, `start?`, `end?`, `limit` 1-250 (=50) | `{symbol, count, shares[{date, shares}]}` (most recent kept, last 18 months unless `start` is given) |
 | `get_fund_data` | `symbol`, `limit` 1-100 (=25) | `{symbol, description, fund_overview, asset_classes, sector_weightings, top_holdings[]}` (fund/ETF-only) |
 | `get_sector` | `key` (sector key), `limit` 1-100 (=25) | `{key, name, index_symbol, overview, top_companies[], top_etfs, top_mutual_funds, industries[]}` (module-level, not a symbol) |
 | `get_industry` | `key` (industry key), `limit` 1-100 (=25) | `{key, name, index_symbol, sector_key, sector_name, overview, top_companies[], top_performing_companies[], top_growth_companies[]}` (module-level, not a symbol) |

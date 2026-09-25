@@ -51,19 +51,25 @@ Keep the layers separate: **tools in `server.py` stay thin** and delegate to
 
 ## How to add or change a tool
 
-1. Add the data-fetching logic to `client.py`. Wrap every yfinance call in
-   `try/except` and route failures through `_wrap_upstream(exc, "...")` so rate
-   limits map to `RateLimitError` and other errors keep context. Raise
-   `SymbolNotFoundError(symbol)` on empty results. Decorate the function with
-   `@cache.cached("<category>")` and add that category with a TTL to
-   `cache.DEFAULT_TTLS` (the cache is opt-in; the decorator is a no-op until
-   enabled).
-2. Convert pandas output with `formatting.dataframe_to_records` / `to_jsonable`;
-   apply a sensible `max_rows`.
+1. Add the data-fetching logic to `client.py`. Put every yfinance call inside
+   `with _upstream("Failed to load ... for {symbol!r}"):`, which routes
+   failures through `_wrap_upstream` so rate limits map to `RateLimitError`
+   and other errors keep context. Raise `SymbolNotFoundError(symbol)` on empty
+   results, and echo the symbol as `_normalize_symbol(symbol)`. Decorate the
+   function with `@cache.cached("<category>")` and add that category with a
+   TTL to `cache.DEFAULT_TTLS` (the cache is opt-in; the decorator is a no-op
+   until enabled). If "nothing found" is a non-empty value, pass
+   `worth_keeping=` so it is not cached.
+2. Convert pandas output with `formatting.dataframe_to_records` / `to_jsonable`.
+   It takes `None`, caps at `max_rows` and keeps the tail. Pass `head=True` for
+   a frame ranked from the top. Cap silently only where the tail or head is
+   obviously what a caller wants, and otherwise report `truncated`.
 3. Expose it in `server.py` with `@mcp.tool()`. The **docstring becomes the
-   tool description** Claude sees — write it for an LLM caller. Give every
-   parameter an `Annotated[type, Field(description=...)]` (reuse the `Symbol`
-   alias for ticker arguments); add `ge`/`le` bounds for numeric limits.
+   tool description** Claude sees — write it for an LLM caller, and leave
+   allowed values to the parameter descriptions rather than repeating them.
+   Give every parameter an `Annotated[type, Field(description=...)]` (reuse
+   the `Symbol` alias for ticker arguments); add `ge`/`le` bounds for numeric
+   limits. A row cap is called `limit`, in the tool and in the client.
 4. Add unit tests in `tests/` using the `FakeTicker` pattern (mock
    `client._get_ticker` / `client.yf.Search`). Do not hit the network in tests.
 

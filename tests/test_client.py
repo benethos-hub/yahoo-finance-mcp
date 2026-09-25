@@ -48,8 +48,8 @@ class FakeTicker:
     def splits(self):
         return self._attrs.get("splits")
 
-    @property
-    def news(self):
+    def get_news(self, **kwargs):
+        self.news_kwargs = kwargs
         return self._attrs.get("news", [])
 
     @property
@@ -184,6 +184,21 @@ def _patch_tickers(monkeypatch, mapping):
     monkeypatch.setattr(client, "_get_ticker", lambda s: mapping[s.strip().upper()])
 
 
+def test_get_quotes_unresolvable_isin_is_a_per_symbol_miss(monkeypatch):
+    """One bad ISIN must not fail the whole batch."""
+    good = FakeTicker(fast_info={"lastPrice": 1.0})
+
+    def resolve(symbol):
+        if symbol == "ZZ0000000009":
+            raise SymbolNotFoundError(symbol)
+        return good
+
+    monkeypatch.setattr(client, "_get_ticker", resolve)
+    out = client.get_quotes(["AAPL", "ZZ0000000009"])
+    assert [q["symbol"] for q in out["quotes"]] == ["AAPL"]
+    assert out["not_found"] == ["ZZ0000000009"]
+
+
 def test_get_quotes_returns_rows(monkeypatch):
     _patch_tickers(
         monkeypatch,
@@ -227,7 +242,7 @@ def test_get_quotes_caps_symbols(monkeypatch):
         monkeypatch,
         {f"S{i}": FakeTicker(fast_info={"lastPrice": float(i)}) for i in range(10)},
     )
-    out = client.get_quotes([f"s{i}" for i in range(10)], max_symbols=3)
+    out = client.get_quotes([f"s{i}" for i in range(10)], limit=3)
     assert out["count"] == 3
     assert out["truncated"] is True
 
@@ -323,6 +338,20 @@ def test_get_financials_returns_rows(patch_ticker):
     assert out["rows"][0]["item"] == "Total Revenue"
 
 
+def test_get_financials_keeps_every_line_item_from_the_top(patch_ticker):
+    """A long statement loses nothing, and the headline items come first.
+
+    Apple's annual balance sheet has 69 rows. The old cap of 60 kept the tail
+    and silently dropped Net Debt, Total Debt and seven more from the top.
+    """
+    items = ["Net Debt", "Total Debt"] + [f"Item {i}" for i in range(67)]
+    df = pd.DataFrame({pd.Timestamp("2025-09-27"): range(len(items))}, index=items)
+    patch_ticker(FakeTicker(balance_sheet=df))
+    out = client.get_financials("aapl", statement="balance")
+    assert len(out["rows"]) == 69
+    assert [r["item"] for r in out["rows"][:2]] == ["Net Debt", "Total Debt"]
+
+
 def test_get_financials_ttm_uses_ttm_attr(patch_ticker):
     df = pd.DataFrame(
         {pd.Timestamp("2026-03-31"): [129174.0]},
@@ -343,9 +372,18 @@ def test_get_financials_ttm_not_available_for_balance(patch_ticker):
 # --- get_dividends --------------------------------------------------------
 
 
-def test_get_dividends_handles_none(patch_ticker):
+def test_get_dividends_unknown_symbol_raises(patch_ticker):
+    """yfinance answers an unknown symbol with None for both series."""
     patch_ticker(FakeTicker(dividends=None, splits=None))
-    out = client.get_dividends("aapl")
+    with pytest.raises(SymbolNotFoundError):
+        client.get_dividends("nope")
+
+
+def test_get_dividends_non_payer_is_not_an_error(patch_ticker):
+    """A real instrument without dividends or splits gets empty lists."""
+    empty = pd.Series([], dtype=float)
+    patch_ticker(FakeTicker(dividends=empty, splits=empty))
+    out = client.get_dividends("brk-b")
     assert out["dividends"] == []
     assert out["splits"] == []
 
@@ -382,6 +420,20 @@ def test_get_news_parses_nested_content(patch_ticker):
     assert article["url"] == "https://example.com"
 
 
+def test_get_news_asks_yahoo_for_the_requested_count(patch_ticker):
+    """The count goes upstream. Reading ``.news`` always asked for yfinance's
+    default of ten, so the tool's old ceiling of 30 was never reachable."""
+    ticker = patch_ticker(FakeTicker(news=[]))
+    client.get_news("aapl", limit=3)
+    assert ticker.news_kwargs == {"count": 3}
+
+
+def test_get_news_limit_is_capped_at_what_yahoo_serves(patch_ticker):
+    ticker = patch_ticker(FakeTicker(news=[]))
+    client.get_news("aapl", limit=30)
+    assert ticker.news_kwargs == {"count": 10}
+
+
 # --- get_recommendations --------------------------------------------------
 
 
@@ -396,6 +448,17 @@ def test_get_recommendations_combines_trend_and_targets(patch_ticker):
     out = client.get_recommendations("aapl")
     assert out["price_targets"] == {"mean": 200.0}
     assert out["recommendation_trend"][0]["buy"] == 10
+
+
+def test_get_recommendations_rows_are_keyed_by_period(patch_ticker):
+    """No positional "index" column, the period names the row."""
+    recs = pd.DataFrame({"period": ["0m", "-1m"], "buy": [10, 9]})
+    patch_ticker(FakeTicker(recommendations=recs, analyst_price_targets=None))
+    out = client.get_recommendations("aapl")
+    assert out["recommendation_trend"] == [
+        {"period": "0m", "buy": 10},
+        {"period": "-1m", "buy": 9},
+    ]
 
 
 def test_get_recommendations_empty_raises(patch_ticker):
@@ -469,9 +532,64 @@ def test_get_options_caps_rows(patch_ticker):
     puts = pd.DataFrame({"strike": list(range(100))})
     chain = types.SimpleNamespace(calls=calls, puts=puts)
     patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
-    out = client.get_options("aapl", expiration="2024-01-19", max_rows=5)
+    out = client.get_options("aapl", expiration="2024-01-19", limit=5)
     assert len(out["calls"]) == 5
     assert len(out["puts"]) == 5
+    assert out["truncated"] is True
+
+
+def test_get_options_keeps_the_strikes_around_the_money(patch_ticker):
+    """A wide chain keeps the strikes near the price, not the highest ones.
+
+    Price 50: calls below it and puts above it are in the money.
+    """
+    import types
+
+    strikes = [float(s) for s in range(100)]
+    calls = pd.DataFrame({"strike": strikes, "inTheMoney": [s < 50 for s in strikes]})
+    puts = pd.DataFrame({"strike": strikes, "inTheMoney": [s > 50 for s in strikes]})
+    chain = types.SimpleNamespace(calls=calls, puts=puts)
+    patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
+    out = client.get_options("aapl", expiration="2024-01-19", limit=6)
+    assert [r["strike"] for r in out["calls"]] == [47.0, 48.0, 49.0, 50.0, 51.0, 52.0]
+    assert [r["strike"] for r in out["puts"]] == [48.0, 49.0, 50.0, 51.0, 52.0, 53.0]
+
+
+def test_get_options_window_stays_inside_the_chain(patch_ticker):
+    """Price above every strike: the window is the top of the chain, full size."""
+    import types
+
+    strikes = [float(s) for s in range(20)]
+    calls = pd.DataFrame({"strike": strikes, "inTheMoney": [True] * 20})
+    puts = pd.DataFrame({"strike": strikes, "inTheMoney": [False] * 20})
+    chain = types.SimpleNamespace(calls=calls, puts=puts)
+    patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
+    out = client.get_options("aapl", expiration="2024-01-19", limit=4)
+    assert [r["strike"] for r in out["calls"]] == [16.0, 17.0, 18.0, 19.0]
+    assert [r["strike"] for r in out["puts"]] == [16.0, 17.0, 18.0, 19.0]
+
+
+def test_get_options_rows_are_keyed_by_contract(patch_ticker):
+    """No positional "index" column, the contract symbol names the row."""
+    import types
+
+    calls = pd.DataFrame({"contractSymbol": ["AAPL1C100"], "strike": [100.0]})
+    chain = types.SimpleNamespace(calls=calls, puts=pd.DataFrame())
+    patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
+    out = client.get_options("aapl", expiration="2024-01-19")
+    assert out["calls"] == [{"contractSymbol": "AAPL1C100", "strike": 100.0}]
+
+
+def test_get_options_short_chain_is_not_truncated(patch_ticker):
+    import types
+
+    chain = types.SimpleNamespace(
+        calls=pd.DataFrame({"strike": [1.0, 2.0]}), puts=pd.DataFrame()
+    )
+    patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
+    out = client.get_options("aapl", expiration="2024-01-19")
+    assert out["truncated"] is False
+    assert out["puts"] == []
 
 
 # --- get_earnings ---------------------------------------------------------
@@ -542,7 +660,7 @@ def test_get_upgrades_downgrades_sorts_newest_first_and_caps(patch_ticker):
         {"Firm": ["A", "B", "C"], "ToGrade": ["Buy", "Hold", "Sell"]}, index=idx
     )
     patch_ticker(FakeTicker(upgrades_downgrades=df))
-    out = client.get_upgrades_downgrades("aapl", max_rows=2)
+    out = client.get_upgrades_downgrades("aapl", limit=2)
     assert len(out["changes"]) == 2
     # Newest first: 2024-03-01 (B) then 2024-02-01 (C).
     assert out["changes"][0]["Firm"] == "B"
@@ -588,7 +706,7 @@ def test_get_holders_caps_rows(patch_ticker):
             mutualfund_holders=None,
         )
     )
-    out = client.get_holders("aapl", max_rows=5)
+    out = client.get_holders("aapl", limit=5)
     assert len(out["institutional_holders"]) == 5
 
 
@@ -635,7 +753,7 @@ def test_get_insider_activity_caps_rows(patch_ticker):
             insider_roster_holders=None,
         )
     )
-    out = client.get_insider_activity("aapl", max_rows=5)
+    out = client.get_insider_activity("aapl", limit=5)
     assert len(out["transactions"]) == 5
 
 
@@ -740,7 +858,7 @@ def test_get_shares_returns_recent_points(patch_ticker):
     idx = pd.DatetimeIndex(["2024-01-01", "2024-06-01", "2024-12-01"])
     series = pd.Series([100, 110, 120], index=idx)
     ticker = patch_ticker(FakeTicker(shares_full=series))
-    out = client.get_shares("aapl", start="2024-01-01", max_rows=2)
+    out = client.get_shares("aapl", start="2024-01-01", limit=2)
     # Most recent points are kept (tail).
     assert out["count"] == 2
     assert out["shares"][-1]["shares"] == 120
@@ -823,7 +941,7 @@ def test_get_fund_data_caps_holdings(patch_ticker):
         top_holdings=top,
     )
     patch_ticker(FakeTicker(funds_data=fd))
-    out = client.get_fund_data("spy", max_rows=5)
+    out = client.get_fund_data("spy", limit=5)
     assert len(out["top_holdings"]) == 5
 
 
@@ -886,7 +1004,7 @@ def test_get_sector_returns_overview(monkeypatch):
 
 def test_get_sector_caps_top_companies(monkeypatch):
     monkeypatch.setattr(client.yf, "Sector", lambda key: _fake_sector(n_companies=100))
-    out = client.get_sector("technology", max_rows=5)
+    out = client.get_sector("technology", limit=5)
     assert len(out["top_companies"]) == 5
 
 
@@ -989,7 +1107,7 @@ def test_get_industry_caps_top_companies(monkeypatch):
     monkeypatch.setattr(
         client.yf, "Industry", lambda key: _fake_industry(n_companies=100)
     )
-    out = client.get_industry("semiconductors", max_rows=5)
+    out = client.get_industry("semiconductors", limit=5)
     assert len(out["top_companies"]) == 5
 
 
@@ -1128,7 +1246,7 @@ def test_get_history_truncates_and_flags(patch_ticker):
     idx = pd.date_range("2024-01-01", periods=10, freq="D")
     df = pd.DataFrame({"Close": list(range(10))}, index=idx)
     patch_ticker(FakeTicker(history=df))
-    out = client.get_history("aapl", max_rows=3)
+    out = client.get_history("aapl", limit=3)
     assert out["count"] == 3
     assert out["truncated"] is True
     # The most recent rows are kept (tail).
@@ -1154,6 +1272,58 @@ def test_get_ticker_caches_and_is_case_insensitive(monkeypatch):
     assert constructed == ["AAPL"]  # built once, key upper-cased
 
 
+def test_get_ticker_cache_is_bounded(monkeypatch):
+    """Distinct symbols past the cap evict the least recently used one."""
+    client._ticker_cache.clear()
+    monkeypatch.setattr(client, "_TICKER_CACHE_MAX", 3)
+    monkeypatch.setattr(client.yf, "Ticker", lambda symbol: FakeTicker())
+
+    for sym in ("A", "B", "C"):
+        client._get_ticker(sym)
+    client._get_ticker("A")  # A is now the most recently used
+    client._get_ticker("D")
+    assert list(client._ticker_cache) == ["C", "A", "D"]
+
+
+def test_get_ticker_cache_drops_expired_entries(monkeypatch):
+    """A stale entry goes on the next insert, not only when it is asked for."""
+    client._ticker_cache.clear()
+    clock = [1000.0]
+    monkeypatch.setattr(client.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(client.yf, "Ticker", lambda symbol: FakeTicker())
+
+    client._get_ticker("OLD")
+    clock[0] += client._TICKER_TTL + 1
+    client._get_ticker("NEW")
+    assert list(client._ticker_cache) == ["NEW"]
+
+
+def test_get_ticker_unresolvable_isin_is_symbol_not_found(monkeypatch):
+    """yfinance resolves ISIN-shaped input in the constructor and raises
+    ValueError when Yahoo knows no such ISIN. That must not escape raw."""
+    client._ticker_cache.clear()
+
+    def unresolvable(symbol):
+        raise ValueError(f"Invalid ISIN number: {symbol}")
+
+    monkeypatch.setattr(client.yf, "Ticker", unresolvable)
+    with pytest.raises(SymbolNotFoundError) as info:
+        client._get_ticker("zz0000000009")
+    assert info.value.symbol == "ZZ0000000009"
+    assert "ZZ0000000009" not in client._ticker_cache
+
+
+def test_get_ticker_rate_limit_while_resolving(monkeypatch):
+    client._ticker_cache.clear()
+
+    def throttled(symbol):
+        raise YFRateLimitError()
+
+    monkeypatch.setattr(client.yf, "Ticker", throttled)
+    with pytest.raises(RateLimitError):
+        client._get_ticker("US0378331005")
+
+
 def test_get_ticker_empty_symbol_raises():
     with pytest.raises(ToolError):
         client._get_ticker("   ")
@@ -1177,7 +1347,7 @@ _UPSTREAM_CASES = [
     ("info", lambda: client.get_company_info("AAPL")),
     ("income_stmt", lambda: client.get_financials("AAPL")),
     ("dividends", lambda: client.get_dividends("AAPL")),
-    ("news", lambda: client.get_news("AAPL")),
+    ("get_news", lambda: client.get_news("AAPL")),
     ("recommendations", lambda: client.get_recommendations("AAPL")),
     ("options", lambda: client.get_options("AAPL")),
     ("get_earnings_dates", lambda: client.get_earnings("AAPL")),

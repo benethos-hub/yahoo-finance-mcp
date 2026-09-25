@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 import time
 
 import pytest
@@ -49,6 +50,25 @@ def test_result_cache_expiry(tmp_path):
         rc.set("k", "x", ttl=0.05)
         time.sleep(0.07)
         assert rc.get("k") == (False, None)
+    finally:
+        rc.close()
+
+
+def test_result_cache_sweeps_expired_entries_while_running(tmp_path, monkeypatch):
+    """Expired entries go on a regular write, not only at startup."""
+    monkeypatch.setattr(cache.ResultCache, "PURGE_EVERY", 3)
+    rc = cache.ResultCache(tmp_path / "c.sqlite")
+    try:
+        rc.set("stale", 1, ttl=60)
+        now = time.time()
+        monkeypatch.setattr(cache.time, "time", lambda: now + 120)
+        rc.set("a", 1, ttl=60)
+        count = "SELECT COUNT(*) FROM cache"
+        assert rc._conn.execute(count).fetchone()[0] == 2
+        rc.set("b", 1, ttl=60)  # third write sweeps
+        assert rc._conn.execute(count).fetchone()[0] == 2
+        keys = {row[0] for row in rc._conn.execute("SELECT key FROM cache")}
+        assert keys == {"a", "b"}
     finally:
         rc.close()
 
@@ -116,6 +136,37 @@ def test_cached_decorator_does_not_cache_empty_results(enabled_cache):
     fetch("nothing")
     fetch("nothing")
     assert calls["n"] == 2  # empty result is not pinned
+
+
+def test_cached_decorator_honours_worth_keeping(enabled_cache):
+    calls = {"n": 0}
+
+    @cache.cached("quotes", worth_keeping=lambda r: r["count"] > 0)
+    def fetch(symbols):
+        calls["n"] += 1
+        return {"count": 0, "quotes": [], "not_found": symbols}
+
+    fetch(["AAPL"])
+    fetch(["AAPL"])
+    assert calls["n"] == 2  # an all-miss answer is not pinned
+
+
+def test_get_quotes_does_not_pin_a_complete_miss(enabled_cache, monkeypatch):
+    from benethos_yahoo_finance_mcp import client
+
+    built = {"n": 0}
+
+    class Empty:
+        fast_info: dict = {}
+
+    def fake(symbol):
+        built["n"] += 1
+        return Empty()
+
+    monkeypatch.setattr(client, "_get_ticker", fake)
+    assert client.get_quotes(["AAPL"])["count"] == 0
+    client.get_quotes(["AAPL"])
+    assert built["n"] == 2
 
 
 def test_cached_decorator_does_not_cache_exceptions(enabled_cache):
@@ -199,3 +250,47 @@ def test_ttls_from_env(monkeypatch):
 def test_default_cache_dir_honors_env(monkeypatch, tmp_path):
     monkeypatch.setenv("YF_MCP_CACHE_DIR", str(tmp_path))
     assert cache.default_cache_dir() == tmp_path
+
+
+# --- cache failures never fail the call -----------------------------------
+
+
+class _BrokenStore:
+    """A cache whose every operation fails the way a locked database does."""
+
+    def get(self, key):
+        raise sqlite3.OperationalError("database is locked")
+
+    def set(self, key, value, ttl):
+        raise sqlite3.OperationalError("database is locked")
+
+    def close(self):
+        pass
+
+
+def test_cache_read_failure_falls_back_to_fetching(monkeypatch, caplog):
+    monkeypatch.setattr(cache, "_enabled", True)
+    monkeypatch.setattr(cache, "_cache", _BrokenStore())
+
+    @cache.cached("quote")
+    def fetch(symbol):
+        return {"symbol": symbol}
+
+    with caplog.at_level("WARNING", logger="benethos_yahoo_finance_mcp.cache"):
+        assert fetch("AAPL") == {"symbol": "AAPL"}
+    messages = [r.getMessage() for r in caplog.records]
+    assert any("read failed" in m for m in messages)
+    assert any("write failed" in m for m in messages)
+
+
+def test_cache_write_failure_still_returns_the_result(enabled_cache, monkeypatch):
+    def locked(*args, **kwargs):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(cache._cache, "set", locked)
+
+    @cache.cached("quote")
+    def fetch(symbol):
+        return {"symbol": symbol}
+
+    assert fetch("AAPL") == {"symbol": "AAPL"}
