@@ -10,6 +10,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `get_financials` names its period columns with a plain date,
   `2025-09-30`, where it used to print `2025-09-30 00:00:00`. The time was
   always midnight and said nothing, and every row repeats every column name.
+- Locked dependency refresh of fourteen packages, none of them direct
+  except the linter: `starlette` 1.6 → 1.7, `uvicorn` 0.53 → 0.54,
+  `httpx2` and `httpcore2` 2.12 → 2.13, `pandas` 3.0.5 → 3.0.6, `urllib3`
+  2.7 → 2.8, `pyjwt`, `protobuf`, `soupsieve`, `opentelemetry-api`, `idna`,
+  `platformdirs`, `pytz` and `ruff` 0.16.8 → 0.16.9. `urllib3` 2.8.0 closes
+  two high-severity advisories, an HTTPS proxy's TLS settings being
+  overridden and an unbounded chunk-size line, which had no CVE at release
+  and so no Dependabot alert. It sits under `yfinance`'s fallback through
+  `requests`, not the `curl_cffi` path used by default, but it ships in the
+  image. The packages sit under `mcp` and `yfinance`, so both got their
+  checks: the tool schemas are byte-identical, stdio stays clean, a tool
+  error's text arrives over stdio and streamable-http alike, the bearer guard
+  still answers 401 and 200, and a live smoke run before and after returned
+  data in all 26 sections, each of them byte-identical.
 - The descriptions of `get_history` and `get_financials` no longer repeat the
   allowed values their parameters already list. Every client pays for each
   tool description on every request, and these two said everything twice.
