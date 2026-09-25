@@ -36,6 +36,13 @@ those shapes should look at the entries below.
 - The descriptions of `get_history` and `get_financials` no longer repeat the
   allowed values their parameters already list. Every client pays for each
   tool description on every request, and these two said everything twice.
+- For anyone calling the `client` module from Python rather than through
+  MCP: the row cap is a keyword named `limit` in every function now. It used
+  to be `max_rows` in eleven of them and `limit` in the rest, and
+  `get_quotes` called its symbol cap `max_symbols`. The tools were always
+  `limit` and are unchanged. `formatting.dataframe_to_records` accepts
+  `None` and a `head=True` flag for frames ranked from the top, and the
+  cache decorator takes an optional `worth_keeping` predicate.
 
 ### Fixed
 - `--allowed-origins` on its own (or `YF_MCP_ALLOWED_ORIGINS`) locked every

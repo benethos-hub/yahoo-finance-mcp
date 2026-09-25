@@ -39,9 +39,9 @@ Yahoo's unofficial endpoints.
 | `get_company_info` | Company profile and key statistics (sector, market cap, P/E, …). |
 | `get_financials` | Income statement, balance sheet, or cash flow (annual/quarterly/ttm). |
 | `get_dividends` | Dividend and stock-split history. |
-| `get_news` | Recent news headlines (title, summary, publisher, URL). |
+| `get_news` | Recent news headlines (title, summary, publisher, URL), up to the 10 Yahoo serves. |
 | `get_recommendations` | Analyst recommendation trend and price targets. |
-| `get_options` | Option expiration dates and the calls/puts chain for a date. |
+| `get_options` | Option expiration dates and the calls/puts chain for a date, centred on the money. |
 | `get_earnings` | Upcoming and historical earnings (EPS estimate/actual, surprise). |
 | `get_estimates` | Forward analyst estimates (earnings, revenue, EPS trend/revisions, growth). |
 | `get_upgrades_downgrades` | Recent analyst rating changes (upgrades/downgrades). |
@@ -49,7 +49,7 @@ Yahoo's unofficial endpoints.
 | `get_insider_activity` | Insider transactions, 6-month purchases/sales summary, and current roster. |
 | `get_sec_filings` | Recent SEC filings (type, date, title, EDGAR/exhibit links). |
 | `get_calendar` | Upcoming earnings and dividend / ex-dividend dates with estimate ranges. |
-| `get_shares` | Shares-outstanding history (date → shares). |
+| `get_shares` | Shares-outstanding history (date → shares), the last 18 months unless a start date is given. |
 | `get_fund_data` | Fund/ETF profile: overview, asset-class & sector weightings, top holdings. |
 | `get_sector` | Browse a market sector by key: overview, top companies/ETFs/funds, industries. |
 | `get_industry` | Browse an industry by key: overview, parent sector, top/top-performing/top-growth companies. |
@@ -130,8 +130,9 @@ alongside stdio.
 clients. Start it with `--transport sse` and point the client at
 `http://<host>:8000/sse`. The **MCP Client Tool** node in n8n connects this way.
 
-> Both HTTP transports ship without authentication of their own. Read the note
-> under [Running as a standalone server](#running-as-a-standalone-server) before
+> Both HTTP transports are open by default, with an optional bearer token as
+> the only guard. Read the note under
+> [Running as a standalone server](#running-as-a-standalone-server) before
 > exposing either one.
 
 **Not listed?** Client support moves quickly. Check which transport yours
@@ -292,7 +293,7 @@ containers), with one deliberate exception noted below. Precedence is
 | `--version` | — | — | Print the version and exit. Same value the server reports in the MCP handshake. |
 | `--transport` | `YF_MCP_TRANSPORT` | `stdio` | `stdio`, `streamable-http`, or `sse`. |
 | `--host` | `YF_MCP_HOST` | `127.0.0.1` | Bind host for HTTP transports (`0.0.0.0` for remote). |
-| `--port` | `YF_MCP_PORT` | `8000` | Port for HTTP transports. |
+| `--port` | `YF_MCP_PORT` | `8000` | Port for HTTP transports (1 to 65535). |
 | `--path` | `YF_MCP_PATH` | `/mcp` (`/sse` for sse) | URL path for HTTP transports. |
 | _(none)_ | `YF_MCP_BEARER_TOKEN` | unset | Require this bearer token on every HTTP request. Environment only, deliberately: an argument is visible in the process list. |
 | `--allowed-hosts` | `YF_MCP_ALLOWED_HOSTS` | see below, or derived from origins | Comma-separated `Host` header allow-list for the DNS-rebinding guard. |
@@ -323,7 +324,9 @@ JSON-RPC protocol.
 > (`localhost`/`127.0.0.1`). An **exposed** bind (`0.0.0.0`) accepts any `Host`
 > by default, so containers and other hosts can reach it out of the box. To lock
 > it down again, set `--allowed-hosts` (e.g. `benethos-yahoo-finance-mcp:8000`) — clients
-> whose `Host` is not on the list then get **HTTP 421**.
+> whose `Host` is not on the list then get **HTTP 421**. `--allowed-origins`
+> works on its own as well, and either list is derived from the other when
+> only one is given.
 
 ### Docker
 
@@ -342,7 +345,9 @@ built from `main` on demand and is not a release at all.
 
 The image hosts the server over the streamable-HTTP transport. The stdio
 transport is for local subprocess use and is not what you containerize.
-Dependencies are installed reproducibly from `uv.lock` via uv.
+Dependencies are installed reproducibly from `uv.lock` via uv, and the base
+images are pinned by digest, so a rebuild of the same commit gets the same
+bytes.
 
 The image is **configured entirely through environment variables** (see the
 options table above) — it carries no default command arguments, so overriding a
@@ -393,9 +398,10 @@ reachable at `http://localhost:8000/mcp`.
 
 The port is published on **`127.0.0.1` only**, so the service is reachable from
 the host but not from the rest of the network. That is deliberate, since the
-server has no authentication of its own. To expose it, remove the `127.0.0.1:`
-prefix from the `ports:` entry in `compose.yaml` — and put a reverse proxy with
-authentication in front of it.
+server is unauthenticated unless `YF_MCP_BEARER_TOKEN` is set. To expose it,
+remove the `127.0.0.1:` prefix from the `ports:` entry in `compose.yaml`, set
+the token at the very least, and put a reverse proxy with authentication in
+front of it.
 
 ### Manual (uv or venv)
 
@@ -560,7 +566,9 @@ Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
   `YF_MCP_CACHE_TTL_<NAME>` env var (e.g. `YF_MCP_CACHE_TTL_QUOTE=15`).
   Set a TTL to `0` to bypass caching for that tool.
 
-Precedence is CLI > environment > default. Errors are never cached.
+Precedence is CLI > environment > default. Errors are never cached, and a
+failing cache never fails a call: a locked or damaged cache file is logged
+and the data is fetched as if caching were off.
 
 ### When to enable it
 
