@@ -13,14 +13,18 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
 
-  # The actions the workflows use. They follow their moving major tag, so
-  # fixes arrive without a pull request for every patch.
+  # The actions the workflows use, each pinned to a full commit SHA with the
+  # version it stands for in a trailing comment. A tag, even an exact one, is a
+  # pointer its owner can move, and the publish workflow holds the credentials
+  # that push to PyPI and ghcr. A SHA cannot be moved. The price is a pull
+  # request for every release, patches included, which is what this entry is
+  # for: Dependabot reads the comment and raises SHA and comment together.
   #
-  # astral-sh/setup-uv is the exception, and not by choice: it stopped
-  # publishing major tags after v7. There is no v8, v9 or v10, only exact
-  # versions, so it has to name one. That is also how this repository came to
-  # sit three majors behind without noticing - `@v7` kept working and nothing
-  # said anything newer existed. Dependabot is what notices now.
+  # This also retires the question of moving majors. astral-sh/setup-uv
+  # stopped publishing major tags after v7, and `@v7` kept working while the
+  # repository fell three majors behind without a word. With every action
+  # pinned exactly, all of them are in the same position, and Dependabot is
+  # what notices for each.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

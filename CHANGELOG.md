@@ -72,6 +72,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   saying what the range is.
 
 ### Security
+- Every action in the workflows is pinned to a full commit SHA, with the
+  version in a comment, and both base images in the `Dockerfile` by digest
+  next to their tag. A tag is a pointer its owner can move, and the publish
+  workflow holds the credentials that push to PyPI and ghcr. Dependabot keeps
+  SHAs and digests current, one pull request per release.
 - The bearer guard checked HTTP requests and waved every other ASGI scope
   through unchecked. The SDK serves no WebSocket route today, so nothing was
   reachable that way, but the day one appears it would have been open. Only

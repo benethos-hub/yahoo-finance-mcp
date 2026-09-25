@@ -1,10 +1,15 @@
 # syntax=docker/dockerfile:1
 
-# ---- builder: install locked deps + package into /opt/venv via uv ----
-FROM python:3.14-slim AS builder
+# Both base images are pinned by digest as well as tag. A tag is a pointer the
+# publisher can move, and the digest is the content itself, so a rebuild of the
+# same commit gets the same bytes. The tag stays for the reader and for
+# Dependabot, which raises the digest when the tag moves.
 
-# Bring in the uv binary (pinned image tag for reproducibility).
-COPY --from=ghcr.io/astral-sh/uv:0.12 /uv /usr/local/bin/uv
+# ---- builder: install locked deps + package into /opt/venv via uv ----
+FROM python:3.14-slim@sha256:51dafde81dbdb6ebde285137a295cf18a47ca95234fe388a343719cb97305b3d AS builder
+
+# Bring in the uv binary.
+COPY --from=ghcr.io/astral-sh/uv:0.12@sha256:04d046b13e60d6bcec73cbc5e1cad25d680dea90c8573340950a0ac2d1aef424 /uv /usr/local/bin/uv
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -24,7 +29,7 @@ COPY src ./src
 RUN uv sync --frozen --no-dev --no-editable
 
 # ---- runtime: minimal image that just runs the server ----
-FROM python:3.14-slim AS runtime
+FROM python:3.14-slim@sha256:51dafde81dbdb6ebde285137a295cf18a47ca95234fe388a343719cb97305b3d AS runtime
 
 # All runtime configuration is via environment variables, so the container
 # needs no CMD args and stays fully configurable with `docker run -e ...`.
