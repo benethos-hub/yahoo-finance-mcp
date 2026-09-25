@@ -220,8 +220,15 @@ def _make_key(category: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> s
     return hashlib.sha1(blob.encode("utf-8")).hexdigest()
 
 
-def cached(category: str) -> Callable[[F], F]:
+def cached(
+    category: str, *, worth_keeping: Callable[[Any], bool] = bool
+) -> Callable[[F], F]:
     """Decorate a client function to cache its successful results under ``category``.
+
+    ``worth_keeping`` decides whether a result is stored. The default skips
+    empty ones, a search with no matches say, so a transient empty response is
+    not pinned for the whole TTL. A function whose "nothing found" is a
+    non-empty dict passes its own test.
 
     When caching is disabled the wrapper is a transparent pass-through. Only
     successful returns are stored; exceptions propagate and are never cached.
@@ -247,9 +254,7 @@ def cached(category: str) -> Callable[[F], F]:
             if hit:
                 return value
             result = fn(*args, **kwargs)
-            # Skip empty results (e.g. a search with no matches) so a transient
-            # empty response is not pinned for the whole TTL.
-            if result:
+            if worth_keeping(result):
                 try:
                     store.set(key, result, _ttls.get(category, 0))
                 except sqlite3.Error as exc:

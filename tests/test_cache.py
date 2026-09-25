@@ -119,6 +119,37 @@ def test_cached_decorator_does_not_cache_empty_results(enabled_cache):
     assert calls["n"] == 2  # empty result is not pinned
 
 
+def test_cached_decorator_honours_worth_keeping(enabled_cache):
+    calls = {"n": 0}
+
+    @cache.cached("quotes", worth_keeping=lambda r: r["count"] > 0)
+    def fetch(symbols):
+        calls["n"] += 1
+        return {"count": 0, "quotes": [], "not_found": symbols}
+
+    fetch(["AAPL"])
+    fetch(["AAPL"])
+    assert calls["n"] == 2  # an all-miss answer is not pinned
+
+
+def test_get_quotes_does_not_pin_a_complete_miss(enabled_cache, monkeypatch):
+    from benethos_yahoo_finance_mcp import client
+
+    built = {"n": 0}
+
+    class Empty:
+        fast_info: dict = {}
+
+    def fake(symbol):
+        built["n"] += 1
+        return Empty()
+
+    monkeypatch.setattr(client, "_get_ticker", fake)
+    assert client.get_quotes(["AAPL"])["count"] == 0
+    client.get_quotes(["AAPL"])
+    assert built["n"] == 2
+
+
 def test_cached_decorator_does_not_cache_exceptions(enabled_cache):
     calls = {"n": 0}
 

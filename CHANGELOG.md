@@ -59,6 +59,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `get_recommendations` carried a meaningless `index` of 0 to 3 on every row
   of the trend table, the frame's row counter. The rows are now keyed by
   `period` alone, which is what the counter stood next to.
+- With the result cache on, a `get_quotes` call in which every symbol missed
+  was stored like any other answer, and repeating it within 30 seconds
+  returned the same empty result without asking Yahoo again. The cache
+  skipped empty results, but this one is a dict with a `count` of zero and
+  never looked empty. Such an answer is no longer stored.
 
 ## [0.5.2] - 2026-09-14
 

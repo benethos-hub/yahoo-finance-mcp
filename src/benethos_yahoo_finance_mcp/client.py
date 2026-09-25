@@ -194,7 +194,10 @@ _QUOTES_FAST_FIELDS = (
 _MAX_QUOTES = 50
 
 
-@cache.cached("quotes")
+# A call where every symbol missed is still a non-empty dict, so the default
+# test would store it, and a momentary upstream hiccup would then answer every
+# repeat of the call with "none found" for the whole TTL.
+@cache.cached("quotes", worth_keeping=lambda result: result["count"] > 0)
 def get_quotes(symbols: list[str], *, max_symbols: int = _MAX_QUOTES) -> dict[str, Any]:
     """Return compact current quotes for several symbols at once.
 
