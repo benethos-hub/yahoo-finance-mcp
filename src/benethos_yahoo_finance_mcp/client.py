@@ -542,7 +542,7 @@ def get_options(
 
     Without ``expiration`` the available expiration dates are returned. With an
     ``expiration`` (``YYYY-MM-DD``, one of the listed dates) the calls and puts
-    for that date are returned (capped at ``max_rows`` each).
+    for that date are returned, at most ``max_rows`` each, centred on the money.
     """
     ticker = _get_ticker(symbol)
     try:
@@ -570,12 +570,43 @@ def get_options(
             exc, f"Failed to load option chain for {symbol!r} {expiration}"
         ) from exc
 
+    calls, calls_cut = _around_the_money(chain.calls, max_rows, itm_below=True)
+    puts, puts_cut = _around_the_money(chain.puts, max_rows, itm_below=False)
     return {
         "symbol": symbol.strip().upper(),
         "expiration": expiration,
-        "calls": dataframe_to_records(chain.calls, max_rows=max_rows),
-        "puts": dataframe_to_records(chain.puts, max_rows=max_rows),
+        "truncated": calls_cut or puts_cut,
+        "calls": calls,
+        "puts": puts,
     }
+
+
+def _around_the_money(
+    df: Any, max_rows: int, *, itm_below: bool
+) -> tuple[list[dict[str, Any]], bool]:
+    """The ``max_rows`` contracts nearest the money, and whether any were cut.
+
+    A chain comes sorted by strike, and a wide one (SPY has 300 strikes per
+    expiry) used to be cut to its highest 60 strikes, which left out the
+    region around the current price that most questions are about. The
+    window is now centred where the contracts switch between in and out of
+    the money. That needs no price: the chain says it per row. Calls are in
+    the money below the price and puts above it, so for either side the
+    number of strikes below the price is a count of ``inTheMoney``.
+    """
+    if df is None or df.empty:
+        return [], False
+    total = len(df)
+    if total <= max_rows:
+        return dataframe_to_records(df, max_rows=total), False
+    if "inTheMoney" in df.columns:
+        itm = int(df["inTheMoney"].fillna(False).astype(bool).sum())
+        pivot = itm if itm_below else total - itm
+    else:
+        pivot = total // 2
+    start = max(0, min(pivot - max_rows // 2, total - max_rows))
+    window = df.iloc[start : start + max_rows]
+    return dataframe_to_records(window, max_rows=max_rows), True
 
 
 @cache.cached("earnings")

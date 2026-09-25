@@ -500,6 +500,50 @@ def test_get_options_caps_rows(patch_ticker):
     out = client.get_options("aapl", expiration="2024-01-19", max_rows=5)
     assert len(out["calls"]) == 5
     assert len(out["puts"]) == 5
+    assert out["truncated"] is True
+
+
+def test_get_options_keeps_the_strikes_around_the_money(patch_ticker):
+    """A wide chain keeps the strikes near the price, not the highest ones.
+
+    Price 50: calls below it and puts above it are in the money.
+    """
+    import types
+
+    strikes = [float(s) for s in range(100)]
+    calls = pd.DataFrame({"strike": strikes, "inTheMoney": [s < 50 for s in strikes]})
+    puts = pd.DataFrame({"strike": strikes, "inTheMoney": [s > 50 for s in strikes]})
+    chain = types.SimpleNamespace(calls=calls, puts=puts)
+    patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
+    out = client.get_options("aapl", expiration="2024-01-19", max_rows=6)
+    assert [r["strike"] for r in out["calls"]] == [47.0, 48.0, 49.0, 50.0, 51.0, 52.0]
+    assert [r["strike"] for r in out["puts"]] == [48.0, 49.0, 50.0, 51.0, 52.0, 53.0]
+
+
+def test_get_options_window_stays_inside_the_chain(patch_ticker):
+    """Price above every strike: the window is the top of the chain, full size."""
+    import types
+
+    strikes = [float(s) for s in range(20)]
+    calls = pd.DataFrame({"strike": strikes, "inTheMoney": [True] * 20})
+    puts = pd.DataFrame({"strike": strikes, "inTheMoney": [False] * 20})
+    chain = types.SimpleNamespace(calls=calls, puts=puts)
+    patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
+    out = client.get_options("aapl", expiration="2024-01-19", max_rows=4)
+    assert [r["strike"] for r in out["calls"]] == [16.0, 17.0, 18.0, 19.0]
+    assert [r["strike"] for r in out["puts"]] == [16.0, 17.0, 18.0, 19.0]
+
+
+def test_get_options_short_chain_is_not_truncated(patch_ticker):
+    import types
+
+    chain = types.SimpleNamespace(
+        calls=pd.DataFrame({"strike": [1.0, 2.0]}), puts=pd.DataFrame()
+    )
+    patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
+    out = client.get_options("aapl", expiration="2024-01-19")
+    assert out["truncated"] is False
+    assert out["puts"] == []
 
 
 # --- get_earnings ---------------------------------------------------------

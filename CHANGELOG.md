@@ -40,6 +40,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Yahoo serves no more than ten per symbol anyway, whatever the request says.
   The count now goes upstream, and the ceiling is 10, the most that can ever
   arrive.
+- `get_options` cut a wide chain to its 60 highest strikes. Chains come sorted
+  by strike, and SPY carries some 300 per expiry, so the strikes around the
+  current price, the ones most questions are about, were exactly the ones
+  left out. The 60 per side are now centred where the contracts switch
+  between in and out of the money, and a new `truncated` flag says when a
+  chain was cut.
 
 ## [0.5.2] - 2026-09-14
 

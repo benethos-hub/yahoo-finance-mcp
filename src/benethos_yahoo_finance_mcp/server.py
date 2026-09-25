@@ -165,10 +165,11 @@ in the instrument's own currency, reported as `currency` where the tool has it. 
 Comparing `AAPL` with `SAP.DE`, or summing them, means mixing USD and EUR, and \
 nothing in the data will flag that.
 
-Results are capped, mostly in silence. Only `get_history` and `get_quotes` \
-report a `truncated` flag. Every other tool quietly returns at most its top or \
-most recent rows, so a short list is not evidence that the list is short. Where \
-a tool takes a `limit`, raise it rather than concluding there is no more.
+Results are capped, mostly in silence. Only `get_history`, `get_quotes` and \
+`get_options` report a `truncated` flag. Every other tool quietly returns at \
+most its top or most recent rows, so a short list is not evidence that the list \
+is short. Where a tool takes a `limit`, raise it rather than concluding there is \
+no more.
 
 Data is delayed and may be incomplete. This is not investment advice.
 """
@@ -373,8 +374,10 @@ def get_options(
 
     Call without ``expiration`` to list available expiration dates. Call with
     an ``expiration`` (``YYYY-MM-DD`` from that list) to get the calls and puts
-    for that date. Yahoo carries chains for US-listed instruments only, so a
-    non-US symbol has none and that says nothing about the symbol.
+    for that date, up to 60 strikes each centred on the current price, with
+    ``truncated`` set when a wider chain was cut. Yahoo carries chains for
+    US-listed instruments only, so a non-US symbol has none and that says
+    nothing about the symbol.
     """
     return client.get_options(symbol, expiration=expiration)
 
