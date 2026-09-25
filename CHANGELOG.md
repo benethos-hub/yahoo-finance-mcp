@@ -35,6 +35,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   every read, and either error reached the model as `Error executing tool`.
   The cache now steps aside on its own errors: the data is fetched and
   returned as if caching were off, with a warning in the log.
+- `get_news` offered up to 30 headlines and never delivered more than 10. It
+  read yfinance's `.news`, which always asks for its default of ten, and
+  Yahoo serves no more than ten per symbol anyway, whatever the request says.
+  The count now goes upstream, and the ceiling is 10, the most that can ever
+  arrive.
 
 ## [0.5.2] - 2026-09-14
 

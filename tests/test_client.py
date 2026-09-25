@@ -48,8 +48,8 @@ class FakeTicker:
     def splits(self):
         return self._attrs.get("splits")
 
-    @property
-    def news(self):
+    def get_news(self, **kwargs):
+        self.news_kwargs = kwargs
         return self._attrs.get("news", [])
 
     @property
@@ -394,6 +394,20 @@ def test_get_news_parses_nested_content(patch_ticker):
     assert article["title"] == "Headline"
     assert article["publisher"] == "Yahoo"
     assert article["url"] == "https://example.com"
+
+
+def test_get_news_asks_yahoo_for_the_requested_count(patch_ticker):
+    """The count goes upstream. Reading ``.news`` always asked for yfinance's
+    default of ten, so the tool's old ceiling of 30 was never reachable."""
+    ticker = patch_ticker(FakeTicker(news=[]))
+    client.get_news("aapl", limit=3)
+    assert ticker.news_kwargs == {"count": 3}
+
+
+def test_get_news_limit_is_capped_at_what_yahoo_serves(patch_ticker):
+    ticker = patch_ticker(FakeTicker(news=[]))
+    client.get_news("aapl", limit=30)
+    assert ticker.news_kwargs == {"count": 10}
 
 
 # --- get_recommendations --------------------------------------------------
@@ -1243,7 +1257,7 @@ _UPSTREAM_CASES = [
     ("info", lambda: client.get_company_info("AAPL")),
     ("income_stmt", lambda: client.get_financials("AAPL")),
     ("dividends", lambda: client.get_dividends("AAPL")),
-    ("news", lambda: client.get_news("AAPL")),
+    ("get_news", lambda: client.get_news("AAPL")),
     ("recommendations", lambda: client.get_recommendations("AAPL")),
     ("options", lambda: client.get_options("AAPL")),
     ("get_earnings_dates", lambda: client.get_earnings("AAPL")),

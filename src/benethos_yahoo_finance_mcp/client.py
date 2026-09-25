@@ -462,13 +462,18 @@ def get_dividends(symbol: str, *, max_rows: int = 250) -> dict[str, Any]:
     }
 
 
+# Yahoo serves at most this many articles per symbol, whatever count is asked
+# for. Probed 2026-09-25 with get_news(count=30) for AAPL: ten came back.
+_MAX_NEWS = 10
+
+
 @cache.cached("news")
-def get_news(symbol: str, *, limit: int = 10) -> dict[str, Any]:
+def get_news(symbol: str, *, limit: int = _MAX_NEWS) -> dict[str, Any]:
     """Return recent news headlines for ``symbol``."""
-    limit = max(1, min(int(limit), 30))
+    limit = max(1, min(int(limit), _MAX_NEWS))
     ticker = _get_ticker(symbol)
     try:
-        raw = ticker.news or []
+        raw = ticker.get_news(count=limit) or []
     except Exception as exc:  # noqa: BLE001
         raise _wrap_upstream(exc, f"Failed to load news for {symbol!r}") from exc
 
