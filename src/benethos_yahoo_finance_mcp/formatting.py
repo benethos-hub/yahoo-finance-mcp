@@ -60,21 +60,28 @@ def to_jsonable(value: Any) -> Any:
 
 
 def dataframe_to_records(
-    df: pd.DataFrame,
+    df: pd.DataFrame | None,
     *,
     max_rows: int = MAX_ROWS,
     index_name: str | None = None,
+    head: bool = False,
 ) -> list[dict[str, Any]]:
     """Convert a DataFrame to a list of JSON-safe row dicts.
 
     The index is preserved as a column named ``index_name`` (or the frame's own
-    index name, defaulting to ``"index"``). At most ``max_rows`` rows are kept;
-    when truncated, the most recent rows (the tail) are returned.
+    index name, defaulting to ``"index"``). At most ``max_rows`` rows are kept.
+    By default those are the tail, the most recent rows of a time series. Pass
+    ``head=True`` for a frame ranked from the top, a holder list or a statement
+    whose headline items come first. ``None`` and an empty frame both give an
+    empty list, so callers need no guard of their own.
     """
     if df is None or df.empty:
         return []
 
-    frame = df.tail(max_rows) if len(df) > max_rows else df
+    if len(df) > max_rows:
+        frame = df.head(max_rows) if head else df.tail(max_rows)
+    else:
+        frame = df
     key = index_name or frame.index.name or "index"
 
     records: list[dict[str, Any]] = []

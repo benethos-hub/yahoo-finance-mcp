@@ -11,6 +11,8 @@ from __future__ import annotations
 import logging
 import time
 from collections import OrderedDict
+from collections.abc import Iterator
+from contextlib import contextmanager
 from threading import Lock
 from typing import Any
 
@@ -33,6 +35,24 @@ def _wrap_upstream(exc: Exception, message: str) -> ToolError:
     if isinstance(exc, YFRateLimitError):
         return RateLimitError()
     return ToolError(f"{message}: {exc}")
+
+
+@contextmanager
+def _upstream(message: str) -> Iterator[None]:
+    """Run a block of yfinance calls, normalising whatever it raises.
+
+    ``message`` says what was being attempted and ends up in the error the
+    client sees, see :func:`_wrap_upstream`.
+    """
+    try:
+        yield
+    except Exception as exc:  # noqa: BLE001 - normalize upstream errors
+        raise _wrap_upstream(exc, message) from exc
+
+
+def _normalize_symbol(symbol: str) -> str:
+    """The form a symbol is cached under and echoed back in."""
+    return (symbol or "").strip().upper()
 
 
 # Time-to-live for cached Ticker objects, in seconds. Short enough that quotes
@@ -70,7 +90,7 @@ _QUOTE_FAST_FIELDS = (
 
 def _get_ticker(symbol: str) -> yf.Ticker:
     """Return a cached ``yf.Ticker`` for ``symbol`` (case-insensitive key)."""
-    key = symbol.strip().upper()
+    key = _normalize_symbol(symbol)
     if not key:
         raise ToolError("A non-empty symbol is required.")
 
@@ -130,11 +150,9 @@ def search(query: str, *, limit: int = 8) -> list[dict[str, Any]]:
         raise ToolError("A non-empty search query is required.")
 
     limit = max(1, min(int(limit), 25))
-    try:
+    with _upstream(f"Search failed for {query!r}"):
         result = yf.Search(query, max_results=limit, news_count=0, lists_count=0)
         quotes = result.quotes or []
-    except Exception as exc:  # noqa: BLE001 - normalize upstream errors
-        raise _wrap_upstream(exc, f"Search failed for {query!r}") from exc
 
     matches: list[dict[str, Any]] = []
     for q in quotes[:limit]:
@@ -155,12 +173,10 @@ def search(query: str, *, limit: int = 8) -> list[dict[str, Any]]:
 def get_quote(symbol: str) -> dict[str, Any]:
     """Return the current quote and key intraday figures for ``symbol``."""
     ticker = _get_ticker(symbol)
-    try:
+    with _upstream(f"Failed to load quote for {symbol!r}"):
         fast = ticker.fast_info
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load quote for {symbol!r}") from exc
 
-    quote: dict[str, Any] = {"symbol": symbol.strip().upper()}
+    quote: dict[str, Any] = {"symbol": _normalize_symbol(symbol)}
     have_data = False
     for field in _QUOTE_FAST_FIELDS:
         try:
@@ -212,7 +228,7 @@ def get_quotes(symbols: list[str], *, max_symbols: int = _MAX_QUOTES) -> dict[st
     seen: set[str] = set()
     cleaned: list[str] = []
     for raw in symbols:
-        sym = (raw or "").strip().upper()
+        sym = _normalize_symbol(raw)
         if sym and sym not in seen:
             seen.add(sym)
             cleaned.append(sym)
@@ -281,17 +297,15 @@ def get_history(
     else:
         kwargs["period"] = period
 
-    try:
+    with _upstream(f"Failed to load history for {symbol!r}"):
         df = ticker.history(**kwargs)
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load history for {symbol!r}") from exc
 
     if df is None or df.empty:
         raise SymbolNotFoundError(symbol)
 
     rows = dataframe_to_records(df, max_rows=max_rows, index_name="date")
     return {
-        "symbol": symbol.strip().upper(),
+        "symbol": _normalize_symbol(symbol),
         "interval": interval,
         "period": None if start else period,
         "start": start,
@@ -357,17 +371,13 @@ _VALID_FREQS = ("annual", "quarterly", "ttm")
 def get_company_info(symbol: str) -> dict[str, Any]:
     """Return a curated company profile and key statistics for ``symbol``."""
     ticker = _get_ticker(symbol)
-    try:
+    with _upstream(f"Failed to load company info for {symbol!r}"):
         info = ticker.info or {}
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(
-            exc, f"Failed to load company info for {symbol!r}"
-        ) from exc
 
     if not info or info.get("quoteType") is None and info.get("shortName") is None:
         raise SymbolNotFoundError(symbol)
 
-    profile: dict[str, Any] = {"symbol": symbol.strip().upper()}
+    profile: dict[str, Any] = {"symbol": _normalize_symbol(symbol)}
     # Yahoo resolves an ISIN to a ticker server-side. Surface that, since the
     # caller has no other way to learn it, but never in place of the echo.
     resolved = info.get("symbol")
@@ -415,12 +425,8 @@ def get_financials(
 
     attr = freq_map[freq]
     ticker = _get_ticker(symbol)
-    try:
+    with _upstream(f"Failed to load {statement} statement for {symbol!r}"):
         df = getattr(ticker, attr)
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(
-            exc, f"Failed to load {statement} statement for {symbol!r}"
-        ) from exc
 
     if df is None or df.empty:
         raise SymbolNotFoundError(symbol)
@@ -430,9 +436,9 @@ def get_financials(
     # annual balance sheet has 69: Net Debt, Total Debt, Working Capital and
     # Tangible Book Value were among the nine that vanished without a word.
     # No statement comes near MAX_ROWS, so in practice nothing is cut now.
-    rows = dataframe_to_records(df.head(max_rows), index_name="item")
+    rows = dataframe_to_records(df, max_rows=max_rows, index_name="item", head=True)
     return {
-        "symbol": symbol.strip().upper(),
+        "symbol": _normalize_symbol(symbol),
         "statement": statement,
         "freq": freq,
         "rows": rows,
@@ -443,11 +449,9 @@ def get_financials(
 def get_dividends(symbol: str, *, max_rows: int = 250) -> dict[str, Any]:
     """Return historical dividends and stock splits for ``symbol``."""
     ticker = _get_ticker(symbol)
-    try:
+    with _upstream(f"Failed to load dividends for {symbol!r}"):
         dividends = ticker.dividends
         splits = ticker.splits
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load dividends for {symbol!r}") from exc
 
     # yfinance tells the two empty cases apart, and so must the answer. A
     # symbol it cannot find yields None for both series, while a real
@@ -466,7 +470,7 @@ def get_dividends(symbol: str, *, max_rows: int = 250) -> dict[str, Any]:
         ]
 
     return {
-        "symbol": symbol.strip().upper(),
+        "symbol": _normalize_symbol(symbol),
         "dividends": _series_records(dividends, "dividend"),
         "splits": _series_records(splits, "split_ratio"),
     }
@@ -482,10 +486,8 @@ def get_news(symbol: str, *, limit: int = _MAX_NEWS) -> dict[str, Any]:
     """Return recent news headlines for ``symbol``."""
     limit = max(1, min(int(limit), _MAX_NEWS))
     ticker = _get_ticker(symbol)
-    try:
+    with _upstream(f"Failed to load news for {symbol!r}"):
         raw = ticker.get_news(count=limit) or []
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load news for {symbol!r}") from exc
 
     articles: list[dict[str, Any]] = []
     for item in raw[:limit]:
@@ -503,7 +505,7 @@ def get_news(symbol: str, *, limit: int = _MAX_NEWS) -> dict[str, Any]:
             }
         )
     return {
-        "symbol": symbol.strip().upper(),
+        "symbol": _normalize_symbol(symbol),
         "count": len(articles),
         "articles": articles,
     }
@@ -513,29 +515,21 @@ def get_news(symbol: str, *, limit: int = _MAX_NEWS) -> dict[str, Any]:
 def get_recommendations(symbol: str) -> dict[str, Any]:
     """Return analyst recommendation trends and price targets for ``symbol``."""
     ticker = _get_ticker(symbol)
-    try:
+    with _upstream(f"Failed to load recommendations for {symbol!r}"):
         recs = ticker.recommendations
         targets = ticker.analyst_price_targets
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(
-            exc, f"Failed to load recommendations for {symbol!r}"
-        ) from exc
 
     # The trend table has a plain RangeIndex, which would come out as an
     # "index" of 0 to 3 on every row, while the column that names the row
     # ("0m", "-1m", ...) is "period". Make that the key and drop the counter.
     if recs is not None and "period" in recs.columns:
         recs = recs.set_index("period")
-    trend = (
-        dataframe_to_records(recs, max_rows=12, index_name="period")
-        if recs is not None
-        else []
-    )
+    trend = dataframe_to_records(recs, max_rows=12, index_name="period")
     if not trend and not targets:
         raise SymbolNotFoundError(symbol)
 
     return {
-        "symbol": symbol.strip().upper(),
+        "symbol": _normalize_symbol(symbol),
         "price_targets": to_jsonable(targets) if targets else None,
         "recommendation_trend": trend,
     }
@@ -564,16 +558,14 @@ def get_options(
     for that date are returned, at most ``max_rows`` each, centred on the money.
     """
     ticker = _get_ticker(symbol)
-    try:
+    with _upstream(f"Failed to load options for {symbol!r}"):
         expirations = list(ticker.options or ())
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load options for {symbol!r}") from exc
 
     if not expirations:
         raise SymbolNotFoundError(symbol, reason=_NO_OPTIONS_REASON)
 
     if not expiration:
-        return {"symbol": symbol.strip().upper(), "expirations": expirations}
+        return {"symbol": _normalize_symbol(symbol), "expirations": expirations}
 
     if expiration not in expirations:
         raise ToolError(
@@ -582,17 +574,13 @@ def get_options(
             + (" ..." if len(expirations) > 10 else "")
         )
 
-    try:
+    with _upstream(f"Failed to load option chain for {symbol!r} {expiration}"):
         chain = ticker.option_chain(expiration)
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(
-            exc, f"Failed to load option chain for {symbol!r} {expiration}"
-        ) from exc
 
     calls, calls_cut = _around_the_money(chain.calls, max_rows, itm_below=True)
     puts, puts_cut = _around_the_money(chain.puts, max_rows, itm_below=False)
     return {
-        "symbol": symbol.strip().upper(),
+        "symbol": _normalize_symbol(symbol),
         "expiration": expiration,
         "truncated": calls_cut or puts_cut,
         "calls": calls,
@@ -638,27 +626,17 @@ def get_earnings(symbol: str, *, limit: int = 12) -> dict[str, Any]:
     """
     limit = max(1, min(int(limit), 50))
     ticker = _get_ticker(symbol)
-    try:
+    with _upstream(f"Failed to load earnings for {symbol!r}"):
         dates = ticker.get_earnings_dates(limit=limit)
         history = ticker.earnings_history
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load earnings for {symbol!r}") from exc
 
-    dates_rows = (
-        dataframe_to_records(dates, max_rows=limit, index_name="earnings_date")
-        if dates is not None
-        else []
-    )
-    history_rows = (
-        dataframe_to_records(history, max_rows=limit, index_name="quarter")
-        if history is not None
-        else []
-    )
+    dates_rows = dataframe_to_records(dates, max_rows=limit, index_name="earnings_date")
+    history_rows = dataframe_to_records(history, max_rows=limit, index_name="quarter")
     if not dates_rows and not history_rows:
         raise SymbolNotFoundError(symbol)
 
     return {
-        "symbol": symbol.strip().upper(),
+        "symbol": _normalize_symbol(symbol),
         "earnings_dates": dates_rows,
         "earnings_history": history_rows,
     }
@@ -683,20 +661,12 @@ def get_estimates(symbol: str) -> dict[str, Any]:
     ETFs/funds/crypto.
     """
     ticker = _get_ticker(symbol)
-    out: dict[str, Any] = {"symbol": symbol.strip().upper()}
+    out: dict[str, Any] = {"symbol": _normalize_symbol(symbol)}
     have_data = False
     for key, attr in _ESTIMATE_ATTRS.items():
-        try:
+        with _upstream(f"Failed to load estimates for {symbol!r}"):
             df = getattr(ticker, attr)
-        except Exception as exc:  # noqa: BLE001
-            raise _wrap_upstream(
-                exc, f"Failed to load estimates for {symbol!r}"
-            ) from exc
-        rows = (
-            dataframe_to_records(df, max_rows=12, index_name="period")
-            if df is not None
-            else []
-        )
+        rows = dataframe_to_records(df, max_rows=12, index_name="period")
         if rows:
             have_data = True
         out[key] = rows
@@ -714,25 +684,17 @@ def get_upgrades_downgrades(symbol: str, *, max_rows: int = 50) -> dict[str, Any
     most recent first. Equity-only; empty for ETFs/funds/crypto.
     """
     ticker = _get_ticker(symbol)
-    try:
+    with _upstream(f"Failed to load upgrades/downgrades for {symbol!r}"):
         df = ticker.upgrades_downgrades
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(
-            exc, f"Failed to load upgrades/downgrades for {symbol!r}"
-        ) from exc
 
     if df is not None and not df.empty:
-        # Source order varies; sort newest-first and cap.
-        df = df.sort_index(ascending=False).head(max_rows)
-    rows = (
-        dataframe_to_records(df, max_rows=max_rows, index_name="date")
-        if df is not None
-        else []
-    )
+        # Source order varies, so sort newest-first before capping.
+        df = df.sort_index(ascending=False)
+    rows = dataframe_to_records(df, max_rows=max_rows, index_name="date", head=True)
     if not rows:
         raise SymbolNotFoundError(symbol)
 
-    return {"symbol": symbol.strip().upper(), "changes": rows}
+    return {"symbol": _normalize_symbol(symbol), "changes": rows}
 
 
 @cache.cached("holders")
@@ -744,35 +706,22 @@ def get_holders(symbol: str, *, max_rows: int = 25) -> dict[str, Any]:
     ETFs/funds/crypto.
     """
     ticker = _get_ticker(symbol)
-    try:
+    with _upstream(f"Failed to load holders for {symbol!r}"):
         major = ticker.major_holders
         institutional = ticker.institutional_holders
         mutualfund = ticker.mutualfund_holders
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load holders for {symbol!r}") from exc
 
-    major_rows = (
-        dataframe_to_records(major, max_rows=10, index_name="metric")
-        if major is not None
-        else []
+    major_rows = dataframe_to_records(major, max_rows=10, index_name="metric")
+    # Both lists are sorted largest-holder-first, so the cap keeps the head.
+    institutional_rows = dataframe_to_records(
+        institutional, max_rows=max_rows, head=True
     )
-    # Both lists are sorted largest-holder-first; keep the top rows (head), not
-    # the tail that dataframe_to_records would otherwise retain when capping.
-    institutional_rows = (
-        dataframe_to_records(institutional.head(max_rows))
-        if institutional is not None
-        else []
-    )
-    mutualfund_rows = (
-        dataframe_to_records(mutualfund.head(max_rows))
-        if mutualfund is not None
-        else []
-    )
+    mutualfund_rows = dataframe_to_records(mutualfund, max_rows=max_rows, head=True)
     if not major_rows and not institutional_rows and not mutualfund_rows:
         raise SymbolNotFoundError(symbol)
 
     return {
-        "symbol": symbol.strip().upper(),
+        "symbol": _normalize_symbol(symbol),
         "major_holders": major_rows,
         "institutional_holders": institutional_rows,
         "mutualfund_holders": mutualfund_rows,
@@ -788,33 +737,20 @@ def get_insider_activity(symbol: str, *, max_rows: int = 50) -> dict[str, Any]:
     ETFs/funds/crypto.
     """
     ticker = _get_ticker(symbol)
-    try:
+    with _upstream(f"Failed to load insider activity for {symbol!r}"):
         transactions = ticker.insider_transactions
         purchases = ticker.insider_purchases
         roster = ticker.insider_roster_holders
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(
-            exc, f"Failed to load insider activity for {symbol!r}"
-        ) from exc
 
-    # Transactions are newest-first; keep the most recent (head), not the tail
-    # that dataframe_to_records would retain when capping.
-    transactions_rows = (
-        dataframe_to_records(transactions.head(max_rows))
-        if transactions is not None
-        else []
-    )
-    purchases_rows = (
-        dataframe_to_records(purchases, max_rows=10) if purchases is not None else []
-    )
-    roster_rows = (
-        dataframe_to_records(roster.head(max_rows)) if roster is not None else []
-    )
+    # Transactions are newest-first, so the cap keeps the head.
+    transactions_rows = dataframe_to_records(transactions, max_rows=max_rows, head=True)
+    purchases_rows = dataframe_to_records(purchases, max_rows=10)
+    roster_rows = dataframe_to_records(roster, max_rows=max_rows, head=True)
     if not transactions_rows and not purchases_rows and not roster_rows:
         raise SymbolNotFoundError(symbol)
 
     return {
-        "symbol": symbol.strip().upper(),
+        "symbol": _normalize_symbol(symbol),
         "transactions": transactions_rows,
         "purchases_summary": purchases_rows,
         "roster": roster_rows,
@@ -840,10 +776,8 @@ def get_sec_filings(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     """
     limit = max(1, min(int(limit), 100))
     ticker = _get_ticker(symbol)
-    try:
+    with _upstream(f"Failed to load SEC filings for {symbol!r}"):
         filings = ticker.sec_filings
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load SEC filings for {symbol!r}") from exc
 
     items: list[dict[str, Any]] = []
     for filing in list(filings or [])[:limit]:
@@ -861,7 +795,7 @@ def get_sec_filings(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     if not items:
         raise SymbolNotFoundError(symbol, reason=_NO_SEC_FILINGS_REASON)
 
-    return {"symbol": symbol.strip().upper(), "count": len(items), "filings": items}
+    return {"symbol": _normalize_symbol(symbol), "count": len(items), "filings": items}
 
 
 @cache.cached("calendar")
@@ -872,15 +806,13 @@ def get_calendar(symbol: str) -> dict[str, Any]:
     dividend / ex-dividend dates. Equity-only; empty for ETFs/funds/crypto.
     """
     ticker = _get_ticker(symbol)
-    try:
+    with _upstream(f"Failed to load calendar for {symbol!r}"):
         cal = ticker.calendar
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load calendar for {symbol!r}") from exc
 
     if not cal:
         raise SymbolNotFoundError(symbol)
 
-    return {"symbol": symbol.strip().upper(), "calendar": to_jsonable(cal)}
+    return {"symbol": _normalize_symbol(symbol), "calendar": to_jsonable(cal)}
 
 
 @cache.cached("shares")
@@ -899,10 +831,8 @@ def get_shares(
     Only the most recent ``max_rows`` points are returned.
     """
     ticker = _get_ticker(symbol)
-    try:
+    with _upstream(f"Failed to load shares for {symbol!r}"):
         series = ticker.get_shares_full(start=start, end=end)
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load shares for {symbol!r}") from exc
 
     if series is None or len(series) == 0:
         raise SymbolNotFoundError(symbol)
@@ -912,7 +842,7 @@ def get_shares(
         {"date": to_jsonable(idx), "shares": to_jsonable(val)}
         for idx, val in tail.items()
     ]
-    return {"symbol": symbol.strip().upper(), "count": len(rows), "shares": rows}
+    return {"symbol": _normalize_symbol(symbol), "count": len(rows), "shares": rows}
 
 
 @cache.cached("fund_data")
@@ -939,13 +869,11 @@ def get_fund_data(symbol: str, *, max_rows: int = 25) -> dict[str, Any]:
     except Exception as exc:  # noqa: BLE001
         raise _wrap_upstream(exc, f"Failed to load fund data for {symbol!r}") from exc
 
-    holdings_rows = (
-        dataframe_to_records(top_holdings.head(max_rows), index_name="symbol")
-        if top_holdings is not None
-        else []
+    holdings_rows = dataframe_to_records(
+        top_holdings, max_rows=max_rows, index_name="symbol", head=True
     )
     return {
-        "symbol": symbol.strip().upper(),
+        "symbol": _normalize_symbol(symbol),
         "description": description,
         "fund_overview": to_jsonable(overview),
         "asset_classes": to_jsonable(asset_classes),
@@ -1015,7 +943,7 @@ def get_sector(key: str, *, max_rows: int = 25) -> dict[str, Any]:
             f"Unknown sector key {key!r}. Valid keys: {', '.join(SECTOR_KEYS)}."
         )
 
-    try:
+    with _upstream(f"Failed to load sector {key!r}"):
         sector = yf.Sector(key)
         name = sector.name
         index_symbol = sector.symbol
@@ -1024,8 +952,6 @@ def get_sector(key: str, *, max_rows: int = 25) -> dict[str, Any]:
         top_etfs = sector.top_etfs
         top_mutual_funds = sector.top_mutual_funds
         industries = sector.industries
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load sector {key!r}") from exc
 
     if not name:
         # Key is valid but yfinance returned no data (transient/upstream issue).
@@ -1036,18 +962,12 @@ def get_sector(key: str, *, max_rows: int = 25) -> dict[str, Any]:
         "name": name,
         "index_symbol": index_symbol,
         "overview": to_jsonable(overview),
-        "top_companies": (
-            dataframe_to_records(top_companies.head(max_rows), index_name="symbol")
-            if top_companies is not None
-            else []
+        "top_companies": dataframe_to_records(
+            top_companies, max_rows=max_rows, index_name="symbol", head=True
         ),
         "top_etfs": to_jsonable(top_etfs),
         "top_mutual_funds": to_jsonable(top_mutual_funds),
-        "industries": (
-            dataframe_to_records(industries, index_name="key")
-            if industries is not None
-            else []
-        ),
+        "industries": dataframe_to_records(industries, index_name="key"),
     }
 
 
@@ -1072,7 +992,7 @@ def get_industry(key: str, *, max_rows: int = 25) -> dict[str, Any]:
             "'industries' list returned by get_sector."
         )
 
-    try:
+    with _upstream(f"Failed to load industry {key!r}"):
         industry = yf.Industry(key)
         name = industry.name
         index_symbol = industry.symbol
@@ -1082,8 +1002,6 @@ def get_industry(key: str, *, max_rows: int = 25) -> dict[str, Any]:
         top_companies = industry.top_companies
         top_performing = industry.top_performing_companies
         top_growth = industry.top_growth_companies
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load industry {key!r}") from exc
 
     if not name:
         # Key is valid but yfinance returned no data (transient/upstream issue).
@@ -1096,21 +1014,13 @@ def get_industry(key: str, *, max_rows: int = 25) -> dict[str, Any]:
         "sector_key": sector_key,
         "sector_name": sector_name,
         "overview": to_jsonable(overview),
-        "top_companies": (
-            dataframe_to_records(top_companies.head(max_rows), index_name="symbol")
-            if top_companies is not None
-            else []
+        "top_companies": dataframe_to_records(
+            top_companies, max_rows=max_rows, index_name="symbol", head=True
         ),
-        "top_performing_companies": (
-            dataframe_to_records(top_performing, index_name="symbol")
-            if top_performing is not None
-            else []
+        "top_performing_companies": dataframe_to_records(
+            top_performing, index_name="symbol"
         ),
-        "top_growth_companies": (
-            dataframe_to_records(top_growth, index_name="symbol")
-            if top_growth is not None
-            else []
-        ),
+        "top_growth_companies": dataframe_to_records(top_growth, index_name="symbol"),
     }
 
 
@@ -1161,10 +1071,8 @@ def get_market(key: str = "US") -> dict[str, Any]:
             f"Unknown market key {key!r}. Valid keys: {', '.join(MARKET_KEYS)}."
         )
 
-    try:
+    with _upstream(f"Failed to load market {key!r}"):
         market = yf.Market(key)
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load market {key!r}") from exc
 
     # Yahoo only serves the markettime endpoint for "US". Every other key raises
     # here instead of returning nothing, so treat a failure as "unavailable".
@@ -1182,12 +1090,8 @@ def get_market(key: str = "US") -> dict[str, Any]:
     except Exception:  # noqa: BLE001 - status is optional, the summary is not
         status = None
 
-    try:
+    with _upstream(f"Failed to load market summary for {key!r}"):
         summary = market.summary or {}
-    except YFRateLimitError as exc:
-        raise RateLimitError() from exc
-    except Exception as exc:  # noqa: BLE001
-        raise _wrap_upstream(exc, f"Failed to load market summary for {key!r}") from exc
 
     indices: list[dict[str, Any]] = []
     for entry in summary.values():

@@ -89,3 +89,15 @@ def test_dataframe_to_records_custom_index_name():
     df = pd.DataFrame({"v": [1]}, index=["Revenue"])
     records = formatting.dataframe_to_records(df, index_name="item")
     assert records[0]["item"] == "Revenue"
+
+
+def test_dataframe_to_records_none_is_empty():
+    assert formatting.dataframe_to_records(None) == []
+
+
+def test_dataframe_to_records_head_keeps_the_top():
+    df = pd.DataFrame({"v": range(10)})
+    tail = formatting.dataframe_to_records(df, max_rows=3)
+    head = formatting.dataframe_to_records(df, max_rows=3, head=True)
+    assert [r["v"] for r in tail] == [7, 8, 9]
+    assert [r["v"] for r in head] == [0, 1, 2]
