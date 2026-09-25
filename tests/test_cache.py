@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 import time
 
 import pytest
@@ -199,3 +200,47 @@ def test_ttls_from_env(monkeypatch):
 def test_default_cache_dir_honors_env(monkeypatch, tmp_path):
     monkeypatch.setenv("YF_MCP_CACHE_DIR", str(tmp_path))
     assert cache.default_cache_dir() == tmp_path
+
+
+# --- cache failures never fail the call -----------------------------------
+
+
+class _BrokenStore:
+    """A cache whose every operation fails the way a locked database does."""
+
+    def get(self, key):
+        raise sqlite3.OperationalError("database is locked")
+
+    def set(self, key, value, ttl):
+        raise sqlite3.OperationalError("database is locked")
+
+    def close(self):
+        pass
+
+
+def test_cache_read_failure_falls_back_to_fetching(monkeypatch, caplog):
+    monkeypatch.setattr(cache, "_enabled", True)
+    monkeypatch.setattr(cache, "_cache", _BrokenStore())
+
+    @cache.cached("quote")
+    def fetch(symbol):
+        return {"symbol": symbol}
+
+    with caplog.at_level("WARNING", logger="benethos_yahoo_finance_mcp.cache"):
+        assert fetch("AAPL") == {"symbol": "AAPL"}
+    messages = [r.getMessage() for r in caplog.records]
+    assert any("read failed" in m for m in messages)
+    assert any("write failed" in m for m in messages)
+
+
+def test_cache_write_failure_still_returns_the_result(enabled_cache, monkeypatch):
+    def locked(*args, **kwargs):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(cache._cache, "set", locked)
+
+    @cache.cached("quote")
+    def fetch(symbol):
+        return {"symbol": symbol}
+
+    assert fetch("AAPL") == {"symbol": "AAPL"}

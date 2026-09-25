@@ -30,6 +30,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   as an unknown symbol, and a rate limit during the lookup as a rate limit.
   The lookup no longer runs under the ticker cache's lock either, where one
   slow search held up every other tool call.
+- A failing result cache failed the tool with it. Two processes sharing one
+  cache directory can hold the database locked, and a damaged file raises on
+  every read, and either error reached the model as `Error executing tool`.
+  The cache now steps aside on its own errors: the data is fetched and
+  returned as if caching were off, with a warning in the log.
 
 ## [0.5.2] - 2026-09-14
 

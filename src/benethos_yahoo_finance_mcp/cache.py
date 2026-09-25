@@ -225,6 +225,11 @@ def cached(category: str) -> Callable[[F], F]:
 
     When caching is disabled the wrapper is a transparent pass-through. Only
     successful returns are stored; exceptions propagate and are never cached.
+
+    The cache is an optimisation, so its own failures never fail the call. A
+    second process on the same cache directory can hold the database locked,
+    and a file can be damaged. Either way the result is fetched and returned
+    as if caching were off, and a warning says why.
     """
 
     def decorator(fn: F) -> F:
@@ -232,15 +237,23 @@ def cached(category: str) -> Callable[[F], F]:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             if not _enabled or _cache is None:
                 return fn(*args, **kwargs)
+            store = _cache
             key = _make_key(category, args, kwargs)
-            hit, value = _cache.get(key)
+            try:
+                hit, value = store.get(key)
+            except sqlite3.Error as exc:
+                logger.warning("Result cache read failed, fetching directly: %s", exc)
+                hit, value = False, None
             if hit:
                 return value
             result = fn(*args, **kwargs)
             # Skip empty results (e.g. a search with no matches) so a transient
             # empty response is not pinned for the whole TTL.
             if result:
-                _cache.set(key, result, _ttls.get(category, 0))
+                try:
+                    store.set(key, result, _ttls.get(category, 0))
+                except sqlite3.Error as exc:
+                    logger.warning("Result cache write failed, not cached: %s", exc)
             return result
 
         return wrapper  # type: ignore[return-value]
