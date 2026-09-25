@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from benethos_yahoo_finance_mcp import server
@@ -208,6 +210,50 @@ def test_transport_security_explicit_allow_list_wins_even_when_exposed():
 def test_transport_security_explicit_origins_are_kept():
     ts = server._transport_security_for("0.0.0.0", ["mcp:8000"], ["http://mcp:8000"])
     assert ts.allowed_origins == ["http://mcp:8000"]
+
+
+def test_transport_security_origins_alone_derive_the_hosts():
+    """Origins without hosts must not leave the Host allow-list empty.
+
+    The SDK rejects every Host that is not on the list, so an empty list with
+    protection on answered every request with HTTP 421.
+    """
+    ts = server._transport_security_for(
+        "0.0.0.0",
+        [],
+        ["https://mcp.example.com", "http://mcp.example.com", "http://localhost:*"],
+    )
+    assert ts.enable_dns_rebinding_protection is True
+    assert ts.allowed_hosts == ["mcp.example.com", "localhost:*"]
+    assert ts.allowed_origins == [
+        "https://mcp.example.com",
+        "http://mcp.example.com",
+        "http://localhost:*",
+    ]
+
+
+def test_origins_alone_let_a_matching_request_through():
+    """End to end through the SDK's own check, not just the settings object."""
+    from mcp.server.transport_security import TransportSecurityMiddleware
+    from starlette.requests import Request
+
+    ts = server._transport_security_for("0.0.0.0", [], ["https://mcp.example.com"])
+    request = Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/mcp",
+            "headers": [
+                (b"host", b"mcp.example.com"),
+                (b"origin", b"https://mcp.example.com"),
+                (b"content-type", b"application/json"),
+            ],
+        }
+    )
+    response = asyncio.run(
+        TransportSecurityMiddleware(ts).validate_request(request, is_post=True)
+    )
+    assert response is None
 
 
 def test_main_exposed_bind_disables_rebinding_guard(monkeypatch):

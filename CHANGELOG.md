@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- `--allowed-origins` on its own (or `YF_MCP_ALLOWED_ORIGINS`) locked every
+  client out with HTTP 421. It switched the DNS-rebinding guard on with an
+  empty `Host` allow-list, and the SDK matches every request's `Host` against
+  that list, so nothing ever matched. The hosts are now derived from the
+  origins, the same way the origins were already derived from
+  `--allowed-hosts`.
+
 ## [0.5.2] - 2026-09-14
 
 ### Changed

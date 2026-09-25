@@ -79,7 +79,8 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   derived from the actual bind host and passed to `MCPServer.run()` as an
   explicit argument: a localhost bind keeps the protective localhost allow-list,
   an exposed bind accepts any `Host` unless `--allowed-hosts` /
-  `--allowed-origins` narrow it (mismatches get HTTP 421). stdio has no HTTP
+  `--allowed-origins` narrow it (mismatches get HTTP 421). Either list is
+  derived from the other when only one is given. stdio has no HTTP
   surface and is handed no transport options at all.
 - **Deployment:** a `Dockerfile` (multi-stage, non-root, healthcheck,
   dependencies installed reproducibly from `uv.lock` via uv) and a

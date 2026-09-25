@@ -17,6 +17,7 @@ import logging
 import os
 import sys
 from typing import Annotated, Any
+from urllib.parse import urlsplit
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
@@ -59,6 +60,21 @@ def _split_csv(value: str | None) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def _hosts_from_origins(origins: list[str]) -> list[str]:
+    """The Host header values the given origins imply, in order, deduplicated.
+
+    An origin's authority is exactly what a browser at that origin sends as
+    ``Host``, including a ``:*`` port wildcard, which the SDK understands in
+    both lists.
+    """
+    hosts: list[str] = []
+    for origin in origins:
+        netloc = urlsplit(origin).netloc
+        if netloc and netloc not in hosts:
+            hosts.append(netloc)
+    return hosts
+
+
 def _transport_security_for(
     host: str, allowed_hosts: list[str], allowed_origins: list[str]
 ) -> TransportSecuritySettings:
@@ -70,15 +86,22 @@ def _transport_security_for(
     gateways run into. Derive it from the host actually being bound:
 
     - An explicit allow-list always wins: enable protection with those values.
+      Either list is derived from the other when only one is given.
     - A localhost bind keeps the protective localhost defaults.
     - A deliberately exposed bind (e.g. 0.0.0.0) with no allow-list turns
       DNS-rebinding protection off, mirroring the SDK's own default for a
       non-localhost bind.
+
+    The hosts have to be derived, not left empty. With protection on, the SDK
+    checks the Host header of every request against the list, and an empty
+    list matches nothing: origins alone used to lock out every client with
+    HTTP 421, the browser the origins were meant for included.
     """
     if allowed_hosts or allowed_origins:
         origins = allowed_origins or [
             f"{scheme}://{h}" for h in allowed_hosts for scheme in ("http", "https")
         ]
+        allowed_hosts = allowed_hosts or _hosts_from_origins(allowed_origins)
         return TransportSecuritySettings(
             enable_dns_rebinding_protection=True,
             allowed_hosts=allowed_hosts,
