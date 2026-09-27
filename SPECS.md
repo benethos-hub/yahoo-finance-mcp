@@ -51,7 +51,10 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   - `stdio` (default) — local subprocess for Claude Desktop and similar.
   - `streamable-http` / `sse` — standalone, network-reachable HTTP service.
 - **Logging:** always to stderr (`logging.basicConfig(stream=sys.stderr)`), so
-  under stdio stdout carries JSON-RPC only.
+  under stdio stdout carries JSON-RPC only. The call runs at import, above the
+  `MCPServer` construction, and has to stay there: the SDK's constructor calls
+  `basicConfig` with a `RichHandler`, only the first call takes effect, and a
+  test pins that the root handler is ours.
 - **CLI flags:** `--version`, `--transport`, `--host` (default 127.0.0.1), `--port`
   (default 8000, 1-65535, checked once an HTTP transport binds it), `--path`
   (default `/mcp`, `/sse` for sse), `--allowed-hosts`, `--allowed-origins`,
@@ -81,7 +84,8 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   other scope type gets no answer, so a route the SDK adds later is not
   open by default.
   The MCP HTTP transport also runs a DNS-rebinding `Host`/`Origin` guard. It is
-  derived from the actual bind host and passed to `MCPServer.run()` as an
+  derived from the actual bind host and passed to the SDK's app builder
+  (`streamable_http_app` / `sse_app`, via `transport.http_app`) as an
   explicit argument: a localhost bind keeps the protective localhost allow-list,
   an exposed bind accepts any `Host` unless `--allowed-hosts` /
   `--allowed-origins` narrow it (mismatches get HTTP 421). Either list is
@@ -114,19 +118,24 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   caching sessions — so the result cache operates on our normalized output,
   not on HTTP responses.
 - Symbol resolution (name / ticker / ISIN) uses `yfinance.Search`, and the same
-  endpoint handles all three input kinds.
+  endpoint handles all three input kinds. The `search` tool calls it directly.
+  For an ISIN passed as a symbol, `yf.Ticker` calls it on its own (see §6).
 
 ## 6. Symbol model
 
-- All `get_*` tools pass the given `symbol` through to yfinance unchanged. The
-  server itself resolves nothing (Variant A) and never assembles or rewrites a
-  symbol.
+- All `get_*` tools pass the given `symbol` through to yfinance unchanged
+  apart from trimming and uppercasing. The server itself resolves nothing
+  (Variant A) and never assembles or rewrites a symbol.
 - In practice that accepts both a **Yahoo ticker** (`AAPL`, `SAP.DE`) and a
-  **plain ISIN** (`US0378331005`), because Yahoo resolves ISINs server-side.
+  **plain ISIN** (`US0378331005`). The ISIN is resolved by yfinance, not by
+  this server and not by the data endpoints: `yf.Ticker` recognises anything
+  shaped like an ISIN (`^[A-Z]{2}[A-Z0-9]{9}[0-9]$`), looks it up through
+  Yahoo's search in its constructor and uses the ticker found from then on.
   Probed 2026-08-16: all 18 symbol-taking tools return correct data for an ISIN.
-  This is **observed behaviour of an unofficial endpoint, not a guarantee** — it
-  did not work at all when this section was first written, and it can change
-  back.
+  It still rests on an unofficial search endpoint, so it is **observed
+  behaviour, not a guarantee** — it did not work at all when this section was
+  first written, and it can change back. When the search finds nothing the
+  constructor raises, and the tool answers with `SymbolNotFoundError`.
 - A **company name** is not a symbol. Callers resolve one via `search` and pass
   back the `symbol` it returns.
 - Every tool echoes the `symbol` it was given, uppercased, so the answer can
@@ -143,10 +152,10 @@ All tools are read-only, and each one carries the MCP annotations
 `readOnlyHint: true` and `openWorldHint: true` (one shared `ToolAnnotations`
 in `server.py`). `destructiveHint` and `idempotentHint` are omitted because
 the spec defines them only for tools that are not read-only. `symbol` always
-means a Yahoo ticker. The three
-exceptions are `get_sector` / `get_industry`, which take a sector/industry
-**key** (e.g. `technology`, `semiconductors`), and `get_market`, which takes
-a market key (e.g. `US`), rather than a symbol.
+means a Yahoo ticker or an ISIN (see §6). The three exceptions are
+`get_sector` / `get_industry`, which take a sector/industry **key** (e.g.
+`technology`, `semiconductors`), and `get_market`, which takes a market key
+(e.g. `US`), rather than a symbol.
 
 | Tool | Inputs | Output (shape) |
 |------|--------|----------------|
@@ -418,11 +427,11 @@ tool already returns as `recommendation_trend`.
 ### Module-level (separate, larger category)
 
 These take no per-symbol `Ticker`. `Sector` / `Industry` browsing landed in
-Phase 4 (`get_sector` / `get_industry`). Still open: `Market` (market
-status/summary) and `Lookup` (richer search — overlaps the existing `search`,
-so likely an extension rather than a new tool), the screener
-(`screen` / `EquityQuery`), and multi-symbol (`download` / `Tickers`, which also
-covers the §11 multi-symbol-quote item).
+Phase 4 (`get_sector` / `get_industry`), `Market` later as `get_market`, and
+multi-symbol quotes as `get_quotes` (Phase 5). Still open: `Lookup` (richer
+search — overlaps the existing `search`, so likely an extension rather than a
+new tool), the screener (`screen` / `EquityQuery`), and bulk history
+(`download`). See the roadmap below for where each stands.
 
 The sector/industry key set is sourced from yfinance's own constant
 (`yfinance.const.SECTOR_INDUSTY_MAPPING_LC`, imported defensively in
@@ -455,7 +464,8 @@ output rather than typing them.)
 
 Per the working agreement: **plan (this section) → implement → test → update
 docs**. Each tool follows the established pattern (client.py logic +
-`@cache.cached`, server.py `@mcp.tool()` with `Annotated` Fields, FakeTicker
+`@cache.cached`, server.py `@mcp.tool(annotations=_READ_ONLY)` with
+`Annotated` Fields, FakeTicker
 unit tests, and a smoke-test entry). Land in reviewable PRs (CI must stay
 green).
 

@@ -395,8 +395,9 @@ systemd unit can do, the server stops at startup with
 ### Docker Compose
 
 A `compose.yaml` is provided (settings under `environment:`, secrets in an
-optional `.env`, cache in a named volume). As shipped it **builds** from this checkout, which is what you want
-while developing and the only way to run an unreleased `main`. To **operate**
+optional `.env`, cache in a named volume). As shipped it **builds** from this
+checkout, which is what you want while developing and the only way to run an
+unreleased `main`. To **operate**
 the released server instead, swap two commented lines at the top of the service
 so it pulls `ghcr.io/benethos-hub/yahoo-finance-mcp` — the file is then all you
 need, with no clone and no Dockerfile. The choice and the `pull_policy` values
@@ -531,9 +532,12 @@ the tools. Replace the bracketed placeholders with concrete values.
 ## Symbol resolution
 
 All `get_*` tools expect a Yahoo Finance **symbol**. Both a ticker (`AAPL`,
-`SAP.DE`) and a plain ISIN (`US0378331005`) work, since Yahoo resolves ISINs
-server-side. The server passes whatever it is given straight through and never
-rewrites it.
+`SAP.DE`) and a plain ISIN (`US0378331005`) work. An ISIN is resolved by
+`yfinance` itself: anything shaped like one is looked up through Yahoo's search
+the moment the ticker object is created, and the ticker found stands in for it
+from then on. The server passes the symbol through unchanged apart from
+trimming and uppercasing, and echoes what it was given. An ISIN-shaped string
+that Yahoo cannot resolve answers as an unknown symbol.
 
 To turn a **company name** into a symbol, call `search` first — the same Yahoo
 search endpoint handles free text, tickers, and ISINs. A ticker is preferable to
@@ -644,7 +648,9 @@ With the venv interpreter directly (replace `.venv/bin/python` with
 
 The unit tests mock `yfinance` and run fully offline. `tests/smoke.py` performs
 an ad-hoc check against live Yahoo Finance and is not part of the unit suite.
-CI also runs across Python 3.11–3.14 and enforces an 80% coverage floor.
+CI also runs across Python 3.11–3.14 and enforces an 80% coverage floor. Two
+more jobs install without the lockfile: `fresh-install` with the newest
+versions `pyproject.toml` allows, `lowest-versions` with the oldest.
 
 ## Trademarks
 
