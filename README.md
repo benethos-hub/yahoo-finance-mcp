@@ -381,6 +381,15 @@ volume there to keep it across container restarts. Pass `-e YF_MCP_BEARER_TOKEN=
 to require a bearer token on every request. Beyond a trusted network, front it
 with a reverse proxy that authenticates.
 
+The server needs a home directory it can resolve, because `yfinance` keeps a
+small cache of its own there and looks the location up as soon as it is
+imported. The image's user has one, and Docker and Kubernetes give any other
+UID `HOME=/`, so nothing needs doing in the usual setups. If you run as a UID
+with no passwd entry **and** remove `HOME`, which a hardened pod spec or a
+systemd unit can do, the server stops at startup with
+`could not determine the home directory`. Set `HOME` or an absolute
+`XDG_CACHE_HOME` and it starts.
+
 ### Docker Compose
 
 A `compose.yaml` is provided (settings under `environment:`, cache in a named

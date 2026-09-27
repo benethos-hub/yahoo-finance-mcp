@@ -13,10 +13,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   container, for root, for `appuser` and for an arbitrary UID, which Docker
   gives `HOME=/`. One thing does change: with no passwd entry **and** no
   `HOME` at all, 4.12.0 raises where 4.11.14 quietly returned the relative
-  path `~/.cache`, and every `yfinance` call fails with it. Docker and
+  path `~/.cache`. `yfinance` asks at import time, so the server then stops
+  at startup, before any tool could catch anything. The message says what to
+  set, the traceback goes to stderr, and stdout stays clean. Docker and
   Kubernetes always set `HOME`, so reaching that takes removing it on
-  purpose. A live smoke run before and after returned the same data in all
-  26 sections.
+  purpose, and the README now says what to set if you do. A live smoke run
+  before and after returned the same data in all 26 sections.
 
 ## [0.6.0] - 2026-09-25
 
