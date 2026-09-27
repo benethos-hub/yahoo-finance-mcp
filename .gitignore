@@ -26,6 +26,9 @@ coverage.xml
 .env
 .env.*
 !.env.example
+# Claude Code's per-machine permissions. Local by convention, and hatchling
+# puts every file .gitignore does not exclude into a locally built sdist.
+.claude/settings.local.json
 
 # IDE / OS
 .vscode/
