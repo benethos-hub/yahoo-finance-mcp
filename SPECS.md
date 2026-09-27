@@ -91,7 +91,11 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   dependencies installed reproducibly from `uv.lock` via uv) and a
   `compose.yaml` host the server over streamable-HTTP on port 8000. The image
   is configured entirely via env vars (no default CMD args) and persists its
-  cache to a `/cache` volume. Compose publishes the port on **127.0.0.1 only**.
+  cache to a `/cache` volume. Secrets such as the bearer token go in an
+  optional `.env` next to `compose.yaml`, read through `env_file` and ignored
+  by git and the build context, with `.env.example` as the tracked template.
+  Only Compose (or `docker run --env-file`) reads it, the server itself loads
+  no file. Compose publishes the port on **127.0.0.1 only**.
   Drop that prefix only behind a reverse proxy that authenticates, or at the
   very least with `YF_MCP_BEARER_TOKEN` set.
 

@@ -21,6 +21,15 @@ dist/
 htmlcov/
 coverage.xml
 
+# Local secrets. .env holds values such as YF_MCP_BEARER_TOKEN for Compose,
+# the example next to it is the tracked template.
+.env
+.env.*
+!.env.example
+# Claude Code's per-machine permissions. Local by convention, and hatchling
+# puts every file .gitignore does not exclude into a locally built sdist.
+.claude/settings.local.json
+
 # IDE / OS
 .vscode/
 .idea/
