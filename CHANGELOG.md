@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-09-27
+
+A maintenance release for the container image and Compose. No tool, schema
+or API changes.
+
 ### Added
 - A `.env.example` and an optional `env_file: .env` in `compose.yaml`, so the
   bearer token no longer has to be written into the tracked `compose.yaml`.
@@ -14,6 +19,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   left out of the Docker build context. Only Compose reads the file, the
   server itself still takes its settings from the environment and the
   command line. The optional `env_file` needs Docker Compose 2.24 or newer.
+  The ignore rules also keep a local `.env` and Claude Code's
+  `.claude/settings.local.json` out of a locally built sdist, since hatchling
+  packs every file `.gitignore` does not exclude. The published sdists were
+  never affected, CI builds them from a clean checkout.
 
 ### Changed
 - Locked `platformdirs` 4.11.14 → 4.12.0, the one package that had moved
@@ -670,7 +679,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.0...v0.5.1

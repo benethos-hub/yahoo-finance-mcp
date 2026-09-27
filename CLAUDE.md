@@ -67,7 +67,9 @@ Keep the layers separate: **tools in `server.py` stay thin** and delegate to
    It takes `None`, caps at `max_rows` and keeps the tail. Pass `head=True` for
    a frame ranked from the top. Cap silently only where the tail or head is
    obviously what a caller wants, and otherwise report `truncated`.
-3. Expose it in `server.py` with `@mcp.tool()`. The **docstring becomes the
+3. Expose it in `server.py` with `@mcp.tool(annotations=_READ_ONLY)`, the
+   shared `readOnlyHint`/`openWorldHint` pair every tool carries (a test
+   asserts it for all of them). The **docstring becomes the
    tool description** Claude sees — write it for an LLM caller, and leave
    allowed values to the parameter descriptions rather than repeating them.
    Give every parameter an `Annotated[type, Field(description=...)]` (reuse
