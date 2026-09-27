@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- Locked `platformdirs` 4.11.14 → 4.12.0, the one package that had moved
+  since 0.6.0. `yfinance` asks it where to keep its own cache of time zones,
+  cookies and resolved ISINs. The paths are unchanged on Windows and, in the
+  container, for root, for `appuser` and for an arbitrary UID, which Docker
+  gives `HOME=/`. One thing does change: with no passwd entry **and** no
+  `HOME` at all, 4.12.0 raises where 4.11.14 quietly returned the relative
+  path `~/.cache`, and every `yfinance` call fails with it. Docker and
+  Kubernetes always set `HOME`, so reaching that takes removing it on
+  purpose. A live smoke run before and after returned the same data in all
+  26 sections.
+
 ## [0.6.0] - 2026-09-25
 
 A minor release rather than a patch, because several tools answer
