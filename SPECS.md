@@ -298,6 +298,11 @@ values).
   takes, and a lockfile hides breakage in the *declared* dependency ranges —
   0.3.0 shipped an unbounded `mcp` requirement, resolved to an incompatible major
   on a fresh install and failed at import while every other job stayed green.
+  A `lowest-versions` job checks the other end of those ranges: it installs
+  every direct dependency at its lower bound (`--resolution lowest-direct`)
+  on Python 3.11, again without the lockfile, and runs the suite. It is an
+  early warning and not a required check on `main`. A red run means a lower
+  bound in `pyproject.toml` needs raising.
 - Every action in both workflows is pinned to a full commit SHA, with the
   version it stands for in a trailing comment, and the two base images in the
   `Dockerfile` by digest next to their tag. A tag is a pointer its owner can

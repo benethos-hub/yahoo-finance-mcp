@@ -109,6 +109,40 @@ jobs:
           /tmp/fresh/bin/benethos-yahoo-finance-mcp --help > /dev/null
           echo "OK: a fresh install imports, registers its tools and starts"
 
+  # The other half of what fresh-install checks. That job resolves the newest
+  # versions pyproject.toml allows, this one the oldest: every direct
+  # dependency at its declared lower bound, on the oldest supported Python,
+  # without the lockfile. A bound that no longer holds fails here instead of on
+  # the machine of someone whose resolver happens to pick it.
+  #
+  # An early warning, not a merge gate: it is deliberately not a required
+  # check on main. A red run means a lower bound in pyproject.toml needs
+  # raising. The suite mocks yfinance, so green here says the code runs
+  # against those versions, not that Yahoo answers them the same way.
+  lowest-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Install the lowest allowed direct dependencies (no lockfile)
+        run: |
+          set -euo pipefail
+          uv venv -p 3.11 /tmp/lowest
+          # pytest at the floor the dev extra declares. The suite needs no
+          # other plugin, and coverage is the test job's business.
+          uv pip install --python /tmp/lowest/bin/python \
+            --resolution lowest-direct -e . "pytest>=9.1.1"
+          echo "--- resolved dependency versions ---"
+          uv pip list --python /tmp/lowest/bin/python
+
+      - name: Run the tests against them
+        run: |
+          set -euo pipefail
+          /tmp/lowest/bin/python -m pytest -q -p no:cacheprovider
+
   docker:
     runs-on: ubuntu-latest
     steps:
