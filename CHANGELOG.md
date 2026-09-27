@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- A `.env.example` and an optional `env_file: .env` in `compose.yaml`, so the
+  bearer token no longer has to be written into the tracked `compose.yaml`.
+  Copy the example to `.env` and set `YF_MCP_BEARER_TOKEN` there. Without a
+  `.env` the service runs exactly as before. `.env` is now ignored by git and
+  left out of the Docker build context. Only Compose reads the file, the
+  server itself still takes its settings from the environment and the
+  command line. The optional `env_file` needs Docker Compose 2.24 or newer.
+
 ### Changed
 - Locked `platformdirs` 4.11.14 → 4.12.0, the one package that had moved
   since 0.6.0. `yfinance` asks it where to keep its own cache of time zones,

@@ -416,6 +416,16 @@ remove the `127.0.0.1:` prefix from the `ports:` entry in `compose.yaml`, set
 the token at the very least, and put a reverse proxy with authentication in
 front of it.
 
+Secrets go in a `.env` next to `compose.yaml`, which Compose reads through
+`env_file` and git and the Docker build context both ignore. Copy
+`.env.example` to `.env` and set `YF_MCP_BEARER_TOKEN` there, not in
+`compose.yaml`, which is tracked. The file is optional, and without it the
+service runs on the values in `compose.yaml`. A name set under
+`environment:` in `compose.yaml` wins over the same name in `.env`. This
+needs Docker Compose 2.24 or newer. Only Compose reads the file. The server
+itself never loads it, so for a plain `docker run` pass `--env-file .env`, and
+for a local or Claude Desktop setup keep using the environment.
+
 ### Manual (uv or venv)
 
 With uv (any OS):

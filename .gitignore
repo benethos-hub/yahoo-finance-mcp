@@ -21,6 +21,12 @@ dist/
 htmlcov/
 coverage.xml
 
+# Local secrets. .env holds values such as YF_MCP_BEARER_TOKEN for Compose,
+# the example next to it is the tracked template.
+.env
+.env.*
+!.env.example
+
 # IDE / OS
 .vscode/
 .idea/

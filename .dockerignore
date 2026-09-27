@@ -12,6 +12,10 @@ __pycache__
 .cache
 *.sqlite
 
+# Local secrets never belong in the build context, not even the template
+.env
+.env.*
+
 # Not needed inside the image
 tests
 SPECS.md

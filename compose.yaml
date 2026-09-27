@@ -41,6 +41,13 @@ services:
       # Change the host port (the middle number) if 8000 is already taken.
       - "127.0.0.1:8000:8000"
     restart: unless-stopped
+    # Secrets, the bearer token above all, go in a .env next to this file
+    # rather than into it, since this file is tracked. Copy .env.example to
+    # .env to start. It is optional: without it everything runs on the values
+    # below. `required: false` needs Docker Compose 2.24 or newer.
+    env_file:
+      - path: .env
+        required: false
     # All configuration is via environment variables. The image already sets
     # sensible defaults (streamable-HTTP on 0.0.0.0:8000, cache at /cache);
     # override any of them here.
@@ -53,10 +60,11 @@ services:
       # DNS-rebinding guard down to specific hosts if you want to (clients with
       # another Host then get HTTP 421):
       # YF_MCP_ALLOWED_HOSTS: "benethos-yahoo-finance-mcp:8000"
-      # Require a bearer token on every HTTP request. Off by default: on a
-      # loopback-published port it guards against nothing. Anything that can
-      # reach the port can otherwise call every tool.
-      # YF_MCP_BEARER_TOKEN: "change-me-to-something-long-and-random"
+      # A bearer token on every HTTP request is off by default: on a
+      # loopback-published port it guards against nothing, and anything that
+      # can reach the port can otherwise call every tool. Set
+      # YF_MCP_BEARER_TOKEN in .env, not here, so the secret stays out of git.
+      # A value set in this block would override the one in .env.
       YF_MCP_LOG_LEVEL: INFO
       # The result cache is opt-in (off by default). Enable it and it persists
       # to the /cache volume below:
