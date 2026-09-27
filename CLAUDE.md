@@ -44,6 +44,9 @@ src/benethos_yahoo_finance_mcp/
   transport.py    # HTTP app + optional bearer guard (stdio never uses it)
   py.typed        # PEP 561 marker, without it the annotations reach nobody
 tests/            # mocked, offline unit tests (+ live smoke.py, not collected)
+.github/workflows/
+  ci.yml          # lint, test matrix, fresh-install, lowest-versions, docker
+  publish.yml     # PyPI + ghcr on a published GitHub release
 ```
 
 Keep the layers separate: **tools in `server.py` stay thin** and delegate to
@@ -125,6 +128,10 @@ and it now asserts the message text as well.
 ## Git / commits
 
 - Commit only when the user asks. Use clear, descriptive messages.
+- Every CI job must pass before a merge, except `lowest-versions`. That one
+  installs the oldest versions `pyproject.toml` allows and is an early warning,
+  not a gate. When it goes red, raise the lower bound it names, it is not a
+  reason to hold a pull request.
 - Do not commit `.venv/`, `__pycache__/`, or `*.egg-info/` (already gitignored).
 
 ## Releasing
