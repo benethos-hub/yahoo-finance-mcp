@@ -377,9 +377,11 @@ docker run --rm -p 9000:9000 \
 The image runs as a non-root user and includes a healthcheck on the configured
 HTTP port. The cache is off by default. Enable it with `-e YF_MCP_CACHE=1`, in
 which case it is written to `/cache` (declared as a volume) — mount a named
-volume there to keep it across container restarts. Pass `-e YF_MCP_BEARER_TOKEN=...`
-to require a bearer token on every request. Beyond a trusted network, front it
-with a reverse proxy that authenticates.
+volume there to keep it across container restarts. To require a bearer token
+on every request, put `YF_MCP_BEARER_TOKEN=...` in a `.env` (see
+`.env.example`) and pass `--env-file .env`. `-e YF_MCP_BEARER_TOKEN=...` works
+as well, but leaves the secret in your shell history. Beyond a trusted network,
+front it with a reverse proxy that authenticates.
 
 The server needs a home directory it can resolve, because `yfinance` keeps a
 small cache of its own there and looks the location up as soon as it is
@@ -392,8 +394,8 @@ systemd unit can do, the server stops at startup with
 
 ### Docker Compose
 
-A `compose.yaml` is provided (settings under `environment:`, cache in a named
-volume). As shipped it **builds** from this checkout, which is what you want
+A `compose.yaml` is provided (settings under `environment:`, secrets in an
+optional `.env`, cache in a named volume). As shipped it **builds** from this checkout, which is what you want
 while developing and the only way to run an unreleased `main`. To **operate**
 the released server instead, swap two commented lines at the top of the service
 so it pulls `ghcr.io/benethos-hub/yahoo-finance-mcp` — the file is then all you
