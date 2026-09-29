@@ -601,6 +601,8 @@ Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 
 - Off by default. Enable with `--cache` or `YF_MCP_CACHE=1`.
 - Location: the OS user cache directory, or `--cache-dir` / `YF_MCP_CACHE_DIR`.
+  The file grows with what it holds and shrinks again after expired entries
+  are swept. A file made by an earlier version is rewritten once at start.
 - Override a TTL: `--cache-ttl quote=15` (repeatable) or the
   `YF_MCP_CACHE_TTL_<NAME>` env var (e.g. `YF_MCP_CACHE_TTL_QUOTE=15`).
   Set a TTL to `0` to bypass caching for that tool.

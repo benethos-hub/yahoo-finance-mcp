@@ -12,6 +12,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the container ran, and uvicorn adds a line per request to it. The README
   says how to keep more, hand the log to `journald`, or set the same cap on
   a plain `docker run`.
+- The result cache file shrinks after a sweep. SQLite reuses the pages a
+  deletion frees but never hands them back on its own, so the file stayed
+  at its largest size for good: 2000 expired entries purged left a 1.4 MB
+  file holding nothing. `auto_vacuum` in its incremental mode gives the
+  pages back after every sweep, at startup, every hundredth write and on
+  `clear`. A file made by an earlier version is rewritten once when the
+  server opens it, which takes a moment for a large one, and the log says
+  so.
 
 ## [0.6.1] - 2026-09-27
 

@@ -73,6 +73,83 @@ def test_result_cache_sweeps_expired_entries_while_running(tmp_path, monkeypatch
         rc.close()
 
 
+def _pages(rc: cache.ResultCache) -> tuple[int, int]:
+    """``(page_count, freelist_count)`` of the cache file."""
+    total = rc._conn.execute("PRAGMA page_count").fetchone()[0]
+    free = rc._conn.execute("PRAGMA freelist_count").fetchone()[0]
+    return total, free
+
+
+def _fill(rc: cache.ResultCache, n: int, ttl: float) -> None:
+    for i in range(n):
+        rc.set(f"k{i}", {"rows": [{"i": i, "pad": "x" * 200}] * 20}, ttl=ttl)
+
+
+def test_result_cache_file_shrinks_after_a_sweep(tmp_path, monkeypatch):
+    """The pages a sweep frees go back to the file system, not to a free list."""
+    path = tmp_path / "c.sqlite"
+    rc = cache.ResultCache(path)
+    try:
+        _fill(rc, 300, ttl=60)
+        full, _ = _pages(rc)
+        now = time.time()
+        monkeypatch.setattr(cache.time, "time", lambda: now + 120)
+        rc.purge_expired()
+        after, free = _pages(rc)
+        assert free == 0
+        assert after < full / 4
+        assert path.stat().st_size < full * 4096
+    finally:
+        rc.close()
+
+
+def test_result_cache_write_sweep_shrinks_too(tmp_path, monkeypatch):
+    monkeypatch.setattr(cache.ResultCache, "PURGE_EVERY", 301)
+    rc = cache.ResultCache(tmp_path / "c.sqlite")
+    try:
+        _fill(rc, 300, ttl=60)
+        full, _ = _pages(rc)
+        now = time.time()
+        monkeypatch.setattr(cache.time, "time", lambda: now + 120)
+        rc.set("fresh", 1, ttl=60)  # the 301st write sweeps
+        after, free = _pages(rc)
+        assert free == 0
+        assert after < full / 4
+        assert rc.get("fresh") == (True, 1)
+    finally:
+        rc.close()
+
+
+def test_an_older_cache_file_is_rewritten_once_to_shrink(tmp_path, caplog):
+    path = tmp_path / "old.sqlite"
+    rc = cache.ResultCache(path)
+    rc.set("kept", {"v": 1}, ttl=3600)
+    rc.close()
+    # As a file made before shrinking existed: no auto_vacuum.
+    plain = sqlite3.connect(path)
+    plain.execute("PRAGMA auto_vacuum = NONE")
+    plain.execute("VACUUM")
+    assert plain.execute("PRAGMA auto_vacuum").fetchone()[0] == 0
+    plain.close()
+
+    logger = "benethos_yahoo_finance_mcp.cache"
+    with caplog.at_level("INFO", logger=logger):
+        rc = cache.ResultCache(path)
+    try:
+        assert rc._conn.execute("PRAGMA auto_vacuum").fetchone()[0] == 2
+        assert rc.get("kept") == (True, {"v": 1})  # the rewrite keeps the data
+    finally:
+        rc.close()
+    assert any("rewritten once" in r.getMessage() for r in caplog.records)
+
+    # Not again.
+    caplog.clear()
+    with caplog.at_level("INFO", logger=logger):
+        rc = cache.ResultCache(path)
+    rc.close()
+    assert not any("rewritten once" in r.getMessage() for r in caplog.records)
+
+
 def test_result_cache_zero_ttl_not_stored(tmp_path):
     rc = cache.ResultCache(tmp_path / "c.sqlite")
     try:

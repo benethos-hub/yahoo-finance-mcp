@@ -261,6 +261,11 @@ values).
 - Housekeeping: an expired entry is deleted when it is read, and every
   hundredth write sweeps the whole file. Startup used to be the only sweep,
   and a long-running HTTP server kept every entry nobody asked for again.
+  The pages a sweep frees go back to the file system (`auto_vacuum` in its
+  incremental mode, `PRAGMA incremental_vacuum` after each sweep), so the
+  file follows what it holds instead of staying at its largest size. A
+  file made before that is rewritten once when it is opened, said in the
+  log.
 
 ## 9. Error handling
 
