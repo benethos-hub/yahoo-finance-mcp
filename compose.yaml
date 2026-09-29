@@ -41,6 +41,15 @@ services:
       # Change the host port (the middle number) if 8000 is already taken.
       - "127.0.0.1:8000:8000"
     restart: unless-stopped
+    # Docker keeps what a container writes to stdout and stderr, and the
+    # server writes a line per request: uvicorn's access log on stdout, its
+    # own log on stderr. Without a cap the log grows for as long as the
+    # container runs. At most 5 files of 10 MB, the oldest dropped first.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
     # Secrets, the bearer token above all, go in a .env next to this file
     # rather than into it, since this file is tracked. Copy .env.example to
     # .env to start. It is optional: without it everything runs on the values

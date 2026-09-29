@@ -381,7 +381,11 @@ volume there to keep it across container restarts. To require a bearer token
 on every request, put `YF_MCP_BEARER_TOKEN=...` in a `.env` (see
 `.env.example`) and pass `--env-file .env`. `-e YF_MCP_BEARER_TOKEN=...` works
 as well, but leaves the secret in your shell history. Beyond a trusted network,
-front it with a reverse proxy that authenticates.
+front it with a reverse proxy that authenticates. Docker keeps the
+container's log without a cap unless told otherwise, so add
+`--log-opt max-size=10m --log-opt max-file=5` to a `docker run` that is meant
+to stay up, or set the same in the daemon's `log-opts` once for every
+container.
 
 The server needs a home directory it can resolve, because `yfinance` keeps a
 small cache of its own there and looks the location up as soon as it is
@@ -418,6 +422,12 @@ server is unauthenticated unless `YF_MCP_BEARER_TOKEN` is set. To expose it,
 remove the `127.0.0.1:` prefix from the `ports:` entry in `compose.yaml`, set
 the token at the very least, and put a reverse proxy with authentication in
 front of it.
+
+The compose file caps the log Docker keeps of the container at 5 files of
+10 MB, the oldest dropped first (`logging:` in the service). Before, the log
+grew for as long as the container ran. To keep more, raise `max-size` or
+`max-file`. To keep the log elsewhere, replace the driver, for example with
+`journald`, and read it with `journalctl CONTAINER_NAME=benethos-yahoo-finance-mcp`.
 
 Secrets go in a `.env` next to `compose.yaml`, which Compose reads through
 `env_file` and git and the Docker build context both ignore. Copy

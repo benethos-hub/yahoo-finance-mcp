@@ -99,7 +99,9 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   optional `.env` next to `compose.yaml`, read through `env_file` and ignored
   by git and the build context, with `.env.example` as the tracked template.
   Only Compose (or `docker run --env-file`) reads it, the server itself loads
-  no file. Compose publishes the port on **127.0.0.1 only**.
+  no file. Compose publishes the port on **127.0.0.1 only** and caps the log
+  Docker keeps of the container at 5 files of 10 MB, since uvicorn writes a
+  line per request and Docker's default keeps everything.
   Drop that prefix only behind a reverse proxy that authenticates, or at the
   very least with `YF_MCP_BEARER_TOKEN` set.
 

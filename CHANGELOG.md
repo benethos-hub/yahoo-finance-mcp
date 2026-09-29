@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- The compose file caps the log Docker keeps of the container at 5 files
+  of 10 MB, the oldest dropped first. Before, the log grew for as long as
+  the container ran, and uvicorn adds a line per request to it. The README
+  says how to keep more, hand the log to `journald`, or set the same cap on
+  a plain `docker run`.
+
 ## [0.6.1] - 2026-09-27
 
 A maintenance release for the container image and Compose. No tool, schema
