@@ -65,6 +65,9 @@ DEFAULT_TTLS: dict[str, float] = {
 
 _FALSY = {"0", "false", "no", "off", ""}
 
+# PRAGMA auto_vacuum: 0 none, 1 full, 2 incremental.
+_INCREMENTAL = 2
+
 # --- module state (set by configure) --------------------------------------
 _lock = threading.Lock()
 _enabled = False
@@ -122,6 +125,10 @@ class ResultCache:
     An expired entry is deleted when it is read, and every ``PURGE_EVERY``
     writes the whole file is swept. Startup used to be the only sweep, and a
     long-running HTTP server kept every entry nobody asked for again.
+
+    The pages a sweep frees go back to the file system, so the file follows
+    what it holds. SQLite reuses freed pages but never hands them back on
+    its own, and the file used to stay at its largest size for good.
     """
 
     PURGE_EVERY = 100
@@ -129,6 +136,7 @@ class ResultCache:
     def __init__(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(path), check_same_thread=False)
+        self._make_shrinkable()
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS cache "
             "(key TEXT PRIMARY KEY, expires_at REAL NOT NULL, value TEXT NOT NULL)"
@@ -136,6 +144,41 @@ class ResultCache:
         self._conn.commit()
         self._lock = threading.Lock()
         self._writes = 0
+
+    def _make_shrinkable(self) -> None:
+        """Put ``auto_vacuum`` in its incremental mode, which ``_shrink`` needs.
+
+        The mode has to be set before the first table exists. A new file takes
+        it as it is. One made without it, by a version before this, is
+        rewritten once, which ``VACUUM`` does outside any transaction, and the
+        log says so. Called before the table is created, with no lock yet.
+        """
+        mode = self._conn.execute("PRAGMA auto_vacuum").fetchone()[0]
+        if mode == _INCREMENTAL:
+            return
+        self._conn.execute("PRAGMA auto_vacuum = INCREMENTAL")
+        has_tables = self._conn.execute("SELECT 1 FROM sqlite_master LIMIT 1")
+        if has_tables.fetchone() is None:
+            return
+        logger.info("Result cache file rewritten once so it can shrink after a sweep")
+        self._conn.execute("VACUUM")
+
+    def _shrink(self) -> None:
+        """Give the pages a sweep freed back to the file system.
+
+        Called with the lock held, after the sweep is committed. Cheap when
+        there is nothing to give back.
+
+        The pragma frees one page per step and returns no rows, so it only
+        finishes if something keeps stepping it. ``execute`` does not on Python
+        3.11: for a statement without result columns it steps once and stops,
+        ``fetchall`` has nothing to fetch, and a sweep gave back one page out
+        of hundreds with no error anywhere. 3.12 steps it to the end, so the
+        tests passed there and failed only in CI on 3.11. ``executescript``
+        steps every statement to completion on every version. It commits an
+        open transaction first, which is why this runs only after a commit.
+        """
+        self._conn.executescript("PRAGMA incremental_vacuum;")
 
     def get(self, key: str) -> tuple[bool, Any]:
         """Return ``(hit, value)``; a miss or expired entry yields ``(False, None)``."""
@@ -173,20 +216,25 @@ class ResultCache:
                 (key, now + ttl, payload),
             )
             self._writes += 1
-            if self._writes % self.PURGE_EVERY == 0:
+            sweep = self._writes % self.PURGE_EVERY == 0
+            if sweep:
                 self._conn.execute("DELETE FROM cache WHERE expires_at < ?", (now,))
             self._conn.commit()
+            if sweep:
+                self._shrink()
 
     def purge_expired(self) -> None:
         """Delete all expired entries (housekeeping)."""
         with self._lock:
             self._conn.execute("DELETE FROM cache WHERE expires_at < ?", (time.time(),))
             self._conn.commit()
+            self._shrink()
 
     def clear(self) -> None:
         with self._lock:
             self._conn.execute("DELETE FROM cache")
             self._conn.commit()
+            self._shrink()
 
     def close(self) -> None:
         with self._lock:
