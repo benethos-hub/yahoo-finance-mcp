@@ -167,10 +167,18 @@ class ResultCache:
         """Give the pages a sweep freed back to the file system.
 
         Called with the lock held, after the sweep is committed. Cheap when
-        there is nothing to give back. Each row the pragma answers is a page
-        given back: read them all, or nothing happens.
+        there is nothing to give back.
+
+        The pragma frees one page per step and returns no rows, so it only
+        finishes if something keeps stepping it. ``execute`` does not on Python
+        3.11: for a statement without result columns it steps once and stops,
+        ``fetchall`` has nothing to fetch, and a sweep gave back one page out
+        of hundreds with no error anywhere. 3.12 steps it to the end, so the
+        tests passed there and failed only in CI on 3.11. ``executescript``
+        steps every statement to completion on every version. It commits an
+        open transaction first, which is why this runs only after a commit.
         """
-        self._conn.execute("PRAGMA incremental_vacuum").fetchall()
+        self._conn.executescript("PRAGMA incremental_vacuum;")
 
     def get(self, key: str) -> tuple[bool, Any]:
         """Return ``(hit, value)``; a miss or expired entry yields ``(False, None)``."""
