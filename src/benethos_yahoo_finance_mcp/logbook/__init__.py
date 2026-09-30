@@ -16,8 +16,9 @@ a URL's query string, anything from Yahoo's answer, or the text of an error
 this server raised, which is written for the model. A line names the error's
 class instead.
 
-:mod:`.output` installs the one handler on stderr, and :mod:`.access` shapes
-uvicorn's request log to the same rules.
+:mod:`.output` installs the one handler on stderr, :mod:`.formats` decides
+how a line looks there, and :mod:`.access` shapes uvicorn's request log to the
+same rules.
 """
 
 from __future__ import annotations

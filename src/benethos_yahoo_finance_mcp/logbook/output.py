@@ -13,10 +13,8 @@ import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from . import access
+from . import access, formats
 from ._describe import PACKAGE
-
-FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 
 # The chosen level applies to this package (PACKAGE) and to uvicorn's request
 # log. Everything else inherits the root logger's WARNING, so a library nobody
@@ -47,7 +45,10 @@ class _Handler(logging.StreamHandler):
 
 
 def configure(level: str) -> None:
-    """Send this server's lines at ``level`` and above to stderr, in one format.
+    """Send this server's lines at ``level`` and above to stderr.
+
+    The line is plain, or in colour when stderr is a terminal, see
+    :mod:`.formats`.
 
     ``level`` applies to this package and to uvicorn's request log. The root
     logger stays at WARNING, so every other library says only what went
@@ -59,7 +60,7 @@ def configure(level: str) -> None:
     ours = [h for h in root.handlers if isinstance(h, _Handler)]
     if not root.handlers:
         handler = _Handler(sys.stderr)
-        handler.setFormatter(logging.Formatter(FORMAT))
+        handler.setFormatter(formats.for_stderr())
         root.addHandler(handler)
         ours = [handler]
     for handler in ours:

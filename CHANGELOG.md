@@ -45,6 +45,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   symbol only as the other possibility.
 
 ### Changed
+- At a terminal the log comes in colour: the time dim, the level in colour,
+  a short source (`server`, `tools`, `yahoo`, `cache`, `uvicorn`, `http`)
+  and a request as method, path, status and client. `uvicorn.error` read as
+  if something had failed while it is only uvicorn's server log, and shows
+  there as `uvicorn`. `NO_COLOR` turns the colours off. A plain line, in a
+  container log or the file Claude Desktop keeps, still carries the full
+  logger name, with the level padded and the time written as
+  `2026-09-30 13:19:02.840+02:00`, a point before the milliseconds instead
+  of a comma and the offset added.
 - Every call builds its own `yf.Ticker`. They used to be shared for 60
   seconds, and the SDK runs the tools in worker threads, so two calls on one
   symbol could fill the same object's lazily loaded fields at once, which
