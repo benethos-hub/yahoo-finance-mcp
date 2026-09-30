@@ -528,7 +528,9 @@ Goal: expose every **working** yfinance method as an MCP tool. "Working" was
 verified empirically (probed live on a stock `AAPL`, an ETF `SPY`, and a crypto
 pair `BTC-USD`). Only methods that return real data are in scope. Availability
 is symbol-dependent (equity fields are empty for ETFs/crypto and vice versa) —
-tools surface that as an empty result, not an error.
+a tool answers that with a `SymbolNotFoundError` whose reason says Yahoo keeps
+the data for single stocks only (`tickers.EQUITY_ONLY_REASON`), so the model
+does not go looking for another ticker.
 
 ### Verified data sources (probe results)
 
@@ -545,7 +547,7 @@ tools surface that as an empty result, not an error.
   `fast_info`/`info` (rich), `history_metadata`, `isin` — so `get_quote`,
   `get_history`, and `get_company_info` already cover crypto. All
   equity-specific methods (analysts, holders, earnings, financials, calendar)
-  are empty, so the new tools return empty for crypto.
+  are empty, so the equity-only tools answer crypto with that error.
 - **Excluded — upstream empty for all probed symbols:** `sustainability` (ESG),
   `capital_gains`.
 - **Out of scope (non-goals, §2):** `live`/`WebSocket` (streaming), and the SDK's

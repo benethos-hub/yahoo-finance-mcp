@@ -33,8 +33,8 @@ def get_earnings(
     """Get upcoming and historical earnings for a Yahoo symbol.
 
     Returns the earnings calendar (upcoming and past dates with EPS estimate,
-    reported EPS, and surprise %) plus the recent earnings history. Equity-only,
-    empty for ETFs, funds, and crypto.
+    reported EPS, and surprise %) plus the recent earnings history. Equity-only:
+    an ETF, fund or crypto symbol answers with an error that says so.
     """
     return yahoo.get_earnings(symbol, limit=limit)
 
@@ -43,8 +43,8 @@ def get_estimates(symbol: Symbol) -> dict[str, Any]:
     """Get forward analyst estimates for a Yahoo symbol.
 
     Returns earnings and revenue estimates, EPS trend and revisions, and growth
-    estimates (small tables keyed by period). Equity-only, empty for ETFs,
-    funds, and crypto.
+    estimates (small tables keyed by period). Equity-only: an ETF, fund or
+    crypto symbol answers with an error that says so.
     """
     return yahoo.get_estimates(symbol)
 
@@ -59,7 +59,8 @@ def get_upgrades_downgrades(
     """Get recent analyst rating changes (upgrades/downgrades) for a Yahoo symbol.
 
     Each entry is a firm's rating change with the from/to grade and action, most
-    recent first. Equity-only, empty for ETFs, funds, and crypto.
+    recent first. Equity-only: an ETF, fund or crypto symbol answers with an
+    error that says so.
     """
     return yahoo.get_upgrades_downgrades(symbol, limit=limit)
 

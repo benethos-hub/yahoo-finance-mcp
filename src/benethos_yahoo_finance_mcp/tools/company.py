@@ -72,7 +72,8 @@ def get_calendar(symbol: Symbol) -> dict[str, Any]:
     """Get upcoming corporate-calendar events for a Yahoo symbol.
 
     Returns the next earnings date(s) with analyst estimate ranges and the next
-    dividend / ex-dividend dates. Equity-only, empty for ETFs, funds, and crypto.
+    dividend / ex-dividend dates. Equity-only: an ETF, fund or crypto symbol
+    answers with an error that says so.
     """
     return yahoo.get_calendar(symbol)
 

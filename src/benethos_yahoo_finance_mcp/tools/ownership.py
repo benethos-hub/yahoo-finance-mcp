@@ -28,8 +28,8 @@ def get_holders(
     """Get the ownership breakdown for a Yahoo symbol.
 
     Returns the high-level holder summary (insider/institutional percentages)
-    plus the top institutional and mutual-fund holders. Equity-only, empty for
-    ETFs, funds, and crypto.
+    plus the top institutional and mutual-fund holders. Equity-only: an ETF,
+    fund or crypto symbol answers with an error that says so.
     """
     return yahoo.get_holders(symbol, limit=limit)
 
@@ -48,8 +48,8 @@ def get_insider_activity(
     """Get insider trading activity for a Yahoo symbol.
 
     Returns individual insider transactions, a 6-month purchases/sales summary,
-    and the current insider roster. Equity-only, empty for ETFs, funds, and
-    crypto.
+    and the current insider roster. Equity-only: an ETF, fund or crypto symbol
+    answers with an error that says so.
     """
     return yahoo.get_insider_activity(symbol, limit=limit)
 

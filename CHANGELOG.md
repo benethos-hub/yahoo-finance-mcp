@@ -14,8 +14,9 @@ Compose left off. The log follows written rules and has a new look,
 gets an entry limit, and many errors now name their real cause instead of
 an unknown symbol. Underneath, the code is reorganised by subject. A client
 sees the tools listed grouped by subject, a limit of 32 characters on
-symbols, changed descriptions for `period`, `interval` and `end`, and
-integer columns such as `Volume` as integers again.
+symbols, changed descriptions for `period`, `interval` and `end` and for
+the six equity-only tools, and integer columns such as `Volume` as
+integers again.
 
 ### Security
 - `compose.yaml` sets `YF_MCP_ALLOWED_HOSTS` to the loopback names and its
@@ -79,7 +80,8 @@ integer columns such as `Volume` as integers again.
   `get_earnings`, `get_estimates`, `get_upgrades_downgrades`, `get_holders`,
   `get_insider_activity` and `get_calendar`. They now say that Yahoo keeps
   this data for single stocks only, as `get_options` and `get_sec_filings`
-  already did for their cases.
+  already did for their cases, and their descriptions say an ETF gets that
+  error instead of promising an empty answer.
 - `get_quote` answered an unreachable Yahoo with "symbol not found": every
   field came back empty and that read as an unknown symbol. It now says
   Yahoo could not be reached. Measured with a dead proxy, an unknown symbol
