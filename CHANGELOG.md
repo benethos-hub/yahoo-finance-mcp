@@ -63,6 +63,27 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   publish workflow pushed `edge` from whatever branch it was started on,
   although `edge` is documented as main's state. `latest` now follows full
   releases only, and a manual run builds from main only.
+- Six tools describe themselves as empty for ETFs, funds and crypto, then
+  answered a correct `SPY` with "No data found, use the search tool":
+  `get_earnings`, `get_estimates`, `get_upgrades_downgrades`, `get_holders`,
+  `get_insider_activity` and `get_calendar`. They now say that Yahoo keeps
+  this data for single stocks only, as `get_options` and `get_sec_filings`
+  already did for their cases.
+- `get_quote` answered an unreachable Yahoo with "symbol not found": every
+  field came back empty and that read as an unknown symbol. It now says
+  Yahoo could not be reached. Measured with a dead proxy, an unknown symbol
+  and a network failure differ in exactly that `ConnectionError`.
+- `get_quotes` threw the whole batch away when looking up one ISIN failed
+  in any way other than "not found", against its description. That symbol
+  is now listed under `not_found`, and only a rate limit stops the batch.
+- A valid sector, industry or market key with nothing from Yahoo answered
+  "No data found for symbol 'technology'. Use the search tool". It now says
+  Yahoo returned nothing for that key.
+- Integer columns came back as floats whenever the frame also held floats,
+  every history row's `Volume` as `56123400.0`. They stay integers now.
+- The result cache kept a found-nothing answer that is a non-empty dict,
+  `get_news` with `count: 0` say, for the whole TTL. A dict whose `count`
+  is 0 now counts as empty, like an empty list.
 - `get_history` and `get_shares` answered `end` before or on `start` with
   "No data found for symbol", the same wrong lead the argument checks were
   meant to remove. yfinance's `end` is exclusive, so a single day asked as

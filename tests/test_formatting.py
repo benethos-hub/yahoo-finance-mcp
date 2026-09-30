@@ -91,6 +91,18 @@ def test_dataframe_to_records_custom_index_name():
     assert records[0]["item"] == "Revenue"
 
 
+def test_an_integer_column_stays_integer_next_to_floats():
+    """iterrows() made a row one dtype, so every history Volume came as 56123400.0."""
+    df = pd.DataFrame(
+        {"Close": [189.5, 190.25], "Volume": [56123400, 48000100]},
+        index=pd.DatetimeIndex(["2024-01-02", "2024-01-03"], name="Date"),
+    )
+    rows = formatting.dataframe_to_records(df, index_name="date")
+    assert [r["Volume"] for r in rows] == [56123400, 48000100]
+    assert all(type(r["Volume"]) is int for r in rows)
+    assert rows[0]["Close"] == 189.5
+
+
 def test_dataframe_to_records_none_is_empty():
     assert formatting.dataframe_to_records(None) == []
 

@@ -220,7 +220,7 @@ def get_calendar(symbol: str) -> dict[str, Any]:
         cal = ticker.calendar
 
     if not cal:
-        raise SymbolNotFoundError(symbol)
+        raise SymbolNotFoundError(symbol, reason=tickers.EQUITY_ONLY_REASON)
 
     return {"symbol": tickers.normalize(symbol), "calendar": to_jsonable(cal)}
 

@@ -103,10 +103,17 @@ def dataframe_to_records(
         frame = df
     key = index_name or frame.index.name or "index"
 
+    # Row by row, but not through iterrows(): it makes each row a Series of one
+    # common dtype, which turned every integer column of a frame that also has
+    # floats into floats, a history's Volume 56123400 into 56123400.0.
+    # itertuples() hands each value over with its own column's type.
+    columns = [_column_key(col) for col in frame.columns]
     records: list[dict[str, Any]] = []
-    for idx, row in frame.iterrows():
+    for idx, values in zip(
+        frame.index, frame.itertuples(index=False, name=None), strict=True
+    ):
         record: dict[str, Any] = {key: to_jsonable(idx)}
-        for col, val in row.items():
-            record[_column_key(col)] = to_jsonable(val)
+        for col, val in zip(columns, values, strict=True):
+            record[col] = to_jsonable(val)
         records.append(record)
     return records

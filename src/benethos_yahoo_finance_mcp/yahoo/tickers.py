@@ -28,6 +28,14 @@ from ..formatting import to_jsonable
 # question mark or ".." has no business, and a name with a space is a case
 # for the search tool anyway.
 SYMBOL_MAX = 32
+
+# For the tools whose data Yahoo keeps for single stocks only. An ETF such as
+# SPY answers them with nothing, and the default "look the symbol up" would
+# send the caller after a ticker that was right.
+EQUITY_ONLY_REASON = (
+    "Yahoo keeps this data for single stocks only, so an ETF, fund, index, "
+    "currency or crypto is expected to have none."
+)
 _SYMBOL_SHAPE = re.compile(rf"[A-Z0-9.\-^=&]{{1,{SYMBOL_MAX}}}")
 
 
@@ -133,20 +141,31 @@ def get_ticker(symbol: str) -> yf.Ticker:
         raise wrap_upstream(exc, f"Failed to resolve {key!r}") from exc
 
 
-def fast_fields(fast: Any, fields: tuple[str, ...]) -> dict[str, Any]:
+def fast_fields(fast: Any, fields: tuple[str, ...], message: str) -> dict[str, Any]:
     """Read ``fields`` from a ``fast_info``, JSON-safe, ``None`` where missing.
 
     Some fields raise instead of returning nothing when Yahoo lacks them, and
     one missing field must not cost the rest. A rate limit is the exception,
     since every further field would hit it too.
+
+    So is Yahoo out of reach. Every field then came back ``None`` and the
+    quote read as an unknown symbol. Measured with an unreachable proxy: an
+    unknown symbol raises ``KeyError`` for some fields, an unreachable Yahoo
+    a ``ConnectionError``, which is an ``OSError``. When no field came and
+    one of them failed that way, the error says so, under ``message``.
     """
     out: dict[str, Any] = {}
+    network: OSError | None = None
     for field in fields:
         try:
             value = fast.get(field)
         except YFRateLimitError as exc:
             raise RateLimitError() from exc
+        except OSError as exc:
+            network, value = exc, None
         except Exception:  # noqa: BLE001 - some fields raise when unavailable
             value = None
         out[field] = to_jsonable(value)
+    if network is not None and all(value is None for value in out.values()):
+        raise wrap_upstream(network, message) from network
     return out

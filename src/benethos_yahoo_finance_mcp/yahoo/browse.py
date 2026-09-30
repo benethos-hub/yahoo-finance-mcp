@@ -9,7 +9,7 @@ import yfinance as yf
 from yfinance.exceptions import YFRateLimitError
 
 from .. import cache, logbook
-from ..errors import RateLimitError, SymbolNotFoundError, ToolError
+from ..errors import RateLimitError, ToolError
 from ..formatting import dataframe_to_records, to_jsonable
 from . import tickers
 
@@ -54,6 +54,18 @@ INDUSTRY_KEYS: frozenset[str] = frozenset(
 )
 
 
+def _no_data(kind: str, key: str) -> ToolError:
+    """A key that passed the check came back empty.
+
+    It used to be SymbolNotFoundError, which told the model "No data found for
+    symbol 'technology'" and sent it to the search tool with a sector key.
+    """
+    return ToolError(
+        f"Yahoo returned nothing for the {kind} {key!r}. The key passed the "
+        "check, so this is most likely on Yahoo's side: try again in a moment."
+    )
+
+
 @cache.cached("sector")
 def get_sector(key: str, *, limit: int = 25) -> dict[str, Any]:
     """Return an overview of a market sector by its Yahoo ``key``.
@@ -83,7 +95,7 @@ def get_sector(key: str, *, limit: int = 25) -> dict[str, Any]:
 
     if not name:
         # Key is valid but yfinance returned no data (transient/upstream issue).
-        raise SymbolNotFoundError(key)
+        raise _no_data("sector", key)
 
     return {
         "key": key,
@@ -133,7 +145,7 @@ def get_industry(key: str, *, limit: int = 25) -> dict[str, Any]:
 
     if not name:
         # Key is valid but yfinance returned no data (transient/upstream issue).
-        raise SymbolNotFoundError(key)
+        raise _no_data("industry", key)
 
     return {
         "key": key,
@@ -228,6 +240,6 @@ def get_market(key: str = "US") -> dict[str, Any]:
         indices.append({f: to_jsonable(entry.get(f)) for f in _MARKET_INDEX_FIELDS})
 
     if not indices and not status:
-        raise SymbolNotFoundError(key)
+        raise _no_data("market", key)
 
     return {"key": key, "status": status, "count": len(indices), "indices": indices}

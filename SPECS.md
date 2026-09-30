@@ -365,10 +365,12 @@ values).
   `--cache-ttl <NAME>=<SECONDS>` (`YF_MCP_CACHE_TTL_<NAME>`). A TTL of `0`
   bypasses caching for that tool.
 - Only successful, non-empty returns are cached. Exceptions propagate and are
-  never cached, and empty results (e.g. a search with no matches) are not
-  pinned for the TTL. A function whose "nothing found" is a non-empty value
-  passes its own test via `cached(..., worth_keeping=...)`: a `get_quotes`
-  call in which every symbol missed is not stored.
+  never cached, and empty results are not pinned for the TTL. Empty means a
+  falsy value, a search with no matches say, or a dict whose `count` is 0,
+  `get_news` without articles say (`cache.has_content`). A function whose
+  "nothing found" looks different passes its own test via
+  `cached(..., worth_keeping=...)`: a `get_quotes` call in which every symbol
+  missed is not stored.
 - The cache never fails a call, and never the start. A database another
   process holds locked, or a damaged file, is logged as a warning and the
   result is fetched and returned as if caching were off. At startup the same

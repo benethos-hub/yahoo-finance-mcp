@@ -22,7 +22,7 @@ import json
 import sqlite3
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from functools import wraps
 from pathlib import Path
 from typing import Any, TypeVar
@@ -241,15 +241,28 @@ def _make_key(category: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> s
     return hashlib.sha1(blob.encode("utf-8")).hexdigest()
 
 
+def has_content(result: Any) -> bool:
+    """The default test of whether a result is worth keeping.
+
+    Not an empty value, a search with no matches say, and not a dict that
+    counts nothing. ``get_news`` answers no articles with ``{"count": 0,
+    ...}``, which is truthy, and the plain ``bool`` this replaces pinned that
+    for the whole TTL.
+    """
+    if not result:
+        return False
+    return not (isinstance(result, Mapping) and result.get("count") == 0)
+
+
 def cached(
-    category: str, *, worth_keeping: Callable[[Any], bool] = bool
+    category: str, *, worth_keeping: Callable[[Any], bool] = has_content
 ) -> Callable[[F], F]:
     """Decorate a client function to cache its successful results under ``category``.
 
-    ``worth_keeping`` decides whether a result is stored. The default skips
-    empty ones, a search with no matches say, so a transient empty response is
-    not pinned for the whole TTL. A function whose "nothing found" is a
-    non-empty dict passes its own test.
+    ``worth_keeping`` decides whether a result is stored. The default,
+    :func:`has_content`, skips empty ones, so a transient empty response is
+    not pinned for the whole TTL. A function whose "nothing found" looks
+    different passes its own test.
 
     When caching is disabled the wrapper is a transparent pass-through. Only
     successful returns are stored; exceptions propagate and are never cached.
