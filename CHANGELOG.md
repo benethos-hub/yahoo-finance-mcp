@@ -246,12 +246,13 @@ integers again.
   over environment over default, in the new `settings` module, and no module
   reads the environment on its own any more.
 - `client.py` is now the `yahoo` package, one module per subject: quotes,
-  company, analysts, ownership, options, funds and browse, with the shared
-  ticker cache and error mapping in `yahoo.tickers`. The functions are
+  company, analysts, ownership, options, funds and browse, with the `Ticker`
+  construction and error mapping in `yahoo.tickers`. The functions are
   unchanged and importable from `benethos_yahoo_finance_mcp.yahoo`.
 - The tools moved from `server.py` into the `tools` package, which mirrors
   `yahoo` module for module. Their names, parameters, descriptions and
-  annotations are byte for byte the same. The order a client lists them in
+  annotations were byte for byte the same at the move, and what this release
+  changes in them is listed above. The order a client lists them in
   now follows the subjects: search and quotes first, then company data,
   analysts, ownership, options, funds and browsing by key. `search` stays
   first, and `get_calendar` and `get_shares` now sit with the other company

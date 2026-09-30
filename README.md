@@ -134,8 +134,8 @@ alongside stdio.
 clients. Start it with `--transport sse` and point the client at
 `http://<host>:8000/sse`. The **MCP Client Tool** node in n8n connects this way.
 
-> Both HTTP transports are open by default, with an optional bearer token as
-> the only guard. Read the note under
+> Both HTTP transports are open by default, guarded by a `Host` allow-list and
+> an optional bearer token. Read the notes under
 > [Running as a standalone server](#running-as-a-standalone-server) before
 > exposing either one.
 
@@ -568,8 +568,10 @@ All `get_*` tools expect a Yahoo Finance **symbol**. Both a ticker (`AAPL`,
 `yfinance` itself: anything shaped like one is looked up through Yahoo's search
 the moment the ticker object is created, and the ticker found stands in for it
 from then on. The server passes the symbol through unchanged apart from
-trimming and uppercasing, and echoes what it was given. An ISIN-shaped string
-that Yahoo cannot resolve answers as an unknown symbol.
+trimming and uppercasing, and echoes what it was given. A symbol has at most
+32 characters and the shape Yahoo uses, letters, digits and `. - ^ = &`, as in
+`^GSPC`, `EURUSD=X` or `BRK-B`. Anything else, and an ISIN-shaped string that
+Yahoo cannot resolve, answers as an unknown symbol.
 
 To turn a **company name** into a symbol, call `search` first — the same Yahoo
 search endpoint handles free text, tickers, and ISINs. A ticker is preferable to
@@ -589,9 +591,11 @@ cached in a small SQLite file with a per-tool time-to-live (TTL) to reduce load
 on Yahoo's endpoints and survive restarts. Fast-moving data has a short TTL,
 stable data a long one.
 
-Within a single running process yfinance already reuses identical requests, so
-the cache mainly helps **across restarts** and as **rate-limit protection** —
-that is why it is off by default.
+Every call asks Yahoo anew, and the cache is what makes a repeat cheap, across
+restarts and as **rate-limit protection**. It is off by default because the
+ordinary case is an interactive session over stdio, where a repeat is rare and
+fresh data counts for more, and because a file on disk is the operator's
+choice.
 
 Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 `YF_MCP_CACHE_TTL_<NAME>`) and their default TTLs:
@@ -647,8 +651,8 @@ Enable the cache (`--cache` / `YF_MCP_CACHE=1`) if you:
 
 Leave it off (the default) if you:
 
-- run it **locally over stdio** for interactive sessions — yfinance already
-  reuses identical requests within a single process, so the cache adds little.
+- run it **locally over stdio** for interactive sessions — a repeat of the
+  same question within minutes is rare there, and fresh data counts for more.
 - need the **freshest possible** data.
 - use it only occasionally.
 
