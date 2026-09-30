@@ -46,7 +46,7 @@ subject (quotes, company, analysts, ownership, options, funds, browse), so
 | `settings.py` | Every `YF_MCP_*` variable and flag, resolved once into a `Settings` dataclass (flag > env > default), plus the default cache TTLs. The only module that reads the environment. |
 | `server.py` | The server's identity and instructions, `build_server()`, and the `call_tool` override that logs refused arguments. |
 | `tools/` | The tools a client sees, thin: parameters, descriptions, and a call to the yahoo function of the same name. `_base.py` holds the `Symbol` parameter, the shared annotations and `register_tool`, which wraps every tool with its log line. |
-| `yahoo/` | All yfinance usage, one module per subject. `tickers.py` holds the ticker cache and the error mapping every subject shares. The only package that imports yfinance. |
+| `yahoo/` | All yfinance usage, one module per subject. `tickers.py` builds the `Ticker` and holds the error mapping every subject shares. The only package that imports yfinance. |
 | `cache.py` | Opt-in persistent result cache (SQLite) with per-tool TTLs. Off until `configure(settings)` enables it. |
 | `formatting.py` | Convert pandas/yfinance output to compact, JSON-safe values. |
 | `logbook/` | Every log line, as a function, and the one stderr handler. The only package that imports `logging` (see §4). |
@@ -181,14 +181,13 @@ submodules.
 ## 5. Data source rules
 
 - Single source: `yfinance`. No other provider, no direct HTTP scraping.
-- Two cache layers: `Ticker` objects are cached in-memory by
-  `yahoo.tickers.get_ticker` for `_TICKER_TTL` (60 s) to coalesce bursts within a process, at most `_TICKER_CACHE_MAX`
-  (256) of them: expired entries are dropped on every insert and beyond the
-  cap the least recently used goes first, since each `Ticker` keeps whatever
-  it has loaded and over HTTP a caller decides how many symbols that is.
-  The `Ticker` constructor runs outside the cache lock, because for an
-  ISIN-shaped symbol it performs a lookup request on the spot. Successful
-  tool **results** are cached persistently with per-tool TTLs (see §8a).
+- One cache layer: successful tool **results** are cached persistently with
+  per-tool TTLs (see §8a). `yahoo.tickers.get_ticker` builds a new
+  `yf.Ticker` for every call and shares none. The SDK runs the sync tools in
+  worker threads, and a `Ticker` fills its lazily loaded fields without a
+  lock, which yfinance promises nothing about. Building one sends no request
+  for a ticker. For an ISIN-shaped symbol the constructor looks it up through
+  Yahoo's search, and yfinance keeps that answer in a cache file of its own.
   requests-cache is **not** usable here — yfinance uses curl_cffi and rejects
   caching sessions — so the result cache operates on our normalized output,
   not on HTTP responses.
@@ -465,10 +464,6 @@ values).
 ## 11. Future work (not yet implemented)
 
 - Stale-on-error: serve an expired cache entry when Yahoo is rate limiting.
-- Shared `Ticker` objects under concurrent calls. The SDK runs the sync tools
-  in worker threads, so two calls for the same symbol can use one cached
-  `yf.Ticker` at the same time, and yfinance does not promise that is safe.
-  Nothing has been observed, so this is a watch item, not a plan.
 
 (Multi-symbol batch quoting is implemented as `get_quotes` — see §7 and §12.)
 

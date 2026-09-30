@@ -41,6 +41,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   symbol only as the other possibility.
 
 ### Changed
+- Every call builds its own `yf.Ticker`. They used to be shared for 60
+  seconds, and the SDK runs the tools in worker threads, so two calls on one
+  symbol could fill the same object's lazily loaded fields at once, which
+  yfinance promises nothing about. Nothing was observed, and nothing in the
+  answers or the schemas changes. Building one takes about 0.01 ms and no
+  request, and an ISIN's lookup is kept by yfinance itself. A lock per
+  symbol was the alternative and was dropped: it would have to be held for
+  the whole use of the object, so in all eighteen functions that build one
+  or through a symbol argument to `upstream()`, and it would have made calls
+  on one symbol wait for each other.
 - The log follows written rules. Every tool call leaves one line: an INFO
   with the tool, its symbol or key, how many rows came back, whether the
   result was cut, how long it took and whether the result cache answered,

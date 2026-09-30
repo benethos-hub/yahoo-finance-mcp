@@ -42,7 +42,7 @@ src/benethos_yahoo_finance_mcp/
   tools/          # the tools a client sees, one module per subject, thin
     _base.py      #   Symbol, READ_ONLY, register_tool (adds the log line)
   yahoo/          # all yfinance access, the same seven subjects as tools/
-    tickers.py    #   ticker cache, get_ticker, upstream(), normalize()
+    tickers.py    #   get_ticker, upstream(), normalize()
   cache.py        # opt-in persistent result cache (SQLite) with per-tool TTLs
   formatting.py   # pandas/yfinance -> compact JSON-safe values
   logbook/        # every log line as a function, the one stderr handler

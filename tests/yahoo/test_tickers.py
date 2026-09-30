@@ -1,4 +1,4 @@
-"""Unit tests for the ticker cache and how upstream errors are mapped.
+"""Unit tests for building a Ticker and how upstream errors are mapped.
 
 yfinance is mocked completely, nothing here reaches the network.
 """
@@ -17,11 +17,19 @@ from benethos_yahoo_finance_mcp.errors import (
 )
 from benethos_yahoo_finance_mcp.yahoo import tickers
 
-# --- get_ticker cache -----------------------------------------------------
+# --- get_ticker -----------------------------------------------------------
 
 
-def test_get_ticker_caches_and_is_case_insensitive(monkeypatch):
-    tickers._ticker_cache.clear()
+def test_every_call_gets_a_ticker_of_its_own(monkeypatch):
+    """The tools run in worker threads, and a Ticker fills its fields unlocked.
+
+    Two calls on one symbol used to share an object for 60 seconds.
+    """
+    monkeypatch.setattr(tickers.yf, "Ticker", lambda symbol: FakeTicker())
+    assert tickers.get_ticker("AAPL") is not tickers.get_ticker("AAPL")
+
+
+def test_get_ticker_is_case_insensitive(monkeypatch):
     constructed: list[str] = []
 
     def fake_ticker(symbol):
@@ -29,43 +37,14 @@ def test_get_ticker_caches_and_is_case_insensitive(monkeypatch):
         return FakeTicker()
 
     monkeypatch.setattr(tickers.yf, "Ticker", fake_ticker)
-
-    first = tickers.get_ticker("aapl")
-    second = tickers.get_ticker("AAPL")
-    assert first is second  # same cached instance
-    assert constructed == ["AAPL"]  # built once, key upper-cased
-
-
-def test_get_ticker_cache_is_bounded(monkeypatch):
-    """Distinct symbols past the cap evict the least recently used one."""
-    tickers._ticker_cache.clear()
-    monkeypatch.setattr(tickers, "_TICKER_CACHE_MAX", 3)
-    monkeypatch.setattr(tickers.yf, "Ticker", lambda symbol: FakeTicker())
-
-    for sym in ("A", "B", "C"):
-        tickers.get_ticker(sym)
-    tickers.get_ticker("A")  # A is now the most recently used
-    tickers.get_ticker("D")
-    assert list(tickers._ticker_cache) == ["C", "A", "D"]
-
-
-def test_get_ticker_cache_drops_expired_entries(monkeypatch):
-    """A stale entry goes on the next insert, not only when it is asked for."""
-    tickers._ticker_cache.clear()
-    clock = [1000.0]
-    monkeypatch.setattr(tickers.time, "monotonic", lambda: clock[0])
-    monkeypatch.setattr(tickers.yf, "Ticker", lambda symbol: FakeTicker())
-
-    tickers.get_ticker("OLD")
-    clock[0] += tickers._TICKER_TTL + 1
-    tickers.get_ticker("NEW")
-    assert list(tickers._ticker_cache) == ["NEW"]
+    tickers.get_ticker(" aapl ")
+    tickers.get_ticker("AAPL")
+    assert constructed == ["AAPL", "AAPL"]
 
 
 def test_get_ticker_unresolvable_isin_is_symbol_not_found(monkeypatch):
     """yfinance resolves ISIN-shaped input in the constructor and raises
     ValueError when Yahoo knows no such ISIN. That must not escape raw."""
-    tickers._ticker_cache.clear()
 
     def unresolvable(symbol):
         raise ValueError(f"Invalid ISIN number: {symbol}")
@@ -74,12 +53,9 @@ def test_get_ticker_unresolvable_isin_is_symbol_not_found(monkeypatch):
     with pytest.raises(SymbolNotFoundError) as info:
         tickers.get_ticker("zz0000000009")
     assert info.value.symbol == "ZZ0000000009"
-    assert "ZZ0000000009" not in tickers._ticker_cache
 
 
 def test_get_ticker_rate_limit_while_resolving(monkeypatch):
-    tickers._ticker_cache.clear()
-
     def throttled(symbol):
         raise YFRateLimitError()
 
