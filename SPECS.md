@@ -361,9 +361,11 @@ values).
   pinned for the TTL. A function whose "nothing found" is a non-empty value
   passes its own test via `cached(..., worth_keeping=...)`: a `get_quotes`
   call in which every symbol missed is not stored.
-- The cache never fails a call. A database another process holds locked, or
-  a damaged file, is logged as a warning and the result is fetched and
-  returned as if caching were off.
+- The cache never fails a call, and never the start. A database another
+  process holds locked, or a damaged file, is logged as a warning and the
+  result is fetched and returned as if caching were off. At startup the same
+  goes for the file or its directory: `configure` logs a warning and the
+  server runs without a cache.
 - Housekeeping: an expired entry is deleted when it is read, and every
   hundredth write sweeps the whole file. Startup used to be the only sweep,
   and a long-running HTTP server kept every entry nobody asked for again.

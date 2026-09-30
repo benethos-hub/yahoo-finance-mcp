@@ -23,6 +23,14 @@ def disabled() -> None:
     _log.info("Result cache disabled")
 
 
+def unusable(directory: Path, error: BaseException) -> None:
+    _log.warning(
+        "Result cache at %s unusable, running without it: %s",
+        directory,
+        _describe.fault(error),
+    )
+
+
 def file_rewritten() -> None:
     _log.info("Result cache file rewritten once so it can shrink after a sweep")
 

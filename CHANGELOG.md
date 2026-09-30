@@ -34,6 +34,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   never pushed out by yesterday's financials.
 
 ### Fixed
+- A damaged or locked cache file stopped the server at startup with
+  `DatabaseError: file is not a database`, although the cache is only an
+  optimisation and a failing cache never fails a call. The server now logs a
+  warning and runs without the cache.
 - Ctrl+C printed a traceback that read as a crash. The shutdown itself was
   clean: uvicorn finishes and then raises the interrupt again on purpose, so
   the process ends as interrupted, and nothing caught it. The server now

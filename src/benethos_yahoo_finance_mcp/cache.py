@@ -74,12 +74,17 @@ class ResultCache:
         path.parent.mkdir(parents=True, exist_ok=True)
         self._max_entries = max_entries
         self._conn = sqlite3.connect(str(path), check_same_thread=False)
-        self._make_shrinkable()
-        self._conn.execute(
-            "CREATE TABLE IF NOT EXISTS cache "
-            "(key TEXT PRIMARY KEY, expires_at REAL NOT NULL, value TEXT NOT NULL)"
-        )
-        self._conn.commit()
+        try:
+            self._make_shrinkable()
+            self._conn.execute(
+                "CREATE TABLE IF NOT EXISTS cache "
+                "(key TEXT PRIMARY KEY, expires_at REAL NOT NULL, value TEXT NOT NULL)"
+            )
+            self._conn.commit()
+        except sqlite3.Error:
+            # A damaged file fails here. Closed, so it is not held open.
+            self._conn.close()
+            raise
         self._lock = threading.Lock()
         self._writes = 0
 
@@ -205,13 +210,24 @@ def configure(settings: Settings) -> None:
             _cache.close()
             _cache = None
         _enabled = settings.cache_enabled
-        if _enabled:
-            directory: Path = settings.cache_dir or settings_mod.default_cache_dir()
-            _cache = ResultCache(directory / "cache.sqlite", settings.cache_max_entries)
-            _cache.purge_expired()
-            logbook.cache.enabled(directory)
-        else:
+        if not _enabled:
             logbook.cache.disabled()
+            return
+        directory: Path = settings.cache_dir or settings_mod.default_cache_dir()
+        # The cache is an optimisation, and a file it cannot use, damaged or
+        # held by another process, must not stop the server. It runs without.
+        store: ResultCache | None = None
+        try:
+            store = ResultCache(directory / "cache.sqlite", settings.cache_max_entries)
+            store.purge_expired()
+        except (sqlite3.Error, OSError) as exc:
+            if store is not None:
+                store.close()
+            _enabled = False
+            logbook.cache.unusable(directory, exc)
+            return
+        _cache = store
+        logbook.cache.enabled(directory)
 
 
 def _make_key(category: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> str:
