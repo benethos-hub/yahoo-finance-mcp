@@ -13,10 +13,9 @@ the JSON-RPC stream.
 from __future__ import annotations
 
 import argparse
-import logging
-import sys
 
 from . import __version__, cache, transport
+from .logbook import lifecycle, output
 from .server import build_server
 from .settings import (
     DEFAULT_TTLS,
@@ -27,8 +26,6 @@ from .settings import (
     SettingsError,
     load_settings,
 )
-
-logger = logging.getLogger("benethos_yahoo_finance_mcp")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -139,53 +136,28 @@ def main(argv: list[str] | None = None) -> None:
     """Console-script entry point: parse CLI args and run the MCP server."""
     settings = parse_settings(argv)
 
-    # Log to stderr only: stdout carries the MCP JSON-RPC protocol.
-    #
-    # This has to come before build_server. The SDK's constructor calls
-    # logging.basicConfig itself, with a RichHandler, and basicConfig only
-    # ever takes effect once. Whoever calls it first decides the format.
-    logging.basicConfig(
-        level=settings.log_level,
-        stream=sys.stderr,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
-    logging.getLogger().setLevel(settings.log_level)
-    for variable, raw in settings.ignored:
-        logger.warning("Ignoring invalid %s: %r", variable, raw)
+    # Before anything that might log, the server construction included.
+    output.configure(settings.log_level)
+    for variable, value in settings.ignored:
+        lifecycle.setting_ignored(variable, value)
 
     cache.configure(settings)
     server = build_server()
 
     if settings.transport == "stdio":
-        logger.info("Starting Yahoo Finance MCP server (stdio)")
+        lifecycle.starting_stdio()
         if settings.bearer_token is not None:
-            logger.warning(
-                "%s is set, but stdio has no port for anyone to reach. The "
-                "client owns this process, so the token is ignored.",
-                TOKEN_VAR,
-            )
+            lifecycle.token_ignored_under_stdio(TOKEN_VAR)
         transport.run_stdio(server)
         return
 
-    logger.info(
-        "Starting Yahoo Finance MCP server (%s) on http://%s:%s%s",
-        settings.transport,
-        settings.host,
-        settings.port,
-        settings.http_path,
+    lifecycle.starting_http(
+        settings.transport, settings.host, settings.port, settings.http_path
     )
     if settings.bearer_token is None:
-        logger.warning(
-            "No %s set: anything that can reach %s:%s can call every tool. "
-            "That is fine for a loopback bind on your own machine and is not "
-            "fine anywhere else.",
-            TOKEN_VAR,
-            settings.host,
-            settings.port,
-        )
+        lifecycle.port_unguarded(TOKEN_VAR, settings.host, settings.port)
     else:
-        logger.info("Bearer token required: requests without it get HTTP 401.")
-
+        lifecycle.token_required()
     transport.run_http(server, settings)
 
 

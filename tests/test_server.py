@@ -58,25 +58,50 @@ def test_every_parameter_has_a_description():
             assert spec.get("description"), f"{tool.name}.{param} missing description"
 
 
-def test_root_logging_is_ours_not_the_sdks():
-    """Our plain stderr handler wins over the RichHandler the SDK installs.
+def _fresh(code: str) -> list[str]:
+    """Run ``code`` in a fresh interpreter, whose root logger pytest has not touched."""
+    out = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True
+    )
+    return out.stdout.split()
 
-    Both call logging.basicConfig and only the first counts, so this pins the
-    ordering in cli.main. Run in a fresh interpreter because pytest has its own
-    handlers on the root logger.
-    """
+
+def test_root_logging_is_ours_not_the_sdks():
+    """One plain handler on stderr, not the RichHandler the SDK installs."""
     code = (
         "import logging, sys; "
         "from benethos_yahoo_finance_mcp import cli, transport; "
         "transport.run_stdio = lambda server: None; "
         "cli.main([]); "
         "h = logging.getLogger().handlers; "
-        "print(len(h), type(h[0]).__name__, h[0].stream is sys.stderr)"
+        "print(len(h), isinstance(h[0], logging.StreamHandler), "
+        "h[0].stream is sys.stderr)"
     )
-    out = subprocess.run(
-        [sys.executable, "-c", code], capture_output=True, text=True, check=True
+    assert _fresh(code) == ["1", "True", "True"]
+
+
+def test_building_a_server_leaves_the_root_logger_alone():
+    """The SDK's constructor calls basicConfig with a RichHandler.
+
+    Nothing may be left of it, whatever order a program builds and logs in.
+    """
+    code = (
+        "import logging; "
+        "from benethos_yahoo_finance_mcp.server import build_server; "
+        "build_server(); "
+        "root = logging.getLogger(); "
+        "print(len(root.handlers), logging.getLevelName(root.level))"
     )
-    assert out.stdout.split() == ["1", "StreamHandler", "True"]
+    assert _fresh(code) == ["0", "WARNING"]
+
+
+def test_importing_the_package_configures_no_logging():
+    code = (
+        "import logging; "
+        "import benethos_yahoo_finance_mcp.cli, benethos_yahoo_finance_mcp.server; "
+        "print(len(logging.getLogger().handlers))"
+    )
+    assert _fresh(code) == ["0"]
 
 
 def test_every_tool_is_annotated_read_only_and_open_world():

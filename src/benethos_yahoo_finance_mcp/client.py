@@ -8,7 +8,6 @@ avoid redundant network calls.
 
 from __future__ import annotations
 
-import logging
 import time
 from collections import OrderedDict
 from collections.abc import Iterator
@@ -19,11 +18,9 @@ from typing import Any
 import yfinance as yf
 from yfinance.exceptions import YFDataException, YFRateLimitError
 
-from . import cache
+from . import cache, logbook
 from .errors import RateLimitError, SymbolNotFoundError, ToolError
 from .formatting import MAX_ROWS, dataframe_to_records, to_jsonable
-
-logger = logging.getLogger(__name__)
 
 
 def _wrap_upstream(exc: Exception, message: str) -> ToolError:
@@ -920,10 +917,7 @@ try:
         str(sec): tuple(inds) for sec, inds in _SECTOR_INDUSTRY_MAP_RAW.items()
     }
 except Exception:  # noqa: BLE001 - constant is semi-internal; degrade gracefully
-    logger.warning(
-        "yfinance.const sector mapping unavailable; "
-        "falling back to a static sector list."
-    )
+    logbook.upstream.sector_keys_unavailable()
     SECTOR_INDUSTRY_MAP = {key: () for key in _FALLBACK_SECTOR_KEYS}
 
 # Public, derived from the mapping above (single source of truth for code + docs).

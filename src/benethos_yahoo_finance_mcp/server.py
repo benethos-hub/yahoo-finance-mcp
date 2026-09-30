@@ -7,13 +7,18 @@ is built and which transport it is handed to.
 
 from __future__ import annotations
 
+import time
+from collections.abc import Callable
+from functools import wraps
 from typing import Annotated, Any
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError as SDKToolError
 from mcp.types import ToolAnnotations
-from pydantic import Field
+from pydantic import Field, ValidationError
 
-from . import __version__, client
+from . import __version__, client, logbook
+from .errors import RateLimitError
 
 # Sent once during the initialize handshake, not per tool, so this is the
 # natural place for rules that hold across the whole server.
@@ -508,6 +513,56 @@ _TOOLS = (
 )
 
 
+def _logged(tool: Callable[..., Any]) -> Callable[..., Any]:
+    """The tool, writing its one log line per call.
+
+    ``wraps`` carries the name, the docstring and the signature over, so the
+    schema a client sees is the tool's own. The SDK passes arguments by name,
+    which is what the line reads its subject from.
+    """
+    name = tool.__name__
+
+    @wraps(tool)
+    def logged(**arguments: Any) -> Any:
+        started = time.perf_counter()
+        with logbook.calls.watching_cache():
+            try:
+                result = tool(**arguments)
+            except RateLimitError:
+                logbook.upstream.rate_limited(name, arguments)
+                raise
+            except Exception as exc:
+                logbook.calls.ended(name, arguments, exc, time.perf_counter() - started)
+                raise
+            logbook.calls.read(name, arguments, result, time.perf_counter() - started)
+        return result
+
+    return logged
+
+
+class _Server(MCPServer):
+    """The SDK's server, noting arguments a tool's schema refused.
+
+    Validation runs before the tool, so its own line never sees such a call.
+    """
+
+    async def call_tool(
+        self, name: str, arguments: dict[str, Any], *args: Any, **kwargs: Any
+    ) -> Any:
+        try:
+            return await super().call_tool(name, arguments, *args, **kwargs)
+        except SDKToolError as exc:
+            if isinstance(exc.__cause__, ValidationError):
+                fields = sorted(
+                    {
+                        ".".join(str(p) for p in err["loc"])
+                        for err in exc.__cause__.errors()
+                    }
+                )
+                logbook.calls.arguments_refused(name, fields)
+            raise
+
+
 def build_server() -> MCPServer:
     """A server with every tool registered, ready to be handed to a transport.
 
@@ -516,14 +571,17 @@ def build_server() -> MCPServer:
     server a client lists is traceable to the package it came from. ``title``
     is what a client shows to a person.
     """
-    server = MCPServer(
-        name="benethos-yahoo-finance-mcp",
-        title="Unofficial Yahoo Finance MCP Server",
-        version=__version__,
-        instructions=_INSTRUCTIONS,
-    )
+    # The constructor installs a RichHandler on the root logger if it has
+    # none, see logbook.output.untouched_root.
+    with logbook.output.untouched_root():
+        server = _Server(
+            name="benethos-yahoo-finance-mcp",
+            title="Unofficial Yahoo Finance MCP Server",
+            version=__version__,
+            instructions=_INSTRUCTIONS,
+        )
     for tool in _TOOLS:
-        server.add_tool(tool, annotations=_READ_ONLY)
+        server.add_tool(_logged(tool), annotations=_READ_ONLY)
     return server
 
 

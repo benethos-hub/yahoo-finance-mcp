@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import logging
 import sqlite3
 import threading
 import time
@@ -28,10 +27,9 @@ from functools import wraps
 from pathlib import Path
 from typing import Any, TypeVar
 
+from . import logbook
 from . import settings as settings_mod
 from .settings import Settings
-
-logger = logging.getLogger(__name__)
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -90,7 +88,7 @@ class ResultCache:
         has_tables = self._conn.execute("SELECT 1 FROM sqlite_master LIMIT 1")
         if has_tables.fetchone() is None:
             return
-        logger.info("Result cache file rewritten once so it can shrink after a sweep")
+        logbook.cache.file_rewritten()
         self._conn.execute("VACUUM")
 
     def _shrink(self) -> None:
@@ -136,7 +134,7 @@ class ResultCache:
         try:
             payload = json.dumps(value)
         except (TypeError, ValueError):
-            logger.debug("Skipping cache for non-serializable value under %s", key)
+            logbook.cache.not_serializable()
             return
         now = time.time()
         with self._lock:
@@ -188,9 +186,9 @@ def configure(settings: Settings) -> None:
             directory: Path = settings.cache_dir or settings_mod.default_cache_dir()
             _cache = ResultCache(directory / "cache.sqlite")
             _cache.purge_expired()
-            logger.info("Result cache enabled at %s", directory)
+            logbook.cache.enabled(directory)
         else:
-            logger.info("Result cache disabled")
+            logbook.cache.disabled()
 
 
 def _make_key(category: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> str:
@@ -233,16 +231,17 @@ def cached(
             try:
                 hit, value = store.get(key)
             except sqlite3.Error as exc:
-                logger.warning("Result cache read failed, fetching directly: %s", exc)
+                logbook.cache.read_failed(exc)
                 hit, value = False, None
             if hit:
+                logbook.calls.cache_hit()
                 return value
             result = fn(*args, **kwargs)
             if worth_keeping(result):
                 try:
                     store.set(key, result, _ttls.get(category, 0))
                 except sqlite3.Error as exc:
-                    logger.warning("Result cache write failed, not cached: %s", exc)
+                    logbook.cache.write_failed(exc)
             return result
 
         return wrapper  # type: ignore[return-value]

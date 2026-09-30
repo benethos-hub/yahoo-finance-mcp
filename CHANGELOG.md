@@ -7,6 +7,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
+- The log follows written rules. Every tool call leaves one line: an INFO
+  with the tool, its symbol or key, how many rows came back, whether the
+  result was cut, how long it took and whether the result cache answered,
+  or a WARNING naming the error's class. Before, a call left no line at all
+  unless it failed, and then only the SDK's INFO line quoting the message
+  written for the model. A Yahoo rate limit is now a WARNING of its own, and
+  so are arguments a tool's schema refused, by field name.
+  A line may carry a symbol or a key. It never carries the bearer token, a
+  search query, a URL's query string, anything from Yahoo's answer or the
+  text of an error. The SDK's `mcp` logger and `sse_starlette` are held at
+  WARNING whatever the level: the first quoted every failed call's text at
+  INFO, the second logged every tool result in full at DEBUG. yfinance,
+  curl_cffi, urllib3, peewee, httpx and httpcore are held there too.
+  uvicorn's request log goes to stderr with everything else instead of to
+  stdout, without the query string. At INFO it shows only refused requests,
+  status 400 and above, 401 and 421 included, with the address that tried.
+  At DEBUG it shows every request.
+  Logging is set up by the command line, no longer at import, and a server
+  built by a program that imports the package leaves its logging alone. The
+  SDK's Rich handler, which its constructor installs, is taken back.
 - The compose file caps the log Docker keeps of the container at 5 files
   of 10 MB, the oldest dropped first. Before, the log grew for as long as
   the container ran, and uvicorn adds a line per request to it. The README

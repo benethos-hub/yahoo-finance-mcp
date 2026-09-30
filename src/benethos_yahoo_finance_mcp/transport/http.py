@@ -29,6 +29,8 @@ from urllib.parse import urlsplit
 
 from mcp.server.transport_security import TransportSecuritySettings
 
+from ..logbook import access
+
 if TYPE_CHECKING:  # pragma: no cover - imported for typing only
     from mcp.server.mcpserver import MCPServer
     from starlette.types import ASGIApp, Receive, Scope, Send
@@ -208,18 +210,18 @@ def run_http(server: MCPServer, settings: Settings) -> None:
         ),
         token=settings.bearer_token,
     )
-    serve(app, host=settings.host, port=settings.port, log_level=settings.log_level)
+    serve(app, host=settings.host, port=settings.port)
 
 
-def serve(app: ASGIApp, *, host: str, port: int, log_level: str) -> None:
+def serve(app: ASGIApp, *, host: str, port: int) -> None:
     """Serve the app over HTTP until interrupted.
 
     The SDK's own runner builds the app and starts uvicorn in one step, which
     leaves nowhere to put the guard. This does the same two things with the
-    wrapper in between.
+    wrapper in between. uvicorn's log goes where the logbook sends it.
     """
     import uvicorn  # imported here so stdio never pays for it
 
     uvicorn.Server(
-        uvicorn.Config(app, host=host, port=port, log_level=log_level.lower())
+        uvicorn.Config(app, host=host, port=port, **access.uvicorn_options())
     ).run()
