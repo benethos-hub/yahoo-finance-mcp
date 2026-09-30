@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- The result cache keeps at most 10 000 entries, set with
+  `--cache-max-entries` or `YF_MCP_CACHE_MAX_ENTRIES`. The TTLs bounded how
+  long an entry lived, not how many there were, and over HTTP a caller
+  decides how many distinct keys arrive within one TTL. Each sweep, the one
+  at startup included, drops the oldest beyond the limit and gives the pages
+  back to the file system, and the log says how many went. Oldest means
+  written first, not closest to expiry, so a quote written a second ago is
+  never pushed out by yesterday's financials.
+
 ### Fixed
 - The server instructions said Yahoo resolves an ISIN server-side. It does
   so only in its search: asked for `US0378331005` on 2026-09-30, the search

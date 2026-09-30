@@ -121,6 +121,86 @@ def test_result_cache_write_sweep_shrinks_too(tmp_path, monkeypatch):
         rc.close()
 
 
+def _keys(rc: cache.ResultCache) -> list[str]:
+    return [row[0] for row in rc._conn.execute("SELECT key FROM cache ORDER BY key")]
+
+
+def test_a_sweep_keeps_the_newest_entries_up_to_the_limit(
+    tmp_path, monkeypatch, caplog
+):
+    """The TTLs bound how long entries live, not how many there are."""
+    monkeypatch.setattr(cache.ResultCache, "PURGE_EVERY", 50)
+    rc = cache.ResultCache(tmp_path / "c.sqlite", max_entries=10)
+    try:
+        _fill(rc, 49, ttl=3600)
+        full, _ = _pages(rc)
+        with caplog.at_level("INFO", logger="benethos_yahoo_finance_mcp.cache"):
+            rc.set("newest", 1, ttl=30)  # the 50th write sweeps
+        assert len(_keys(rc)) == 10
+        # Kept by write order, not by expiry: the 30 s entry outlives
+        # hour-long ones written before it.
+        assert rc.get("newest") == (True, 1)
+        assert set(_keys(rc)) == {f"k{i}" for i in range(40, 49)} | {"newest"}
+        after, free = _pages(rc)
+        assert free == 0
+        assert after < full / 2
+        [record] = caplog.records
+        assert record.getMessage() == (
+            "Result cache over its limit of 10 entries, dropped the 40 oldest"
+        )
+    finally:
+        rc.close()
+
+
+def test_writing_a_key_again_makes_it_the_newest(tmp_path, monkeypatch):
+    monkeypatch.setattr(cache.ResultCache, "PURGE_EVERY", 4)
+    rc = cache.ResultCache(tmp_path / "c.sqlite", max_entries=2)
+    try:
+        for key in ("a", "b", "c", "a"):  # the fourth write sweeps
+            rc.set(key, 1, ttl=60)
+        assert _keys(rc) == ["a", "c"]
+    finally:
+        rc.close()
+
+
+def test_a_lowered_limit_holds_at_startup(tmp_path, caplog):
+    path = tmp_path / "c.sqlite"
+    rc = cache.ResultCache(path)
+    _fill(rc, 30, ttl=60)
+    rc.close()
+    rc = cache.ResultCache(path, max_entries=5)
+    try:
+        with caplog.at_level("INFO", logger="benethos_yahoo_finance_mcp.cache"):
+            rc.purge_expired()
+        assert _keys(rc) == [f"k{i}" for i in (25, 26, 27, 28, 29)]
+        assert "dropped the 25 oldest" in caplog.text
+    finally:
+        rc.close()
+
+
+def test_a_sweep_under_the_limit_drops_nothing_and_says_nothing(tmp_path, caplog):
+    rc = cache.ResultCache(tmp_path / "c.sqlite", max_entries=5)
+    try:
+        _fill(rc, 5, ttl=60)
+        with caplog.at_level("INFO", logger="benethos_yahoo_finance_mcp.cache"):
+            rc.purge_expired()
+        assert len(_keys(rc)) == 5
+        assert not caplog.records
+    finally:
+        rc.close()
+
+
+def test_configure_hands_the_limit_on(tmp_path):
+    cache.configure(
+        Settings(cache_enabled=True, cache_dir=tmp_path, cache_max_entries=7)
+    )
+    try:
+        assert cache._cache is not None
+        assert cache._cache._max_entries == 7
+    finally:
+        cache.configure(Settings())
+
+
 def test_an_older_cache_file_is_rewritten_once_to_shrink(tmp_path, caplog):
     path = tmp_path / "old.sqlite"
     rc = cache.ResultCache(path)

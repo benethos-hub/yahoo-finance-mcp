@@ -18,6 +18,7 @@ from . import __version__, cache, transport
 from .logbook import lifecycle, output
 from .server import build_server
 from .settings import (
+    CACHE_MAX_ENTRIES,
     DEFAULT_TTLS,
     LOG_LEVELS,
     TOKEN_VAR,
@@ -100,6 +101,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--cache-dir",
         help="Directory for the cache file (default: the OS user cache dir, "
         "set via YF_MCP_CACHE_DIR).",
+    )
+    parser.add_argument(
+        "--cache-max-entries",
+        type=int,
+        metavar="N",
+        help="Most entries the cache keeps, the oldest go first "
+        f"(default: {CACHE_MAX_ENTRIES}, set via YF_MCP_CACHE_MAX_ENTRIES).",
     )
     parser.add_argument(
         "--cache-ttl",

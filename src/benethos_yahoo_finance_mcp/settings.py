@@ -59,6 +59,11 @@ DEFAULT_TTLS: dict[str, float] = {
     "market": 60,
 }
 
+# How many entries the result cache keeps at most. The TTLs bound how long an
+# entry lives, not how many there are, and over HTTP a caller decides how many
+# distinct keys arrive within one TTL.
+CACHE_MAX_ENTRIES = 10_000
+
 _FALSY = {"0", "false", "no", "off", ""}
 
 
@@ -84,6 +89,7 @@ class Settings:
     # cache has no reason to look.
     cache_dir: Path | None = None
     cache_ttls: Mapping[str, float] = field(default_factory=lambda: dict(DEFAULT_TTLS))
+    cache_max_entries: int = CACHE_MAX_ENTRIES
     bearer_token: str | None = None
     # ``(variable, value)`` for every environment value that was unusable and
     # replaced by its default.
@@ -145,6 +151,16 @@ def load_settings(
     if cache_enabled and cache_dir is None:
         cache_dir = default_cache_dir(env)
 
+    cache_max_entries = given("cache_max_entries")
+    if cache_max_entries is None:
+        cache_max_entries = from_env(
+            "YF_MCP_CACHE_MAX_ENTRIES", _positive_int, CACHE_MAX_ENTRIES
+        )
+    elif cache_max_entries < 1:
+        raise SettingsError(
+            f"invalid --cache-max-entries {cache_max_entries}, expected at least 1"
+        )
+
     ttls = dict(DEFAULT_TTLS)
     for name in DEFAULT_TTLS:
         ttls[name] = from_env(f"YF_MCP_CACHE_TTL_{name.upper()}", float, ttls[name])
@@ -165,6 +181,7 @@ def load_settings(
         cache_enabled=bool(cache_enabled),
         cache_dir=cache_dir,
         cache_ttls=ttls,
+        cache_max_entries=cache_max_entries,
         bearer_token=token_from(env),
         ignored=tuple(ignored),
     )
@@ -180,6 +197,13 @@ def _choice(allowed: tuple[str, ...], normalize: Any) -> Any:
         return str(value)
 
     return parse
+
+
+def _positive_int(raw: str) -> int:
+    value = int(raw)
+    if value < 1:
+        raise ValueError(raw)
+    return value
 
 
 def _truthy(raw: str) -> bool:

@@ -8,6 +8,7 @@ import pytest
 
 from benethos_yahoo_finance_mcp import settings
 from benethos_yahoo_finance_mcp.settings import (
+    CACHE_MAX_ENTRIES,
     DEFAULT_TTLS,
     TOKEN_VAR,
     Settings,
@@ -105,6 +106,30 @@ class TestTtls:
     def test_an_unusable_flag_is_an_error(self, item):
         with pytest.raises(SettingsError, match="--cache-ttl"):
             load_settings({"cache_ttl": [item]}, {})
+
+
+class TestCacheMaxEntries:
+    def test_the_default(self):
+        assert load_settings({}, {}).cache_max_entries == CACHE_MAX_ENTRIES == 10_000
+
+    def test_from_the_environment(self):
+        env = {"YF_MCP_CACHE_MAX_ENTRIES": "500"}
+        assert load_settings({}, env).cache_max_entries == 500
+
+    def test_the_flag_wins_over_the_environment(self):
+        env = {"YF_MCP_CACHE_MAX_ENTRIES": "500"}
+        assert load_settings({"cache_max_entries": 50}, env).cache_max_entries == 50
+
+    @pytest.mark.parametrize("raw", ["many", "0", "-5", "1.5"])
+    def test_an_unusable_environment_value_is_ignored_and_recorded(self, raw):
+        resolved = load_settings({}, {"YF_MCP_CACHE_MAX_ENTRIES": raw})
+        assert resolved.cache_max_entries == CACHE_MAX_ENTRIES
+        assert resolved.ignored == (("YF_MCP_CACHE_MAX_ENTRIES", raw),)
+
+    @pytest.mark.parametrize("value", [0, -1])
+    def test_a_flag_below_one_is_an_error(self, value):
+        with pytest.raises(SettingsError, match="--cache-max-entries"):
+            load_settings({"cache_max_entries": value}, {})
 
 
 def test_unusable_environment_values_fall_back_and_are_recorded():

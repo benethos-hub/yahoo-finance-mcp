@@ -82,6 +82,19 @@ def test_parses_http_options():
     assert args.port == 9000
 
 
+def test_parses_the_cache_limit():
+    assert _settings(["--cache-max-entries", "250"]).cache_max_entries == 250
+    assert _settings([]).cache_max_entries == settings.CACHE_MAX_ENTRIES
+
+
+@pytest.mark.parametrize("value", ["0", "-3", "many"])
+def test_rejects_a_cache_limit_below_one(capsys, value):
+    with pytest.raises(SystemExit) as info:
+        _settings(["--cache-max-entries", value])
+    assert info.value.code == 2
+    assert "--cache-max-entries" in capsys.readouterr().err
+
+
 def test_rejects_unknown_transport():
     with pytest.raises(SystemExit):
         _settings(["--transport", "carrier-pigeon"])

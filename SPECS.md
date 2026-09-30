@@ -128,13 +128,14 @@ submodules.
   (default 8000, 1-65535, checked once an HTTP transport binds it), `--path`
   (default `/mcp`, `/sse` for sse), `--allowed-hosts`, `--allowed-origins`,
   `--log-level`, and the cache flags `--cache`/`--no-cache`, `--cache-dir`,
-  `--cache-ttl <NAME>=<SECONDS>` (see §8a).
+  `--cache-max-entries <N>`, `--cache-ttl <NAME>=<SECONDS>` (see §8a).
   Host/port/path/allow-list apply to the HTTP transports only. For stdio they
   are ignored.
 - **Environment:** every CLI flag has an env-var equivalent (CLI > env >
   default): `YF_MCP_TRANSPORT`, `YF_MCP_HOST`, `YF_MCP_PORT`, `YF_MCP_PATH`,
   `YF_MCP_ALLOWED_HOSTS`, `YF_MCP_ALLOWED_ORIGINS`, `YF_MCP_LOG_LEVEL`, and the
-  cache vars `YF_MCP_CACHE`, `YF_MCP_CACHE_DIR`, `YF_MCP_CACHE_TTL_<NAME>`.
+  cache vars `YF_MCP_CACHE`, `YF_MCP_CACHE_DIR`, `YF_MCP_CACHE_MAX_ENTRIES`,
+  `YF_MCP_CACHE_TTL_<NAME>`.
   `YF_MCP_BEARER_TOKEN` is the one exception with no flag: an argument is
   visible in the process list to every other user on the machine. All of them
   are read once, by `settings.load_settings`. A value that cannot be used
@@ -320,8 +321,10 @@ values).
   importing the package or calling the yahoo functions in tests/library use
   does not touch disk unless caching is explicitly enabled.
 - Config precedence CLI > env > default: `--cache/--no-cache` (`YF_MCP_CACHE`),
-  `--cache-dir` (`YF_MCP_CACHE_DIR`), `--cache-ttl <NAME>=<SECONDS>`
-  (`YF_MCP_CACHE_TTL_<NAME>`). A TTL of `0` bypasses caching for that tool.
+  `--cache-dir` (`YF_MCP_CACHE_DIR`), `--cache-max-entries <N>`
+  (`YF_MCP_CACHE_MAX_ENTRIES`, default 10 000, at least 1),
+  `--cache-ttl <NAME>=<SECONDS>` (`YF_MCP_CACHE_TTL_<NAME>`). A TTL of `0`
+  bypasses caching for that tool.
 - Only successful, non-empty returns are cached. Exceptions propagate and are
   never cached, and empty results (e.g. a search with no matches) are not
   pinned for the TTL. A function whose "nothing found" is a non-empty value
@@ -338,6 +341,15 @@ values).
   file follows what it holds instead of staying at its largest size. A
   file made before that is rewritten once when it is opened, said in the
   log.
+- Size: the TTLs bound how long an entry lives, not how many there are, and
+  over HTTP a caller decides how many distinct keys arrive within one TTL.
+  After the expired entries, every sweep, the one at startup included, drops
+  the oldest beyond `cache_max_entries` and logs how many at INFO. Oldest
+  means written first, by `rowid`, since `INSERT OR REPLACE` gives a
+  rewritten key a new one. Ordering by expiry instead would let yesterday's
+  24-hour entry push out a quote written a second ago. Between sweeps the
+  count can run up to a hundred past the limit. The startup sweep makes a
+  lowered limit hold at once.
 
 ## 9. Error handling
 
