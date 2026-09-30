@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 
 import pytest
 from mcp.server.mcpserver import MCPServer
@@ -249,6 +250,29 @@ def test_transport_security_explicit_allow_list_wins_even_when_exposed():
     assert ts.allowed_hosts == ["mcp:8000"]
     # Origins are derived from the hosts when not given explicitly.
     assert ts.allowed_origins == ["http://mcp:8000", "https://mcp:8000"]
+
+
+def test_compose_keeps_the_rebinding_guard_on():
+    """The container binds 0.0.0.0, which alone turns the guard off.
+
+    A page whose domain points at 127.0.0.1 could then call every tool from a
+    browser on the host. Compose sets the allow-list, not as a comment.
+    """
+    from pathlib import Path
+
+    from mcp.server.transport_security import TransportSecurityMiddleware
+
+    compose = (Path(__file__).parent.parent / "compose.yaml").read_text("utf-8")
+    [raw] = re.findall(r'^ +YF_MCP_ALLOWED_HOSTS: "([^"]+)"$', compose, re.M)
+    ts = http_transport.transport_security_for("0.0.0.0", settings.split_csv(raw), [])
+    assert ts.enable_dns_rebinding_protection is True
+    guard = TransportSecurityMiddleware(ts)
+    for host in ("localhost:8000", "127.0.0.1:8000", "[::1]:8000"):
+        assert guard._validate_host(host), host
+    assert guard._validate_host("benethos-yahoo-finance-mcp:8000")
+    assert not guard._validate_host("attacker.example:8000")
+    assert guard._validate_origin("http://localhost:8000")
+    assert not guard._validate_origin("http://attacker.example:8000")
 
 
 def test_transport_security_explicit_origins_are_kept():

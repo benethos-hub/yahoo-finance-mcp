@@ -181,7 +181,11 @@ submodules.
   an exposed bind accepts any `Host` unless `--allowed-hosts` /
   `--allowed-origins` narrow it (mismatches get HTTP 421). Either list is
   derived from the other when only one is given. stdio has no HTTP
-  surface and is handed no transport options at all.
+  surface and is handed no transport options at all. `compose.yaml` sets
+  `YF_MCP_ALLOWED_HOSTS` to the loopback names and its service name, because
+  the image binds `0.0.0.0` and the guard would otherwise be off while the
+  port sits on the host's loopback, reachable by a rebound browser page.
+  `tests/test_cli.py` holds it to that.
 - **Deployment:** a `Dockerfile` (multi-stage, non-root, healthcheck,
   dependencies installed reproducibly from `uv.lock` via uv) and a
   `compose.yaml` host the server over streamable-HTTP on port 8000. The image

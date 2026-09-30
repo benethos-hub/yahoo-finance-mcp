@@ -42,9 +42,9 @@ services:
       - "127.0.0.1:8000:8000"
     restart: unless-stopped
     # Docker keeps what a container writes to stdout and stderr, and the
-    # server writes a line per request: uvicorn's access log on stdout, its
-    # own log on stderr. Without a cap the log grows for as long as the
-    # container runs. At most 5 files of 10 MB, the oldest dropped first.
+    # server writes a line per tool call to stderr, and every request at
+    # DEBUG. Without a cap the log grows for as long as the container runs.
+    # At most 5 files of 10 MB, the oldest dropped first.
     logging:
       driver: json-file
       options:
@@ -65,10 +65,15 @@ services:
       # YF_MCP_HOST: "0.0.0.0"
       # YF_MCP_PORT: "8000"
       # YF_MCP_PATH: /mcp
-      # An exposed bind (0.0.0.0) accepts any Host header by default. Lock the
-      # DNS-rebinding guard down to specific hosts if you want to (clients with
-      # another Host then get HTTP 421):
-      # YF_MCP_ALLOWED_HOSTS: "benethos-yahoo-finance-mcp:8000"
+      # The DNS-rebinding guard. The server binds 0.0.0.0 inside the
+      # container, and an exposed bind without an allow-list accepts any Host
+      # header. A web page whose domain an attacker points at 127.0.0.1 could
+      # then call every tool from a browser on this machine, same-origin, no
+      # CORS involved. These are the names a client really uses: the published
+      # loopback port, and the service name for another container on the same
+      # network. Add a name here when you put a proxy in front, anything else
+      # gets HTTP 421.
+      YF_MCP_ALLOWED_HOSTS: "localhost:*,127.0.0.1:*,[::1]:*,benethos-yahoo-finance-mcp:*"
       # A bearer token on every HTTP request is off by default: on a
       # loopback-published port it guards against nothing, and anything that
       # can reach the port can otherwise call every tool. Set
