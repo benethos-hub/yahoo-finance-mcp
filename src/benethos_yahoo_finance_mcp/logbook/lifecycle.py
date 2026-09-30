@@ -1,4 +1,4 @@
-"""Starting up: what is being served, how the port is guarded, what was ignored."""
+"""Start and stop: what is served, how the port is guarded, what was ignored."""
 
 from __future__ import annotations
 
@@ -56,3 +56,7 @@ def port_unguarded(variable: str, host: str, port: int) -> None:
 
 def token_required() -> None:
     _log.info("Bearer token required: requests without it get HTTP 401.")
+
+
+def interrupted() -> None:
+    _log.info("Stopped by an interrupt")

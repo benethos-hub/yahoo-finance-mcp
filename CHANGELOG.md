@@ -17,6 +17,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   never pushed out by yesterday's financials.
 
 ### Fixed
+- Ctrl+C printed a traceback that read as a crash. The shutdown itself was
+  clean: uvicorn finishes and then raises the interrupt again on purpose, so
+  the process ends as interrupted, and nothing caught it. The server now
+  logs `Stopped by an interrupt` and exits with 130, stdio included.
 - The server instructions said Yahoo resolves an ISIN server-side. It does
   so only in its search: asked for `US0378331005` on 2026-09-30, the search
   endpoint answered `AAPL`, while the quote, quoteSummary and chart

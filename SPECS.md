@@ -100,8 +100,14 @@ submodules.
     that is not a `ToolError`. WARNING for a tool call that raised, a Yahoo
     rate limit, arguments a schema refused, a cache file that failed, an
     unguarded port, a token under stdio, an unusable setting. INFO for
-    startup, the cache state and one line per tool call. DEBUG for every
-    answered HTTP request.
+    startup, the cache state, one line per tool call and a stop by Ctrl+C.
+    DEBUG for every answered HTTP request.
+  - **Ctrl+C.** uvicorn shuts down cleanly and then raises the interrupt
+    again, so the process ends as interrupted. `cli.main` catches it, logs
+    `Stopped by an interrupt` and exits with 130, stdio included. Uncaught it
+    printed a traceback after `Finished server process`. SIGTERM, which
+    `docker stop` sends, is not affected: Python turns only SIGINT into an
+    exception.
   - **One line per call**, written by the wrapper `register_tool` puts around
     every tool: `get_history SAP.DE 250 rows, truncated, 412 ms`, with
     `cached` appended when the result cache answered (the cache notes that in
