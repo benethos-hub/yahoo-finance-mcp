@@ -1,11 +1,11 @@
 """End-to-end tests for the MCP tool layer.
 
-These complement ``test_client.py`` (which tests the client functions directly)
+These complement ``tests/yahoo/`` (which tests the yahoo functions directly)
 and ``test_server.py`` (which tests tool registration). Here every tool is
-invoked through the MCPServer machinery with the client mocked, so the thin
-``@mcp.tool()`` wrappers are actually exercised. This catches wiring bugs the
-other suites miss — e.g. forwarding ``limit`` to the wrong client keyword — and
-asserts each tool's result is JSON-serializable.
+invoked through the MCPServer machinery with the yahoo functions mocked, so the
+thin tool functions are actually exercised. This catches wiring bugs the other
+suites miss — e.g. forwarding ``limit`` to the wrong keyword — and asserts each
+tool's result is JSON-serializable.
 """
 
 from __future__ import annotations
