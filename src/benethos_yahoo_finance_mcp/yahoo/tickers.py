@@ -9,6 +9,7 @@ never as a name imported from it, so a test that patches
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
@@ -18,6 +19,14 @@ from yfinance.exceptions import YFRateLimitError
 
 from ..errors import RateLimitError, SymbolNotFoundError, ToolError
 from ..formatting import to_jsonable
+
+# What a Yahoo symbol or an ISIN can look like once upper-cased: letters,
+# digits and the few marks Yahoo uses, as in ^GSPC, EURUSD=X, BRK-B and
+# M&M.NS. The symbol goes into the path of Yahoo's URLs, where a slash, a
+# question mark or ".." has no business, and a name with a space is a case
+# for the search tool anyway.
+SYMBOL_MAX = 32
+_SYMBOL_SHAPE = re.compile(rf"[A-Z0-9.\-^=&]{{1,{SYMBOL_MAX}}}")
 
 
 def wrap_upstream(exc: Exception, message: str) -> ToolError:
@@ -63,6 +72,8 @@ def get_ticker(symbol: str) -> yf.Ticker:
     key = normalize(symbol)
     if not key:
         raise ToolError("A non-empty symbol is required.")
+    if not _SYMBOL_SHAPE.fullmatch(key):
+        raise SymbolNotFoundError(key)
 
     # The constructor is the one yfinance call outside every upstream block.
     # An ISIN-shaped string Yahoo cannot resolve raises ValueError there,

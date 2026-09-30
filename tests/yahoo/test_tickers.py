@@ -42,6 +42,26 @@ def test_get_ticker_is_case_insensitive(monkeypatch):
     assert constructed == ["AAPL", "AAPL"]
 
 
+@pytest.mark.parametrize(
+    "symbol", ["^GSPC", "EURUSD=X", "BRK-B", "M&M.NS", "BTC-USD", "US0378331005"]
+)
+def test_get_ticker_takes_every_shape_yahoo_uses(monkeypatch, symbol):
+    monkeypatch.setattr(tickers.yf, "Ticker", lambda s: FakeTicker())
+    tickers.get_ticker(symbol.lower())
+
+
+@pytest.mark.parametrize(
+    "symbol", ["../quote", "AAPL/X", "AAPL?crumb=1", "APPLE INC", "A" * 33, "AA\nPL"]
+)
+def test_a_symbol_of_another_shape_never_reaches_yahoo(monkeypatch, symbol):
+    """The symbol goes into the path of Yahoo's URLs."""
+    built: list[str] = []
+    monkeypatch.setattr(tickers.yf, "Ticker", lambda s: built.append(s))
+    with pytest.raises(SymbolNotFoundError):
+        tickers.get_ticker(symbol)
+    assert built == []
+
+
 def test_get_ticker_unresolvable_isin_is_symbol_not_found(monkeypatch):
     """yfinance resolves ISIN-shaped input in the constructor and raises
     ValueError when Yahoo knows no such ISIN. That must not escape raw."""

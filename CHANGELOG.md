@@ -6,6 +6,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+- `compose.yaml` sets `YF_MCP_ALLOWED_HOSTS` to the loopback names and its
+  service name. The image binds `0.0.0.0`, and an exposed bind without an
+  allow-list turns the DNS-rebinding guard off, while Compose publishes the
+  port on the host's loopback: a web page whose domain an attacker points at
+  127.0.0.1 could call every tool from a browser on that machine. The list
+  was only a commented-out option.
+- A symbol or key from the caller reached the log unfiltered. A line break
+  in it forged a second line, an escape sequence reached the terminal, and
+  nothing bounded its length. The line keeps printable characters only and
+  cuts at 32.
+- A symbol goes into the path of Yahoo's URLs, and a slash, a question mark
+  or `..` went along unchecked. It now has at most 32 characters, which the
+  schema says, and the shape Yahoo uses (letters, digits, `. - ^ = &`).
+  Anything else is "not found" before yfinance is asked. 128 symbols from 25
+  live searches all fit.
+
 ### Added
 - The result cache keeps at most 10 000 entries, set with
   `--cache-max-entries` or `YF_MCP_CACHE_MAX_ENTRIES`. The TTLs bounded how

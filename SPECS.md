@@ -125,7 +125,10 @@ submodules.
     `cached` appended when the result cache answered (the cache notes that in
     a context variable).
   - **What a line may carry.** A symbol or a key, since both are public
-    identifiers. Never the bearer token, a search query (free text a person
+    identifiers, with printable characters only and cut at 32, because the
+    caller chose them and the line is written before Yahoo says whether they
+    exist. A line break would forge a second line, an escape sequence would
+    reach a terminal. Never the bearer token, a search query (free text a person
     typed, the line gives the number of matches), a URL's query string,
     anything from Yahoo's answer, or the text of an error this server raised,
     which is written for the model. A line names the error's class instead.
@@ -222,6 +225,13 @@ submodules.
 - All `get_*` tools pass the given `symbol` through to yfinance unchanged
   apart from trimming and uppercasing. The server itself resolves nothing
   (Variant A) and never assembles or rewrites a symbol.
+- A symbol has at most 32 characters, which the schema says (`maxLength`), and
+  must have the shape Yahoo uses: letters, digits and `. - ^ = &`, as in
+  `^GSPC`, `EURUSD=X`, `BRK-B`, `M&M.NS`. `yahoo.tickers.get_ticker` answers
+  anything else with `SymbolNotFoundError` before yfinance is asked, since the
+  symbol goes into the path of Yahoo's URLs. 128 symbols from 25 live
+  searches across markets, futures, currencies and crypto all fit, checked
+  2026-09-30.
 - In practice that accepts both a **Yahoo ticker** (`AAPL`, `SAP.DE`) and a
   **plain ISIN** (`US0378331005`). The ISIN is resolved by yfinance, not by
   this server and not by the data endpoints: `yf.Ticker` recognises anything
