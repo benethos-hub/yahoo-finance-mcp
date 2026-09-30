@@ -14,15 +14,22 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 from . import access
+from ._describe import PACKAGE
 
 FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 
-# Libraries held at WARNING whatever the level, because what they say below it
-# is noise or must not be in the log at all. The SDK's ``mcp`` logger quotes the
-# text of every failed call at INFO, and that text is written for the model.
-# ``sse_starlette`` logs every chunk it streams at DEBUG, which is every tool
-# result in full, Yahoo's data and all. A failure the SDK did not expect still
-# comes through, as an ERROR with its traceback.
+# The chosen level applies to this package (PACKAGE) and to uvicorn's request
+# log. Everything else inherits the root logger's WARNING, so a library nobody
+# listed, asyncio's DEBUG line about its event loop say, stays out of the log
+# at every level.
+
+# Libraries pinned at WARNING by name on top of that, because what they say
+# below it is noise or must not be in the log at all, and a pin holds even
+# where something else lowers the root logger. The SDK's ``mcp`` logger quotes
+# the text of every failed call at INFO, and that text is written for the
+# model. ``sse_starlette`` logs every chunk it streams at DEBUG, which is every
+# tool result in full, Yahoo's data and all. A failure the SDK did not expect
+# still comes through, as an ERROR with its traceback.
 QUIET = (
     "mcp",
     "sse_starlette",
@@ -40,11 +47,13 @@ class _Handler(logging.StreamHandler):
 
 
 def configure(level: str) -> None:
-    """Send every line at ``level`` and above to stderr, in one format.
+    """Send this server's lines at ``level`` and above to stderr, in one format.
 
-    A second call only changes the level. When the root logger already has
-    handlers of someone else's, as under a test runner, they are kept and none
-    is added, the way ``logging.basicConfig`` behaves.
+    ``level`` applies to this package and to uvicorn's request log. The root
+    logger stays at WARNING, so every other library says only what went
+    wrong. A second call only changes the level. When the root logger already
+    has handlers of someone else's, as under a test runner, they are kept and
+    none is added, the way ``logging.basicConfig`` behaves.
     """
     root = logging.getLogger()
     ours = [h for h in root.handlers if isinstance(h, _Handler)]
@@ -55,10 +64,11 @@ def configure(level: str) -> None:
         ours = [handler]
     for handler in ours:
         handler.setLevel(level)
-    root.setLevel(level)
+    root.setLevel(logging.WARNING)
+    logging.getLogger(PACKAGE).setLevel(level)
     for name in QUIET:
         logging.getLogger(name).setLevel(logging.WARNING)
-    access.configure()
+    access.configure(level)
 
 
 @contextmanager

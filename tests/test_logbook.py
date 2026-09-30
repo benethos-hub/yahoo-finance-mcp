@@ -160,11 +160,24 @@ class TestAccessLog:
 def test_chatty_libraries_are_held_at_warning():
     """The SDK quotes every failed call's text at INFO, and yfinance is loud."""
     output.configure("DEBUG")
-    try:
-        for name in output.QUIET:
-            assert logging.getLogger(name).level == logging.WARNING, name
-    finally:
-        output.configure("INFO")
+    for name in output.QUIET:
+        assert logging.getLogger(name).level == logging.WARNING, name
+
+
+def test_debug_lowers_this_server_and_the_request_log_only():
+    """A library nobody named, asyncio say, stays at the root's WARNING."""
+    output.configure("DEBUG")
+    level = {
+        name: logging.getLogger(name).getEffectiveLevel()
+        for name in ("", "asyncio", TOOLS, "uvicorn.access", "uvicorn.error")
+    }
+    assert level == {
+        "": logging.WARNING,
+        "asyncio": logging.WARNING,
+        TOOLS: logging.DEBUG,
+        "uvicorn.access": logging.DEBUG,
+        "uvicorn.error": logging.INFO,
+    }
 
 
 def test_streamed_responses_never_reach_the_log():

@@ -28,7 +28,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   text of an error. The SDK's `mcp` logger and `sse_starlette` are held at
   WARNING whatever the level: the first quoted every failed call's text at
   INFO, the second logged every tool result in full at DEBUG. yfinance,
-  curl_cffi, urllib3, peewee, httpx and httpcore are held there too.
+  curl_cffi, urllib3, peewee, httpx and httpcore are held there too. The
+  log level applies to this server's own lines and the request log only.
+  Every other library stays at WARNING, where `--log-level DEBUG` used to
+  open all of them, asyncio's line about its event loop included.
   uvicorn's request log goes to stderr with everything else instead of to
   stdout, without the query string. At INFO it shows only refused requests,
   status 400 and above, 401 and 421 included, with the address that tried.

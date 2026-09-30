@@ -89,10 +89,14 @@ in the test's table.
     typed, the line gives the number of matches), a URL's query string,
     anything from Yahoo's answer, or the text of an error this server raised,
     which is written for the model. A line names the error's class instead.
-  - **Other loggers.** `mcp`, `sse_starlette`, `yfinance`, `curl_cffi`,
-    `urllib3`, `peewee`, `httpx` and `httpcore` are held at WARNING whatever
-    the level: `mcp` quotes every failed call's text at INFO and
-    `sse_starlette` logs every tool result in full at DEBUG. uvicorn gets no
+  - **Other loggers.** The chosen level applies to this package and to
+    uvicorn's request log only. The root logger stays at WARNING, so every
+    other library, including one nobody thought of, says only what went
+    wrong. `mcp`, `sse_starlette`, `yfinance`, `curl_cffi`, `urllib3`,
+    `peewee`, `httpx` and `httpcore` are also pinned at WARNING by name:
+    `mcp` quotes every failed call's text at INFO and `sse_starlette` logs
+    every tool result in full at DEBUG. uvicorn's server log is held at INFO
+    for its startup lines. uvicorn gets no
     handlers of its own. Its request log reaches the same stderr handler
     without the query string, at INFO only for a refused request (status 400
     and up, with the address that tried) and at DEBUG for all. yfinance's own

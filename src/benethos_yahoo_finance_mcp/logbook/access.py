@@ -39,16 +39,18 @@ class AccessFilter(logging.Filter):
         return True
 
 
-def configure() -> None:
+def configure(level: str) -> None:
     """Route uvicorn's loggers through the root handler, shaped as above.
 
-    Their levels are left to the root logger, except that uvicorn's own server
-    log stops at INFO: its DEBUG lines are about connections, not about this
-    server.
+    The request log follows ``level``, which is how DEBUG shows every request
+    and INFO only the refused ones. uvicorn's own server log is held at INFO:
+    it says when the server started and where it listens, and its DEBUG lines
+    are about connections, not about this server.
     """
     access = logging.getLogger(ACCESS_LOGGER)
     if not any(isinstance(f, AccessFilter) for f in access.filters):
         access.addFilter(AccessFilter())
+    access.setLevel(level)
     logging.getLogger(SERVER_LOGGER).setLevel(logging.INFO)
 
 
