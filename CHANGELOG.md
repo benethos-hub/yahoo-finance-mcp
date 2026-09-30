@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-30
+
+The log follows written rules and has a new look, `get_history` checks its
+arguments before asking Yahoo, and the result cache gets an entry limit.
+Underneath, the code is reorganised by subject. A client sees two changed
+parameter descriptions in `get_history` and the tools listed grouped by
+subject. Every successful answer is the same as before.
+
 ### Added
 - The result cache keeps at most 10 000 entries, set with
   `--cache-max-entries` or `YF_MCP_CACHE_MAX_ENTRIES`. The TTLs bounded how
@@ -45,6 +53,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   symbol only as the other possibility.
 
 ### Changed
+- Locked dependency refresh of seven packages, none of them direct:
+  `sse-starlette` 3.4 → 3.5, `pyjwt`, `peewee`, `platformdirs`,
+  `charset-normalizer`, and `coverage` and `librt` for development only. The
+  tool schemas are byte-identical before and after, stdio, streamable-http
+  and sse answer alike, and the live smoke test returned the same data.
 - Every log line names its source short: `server`, `tools`, `yahoo`,
   `cache`, `uvicorn`, `http`, instead of the full logger name.
   `uvicorn.error` read as if something had failed while it is only
@@ -797,7 +810,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.1...v0.5.2
