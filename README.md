@@ -318,10 +318,14 @@ is logged with the address that tried. `DEBUG` adds every answered request.
 The log never contains the bearer token, a search query, a URL's query
 string, the data Yahoo returned or the text of an error message.
 
-At a terminal the lines come in colour with short sources, `uvicorn` for
-uvicorn's server log and `http` for requests. Set `NO_COLOR` to turn that off.
-Anywhere else, in a container log say, each line is plain text with the full
-logger name and the time to the millisecond with its offset.
+Every line names its source short: `server`, `tools`, `yahoo`, `cache`,
+`uvicorn` for uvicorn's server log and `http` for requests, and the time as
+ISO 8601 to the millisecond with its offset, for example
+`2026-09-30T13:19:02.840+02:00 INFO     tools: get_quote AAPL 312 ms`. The
+time is the machine's local time. A container's is UTC (`+00:00`) unless you
+set `TZ`, e.g. `TZ=Europe/Berlin`. At a terminal the lines come in colour,
+set `NO_COLOR` to turn that off. Anywhere else, in a container log say, each
+line is plain text.
 
 > **Bearer token (optional).** Set `YF_MCP_BEARER_TOKEN` and every HTTP request
 > must carry `Authorization: Bearer <token>`. Anything else gets **HTTP 401**.
