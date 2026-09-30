@@ -45,6 +45,11 @@ def test_all_expected_tools_are_registered():
     assert names == EXPECTED_TOOLS
 
 
+def test_search_is_listed_first():
+    """A name has to be resolved before anything else can use it."""
+    assert _list_tools()[0].name == "search"
+
+
 def test_every_tool_has_a_description():
     for tool in _list_tools():
         assert tool.description and tool.description.strip(), tool.name

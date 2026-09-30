@@ -1,0 +1,101 @@
+"""Finding an instrument and its price: search, quotes, history."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Annotated, Any
+
+from pydantic import Field
+
+from .. import yahoo
+from ._base import Symbol, register_tool
+
+if TYPE_CHECKING:  # pragma: no cover - imported for typing only
+    from mcp.server.mcpserver import MCPServer
+
+
+def search(
+    query: Annotated[
+        str, Field(description="Company name, ticker symbol, or ISIN to look up.")
+    ],
+    limit: Annotated[
+        int,
+        Field(description="Maximum number of matches to return.", ge=1, le=25),
+    ] = 8,
+) -> list[dict[str, Any]]:
+    """Search Yahoo Finance by company name, ticker symbol, or ISIN.
+
+    Use this first to resolve a name or ISIN into a Yahoo ``symbol`` that the
+    other tools accept. Returns up to ``limit`` matches (1-25), each with its
+    symbol, name, exchange, and instrument type.
+    """
+    return yahoo.search(query, limit=limit)
+
+
+def get_quote(symbol: Symbol) -> dict[str, Any]:
+    """Get the current price and key intraday figures for a Yahoo symbol."""
+    return yahoo.get_quote(symbol)
+
+
+def get_quotes(
+    symbols: Annotated[
+        list[str],
+        Field(
+            description="Yahoo tickers or ISINs, e.g. ['AAPL', 'MSFT', "
+            "'SAP.DE']. Not company names. Up to 50, extras are dropped."
+        ),
+    ],
+) -> dict[str, Any]:
+    """Get compact current quotes for several Yahoo symbols in one call.
+
+    Use this to compare or fetch prices for multiple tickers at once. Each symbol
+    is looked up individually and returns currency, last price, previous close,
+    open, day high/low, and market cap. Symbols that return no data are listed
+    under ``not_found`` rather than failing the whole call.
+    """
+    return yahoo.get_quotes(symbols)
+
+
+def get_history(
+    symbol: Symbol,
+    period: Annotated[
+        str,
+        Field(
+            description="Look-back window. One of: 1d, 5d, 1mo, 3mo, 6mo, 1y, "
+            "2y, 5y, 10y, ytd, max. Ignored when 'start' is given."
+        ),
+    ] = "1mo",
+    interval: Annotated[
+        str,
+        Field(
+            description="Bar size. One of: 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, "
+            "1d, 5d, 1wk, 1mo, 3mo. Intraday intervals only cover recent dates."
+        ),
+    ] = "1d",
+    start: Annotated[
+        str | None,
+        Field(description="Start date 'YYYY-MM-DD'. Overrides 'period' when set."),
+    ] = None,
+    end: Annotated[
+        str | None,
+        Field(description="End date 'YYYY-MM-DD'. Used only together with 'start'."),
+    ] = None,
+) -> dict[str, Any]:
+    """Get historical OHLCV (open/high/low/close/volume) data for a symbol.
+
+    Query a look-back ``period`` or an explicit ``start``/``end`` range. Results
+    are capped at the most recent 250 rows, with ``truncated`` set when cut.
+    """
+    return yahoo.get_history(
+        symbol, period=period, interval=interval, start=start, end=end
+    )
+
+
+def register(server: MCPServer) -> None:
+    """Add this module's tools to ``server``, in listing order."""
+    for tool in (
+        search,
+        get_quote,
+        get_quotes,
+        get_history,
+    ):
+        register_tool(server, tool)
