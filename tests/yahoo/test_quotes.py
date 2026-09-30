@@ -234,6 +234,97 @@ def test_get_history_empty_raises(patch_ticker):
         yahoo.get_history("nope")
 
 
+# --- get_history arguments ------------------------------------------------
+#
+# Yahoo answers a period or interval it does not know with no rows, which used
+# to come back as "symbol not found" and sent the model looking for a ticker
+# that was right all along.
+
+
+@pytest.mark.parametrize(
+    "kwargs,named",
+    [
+        ({"period": "banana"}, "period"),
+        ({"period": "0d"}, "period"),
+        ({"interval": "3d"}, "interval"),
+        ({"interval": "2h"}, "interval"),
+        ({"start": "01.01.2024"}, "start"),
+        ({"start": "2024-1-1"}, "start"),
+        ({"start": "2024-02-30"}, "start"),
+        ({"start": "2024-01-01", "end": "tomorrow"}, "end"),
+    ],
+)
+def test_get_history_rejects_an_argument_before_asking_yahoo(
+    patch_ticker, kwargs, named
+):
+    ticker = patch_ticker(FakeTicker(history=pd.DataFrame()))
+    with pytest.raises(ToolError) as info:
+        yahoo.get_history("aapl", **kwargs)
+    assert not isinstance(info.value, SymbolNotFoundError)
+    assert str(info.value).startswith(f"Invalid {named} ")
+    assert not hasattr(ticker, "history_kwargs")  # Yahoo was never asked
+
+
+def test_a_rejected_interval_lists_every_valid_one(patch_ticker):
+    patch_ticker(FakeTicker())
+    with pytest.raises(ToolError) as info:
+        yahoo.get_history("aapl", interval="3d")
+    assert ", ".join(yahoo.INTERVALS) in str(info.value)
+
+
+def test_a_rejected_period_lists_the_named_ones_and_the_shape(patch_ticker):
+    patch_ticker(FakeTicker())
+    with pytest.raises(ToolError) as info:
+        yahoo.get_history("aapl", period="banana")
+    assert ", ".join(yahoo.PERIODS) in str(info.value)
+    assert "7mo" in str(info.value)
+
+
+@pytest.mark.parametrize("period", ["7mo", "3y", "2wk", "100y", "YTD", " 1MO "])
+def test_get_history_passes_any_counted_period(patch_ticker, period):
+    """Yahoo serves any count of d, wk, mo or y, not only the listed ones."""
+    df = pd.DataFrame({"Close": [1.0]}, index=pd.DatetimeIndex(["2024-01-01"]))
+    ticker = patch_ticker(FakeTicker(history=df))
+    out = yahoo.get_history("aapl", period=period)
+    assert ticker.history_kwargs["period"] == period.strip().lower()
+    assert out["period"] == period.strip().lower()
+
+
+def test_get_history_passes_4h_and_writes_the_interval_as_yahoo_does(patch_ticker):
+    df = pd.DataFrame({"Close": [1.0]}, index=pd.DatetimeIndex(["2024-01-01"]))
+    ticker = patch_ticker(FakeTicker(history=df))
+    yahoo.get_history("aapl", interval="4H")
+    assert ticker.history_kwargs["interval"] == "4h"
+
+
+def test_no_intraday_bars_is_not_called_an_unknown_symbol(patch_ticker):
+    """1m over a year is valid on its own and still empty: Yahoo keeps 8 days."""
+    patch_ticker(FakeTicker(history=pd.DataFrame()))
+    with pytest.raises(ToolError) as info:
+        yahoo.get_history("aapl", period="1y", interval="1m")
+    assert not isinstance(info.value, SymbolNotFoundError)
+    message = str(info.value)
+    assert message.startswith("No 1m bars for 'AAPL' in that range.")
+    assert "last 8 days" in message
+    assert "'search' tool" in message  # the symbol may still be the reason
+
+
+def test_every_intraday_interval_knows_how_far_back_it_reaches():
+    from benethos_yahoo_finance_mcp.yahoo import quotes
+
+    daily_and_up = set(yahoo.INTERVALS) - set(quotes._INTRADAY_DAYS)
+    assert daily_and_up == {"1d", "5d", "1wk", "1mo", "3mo"}
+
+
+def test_get_history_checks_only_what_it_uses(patch_ticker):
+    """``period`` is ignored next to ``start`` and ``end`` without it, so
+    neither is checked there."""
+    df = pd.DataFrame({"Close": [1.0]}, index=pd.DatetimeIndex(["2024-01-01"]))
+    patch_ticker(FakeTicker(history=df))
+    assert yahoo.get_history("aapl", period="banana", start="2024-01-01")["count"]
+    assert yahoo.get_history("aapl", end="tomorrow")["count"]
+
+
 # --- search limit clamping ------------------------------------------------
 
 

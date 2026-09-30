@@ -1,4 +1,4 @@
-"""The result cache: whether it is on, and when its file lets it down.
+"""The result cache: whether it is on, what a sweep drops, when its file lets it down.
 
 The cache is an optimisation, so none of its failures fails a call. They are
 WARNINGs because the operator is the only one who can do anything about a
@@ -25,6 +25,14 @@ def disabled() -> None:
 
 def file_rewritten() -> None:
     _log.info("Result cache file rewritten once so it can shrink after a sweep")
+
+
+def capped(dropped: int, limit: int) -> None:
+    _log.info(
+        "Result cache over its limit of %d entries, dropped the %d oldest",
+        limit,
+        dropped,
+    )
 
 
 def not_serializable() -> None:

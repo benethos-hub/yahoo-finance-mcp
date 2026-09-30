@@ -39,6 +39,8 @@ VOCABULARY = {
     "port",
     "path",
     "directory",  # the cache directory
+    "dropped",  # how many cache entries a sweep removed
+    "limit",  # the configured most entries the cache keeps
 }
 
 

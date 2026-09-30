@@ -305,6 +305,7 @@ containers), with one deliberate exception noted below. Precedence is
 | `--log-level` | `YF_MCP_LOG_LEVEL` | `INFO` | `DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`. |
 | `--cache` / `--no-cache` | `YF_MCP_CACHE` | off | Enable/disable the persistent result cache. |
 | `--cache-dir` | `YF_MCP_CACHE_DIR` | OS cache dir | Directory for the cache file. |
+| `--cache-max-entries <N>` | `YF_MCP_CACHE_MAX_ENTRIES` | `10000` | Most entries the cache keeps, the oldest go first. |
 | `--cache-ttl <NAME>=<SECONDS>` | `YF_MCP_CACHE_TTL_<NAME>` | per-tool defaults | Override one tool's TTL. |
 
 Logging always goes to stderr, so under stdio stdout stays reserved for the
@@ -610,6 +611,8 @@ Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 - Location: the OS user cache directory, or `--cache-dir` / `YF_MCP_CACHE_DIR`.
   The file grows with what it holds and shrinks again after expired entries
   are swept. A file made by an earlier version is rewritten once at start.
+- Size: at most 10 000 entries, the most recently written kept, set with
+  `--cache-max-entries` / `YF_MCP_CACHE_MAX_ENTRIES`.
 - Override a TTL: `--cache-ttl quote=15` (repeatable) or the
   `YF_MCP_CACHE_TTL_<NAME>` env var (e.g. `YF_MCP_CACHE_TTL_QUOTE=15`).
   Set a TTL to `0` to bypass caching for that tool.

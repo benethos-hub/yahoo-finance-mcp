@@ -46,7 +46,7 @@ subject (quotes, company, analysts, ownership, options, funds, browse), so
 | `settings.py` | Every `YF_MCP_*` variable and flag, resolved once into a `Settings` dataclass (flag > env > default), plus the default cache TTLs. The only module that reads the environment. |
 | `server.py` | The server's identity and instructions, `build_server()`, and the `call_tool` override that logs refused arguments. |
 | `tools/` | The tools a client sees, thin: parameters, descriptions, and a call to the yahoo function of the same name. `_base.py` holds the `Symbol` parameter, the shared annotations and `register_tool`, which wraps every tool with its log line. |
-| `yahoo/` | All yfinance usage, one module per subject. `tickers.py` holds the ticker cache and the error mapping every subject shares. The only package that imports yfinance. |
+| `yahoo/` | All yfinance usage, one module per subject. `tickers.py` builds the `Ticker` and holds the error mapping every subject shares. The only package that imports yfinance. |
 | `cache.py` | Opt-in persistent result cache (SQLite) with per-tool TTLs. Off until `configure(settings)` enables it. |
 | `formatting.py` | Convert pandas/yfinance output to compact, JSON-safe values. |
 | `logbook/` | Every log line, as a function, and the one stderr handler. The only package that imports `logging` (see §4). |
@@ -128,13 +128,14 @@ submodules.
   (default 8000, 1-65535, checked once an HTTP transport binds it), `--path`
   (default `/mcp`, `/sse` for sse), `--allowed-hosts`, `--allowed-origins`,
   `--log-level`, and the cache flags `--cache`/`--no-cache`, `--cache-dir`,
-  `--cache-ttl <NAME>=<SECONDS>` (see §8a).
+  `--cache-max-entries <N>`, `--cache-ttl <NAME>=<SECONDS>` (see §8a).
   Host/port/path/allow-list apply to the HTTP transports only. For stdio they
   are ignored.
 - **Environment:** every CLI flag has an env-var equivalent (CLI > env >
   default): `YF_MCP_TRANSPORT`, `YF_MCP_HOST`, `YF_MCP_PORT`, `YF_MCP_PATH`,
   `YF_MCP_ALLOWED_HOSTS`, `YF_MCP_ALLOWED_ORIGINS`, `YF_MCP_LOG_LEVEL`, and the
-  cache vars `YF_MCP_CACHE`, `YF_MCP_CACHE_DIR`, `YF_MCP_CACHE_TTL_<NAME>`.
+  cache vars `YF_MCP_CACHE`, `YF_MCP_CACHE_DIR`, `YF_MCP_CACHE_MAX_ENTRIES`,
+  `YF_MCP_CACHE_TTL_<NAME>`.
   `YF_MCP_BEARER_TOKEN` is the one exception with no flag: an argument is
   visible in the process list to every other user on the machine. All of them
   are read once, by `settings.load_settings`. A value that cannot be used
@@ -180,14 +181,13 @@ submodules.
 ## 5. Data source rules
 
 - Single source: `yfinance`. No other provider, no direct HTTP scraping.
-- Two cache layers: `Ticker` objects are cached in-memory by
-  `yahoo.tickers.get_ticker` for `_TICKER_TTL` (60 s) to coalesce bursts within a process, at most `_TICKER_CACHE_MAX`
-  (256) of them: expired entries are dropped on every insert and beyond the
-  cap the least recently used goes first, since each `Ticker` keeps whatever
-  it has loaded and over HTTP a caller decides how many symbols that is.
-  The `Ticker` constructor runs outside the cache lock, because for an
-  ISIN-shaped symbol it performs a lookup request on the spot. Successful
-  tool **results** are cached persistently with per-tool TTLs (see §8a).
+- One cache layer: successful tool **results** are cached persistently with
+  per-tool TTLs (see §8a). `yahoo.tickers.get_ticker` builds a new
+  `yf.Ticker` for every call and shares none. The SDK runs the sync tools in
+  worker threads, and a `Ticker` fills its lazily loaded fields without a
+  lock, which yfinance promises nothing about. Building one sends no request
+  for a ticker. For an ISIN-shaped symbol the constructor looks it up through
+  Yahoo's search, and yfinance keeps that answer in a cache file of its own.
   requests-cache is **not** usable here — yfinance uses curl_cffi and rejects
   caching sessions — so the result cache operates on our normalized output,
   not on HTTP responses.
@@ -320,8 +320,10 @@ values).
   importing the package or calling the yahoo functions in tests/library use
   does not touch disk unless caching is explicitly enabled.
 - Config precedence CLI > env > default: `--cache/--no-cache` (`YF_MCP_CACHE`),
-  `--cache-dir` (`YF_MCP_CACHE_DIR`), `--cache-ttl <NAME>=<SECONDS>`
-  (`YF_MCP_CACHE_TTL_<NAME>`). A TTL of `0` bypasses caching for that tool.
+  `--cache-dir` (`YF_MCP_CACHE_DIR`), `--cache-max-entries <N>`
+  (`YF_MCP_CACHE_MAX_ENTRIES`, default 10 000, at least 1),
+  `--cache-ttl <NAME>=<SECONDS>` (`YF_MCP_CACHE_TTL_<NAME>`). A TTL of `0`
+  bypasses caching for that tool.
 - Only successful, non-empty returns are cached. Exceptions propagate and are
   never cached, and empty results (e.g. a search with no matches) are not
   pinned for the TTL. A function whose "nothing found" is a non-empty value
@@ -338,6 +340,15 @@ values).
   file follows what it holds instead of staying at its largest size. A
   file made before that is rewritten once when it is opened, said in the
   log.
+- Size: the TTLs bound how long an entry lives, not how many there are, and
+  over HTTP a caller decides how many distinct keys arrive within one TTL.
+  After the expired entries, every sweep, the one at startup included, drops
+  the oldest beyond `cache_max_entries` and logs how many at INFO. Oldest
+  means written first, by `rowid`, since `INSERT OR REPLACE` gives a
+  rewritten key a new one. Ordering by expiry instead would let yesterday's
+  24-hour entry push out a quote written a second ago. Between sweeps the
+  count can run up to a hundred past the limit. The startup sweep makes a
+  lowered limit hold at once.
 
 ## 9. Error handling
 
@@ -353,6 +364,17 @@ values).
   covered as well: an ISIN-shaped string Yahoo cannot resolve raises there
   and becomes a `SymbolNotFoundError`, and in `get_quotes` such a symbol is
   listed under `not_found` instead of failing the batch.
+- An argument Yahoo would answer with no rows is checked before the call,
+  because no rows reads as an unknown symbol. That covers `statement` and
+  `freq` of `get_financials`, the sector, industry and market keys, and the
+  arguments of `get_history`: `interval` from a fixed set, `period` listed or
+  shaped as a count of d, wk, mo or y (Yahoo serves `7mo` and `3y` too), and
+  `start`/`end` as real dates written `YYYY-MM-DD`. Each is checked only when
+  it is used, so `period` is not checked next to `start`.
+  Valid arguments can still come back empty: Yahoo keeps 1m bars for 8 days,
+  2m to 90m for 60 and the hourly bars for 730. No intraday rows is therefore
+  a `ToolError` naming that reach and the symbol as the other possibility,
+  not a `SymbolNotFoundError`.
 - `ToolError` derives from the SDK's own `ToolError`, and that is what carries
   the text. Since `mcp` 2.1.0 anything else raised from a tool is treated as
   unexpected: logged with a traceback, and reported to the client as
@@ -441,14 +463,7 @@ values).
 
 ## 11. Future work (not yet implemented)
 
-- Input validation of `period`/`interval` against known value sets. The
-  `statement` and `freq` arguments of `get_financials` are already validated,
-  as are the sector and industry keys.
 - Stale-on-error: serve an expired cache entry when Yahoo is rate limiting.
-- Shared `Ticker` objects under concurrent calls. The SDK runs the sync tools
-  in worker threads, so two calls for the same symbol can use one cached
-  `yf.Ticker` at the same time, and yfinance does not promise that is safe.
-  Nothing has been observed, so this is a watch item, not a plan.
 
 (Multi-symbol batch quoting is implemented as `get_quotes` — see §7 and §12.)
 

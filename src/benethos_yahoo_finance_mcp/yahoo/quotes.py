@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+from datetime import date
 from typing import Any
 
 import yfinance as yf
@@ -154,6 +156,64 @@ def get_quotes(symbols: list[str], *, limit: int = _MAX_QUOTES) -> dict[str, Any
     }
 
 
+# The look-back windows get_history names to its caller. Yahoo takes any count
+# of days, weeks, months or years as well: 7mo, 3y and 2wk answered with data
+# on 2026-09-30, so a period passes when it is listed or has that shape.
+# yfinance exports no constant for either set.
+PERIODS = ("1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max")
+_PERIOD_SHAPE = re.compile(r"[1-9][0-9]*(d|wk|mo|y)")
+
+# The bar sizes Yahoo serves, a fixed set unlike the periods: 3h, 2d, 2wk and
+# 10m came back empty on 2026-09-30, while 4h, missing from yfinance's own
+# docstring, answered with data. 1h and 60m are the same bars.
+INTERVALS = (
+    "1m",
+    "2m",
+    "5m",
+    "15m",
+    "30m",
+    "60m",
+    "90m",
+    "1h",
+    "4h",
+    "1d",
+    "5d",
+    "1wk",
+    "1mo",
+    "3mo",
+)
+
+# How many days back Yahoo keeps intraday bars, measured on 2026-09-30: 1m
+# answered for 8 days and nothing for 9, 2m to 90m for 60 days and nothing for
+# 61, the hourly bars for 730 days and nothing for 3 years. A range beyond
+# that comes back empty, which is no sign of an unknown symbol.
+_INTRADAY_DAYS = {
+    "1m": 8,
+    "2m": 60,
+    "5m": 60,
+    "15m": 60,
+    "30m": 60,
+    "90m": 60,
+    "60m": 730,
+    "1h": 730,
+    "4h": 730,
+}
+
+_DATE_SHAPE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
+
+
+def _checked_date(name: str, value: str) -> str:
+    """``value`` if it is a real date written YYYY-MM-DD, else a ``ToolError``."""
+    value = value.strip()
+    try:
+        if _DATE_SHAPE.fullmatch(value):
+            date.fromisoformat(value)
+            return value
+    except ValueError:
+        pass
+    raise ToolError(f"Invalid {name} {value!r}, expected a date as YYYY-MM-DD.")
+
+
 @cache.cached("history")
 def get_history(
     symbol: str,
@@ -166,10 +226,27 @@ def get_history(
 ) -> dict[str, Any]:
     """Return historical OHLCV data for ``symbol``.
 
-    ``period`` is ignored when ``start`` is given. See Yahoo's accepted values
-    for ``period`` (e.g. ``1d``, ``5d``, ``1mo``, ``1y``, ``max``) and
-    ``interval`` (e.g. ``1m``, ``1h``, ``1d``, ``1wk``, ``1mo``).
+    ``period`` is ignored when ``start`` is given, and ``end`` is used only
+    together with ``start``. Each argument is checked only when it is used.
+    Yahoo answers a value it does not know with no rows at all, which would
+    read as an unknown symbol, so the check comes first.
     """
+    interval = (interval or "").strip().lower()
+    if interval not in INTERVALS:
+        raise ToolError(
+            f"Invalid interval {interval!r}, expected one of {', '.join(INTERVALS)}."
+        )
+    if start:
+        start = _checked_date("start", start)
+        end = _checked_date("end", end) if end else None
+    else:
+        period = (period or "").strip().lower()
+        if period not in PERIODS and not _PERIOD_SHAPE.fullmatch(period):
+            raise ToolError(
+                f"Invalid period {period!r}, expected one of {', '.join(PERIODS)}, "
+                "or a count of d, wk, mo or y such as 7mo."
+            )
+
     ticker = tickers.get_ticker(symbol)
     kwargs: dict[str, Any] = {"interval": interval, "auto_adjust": True}
     if start:
@@ -183,6 +260,14 @@ def get_history(
         df = ticker.history(**kwargs)
 
     if df is None or df.empty:
+        if interval in _INTRADAY_DAYS:
+            raise ToolError(
+                f"No {interval} bars for {tickers.normalize(symbol)!r} in that "
+                f"range. Yahoo keeps {interval} bars for the last "
+                f"{_INTRADAY_DAYS[interval]} days only, so ask for a range inside "
+                "them or a larger interval. If the range is recent, the symbol "
+                "may be unknown: use the 'search' tool to look it up."
+            )
         raise SymbolNotFoundError(symbol)
 
     rows = dataframe_to_records(df, max_rows=limit, index_name="date")

@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- The result cache keeps at most 10 000 entries, set with
+  `--cache-max-entries` or `YF_MCP_CACHE_MAX_ENTRIES`. The TTLs bounded how
+  long an entry lived, not how many there were, and over HTTP a caller
+  decides how many distinct keys arrive within one TTL. Each sweep, the one
+  at startup included, drops the oldest beyond the limit and gives the pages
+  back to the file system, and the log says how many went. Oldest means
+  written first, not closest to expiry, so a quote written a second ago is
+  never pushed out by yesterday's financials.
+
 ### Fixed
 - The server instructions said Yahoo resolves an ISIN server-side. It does
   so only in its search: asked for `US0378331005` on 2026-09-30, the search
@@ -14,8 +24,33 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   up through that search and uses the ticker it finds. The instructions now
   say so, and so do the code comments, SPECS and the bug report template.
   The tool schemas are unchanged.
+- `get_history` answered an unknown `period` or `interval` with "No data found
+  for symbol", because Yahoo answers such a value with no rows, and the model
+  went looking for a ticker that was right all along. Both are now checked
+  before Yahoo is asked, and so are `start` and `end`, which must be real
+  dates written `YYYY-MM-DD`. The error lists what is accepted. `interval`
+  comes from a fixed set, which gained `4h`: Yahoo serves it, while `3h`,
+  `2d` and `2wk` come back empty. `period` takes the listed values or any
+  count of days, weeks, months or years, since `7mo`, `3y` and `2wk` answer
+  with data and a strict list would have refused them. Both parameter
+  descriptions are now built from the same constants as the check.
+- Valid arguments can still find nothing: Yahoo keeps 1m bars for 8 days,
+  2m to 90m for 60 and hourly bars for 730, measured on 2026-09-30, so `1m`
+  over `1y` came back empty and was reported as an unknown symbol as well.
+  No intraday rows now says how far back that interval reaches, and names the
+  symbol only as the other possibility.
 
 ### Changed
+- Every call builds its own `yf.Ticker`. They used to be shared for 60
+  seconds, and the SDK runs the tools in worker threads, so two calls on one
+  symbol could fill the same object's lazily loaded fields at once, which
+  yfinance promises nothing about. Nothing was observed, and nothing in the
+  answers or the schemas changes. Building one takes about 0.01 ms and no
+  request, and an ISIN's lookup is kept by yfinance itself. A lock per
+  symbol was the alternative and was dropped: it would have to be held for
+  the whole use of the object, so in all eighteen functions that build one
+  or through a symbol argument to `upstream()`, and it would have made calls
+  on one symbol wait for each other.
 - The log follows written rules. Every tool call leaves one line: an INFO
   with the tool, its symbol or key, how many rows came back, whether the
   result was cut, how long it took and whether the result cache answered,

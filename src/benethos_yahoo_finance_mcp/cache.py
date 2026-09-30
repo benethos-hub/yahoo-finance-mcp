@@ -54,6 +54,13 @@ class ResultCache:
     writes the whole file is swept. Startup used to be the only sweep, and a
     long-running HTTP server kept every entry nobody asked for again.
 
+    A sweep also keeps at most ``max_entries``, the most recently written
+    ones. The TTLs bound how long an entry lives, not how many there are, and
+    over HTTP a caller decides how many distinct keys arrive within one TTL.
+    Between sweeps the count can run up to ``PURGE_EVERY`` past the limit.
+    Write order is the ``rowid``: ``INSERT OR REPLACE`` deletes the old row
+    and inserts a new one, which takes a ``rowid`` above every other.
+
     The pages a sweep frees go back to the file system, so the file follows
     what it holds. SQLite reuses freed pages but never hands them back on
     its own, and the file used to stay at its largest size for good.
@@ -61,8 +68,11 @@ class ResultCache:
 
     PURGE_EVERY = 100
 
-    def __init__(self, path: Path) -> None:
+    def __init__(
+        self, path: Path, max_entries: int = settings_mod.CACHE_MAX_ENTRIES
+    ) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
+        self._max_entries = max_entries
         self._conn = sqlite3.connect(str(path), check_same_thread=False)
         self._make_shrinkable()
         self._conn.execute(
@@ -143,20 +153,33 @@ class ResultCache:
                 "VALUES (?, ?, ?)",
                 (key, now + ttl, payload),
             )
-            self._writes += 1
-            sweep = self._writes % self.PURGE_EVERY == 0
-            if sweep:
-                self._conn.execute("DELETE FROM cache WHERE expires_at < ?", (now,))
             self._conn.commit()
-            if sweep:
-                self._shrink()
+            self._writes += 1
+            if self._writes % self.PURGE_EVERY == 0:
+                self._sweep(now)
 
     def purge_expired(self) -> None:
-        """Delete all expired entries (housekeeping)."""
+        """Sweep at startup, so a limit lowered since the last run holds at once."""
         with self._lock:
-            self._conn.execute("DELETE FROM cache WHERE expires_at < ?", (time.time(),))
-            self._conn.commit()
-            self._shrink()
+            self._sweep(time.time())
+
+    def _sweep(self, now: float) -> None:
+        """Delete what expired, then the oldest beyond the limit, and shrink.
+
+        Called with the lock held. The newest ``max_entries`` stay: every row
+        whose ``rowid`` is at or below the first one past them goes. With
+        fewer rows the subquery finds nothing and nothing is dropped.
+        """
+        self._conn.execute("DELETE FROM cache WHERE expires_at < ?", (now,))
+        dropped = self._conn.execute(
+            "DELETE FROM cache WHERE rowid <= "
+            "(SELECT rowid FROM cache ORDER BY rowid DESC LIMIT 1 OFFSET ?)",
+            (self._max_entries,),
+        ).rowcount
+        self._conn.commit()
+        self._shrink()
+        if dropped > 0:
+            logbook.cache.capped(dropped, self._max_entries)
 
     def clear(self) -> None:
         with self._lock:
@@ -184,7 +207,7 @@ def configure(settings: Settings) -> None:
         _enabled = settings.cache_enabled
         if _enabled:
             directory: Path = settings.cache_dir or settings_mod.default_cache_dir()
-            _cache = ResultCache(directory / "cache.sqlite")
+            _cache = ResultCache(directory / "cache.sqlite", settings.cache_max_entries)
             _cache.purge_expired()
             logbook.cache.enabled(directory)
         else:
