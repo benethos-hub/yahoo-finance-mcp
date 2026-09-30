@@ -34,11 +34,13 @@ from .company import (
 from .funds import get_fund_data
 from .options import get_options
 from .ownership import get_holders, get_insider_activity, get_sec_filings
-from .quotes import get_history, get_quote, get_quotes, search
+from .quotes import INTERVALS, PERIODS, get_history, get_quote, get_quotes, search
 
 __all__ = [
     "INDUSTRY_KEYS",
+    "INTERVALS",
     "MARKET_KEYS",
+    "PERIODS",
     "SECTOR_KEYS",
     "get_calendar",
     "get_company_info",

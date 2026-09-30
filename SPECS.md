@@ -353,6 +353,13 @@ values).
   covered as well: an ISIN-shaped string Yahoo cannot resolve raises there
   and becomes a `SymbolNotFoundError`, and in `get_quotes` such a symbol is
   listed under `not_found` instead of failing the batch.
+- An argument Yahoo would answer with no rows is checked before the call,
+  because no rows reads as an unknown symbol. That covers `statement` and
+  `freq` of `get_financials`, the sector, industry and market keys, and the
+  arguments of `get_history`: `interval` from a fixed set, `period` listed or
+  shaped as a count of d, wk, mo or y (Yahoo serves `7mo` and `3y` too), and
+  `start`/`end` as real dates written `YYYY-MM-DD`. Each is checked only when
+  it is used, so `period` is not checked next to `start`.
 - `ToolError` derives from the SDK's own `ToolError`, and that is what carries
   the text. Since `mcp` 2.1.0 anything else raised from a tool is treated as
   unexpected: logged with a traceback, and reported to the client as
@@ -441,9 +448,6 @@ values).
 
 ## 11. Future work (not yet implemented)
 
-- Input validation of `period`/`interval` against known value sets. The
-  `statement` and `freq` arguments of `get_financials` are already validated,
-  as are the sector and industry keys.
 - Stale-on-error: serve an expired cache entry when Yahoo is rate limiting.
 - Shared `Ticker` objects under concurrent calls. The SDK runs the sync tools
   in worker threads, so two calls for the same symbol can use one cached

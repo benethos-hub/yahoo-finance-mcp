@@ -14,6 +14,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   up through that search and uses the ticker it finds. The instructions now
   say so, and so do the code comments, SPECS and the bug report template.
   The tool schemas are unchanged.
+- `get_history` answered an unknown `period` or `interval` with "No data found
+  for symbol", because Yahoo answers such a value with no rows, and the model
+  went looking for a ticker that was right all along. Both are now checked
+  before Yahoo is asked, and so are `start` and `end`, which must be real
+  dates written `YYYY-MM-DD`. The error lists what is accepted. `interval`
+  comes from a fixed set, which gained `4h`: Yahoo serves it, while `3h`,
+  `2d` and `2wk` come back empty. `period` takes the listed values or any
+  count of days, weeks, months or years, since `7mo`, `3y` and `2wk` answer
+  with data and a strict list would have refused them. Both parameter
+  descriptions are now built from the same constants as the check.
 
 ### Changed
 - The log follows written rules. Every tool call leaves one line: an INFO

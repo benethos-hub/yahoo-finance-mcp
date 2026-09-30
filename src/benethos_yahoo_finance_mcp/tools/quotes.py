@@ -12,6 +12,17 @@ from ._base import Symbol, register_tool
 if TYPE_CHECKING:  # pragma: no cover - imported for typing only
     from mcp.server.mcpserver import MCPServer
 
+_PERIOD_DESC = (
+    "Look-back window: "
+    + ", ".join(yahoo.PERIODS)
+    + ", or any count of d, wk, mo or y such as 7mo. Ignored when 'start' is given."
+)
+_INTERVAL_DESC = (
+    "Bar size. One of: "
+    + ", ".join(yahoo.INTERVALS)
+    + ". Intraday intervals only cover recent dates."
+)
+
 
 def search(
     query: Annotated[
@@ -57,20 +68,8 @@ def get_quotes(
 
 def get_history(
     symbol: Symbol,
-    period: Annotated[
-        str,
-        Field(
-            description="Look-back window. One of: 1d, 5d, 1mo, 3mo, 6mo, 1y, "
-            "2y, 5y, 10y, ytd, max. Ignored when 'start' is given."
-        ),
-    ] = "1mo",
-    interval: Annotated[
-        str,
-        Field(
-            description="Bar size. One of: 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, "
-            "1d, 5d, 1wk, 1mo, 3mo. Intraday intervals only cover recent dates."
-        ),
-    ] = "1d",
+    period: Annotated[str, Field(description=_PERIOD_DESC)] = "1mo",
+    interval: Annotated[str, Field(description=_INTERVAL_DESC)] = "1d",
     start: Annotated[
         str | None,
         Field(description="Start date 'YYYY-MM-DD'. Overrides 'period' when set."),
