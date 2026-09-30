@@ -15,6 +15,8 @@ from . import analysts, browse, company, funds, options, ownership, quotes
 if TYPE_CHECKING:  # pragma: no cover - imported for typing only
     from mcp.server.mcpserver import MCPServer
 
+__all__ = ["register_tools"]
+
 # The order of this tuple is the order a client lists the tools in.
 _MODULES = (quotes, company, analysts, ownership, options, funds, browse)
 

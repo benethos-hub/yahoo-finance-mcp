@@ -22,6 +22,6 @@ uvicorn's request log to the same rules.
 
 from __future__ import annotations
 
-from . import cache, calls, lifecycle, output, upstream
+from . import access, cache, calls, lifecycle, output, upstream
 
-__all__ = ["cache", "calls", "lifecycle", "output", "upstream"]
+__all__ = ["access", "cache", "calls", "lifecycle", "output", "upstream"]
