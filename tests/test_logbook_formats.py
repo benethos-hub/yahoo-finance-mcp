@@ -27,17 +27,26 @@ def _request(status: int) -> logging.LogRecord:
 
 
 class TestPlain:
-    def test_the_time_has_a_point_before_the_milliseconds_and_an_offset(self):
+    def test_the_time_is_iso_8601_to_the_millisecond_with_an_offset(self):
         line = formats.Plain().format(_record(PACKAGE, logging.INFO, "Started"))
         assert re.match(
-            r"\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d{3}[+-]\d\d:\d\d INFO     "
-            rf"{PACKAGE}: Started$",
+            r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}[+-]\d\d:\d\d INFO     "
+            r"server: Started$",
             line,
         ), line
 
-    def test_the_full_logger_name_and_no_colour(self):
-        line = formats.Plain().format(_record("uvicorn.error", logging.INFO, "Up"))
-        assert " INFO     uvicorn.error: Up" in line
+    @pytest.mark.parametrize(
+        "name,shown",
+        [
+            ("uvicorn.error", "uvicorn"),
+            ("uvicorn.access", "http"),
+            (f"{PACKAGE}.tools", "tools"),
+            ("yfinance", "yfinance"),
+        ],
+    )
+    def test_the_source_is_short_and_without_colour(self, name, shown):
+        line = formats.Plain().format(_record(name, logging.INFO, "Up"))
+        assert line.endswith(f" INFO     {shown}: Up")
         assert "\033[" not in line
 
 
@@ -46,7 +55,7 @@ class TestConsole:
         record = _record(f"{PACKAGE}.tools", logging.WARNING, "get_quote failed")
         line = formats.Console().format(record)
         assert re.match(
-            r"\033\[2m\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d{3}\033\[0m "
+            r"\033\[2m\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}[+-]\d\d:\d\d\033\[0m "
             r"\033\[33mWARNING \033\[0m \033\[36mtools   \033\[0m get_quote failed$",
             line,
         ), repr(line)
@@ -72,6 +81,15 @@ class TestConsole:
         line = formats.Console().format(record)
         assert "failed\nTraceback (most recent call last):" in line
         assert line.endswith("ValueError: boom")
+
+
+def test_both_formats_write_the_same_time():
+    record = _record(PACKAGE, logging.INFO, "Started")
+    record.created = 1790767142.84  # 2026-09-30 11:19:02.840 UTC
+    plain = formats.Plain().format(record)
+    stamp = plain.split(" ", 1)[0]
+    assert re.fullmatch(r"2026-09-30T\d\d:\d\d:02\.840[+-]\d\d:\d\d", stamp), stamp
+    assert formats.Console().format(record).startswith(f"\033[2m{stamp}\033[0m ")
 
 
 @pytest.mark.parametrize(

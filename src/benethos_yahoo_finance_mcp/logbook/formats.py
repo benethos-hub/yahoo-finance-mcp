@@ -1,13 +1,18 @@
 """How a line looks: plain for a file or a container log, in colour at a terminal.
 
-A plain line keeps the full logger name and writes the time to the
-millisecond with its offset, since a container log may be read far from
-where it was written: ``2026-09-30 13:19:02.840+02:00 INFO     name: text``.
+Both name the source short: ``tools`` for this server's tool calls,
+``server`` for the server itself, ``uvicorn`` for uvicorn's server log and
+``http`` for its request log. uvicorn calls its server log ``uvicorn.error``,
+after the web servers' error log, which holds everything a server says about
+itself. Written out, a start read as a failure.
 
-At a terminal a person reads the lines as they come. The time is local and
-dim, the level in colour, the source short and a request as method, path and
-status in colour. ``uvicorn.error`` is uvicorn's server log, not a log of
-errors, and shows as ``uvicorn``.
+Both write the time the same way, as ISO 8601 to the millisecond with its
+offset, since a log may be read far from where it was written and by a
+parser: ``2026-09-30T13:19:02.840+02:00 INFO     tools: text``.
+
+At a terminal a person reads the lines as they come. The time is dim, the
+level in colour, the source in cyan and a request as method, path and
+status in colour.
 """
 
 from __future__ import annotations
@@ -20,7 +25,7 @@ from http import HTTPStatus
 
 from ._describe import PACKAGE
 
-FORMAT = "%(asctime)s %(levelname)-8s %(name)s: %(message)s"
+FORMAT = "%(asctime)s %(levelname)-8s %(source)s: %(message)s"
 
 # ANSI colours, for a terminal only.
 _RESET = "\033[0m"
@@ -43,8 +48,10 @@ _ACCESS_ARGS = 5
 SOURCE_WIDTH = 8
 
 
-def _moment(record: logging.LogRecord) -> datetime:
-    return datetime.fromtimestamp(record.created).astimezone()
+def timestamp(record: logging.LogRecord) -> str:
+    """``2026-09-30T13:19:02.840+02:00``, in this machine's time zone."""
+    moment = datetime.fromtimestamp(record.created).astimezone()
+    return moment.isoformat(timespec="milliseconds")
 
 
 class Plain(logging.Formatter):
@@ -53,17 +60,19 @@ class Plain(logging.Formatter):
     def __init__(self) -> None:
         super().__init__(FORMAT)
 
+    def format(self, record: logging.LogRecord) -> str:
+        record.source = short_source(record.name)
+        return super().format(record)
+
     def formatTime(self, record: logging.LogRecord, datefmt: str | None = None) -> str:
-        return _moment(record).isoformat(sep=" ", timespec="milliseconds")
+        return timestamp(record)
 
 
 class Console(logging.Formatter):
     """The line for a person at a terminal, see the module docstring."""
 
     def formatTime(self, record: logging.LogRecord, datefmt: str | None = None) -> str:
-        """Local date and time to the millisecond, without the offset."""
-        moment = _moment(record)
-        return f"{moment:%Y-%m-%d %H:%M:%S}.{moment.microsecond // 1000:03d}"
+        return timestamp(record)
 
     def format(self, record: logging.LogRecord) -> str:
         colour = _LEVEL_COLOURS.get(record.levelno, "")

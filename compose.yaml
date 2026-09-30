@@ -75,6 +75,9 @@ services:
       # YF_MCP_BEARER_TOKEN in .env, not here, so the secret stays out of git.
       # A value set in this block would override the one in .env.
       YF_MCP_LOG_LEVEL: INFO
+      # The log writes local time with its offset, and a container's local
+      # time is UTC unless TZ says otherwise, e.g.:
+      # TZ: Europe/Berlin
       # The result cache is opt-in (off by default). Enable it and it persists
       # to the /cache volume below:
       # YF_MCP_CACHE: "1"
