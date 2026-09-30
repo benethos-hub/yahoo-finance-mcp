@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-30
+
+A review closed several security gaps, above all a DNS-rebinding guard that
+Compose left off. The log follows written rules and has a new look,
+`get_history` checks its arguments before asking Yahoo, the result cache
+gets an entry limit, and many errors now name their real cause instead of
+an unknown symbol. Underneath, the code is reorganised by subject. A client
+sees the tools listed grouped by subject, a limit of 32 characters on
+symbols, changed descriptions for `period`, `interval` and `end`, and
+integer columns such as `Volume` as integers again.
+
 ### Security
 - `compose.yaml` sets `YF_MCP_ALLOWED_HOSTS` to the loopback names and its
   service name. The image binds `0.0.0.0`, and an exposed bind without an
@@ -143,6 +154,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   symbol only as the other possibility.
 
 ### Changed
+- Locked dependency refresh of seven packages, none of them direct:
+  `sse-starlette` 3.4 → 3.5, `pyjwt`, `peewee`, `platformdirs`,
+  `charset-normalizer`, and `coverage` and `librt` for development only. The
+  tool schemas are byte-identical before and after, stdio, streamable-http
+  and sse answer alike, and the live smoke test returned the same data.
 - The result cache's key carries the package version, so a release never
   serves a result shape from before it, and keeps the type of every value
   that is not text: `True` and `"true"` were one key. Existing cache entries
@@ -912,7 +928,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.1...v0.5.2
