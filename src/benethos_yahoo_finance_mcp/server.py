@@ -17,7 +17,7 @@ from mcp.server.mcpserver.exceptions import ToolError as SDKToolError
 from mcp.types import ToolAnnotations
 from pydantic import Field, ValidationError
 
-from . import __version__, client, logbook
+from . import __version__, logbook, yahoo
 from .errors import RateLimitError
 
 # Sent once during the initialize handshake, not per tool, so this is the
@@ -90,7 +90,7 @@ def search(
     other tools accept. Returns up to ``limit`` matches (1-25), each with its
     symbol, name, exchange, and instrument type.
     """
-    return client.search(query, limit=limit)
+    return yahoo.search(query, limit=limit)
 
 
 # Repeated once per symbol-taking tool, so every character here is paid 17 times
@@ -113,7 +113,7 @@ Symbol = Annotated[
 
 def get_quote(symbol: Symbol) -> dict[str, Any]:
     """Get the current price and key intraday figures for a Yahoo symbol."""
-    return client.get_quote(symbol)
+    return yahoo.get_quote(symbol)
 
 
 def get_quotes(
@@ -132,7 +132,7 @@ def get_quotes(
     open, day high/low, and market cap. Symbols that return no data are listed
     under ``not_found`` rather than failing the whole call.
     """
-    return client.get_quotes(symbols)
+    return yahoo.get_quotes(symbols)
 
 
 def get_history(
@@ -165,7 +165,7 @@ def get_history(
     Query a look-back ``period`` or an explicit ``start``/``end`` range. Results
     are capped at the most recent 250 rows, with ``truncated`` set when cut.
     """
-    return client.get_history(
+    return yahoo.get_history(
         symbol, period=period, interval=interval, start=start, end=end
     )
 
@@ -177,7 +177,7 @@ def get_company_info(symbol: Symbol) -> dict[str, Any]:
     metrics (market cap, P/E, beta, 52-week range, dividend yield) plus a
     business summary.
     """
-    return client.get_company_info(symbol)
+    return yahoo.get_company_info(symbol)
 
 
 def get_financials(
@@ -202,12 +202,12 @@ def get_financials(
     Each row is a line item and each column a reporting period, most recent
     first.
     """
-    return client.get_financials(symbol, statement=statement, freq=freq)
+    return yahoo.get_financials(symbol, statement=statement, freq=freq)
 
 
 def get_dividends(symbol: Symbol) -> dict[str, Any]:
     """Get the dividend and stock-split history for a Yahoo symbol."""
-    return client.get_dividends(symbol)
+    return yahoo.get_dividends(symbol)
 
 
 def get_news(
@@ -221,7 +221,7 @@ def get_news(
 
     Each article includes title, summary, publisher, publish time, and URL.
     """
-    return client.get_news(symbol, limit=limit)
+    return yahoo.get_news(symbol, limit=limit)
 
 
 def get_recommendations(symbol: Symbol) -> dict[str, Any]:
@@ -230,7 +230,7 @@ def get_recommendations(symbol: Symbol) -> dict[str, Any]:
     Returns the buy/hold/sell trend over recent months plus current/high/low/
     mean/median analyst price targets when available.
     """
-    return client.get_recommendations(symbol)
+    return yahoo.get_recommendations(symbol)
 
 
 def get_options(
@@ -252,7 +252,7 @@ def get_options(
     US-listed instruments only, so a non-US symbol has none and that says
     nothing about the symbol.
     """
-    return client.get_options(symbol, expiration=expiration)
+    return yahoo.get_options(symbol, expiration=expiration)
 
 
 def get_earnings(
@@ -268,7 +268,7 @@ def get_earnings(
     reported EPS, and surprise %) plus the recent earnings history. Equity-only,
     empty for ETFs, funds, and crypto.
     """
-    return client.get_earnings(symbol, limit=limit)
+    return yahoo.get_earnings(symbol, limit=limit)
 
 
 def get_estimates(symbol: Symbol) -> dict[str, Any]:
@@ -278,7 +278,7 @@ def get_estimates(symbol: Symbol) -> dict[str, Any]:
     estimates (small tables keyed by period). Equity-only, empty for ETFs,
     funds, and crypto.
     """
-    return client.get_estimates(symbol)
+    return yahoo.get_estimates(symbol)
 
 
 def get_upgrades_downgrades(
@@ -293,7 +293,7 @@ def get_upgrades_downgrades(
     Each entry is a firm's rating change with the from/to grade and action, most
     recent first. Equity-only, empty for ETFs, funds, and crypto.
     """
-    return client.get_upgrades_downgrades(symbol, limit=limit)
+    return yahoo.get_upgrades_downgrades(symbol, limit=limit)
 
 
 def get_holders(
@@ -314,7 +314,7 @@ def get_holders(
     plus the top institutional and mutual-fund holders. Equity-only, empty for
     ETFs, funds, and crypto.
     """
-    return client.get_holders(symbol, limit=limit)
+    return yahoo.get_holders(symbol, limit=limit)
 
 
 def get_insider_activity(
@@ -334,7 +334,7 @@ def get_insider_activity(
     and the current insider roster. Equity-only, empty for ETFs, funds, and
     crypto.
     """
-    return client.get_insider_activity(symbol, limit=limit)
+    return yahoo.get_insider_activity(symbol, limit=limit)
 
 
 def get_sec_filings(
@@ -351,7 +351,7 @@ def get_sec_filings(
     the U.S. SEC file there, so a non-US symbol has none, and neither do ETFs,
     funds or crypto. An empty result says nothing about the symbol.
     """
-    return client.get_sec_filings(symbol, limit=limit)
+    return yahoo.get_sec_filings(symbol, limit=limit)
 
 
 def get_calendar(symbol: Symbol) -> dict[str, Any]:
@@ -360,7 +360,7 @@ def get_calendar(symbol: Symbol) -> dict[str, Any]:
     Returns the next earnings date(s) with analyst estimate ranges and the next
     dividend / ex-dividend dates. Equity-only, empty for ETFs, funds, and crypto.
     """
-    return client.get_calendar(symbol)
+    return yahoo.get_calendar(symbol)
 
 
 def get_shares(
@@ -391,7 +391,7 @@ def get_shares(
     recent ``limit`` points are returned. Without ``start`` the series covers
     the last 18 months, so pass one for anything older.
     """
-    return client.get_shares(symbol, start=start, end=end, limit=limit)
+    return yahoo.get_shares(symbol, start=start, end=end, limit=limit)
 
 
 def get_fund_data(
@@ -407,14 +407,14 @@ def get_fund_data(
     holdings. Fund/ETF-only, raises for stocks and crypto, which have no fund
     data.
     """
-    return client.get_fund_data(symbol, limit=limit)
+    return yahoo.get_fund_data(symbol, limit=limit)
 
 
-# Built from yfinance's own constant (via client) so the tool description the
+# Built from yfinance's own constant (via yahoo) so the tool description the
 # LLM sees stays in sync with upstream's sector keys.
 _SECTOR_KEYS_DESC = (
     "A Yahoo sector key (lowercase, hyphenated). One of: "
-    + ", ".join(client.SECTOR_KEYS)
+    + ", ".join(yahoo.SECTOR_KEYS)
     + "."
 )
 
@@ -436,7 +436,7 @@ def get_sector(
     Each industry's ``key`` can be passed to ``get_industry`` to drill down.
     This takes a sector key like ``technology`` or ``healthcare`` — not a ticker.
     """
-    return client.get_sector(key, limit=limit)
+    return yahoo.get_sector(key, limit=limit)
 
 
 def get_industry(
@@ -460,7 +460,7 @@ def get_industry(
     the ``industries`` list returned by ``get_sector``. This takes an industry
     key like ``semiconductors`` — not a ticker symbol.
     """
-    return client.get_industry(key, limit=limit)
+    return yahoo.get_industry(key, limit=limit)
 
 
 def get_market(
@@ -468,7 +468,7 @@ def get_market(
         str,
         Field(
             description="A Yahoo market key (uppercase). One of: "
-            + ", ".join(client.MARKET_KEYS)
+            + ", ".join(yahoo.MARKET_KEYS)
             + ". Only 'US' reports a trading status, the others return the index "
             "summary with 'status' set to null."
         ),
@@ -483,7 +483,7 @@ def get_market(
     every other key, which is an upstream limitation rather than an error. The
     index summary, with price, previous close and change, works for all keys.
     """
-    return client.get_market(key)
+    return yahoo.get_market(key)
 
 
 # The listing order a client sees.

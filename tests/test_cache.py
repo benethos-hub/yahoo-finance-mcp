@@ -230,7 +230,8 @@ def test_cached_decorator_honours_worth_keeping(enabled_cache):
 
 
 def test_get_quotes_does_not_pin_a_complete_miss(enabled_cache, monkeypatch):
-    from benethos_yahoo_finance_mcp import client
+    from benethos_yahoo_finance_mcp import yahoo
+    from benethos_yahoo_finance_mcp.yahoo import tickers
 
     built = {"n": 0}
 
@@ -241,9 +242,9 @@ def test_get_quotes_does_not_pin_a_complete_miss(enabled_cache, monkeypatch):
         built["n"] += 1
         return Empty()
 
-    monkeypatch.setattr(client, "_get_ticker", fake)
-    assert client.get_quotes(["AAPL"])["count"] == 0
-    client.get_quotes(["AAPL"])
+    monkeypatch.setattr(tickers, "get_ticker", fake)
+    assert yahoo.get_quotes(["AAPL"])["count"] == 0
+    yahoo.get_quotes(["AAPL"])
     assert built["n"] == 2
 
 

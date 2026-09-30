@@ -11,11 +11,12 @@ import logging
 
 import pytest
 
-from benethos_yahoo_finance_mcp import cache, cli, client, transport
+from benethos_yahoo_finance_mcp import cache, cli, transport, yahoo
 from benethos_yahoo_finance_mcp.errors import RateLimitError, SymbolNotFoundError
 from benethos_yahoo_finance_mcp.logbook import access, output
 from benethos_yahoo_finance_mcp.server import build_server
 from benethos_yahoo_finance_mcp.settings import Settings
+from benethos_yahoo_finance_mcp.yahoo import tickers
 
 mcp = build_server()
 TOOLS = "benethos_yahoo_finance_mcp.tools"
@@ -35,7 +36,7 @@ def _ours(caplog) -> list[logging.LogRecord]:
 def test_a_call_that_returned_is_one_info_line(monkeypatch, caplog):
     rows = [{"close": 1.0}] * 250
     monkeypatch.setattr(
-        client, "get_history", lambda *a, **k: {"rows": rows, "truncated": True}
+        yahoo, "get_history", lambda *a, **k: {"rows": rows, "truncated": True}
     )
     with caplog.at_level(logging.INFO):
         _call("get_history", {"symbol": "sap.de"})
@@ -48,7 +49,7 @@ def test_a_call_that_returned_is_one_info_line(monkeypatch, caplog):
 
 def test_a_quotes_call_counts_found_and_missing(monkeypatch, caplog):
     answer = {"count": 2, "quotes": [{}, {}], "not_found": ["X"], "truncated": False}
-    monkeypatch.setattr(client, "get_quotes", lambda *a, **k: answer)
+    monkeypatch.setattr(yahoo, "get_quotes", lambda *a, **k: answer)
     with caplog.at_level(logging.INFO):
         _call("get_quotes", {"symbols": ["A", "B", "X"]})
     [record] = _ours(caplog)
@@ -57,7 +58,7 @@ def test_a_quotes_call_counts_found_and_missing(monkeypatch, caplog):
 
 def test_a_search_line_never_carries_the_query(monkeypatch, caplog):
     """A query is free text a person typed. Only the number of matches is logged."""
-    monkeypatch.setattr(client, "search", lambda *a, **k: [{"symbol": "AAPL"}])
+    monkeypatch.setattr(yahoo, "search", lambda *a, **k: [{"symbol": "AAPL"}])
     with caplog.at_level(logging.DEBUG):
         _call("search", {"query": "my private shopping list"})
     [record] = _ours(caplog)
@@ -69,7 +70,7 @@ def test_a_failed_call_is_a_warning_naming_the_class_not_the_text(monkeypatch, c
     def boom(*a, **k):
         raise SymbolNotFoundError("NOPE")
 
-    monkeypatch.setattr(client, "get_options", boom)
+    monkeypatch.setattr(yahoo, "get_options", boom)
     with caplog.at_level(logging.INFO), pytest.raises(Exception):  # noqa: B017
         _call("get_options", {"symbol": "nope"})
     [record] = _ours(caplog)
@@ -84,7 +85,7 @@ def test_a_rate_limit_is_named_for_the_operator(monkeypatch, caplog):
     def limited(*a, **k):
         raise RateLimitError()
 
-    monkeypatch.setattr(client, "get_news", limited)
+    monkeypatch.setattr(yahoo, "get_news", limited)
     with caplog.at_level(logging.INFO), pytest.raises(Exception):  # noqa: B017
         _call("get_news", {"symbol": "aapl"})
     [record] = _ours(caplog)
@@ -107,7 +108,7 @@ def test_an_answer_from_the_result_cache_says_so(monkeypatch, caplog, tmp_path):
     class Fast:
         fast_info = {"lastPrice": 1.0}
 
-    monkeypatch.setattr(client, "_get_ticker", lambda symbol: Fast())
+    monkeypatch.setattr(tickers, "get_ticker", lambda symbol: Fast())
     with caplog.at_level(logging.INFO, logger=TOOLS):
         _call("get_quote", {"symbol": "AAPL"})
         _call("get_quote", {"symbol": "AAPL"})

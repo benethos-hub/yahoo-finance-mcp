@@ -15,7 +15,7 @@ import json
 
 import pytest
 
-from benethos_yahoo_finance_mcp import client
+from benethos_yahoo_finance_mcp import yahoo
 from benethos_yahoo_finance_mcp.errors import SymbolNotFoundError
 from benethos_yahoo_finance_mcp.server import build_server
 
@@ -74,9 +74,9 @@ def test_tool_invokes_client_and_result_serializes(monkeypatch, tool, args):
         calls.append((a, k))
         return payload
 
-    # Wrappers look up ``client.<name>`` at call time, so patching the attribute
+    # Wrappers look up ``yahoo.<name>`` at call time, so patching the attribute
     # of the right name suffices.
-    monkeypatch.setattr(client, tool, spy)
+    monkeypatch.setattr(yahoo, tool, spy)
 
     result = _call(tool, args)
 
@@ -112,7 +112,7 @@ def test_limit_is_forwarded_as_limit(monkeypatch, tool, base):
         captured.update(k)
         return [{"ok": True}] if tool == "search" else {"ok": True}
 
-    monkeypatch.setattr(client, tool, spy)
+    monkeypatch.setattr(yahoo, tool, spy)
     _call(tool, {**base, "limit": 7})
     assert captured.get("limit") == 7, f"{tool} should forward limit as limit"
 
@@ -124,7 +124,7 @@ def test_get_shares_forwards_start_end_and_limit(monkeypatch):
         captured.update(k)
         return {"ok": True}
 
-    monkeypatch.setattr(client, "get_shares", spy)
+    monkeypatch.setattr(yahoo, "get_shares", spy)
     _call(
         "get_shares",
         {"symbol": "AAPL", "start": "2024-01-01", "end": "2024-06-01", "limit": 7},
@@ -141,7 +141,7 @@ def test_get_financials_forwards_statement_and_freq(monkeypatch):
         captured.update(k)
         return {"ok": True}
 
-    monkeypatch.setattr(client, "get_financials", spy)
+    monkeypatch.setattr(yahoo, "get_financials", spy)
     _call("get_financials", {"symbol": "AAPL", "statement": "cashflow", "freq": "ttm"})
     assert captured["statement"] == "cashflow"
     assert captured["freq"] == "ttm"
@@ -161,7 +161,7 @@ def test_tool_error_message_reaches_the_caller(monkeypatch):
     def boom(*a, **k):
         raise SymbolNotFoundError("NOPE")
 
-    monkeypatch.setattr(client, "get_quote", boom)
+    monkeypatch.setattr(yahoo, "get_quote", boom)
 
     with pytest.raises(Exception) as excinfo:  # noqa: B017 - the type is the SDK's
         _call("get_quote", {"symbol": "NOPE"})

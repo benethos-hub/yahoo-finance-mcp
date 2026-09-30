@@ -49,6 +49,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   The command line is unchanged. The configuration is resolved once, flag
   over environment over default, in the new `settings` module, and no module
   reads the environment on its own any more.
+- `client.py` is now the `yahoo` package, one module per subject: quotes,
+  company, analysts, ownership, options, funds and browse, with the shared
+  ticker cache and error mapping in `yahoo.tickers`. The functions are
+  unchanged and importable from `benethos_yahoo_finance_mcp.yahoo`.
 
 ## [0.6.1] - 2026-09-27
 

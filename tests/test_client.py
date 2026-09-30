@@ -6,12 +6,13 @@ import pandas as pd
 import pytest
 from yfinance.exceptions import YFDataException, YFRateLimitError
 
-from benethos_yahoo_finance_mcp import client
+from benethos_yahoo_finance_mcp import yahoo
 from benethos_yahoo_finance_mcp.errors import (
     RateLimitError,
     SymbolNotFoundError,
     ToolError,
 )
+from benethos_yahoo_finance_mcp.yahoo import tickers
 
 
 class FakeTicker:
@@ -86,10 +87,10 @@ class FakeTicker:
 
 @pytest.fixture
 def patch_ticker(monkeypatch):
-    """Patch ``client._get_ticker`` to return a supplied FakeTicker."""
+    """Patch ``tickers.get_ticker`` to return a supplied FakeTicker."""
 
     def _install(ticker: FakeTicker):
-        monkeypatch.setattr(client, "_get_ticker", lambda symbol: ticker)
+        monkeypatch.setattr(tickers, "get_ticker", lambda symbol: ticker)
         return ticker
 
     return _install
@@ -100,7 +101,7 @@ def patch_ticker(monkeypatch):
 
 def test_search_requires_query():
     with pytest.raises(ToolError):
-        client.search("   ")
+        yahoo.search("   ")
 
 
 def test_search_maps_quote_fields(monkeypatch):
@@ -117,8 +118,8 @@ def test_search_maps_quote_fields(monkeypatch):
                 }
             ]
 
-    monkeypatch.setattr(client.yf, "Search", FakeSearch)
-    out = client.search("apple", limit=5)
+    monkeypatch.setattr(tickers.yf, "Search", FakeSearch)
+    out = yahoo.search("apple", limit=5)
     assert out == [
         {
             "symbol": "AAPL",
@@ -135,18 +136,18 @@ def test_search_wraps_upstream_error(monkeypatch):
     def boom(*a, **k):
         raise RuntimeError("network down")
 
-    monkeypatch.setattr(client.yf, "Search", boom)
+    monkeypatch.setattr(tickers.yf, "Search", boom)
     with pytest.raises(ToolError):
-        client.search("apple")
+        yahoo.search("apple")
 
 
 def test_search_maps_rate_limit_to_rate_limit_error(monkeypatch):
     def throttled(*a, **k):
         raise YFRateLimitError()
 
-    monkeypatch.setattr(client.yf, "Search", throttled)
+    monkeypatch.setattr(tickers.yf, "Search", throttled)
     with pytest.raises(RateLimitError):
-        client.search("apple")
+        yahoo.search("apple")
 
 
 def test_history_maps_rate_limit_to_rate_limit_error(monkeypatch):
@@ -154,9 +155,9 @@ def test_history_maps_rate_limit_to_rate_limit_error(monkeypatch):
         def history(self, **kwargs):
             raise YFRateLimitError()
 
-    monkeypatch.setattr(client, "_get_ticker", lambda symbol: Throttled())
+    monkeypatch.setattr(tickers, "get_ticker", lambda symbol: Throttled())
     with pytest.raises(RateLimitError):
-        client.get_history("aapl")
+        yahoo.get_history("aapl")
 
 
 # --- get_quote ------------------------------------------------------------
@@ -164,7 +165,7 @@ def test_history_maps_rate_limit_to_rate_limit_error(monkeypatch):
 
 def test_get_quote_returns_fields(patch_ticker):
     patch_ticker(FakeTicker(fast_info={"lastPrice": 100.0, "currency": "USD"}))
-    quote = client.get_quote("aapl")
+    quote = yahoo.get_quote("aapl")
     assert quote["symbol"] == "AAPL"
     assert quote["lastPrice"] == 100.0
     assert quote["currency"] == "USD"
@@ -173,7 +174,7 @@ def test_get_quote_returns_fields(patch_ticker):
 def test_get_quote_without_price_raises(patch_ticker):
     patch_ticker(FakeTicker(fast_info={"currency": "USD"}))
     with pytest.raises(SymbolNotFoundError):
-        client.get_quote("nope")
+        yahoo.get_quote("nope")
 
 
 # --- get_quotes -----------------------------------------------------------
@@ -181,7 +182,7 @@ def test_get_quote_without_price_raises(patch_ticker):
 
 def _patch_tickers(monkeypatch, mapping):
     """Patch _get_ticker to resolve each symbol from a {SYMBOL: FakeTicker} map."""
-    monkeypatch.setattr(client, "_get_ticker", lambda s: mapping[s.strip().upper()])
+    monkeypatch.setattr(tickers, "get_ticker", lambda s: mapping[s.strip().upper()])
 
 
 def test_get_quotes_unresolvable_isin_is_a_per_symbol_miss(monkeypatch):
@@ -193,8 +194,8 @@ def test_get_quotes_unresolvable_isin_is_a_per_symbol_miss(monkeypatch):
             raise SymbolNotFoundError(symbol)
         return good
 
-    monkeypatch.setattr(client, "_get_ticker", resolve)
-    out = client.get_quotes(["AAPL", "ZZ0000000009"])
+    monkeypatch.setattr(tickers, "get_ticker", resolve)
+    out = yahoo.get_quotes(["AAPL", "ZZ0000000009"])
     assert [q["symbol"] for q in out["quotes"]] == ["AAPL"]
     assert out["not_found"] == ["ZZ0000000009"]
 
@@ -207,7 +208,7 @@ def test_get_quotes_returns_rows(monkeypatch):
             "MSFT": FakeTicker(fast_info={"lastPrice": 200.0, "currency": "USD"}),
         },
     )
-    out = client.get_quotes(["aapl", "msft"])
+    out = yahoo.get_quotes(["aapl", "msft"])
     assert out["count"] == 2
     assert out["not_found"] == []
     assert out["truncated"] is False
@@ -222,7 +223,7 @@ def test_get_quotes_reports_not_found_per_symbol(monkeypatch):
             "BADSYM": FakeTicker(fast_info={"currency": "USD"}),  # no lastPrice
         },
     )
-    out = client.get_quotes(["AAPL", "BADSYM"])
+    out = yahoo.get_quotes(["AAPL", "BADSYM"])
     assert out["count"] == 1
     assert out["quotes"][0]["symbol"] == "AAPL"
     assert out["not_found"] == ["BADSYM"]
@@ -233,7 +234,7 @@ def test_get_quotes_dedupes_and_is_case_insensitive(monkeypatch):
         monkeypatch,
         {"AAPL": FakeTicker(fast_info={"lastPrice": 100.0})},
     )
-    out = client.get_quotes(["aapl", "AAPL", " aapl "])
+    out = yahoo.get_quotes(["aapl", "AAPL", " aapl "])
     assert out["count"] == 1
 
 
@@ -242,19 +243,19 @@ def test_get_quotes_caps_symbols(monkeypatch):
         monkeypatch,
         {f"S{i}": FakeTicker(fast_info={"lastPrice": float(i)}) for i in range(10)},
     )
-    out = client.get_quotes([f"s{i}" for i in range(10)], limit=3)
+    out = yahoo.get_quotes([f"s{i}" for i in range(10)], limit=3)
     assert out["count"] == 3
     assert out["truncated"] is True
 
 
 def test_get_quotes_empty_input_raises():
     with pytest.raises(ToolError):
-        client.get_quotes([])
+        yahoo.get_quotes([])
 
 
 def test_get_quotes_blank_only_raises():
     with pytest.raises(ToolError):
-        client.get_quotes(["   ", ""])
+        yahoo.get_quotes(["   ", ""])
 
 
 def test_get_quotes_rate_limit(monkeypatch):
@@ -263,9 +264,9 @@ def test_get_quotes_rate_limit(monkeypatch):
         def fast_info(self):
             raise YFRateLimitError()
 
-    monkeypatch.setattr(client, "_get_ticker", lambda s: Throttled())
+    monkeypatch.setattr(tickers, "get_ticker", lambda s: Throttled())
     with pytest.raises(RateLimitError):
-        client.get_quotes(["AAPL"])
+        yahoo.get_quotes(["AAPL"])
 
 
 def test_get_quotes_upstream_miss_is_per_symbol(monkeypatch):
@@ -274,8 +275,8 @@ def test_get_quotes_upstream_miss_is_per_symbol(monkeypatch):
         def fast_info(self):
             raise RuntimeError("network")
 
-    monkeypatch.setattr(client, "_get_ticker", lambda s: Boom())
-    out = client.get_quotes(["AAPL"])
+    monkeypatch.setattr(tickers, "get_ticker", lambda s: Boom())
+    out = yahoo.get_quotes(["AAPL"])
     # A generic error is a per-symbol miss, not a hard failure.
     assert out["count"] == 0
     assert out["not_found"] == ["AAPL"]
@@ -290,7 +291,7 @@ def test_get_history_uses_period_when_no_start(patch_ticker):
         index=pd.DatetimeIndex(["2024-01-01", "2024-01-02"], name="Date"),
     )
     ticker = patch_ticker(FakeTicker(history=df))
-    out = client.get_history("aapl", period="5d", interval="1d")
+    out = yahoo.get_history("aapl", period="5d", interval="1d")
     assert out["count"] == 2
     assert "period" in ticker.history_kwargs
     assert "start" not in ticker.history_kwargs
@@ -299,7 +300,7 @@ def test_get_history_uses_period_when_no_start(patch_ticker):
 def test_get_history_uses_start_end_when_given(patch_ticker):
     df = pd.DataFrame({"Close": [1.0]}, index=pd.DatetimeIndex(["2024-01-01"]))
     ticker = patch_ticker(FakeTicker(history=df))
-    client.get_history("aapl", start="2024-01-01", end="2024-01-31")
+    yahoo.get_history("aapl", start="2024-01-01", end="2024-01-31")
     assert ticker.history_kwargs["start"] == "2024-01-01"
     assert ticker.history_kwargs["end"] == "2024-01-31"
     assert "period" not in ticker.history_kwargs
@@ -308,7 +309,7 @@ def test_get_history_uses_start_end_when_given(patch_ticker):
 def test_get_history_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(history=pd.DataFrame()))
     with pytest.raises(SymbolNotFoundError):
-        client.get_history("nope")
+        yahoo.get_history("nope")
 
 
 # --- get_financials -------------------------------------------------------
@@ -317,13 +318,13 @@ def test_get_history_empty_raises(patch_ticker):
 def test_get_financials_invalid_statement(patch_ticker):
     patch_ticker(FakeTicker())
     with pytest.raises(ToolError):
-        client.get_financials("aapl", statement="bogus")
+        yahoo.get_financials("aapl", statement="bogus")
 
 
 def test_get_financials_invalid_freq(patch_ticker):
     patch_ticker(FakeTicker())
     with pytest.raises(ToolError):
-        client.get_financials("aapl", freq="weekly")
+        yahoo.get_financials("aapl", freq="weekly")
 
 
 def test_get_financials_returns_rows(patch_ticker):
@@ -333,7 +334,7 @@ def test_get_financials_returns_rows(patch_ticker):
     )
     patch_ticker(FakeTicker(income_stmt=df))
     # Attribute name for income/annual is "income_stmt".
-    out = client.get_financials("aapl", statement="income", freq="annual")
+    out = yahoo.get_financials("aapl", statement="income", freq="annual")
     assert out["statement"] == "income"
     assert out["rows"][0]["item"] == "Total Revenue"
 
@@ -347,7 +348,7 @@ def test_get_financials_keeps_every_line_item_from_the_top(patch_ticker):
     items = ["Net Debt", "Total Debt"] + [f"Item {i}" for i in range(67)]
     df = pd.DataFrame({pd.Timestamp("2025-09-27"): range(len(items))}, index=items)
     patch_ticker(FakeTicker(balance_sheet=df))
-    out = client.get_financials("aapl", statement="balance")
+    out = yahoo.get_financials("aapl", statement="balance")
     assert len(out["rows"]) == 69
     assert [r["item"] for r in out["rows"][:2]] == ["Net Debt", "Total Debt"]
 
@@ -358,7 +359,7 @@ def test_get_financials_ttm_uses_ttm_attr(patch_ticker):
         index=["Free Cash Flow"],
     )
     patch_ticker(FakeTicker(ttm_cashflow=df))
-    out = client.get_financials("aapl", statement="cashflow", freq="ttm")
+    out = yahoo.get_financials("aapl", statement="cashflow", freq="ttm")
     assert out["freq"] == "ttm"
     assert out["rows"][0]["item"] == "Free Cash Flow"
 
@@ -366,7 +367,7 @@ def test_get_financials_ttm_uses_ttm_attr(patch_ticker):
 def test_get_financials_ttm_not_available_for_balance(patch_ticker):
     patch_ticker(FakeTicker())
     with pytest.raises(ToolError):
-        client.get_financials("aapl", statement="balance", freq="ttm")
+        yahoo.get_financials("aapl", statement="balance", freq="ttm")
 
 
 # --- get_dividends --------------------------------------------------------
@@ -376,14 +377,14 @@ def test_get_dividends_unknown_symbol_raises(patch_ticker):
     """yfinance answers an unknown symbol with None for both series."""
     patch_ticker(FakeTicker(dividends=None, splits=None))
     with pytest.raises(SymbolNotFoundError):
-        client.get_dividends("nope")
+        yahoo.get_dividends("nope")
 
 
 def test_get_dividends_non_payer_is_not_an_error(patch_ticker):
     """A real instrument without dividends or splits gets empty lists."""
     empty = pd.Series([], dtype=float)
     patch_ticker(FakeTicker(dividends=empty, splits=empty))
-    out = client.get_dividends("brk-b")
+    out = yahoo.get_dividends("brk-b")
     assert out["dividends"] == []
     assert out["splits"] == []
 
@@ -391,7 +392,7 @@ def test_get_dividends_non_payer_is_not_an_error(patch_ticker):
 def test_get_dividends_returns_records(patch_ticker):
     div = pd.Series([0.5, 0.6], index=pd.DatetimeIndex(["2023-01-01", "2023-06-01"]))
     patch_ticker(FakeTicker(dividends=div, splits=None))
-    out = client.get_dividends("aapl")
+    out = yahoo.get_dividends("aapl")
     assert len(out["dividends"]) == 2
     assert out["dividends"][0]["dividend"] == 0.5
 
@@ -412,7 +413,7 @@ def test_get_news_parses_nested_content(patch_ticker):
         }
     ]
     patch_ticker(FakeTicker(news=news))
-    out = client.get_news("aapl", limit=5)
+    out = yahoo.get_news("aapl", limit=5)
     assert out["count"] == 1
     article = out["articles"][0]
     assert article["title"] == "Headline"
@@ -424,13 +425,13 @@ def test_get_news_asks_yahoo_for_the_requested_count(patch_ticker):
     """The count goes upstream. Reading ``.news`` always asked for yfinance's
     default of ten, so the tool's old ceiling of 30 was never reachable."""
     ticker = patch_ticker(FakeTicker(news=[]))
-    client.get_news("aapl", limit=3)
+    yahoo.get_news("aapl", limit=3)
     assert ticker.news_kwargs == {"count": 3}
 
 
 def test_get_news_limit_is_capped_at_what_yahoo_serves(patch_ticker):
     ticker = patch_ticker(FakeTicker(news=[]))
-    client.get_news("aapl", limit=30)
+    yahoo.get_news("aapl", limit=30)
     assert ticker.news_kwargs == {"count": 10}
 
 
@@ -445,7 +446,7 @@ def test_get_recommendations_combines_trend_and_targets(patch_ticker):
             analyst_price_targets={"mean": 200.0},
         )
     )
-    out = client.get_recommendations("aapl")
+    out = yahoo.get_recommendations("aapl")
     assert out["price_targets"] == {"mean": 200.0}
     assert out["recommendation_trend"][0]["buy"] == 10
 
@@ -454,7 +455,7 @@ def test_get_recommendations_rows_are_keyed_by_period(patch_ticker):
     """No positional "index" column, the period names the row."""
     recs = pd.DataFrame({"period": ["0m", "-1m"], "buy": [10, 9]})
     patch_ticker(FakeTicker(recommendations=recs, analyst_price_targets=None))
-    out = client.get_recommendations("aapl")
+    out = yahoo.get_recommendations("aapl")
     assert out["recommendation_trend"] == [
         {"period": "0m", "buy": 10},
         {"period": "-1m", "buy": 9},
@@ -464,7 +465,7 @@ def test_get_recommendations_rows_are_keyed_by_period(patch_ticker):
 def test_get_recommendations_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(recommendations=None, analyst_price_targets=None))
     with pytest.raises(SymbolNotFoundError):
-        client.get_recommendations("nope")
+        yahoo.get_recommendations("nope")
 
 
 # --- get_options ----------------------------------------------------------
@@ -472,20 +473,20 @@ def test_get_recommendations_empty_raises(patch_ticker):
 
 def test_get_options_lists_expirations(patch_ticker):
     patch_ticker(FakeTicker(options=("2024-01-19", "2024-02-16")))
-    out = client.get_options("aapl")
+    out = yahoo.get_options("aapl")
     assert out["expirations"] == ["2024-01-19", "2024-02-16"]
 
 
 def test_get_options_unknown_expiration_raises(patch_ticker):
     patch_ticker(FakeTicker(options=("2024-01-19",)))
     with pytest.raises(ToolError):
-        client.get_options("aapl", expiration="2030-01-01")
+        yahoo.get_options("aapl", expiration="2030-01-01")
 
 
 def test_get_options_no_options_raises(patch_ticker):
     patch_ticker(FakeTicker(options=()))
     with pytest.raises(SymbolNotFoundError):
-        client.get_options("aapl")
+        yahoo.get_options("aapl")
 
 
 def test_get_options_no_options_explains_why(patch_ticker):
@@ -497,7 +498,7 @@ def test_get_options_no_options_explains_why(patch_ticker):
     """
     patch_ticker(FakeTicker(options=()))
     with pytest.raises(SymbolNotFoundError) as excinfo:
-        client.get_options("7203.t")
+        yahoo.get_options("7203.t")
     message = str(excinfo.value)
     assert "US-listed" in message
     assert "does not show that the symbol is wrong" in message
@@ -508,7 +509,7 @@ def test_symbol_not_found_without_reason_keeps_the_search_advice(patch_ticker):
     """A genuinely unknown symbol must still be sent to `search`."""
     patch_ticker(FakeTicker(shares_full=None))
     with pytest.raises(SymbolNotFoundError) as excinfo:
-        client.get_shares("xyzq123")
+        yahoo.get_shares("xyzq123")
     assert "Use the 'search' tool to look it up" in str(excinfo.value)
     assert excinfo.value.reason is None
 
@@ -520,7 +521,7 @@ def test_get_options_returns_chain(patch_ticker):
     puts = pd.DataFrame({"strike": [90.0]})
     chain = types.SimpleNamespace(calls=calls, puts=puts)
     patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
-    out = client.get_options("aapl", expiration="2024-01-19")
+    out = yahoo.get_options("aapl", expiration="2024-01-19")
     assert out["calls"][0]["strike"] == 100.0
     assert out["puts"][0]["strike"] == 90.0
 
@@ -532,7 +533,7 @@ def test_get_options_caps_rows(patch_ticker):
     puts = pd.DataFrame({"strike": list(range(100))})
     chain = types.SimpleNamespace(calls=calls, puts=puts)
     patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
-    out = client.get_options("aapl", expiration="2024-01-19", limit=5)
+    out = yahoo.get_options("aapl", expiration="2024-01-19", limit=5)
     assert len(out["calls"]) == 5
     assert len(out["puts"]) == 5
     assert out["truncated"] is True
@@ -550,7 +551,7 @@ def test_get_options_keeps_the_strikes_around_the_money(patch_ticker):
     puts = pd.DataFrame({"strike": strikes, "inTheMoney": [s > 50 for s in strikes]})
     chain = types.SimpleNamespace(calls=calls, puts=puts)
     patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
-    out = client.get_options("aapl", expiration="2024-01-19", limit=6)
+    out = yahoo.get_options("aapl", expiration="2024-01-19", limit=6)
     assert [r["strike"] for r in out["calls"]] == [47.0, 48.0, 49.0, 50.0, 51.0, 52.0]
     assert [r["strike"] for r in out["puts"]] == [48.0, 49.0, 50.0, 51.0, 52.0, 53.0]
 
@@ -564,7 +565,7 @@ def test_get_options_window_stays_inside_the_chain(patch_ticker):
     puts = pd.DataFrame({"strike": strikes, "inTheMoney": [False] * 20})
     chain = types.SimpleNamespace(calls=calls, puts=puts)
     patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
-    out = client.get_options("aapl", expiration="2024-01-19", limit=4)
+    out = yahoo.get_options("aapl", expiration="2024-01-19", limit=4)
     assert [r["strike"] for r in out["calls"]] == [16.0, 17.0, 18.0, 19.0]
     assert [r["strike"] for r in out["puts"]] == [16.0, 17.0, 18.0, 19.0]
 
@@ -576,7 +577,7 @@ def test_get_options_rows_are_keyed_by_contract(patch_ticker):
     calls = pd.DataFrame({"contractSymbol": ["AAPL1C100"], "strike": [100.0]})
     chain = types.SimpleNamespace(calls=calls, puts=pd.DataFrame())
     patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
-    out = client.get_options("aapl", expiration="2024-01-19")
+    out = yahoo.get_options("aapl", expiration="2024-01-19")
     assert out["calls"] == [{"contractSymbol": "AAPL1C100", "strike": 100.0}]
 
 
@@ -587,7 +588,7 @@ def test_get_options_short_chain_is_not_truncated(patch_ticker):
         calls=pd.DataFrame({"strike": [1.0, 2.0]}), puts=pd.DataFrame()
     )
     patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
-    out = client.get_options("aapl", expiration="2024-01-19")
+    out = yahoo.get_options("aapl", expiration="2024-01-19")
     assert out["truncated"] is False
     assert out["puts"] == []
 
@@ -605,7 +606,7 @@ def test_get_earnings_combines_dates_and_history(patch_ticker):
         index=pd.Index(["1Q2024"], name="quarter"),
     )
     ticker = patch_ticker(FakeTicker(earnings_dates=dates, earnings_history=history))
-    out = client.get_earnings("aapl", limit=8)
+    out = yahoo.get_earnings("aapl", limit=8)
     assert out["symbol"] == "AAPL"
     assert out["earnings_dates"][0]["EPS Estimate"] == 1.5
     assert out["earnings_history"][0]["epsActual"] == 1.6
@@ -615,7 +616,7 @@ def test_get_earnings_combines_dates_and_history(patch_ticker):
 def test_get_earnings_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(earnings_dates=None, earnings_history=None))
     with pytest.raises(SymbolNotFoundError):
-        client.get_earnings("nope")
+        yahoo.get_earnings("nope")
 
 
 # --- get_estimates --------------------------------------------------------
@@ -632,7 +633,7 @@ def test_get_estimates_returns_tables(patch_ticker):
             growth_estimates=None,
         )
     )
-    out = client.get_estimates("aapl")
+    out = yahoo.get_estimates("aapl")
     assert out["earnings_estimate"][0]["avg"] == 2.0
     assert out["revenue_estimate"] == []
 
@@ -648,7 +649,7 @@ def test_get_estimates_empty_raises(patch_ticker):
         )
     )
     with pytest.raises(SymbolNotFoundError):
-        client.get_estimates("nope")
+        yahoo.get_estimates("nope")
 
 
 # --- get_upgrades_downgrades ----------------------------------------------
@@ -660,7 +661,7 @@ def test_get_upgrades_downgrades_sorts_newest_first_and_caps(patch_ticker):
         {"Firm": ["A", "B", "C"], "ToGrade": ["Buy", "Hold", "Sell"]}, index=idx
     )
     patch_ticker(FakeTicker(upgrades_downgrades=df))
-    out = client.get_upgrades_downgrades("aapl", limit=2)
+    out = yahoo.get_upgrades_downgrades("aapl", limit=2)
     assert len(out["changes"]) == 2
     # Newest first: 2024-03-01 (B) then 2024-02-01 (C).
     assert out["changes"][0]["Firm"] == "B"
@@ -670,7 +671,7 @@ def test_get_upgrades_downgrades_sorts_newest_first_and_caps(patch_ticker):
 def test_get_upgrades_downgrades_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(upgrades_downgrades=pd.DataFrame()))
     with pytest.raises(SymbolNotFoundError):
-        client.get_upgrades_downgrades("nope")
+        yahoo.get_upgrades_downgrades("nope")
 
 
 # --- get_holders ----------------------------------------------------------
@@ -690,7 +691,7 @@ def test_get_holders_combines_lists(patch_ticker):
             mutualfund_holders=mutualfund,
         )
     )
-    out = client.get_holders("aapl")
+    out = yahoo.get_holders("aapl")
     assert out["symbol"] == "AAPL"
     assert out["major_holders"][0]["metric"] == "insidersPercentHeld"
     assert out["institutional_holders"][0]["Holder"] == "Blackrock"
@@ -706,7 +707,7 @@ def test_get_holders_caps_rows(patch_ticker):
             mutualfund_holders=None,
         )
     )
-    out = client.get_holders("aapl", limit=5)
+    out = yahoo.get_holders("aapl", limit=5)
     assert len(out["institutional_holders"]) == 5
 
 
@@ -717,7 +718,7 @@ def test_get_holders_empty_raises(patch_ticker):
         )
     )
     with pytest.raises(SymbolNotFoundError):
-        client.get_holders("nope")
+        yahoo.get_holders("nope")
 
 
 # --- get_insider_activity -------------------------------------------------
@@ -738,7 +739,7 @@ def test_get_insider_activity_combines_tables(patch_ticker):
             insider_roster_holders=roster,
         )
     )
-    out = client.get_insider_activity("aapl")
+    out = yahoo.get_insider_activity("aapl")
     assert out["transactions"][0]["Insider"] == "BORDERS BEN"
     assert out["purchases_summary"][0]["Shares"] == 10
     assert out["roster"][0]["Name"] == "COOK TIMOTHY D"
@@ -753,7 +754,7 @@ def test_get_insider_activity_caps_rows(patch_ticker):
             insider_roster_holders=None,
         )
     )
-    out = client.get_insider_activity("aapl", limit=5)
+    out = yahoo.get_insider_activity("aapl", limit=5)
     assert len(out["transactions"]) == 5
 
 
@@ -766,7 +767,7 @@ def test_get_insider_activity_empty_raises(patch_ticker):
         )
     )
     with pytest.raises(SymbolNotFoundError):
-        client.get_insider_activity("nope")
+        yahoo.get_insider_activity("nope")
 
 
 # --- get_sec_filings ------------------------------------------------------
@@ -787,7 +788,7 @@ def test_get_sec_filings_curates_fields(patch_ticker):
         }
     ]
     patch_ticker(FakeTicker(sec_filings=filings))
-    out = client.get_sec_filings("aapl")
+    out = yahoo.get_sec_filings("aapl")
     assert out["count"] == 1
     item = out["filings"][0]
     assert item["type"] == "10-Q"
@@ -802,14 +803,14 @@ def test_get_sec_filings_curates_fields(patch_ticker):
 def test_get_sec_filings_caps_rows(patch_ticker):
     filings = [{"type": "8-K", "title": str(i)} for i in range(50)]
     patch_ticker(FakeTicker(sec_filings=filings))
-    out = client.get_sec_filings("aapl", limit=5)
+    out = yahoo.get_sec_filings("aapl", limit=5)
     assert out["count"] == 5
 
 
 def test_get_sec_filings_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(sec_filings=[]))
     with pytest.raises(SymbolNotFoundError):
-        client.get_sec_filings("nope")
+        yahoo.get_sec_filings("nope")
 
 
 def test_get_sec_filings_empty_explains_why(patch_ticker):
@@ -820,7 +821,7 @@ def test_get_sec_filings_empty_explains_why(patch_ticker):
     """
     patch_ticker(FakeTicker(sec_filings=[]))
     with pytest.raises(SymbolNotFoundError) as excinfo:
-        client.get_sec_filings("sap.de")
+        yahoo.get_sec_filings("sap.de")
     message = str(excinfo.value)
     assert "U.S. SEC" in message
     assert "does not show that the symbol is wrong" in message
@@ -839,7 +840,7 @@ def test_get_calendar_returns_events(patch_ticker):
         "Ex-Dividend Date": datetime.date(2026, 5, 11),
     }
     patch_ticker(FakeTicker(calendar=cal))
-    out = client.get_calendar("aapl")
+    out = yahoo.get_calendar("aapl")
     assert out["symbol"] == "AAPL"
     assert out["calendar"]["Earnings Date"] == ["2026-07-30"]
     assert out["calendar"]["Earnings Average"] == 1.89
@@ -848,7 +849,7 @@ def test_get_calendar_returns_events(patch_ticker):
 def test_get_calendar_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(calendar={}))
     with pytest.raises(SymbolNotFoundError):
-        client.get_calendar("nope")
+        yahoo.get_calendar("nope")
 
 
 # --- get_shares -----------------------------------------------------------
@@ -858,7 +859,7 @@ def test_get_shares_returns_recent_points(patch_ticker):
     idx = pd.DatetimeIndex(["2024-01-01", "2024-06-01", "2024-12-01"])
     series = pd.Series([100, 110, 120], index=idx)
     ticker = patch_ticker(FakeTicker(shares_full=series))
-    out = client.get_shares("aapl", start="2024-01-01", limit=2)
+    out = yahoo.get_shares("aapl", start="2024-01-01", limit=2)
     # Most recent points are kept (tail).
     assert out["count"] == 2
     assert out["shares"][-1]["shares"] == 120
@@ -868,13 +869,13 @@ def test_get_shares_returns_recent_points(patch_ticker):
 def test_get_shares_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(shares_full=pd.Series(dtype="float64")))
     with pytest.raises(SymbolNotFoundError):
-        client.get_shares("nope")
+        yahoo.get_shares("nope")
 
 
 def test_get_shares_none_raises(patch_ticker):
     patch_ticker(FakeTicker(shares_full=None))
     with pytest.raises(SymbolNotFoundError):
-        client.get_shares("nope")
+        yahoo.get_shares("nope")
 
 
 def test_get_shares_upstream_error(monkeypatch):
@@ -882,9 +883,9 @@ def test_get_shares_upstream_error(monkeypatch):
         def get_shares_full(self, **kwargs):
             raise RuntimeError("network down")
 
-    monkeypatch.setattr(client, "_get_ticker", lambda s: Boom())
+    monkeypatch.setattr(tickers, "get_ticker", lambda s: Boom())
     with pytest.raises(ToolError):
-        client.get_shares("AAPL")
+        yahoo.get_shares("AAPL")
 
 
 def test_get_shares_rate_limit(monkeypatch):
@@ -892,9 +893,9 @@ def test_get_shares_rate_limit(monkeypatch):
         def get_shares_full(self, **kwargs):
             raise YFRateLimitError()
 
-    monkeypatch.setattr(client, "_get_ticker", lambda s: Throttled())
+    monkeypatch.setattr(tickers, "get_ticker", lambda s: Throttled())
     with pytest.raises(RateLimitError):
-        client.get_shares("AAPL")
+        yahoo.get_shares("AAPL")
 
 
 # --- get_fund_data --------------------------------------------------------
@@ -918,7 +919,7 @@ def _fake_funds_data():
 
 def test_get_fund_data_returns_profile(patch_ticker):
     patch_ticker(FakeTicker(funds_data=_fake_funds_data()))
-    out = client.get_fund_data("spy")
+    out = yahoo.get_fund_data("spy")
     assert out["symbol"] == "SPY"
     assert out["description"] == "An index ETF."
     assert out["fund_overview"] == {"categoryName": "Large Blend"}
@@ -941,26 +942,26 @@ def test_get_fund_data_caps_holdings(patch_ticker):
         top_holdings=top,
     )
     patch_ticker(FakeTicker(funds_data=fd))
-    out = client.get_fund_data("spy", limit=5)
+    out = yahoo.get_fund_data("spy", limit=5)
     assert len(out["top_holdings"]) == 5
 
 
 def test_get_fund_data_non_fund_raises_not_found(patch_ticker):
     patch_ticker(FakeTicker(funds_data=YFDataException("No Fund data found.")))
     with pytest.raises(SymbolNotFoundError):
-        client.get_fund_data("aapl")
+        yahoo.get_fund_data("aapl")
 
 
 def test_get_fund_data_rate_limit(patch_ticker):
     patch_ticker(FakeTicker(funds_data=YFRateLimitError()))
     with pytest.raises(RateLimitError):
-        client.get_fund_data("spy")
+        yahoo.get_fund_data("spy")
 
 
 def test_get_fund_data_upstream_error(patch_ticker):
     patch_ticker(FakeTicker(funds_data=RuntimeError("boom")))
     with pytest.raises(ToolError):
-        client.get_fund_data("spy")
+        yahoo.get_fund_data("spy")
 
 
 # --- get_sector -----------------------------------------------------------
@@ -993,8 +994,8 @@ def _fake_sector(name="Technology", n_companies=2):
 
 
 def test_get_sector_returns_overview(monkeypatch):
-    monkeypatch.setattr(client.yf, "Sector", lambda key: _fake_sector())
-    out = client.get_sector("technology")
+    monkeypatch.setattr(tickers.yf, "Sector", lambda key: _fake_sector())
+    out = yahoo.get_sector("technology")
     assert out["key"] == "technology"
     assert out["name"] == "Technology"
     assert out["index_symbol"] == "^YH311"
@@ -1003,8 +1004,8 @@ def test_get_sector_returns_overview(monkeypatch):
 
 
 def test_get_sector_caps_top_companies(monkeypatch):
-    monkeypatch.setattr(client.yf, "Sector", lambda key: _fake_sector(n_companies=100))
-    out = client.get_sector("technology", limit=5)
+    monkeypatch.setattr(tickers.yf, "Sector", lambda key: _fake_sector(n_companies=100))
+    out = yahoo.get_sector("technology", limit=5)
     assert len(out["top_companies"]) == 5
 
 
@@ -1020,14 +1021,14 @@ def test_get_sector_unknown_key_raises(monkeypatch):
         top_mutual_funds=None,
         industries=None,
     )
-    monkeypatch.setattr(client.yf, "Sector", lambda key: none_sector)
+    monkeypatch.setattr(tickers.yf, "Sector", lambda key: none_sector)
     with pytest.raises(ToolError):
-        client.get_sector("not-a-sector")
+        yahoo.get_sector("not-a-sector")
 
 
 def test_get_sector_empty_key_raises():
     with pytest.raises(ToolError):
-        client.get_sector("   ")
+        yahoo.get_sector("   ")
 
 
 def test_get_sector_valid_key_no_data_raises_not_found(monkeypatch):
@@ -1043,25 +1044,25 @@ def test_get_sector_valid_key_no_data_raises_not_found(monkeypatch):
         industries=None,
     )
     # A valid key that returns no data is a not-found, not an unknown-key error.
-    monkeypatch.setattr(client.yf, "Sector", lambda key: none_sector)
+    monkeypatch.setattr(tickers.yf, "Sector", lambda key: none_sector)
     with pytest.raises(SymbolNotFoundError):
-        client.get_sector("technology")
+        yahoo.get_sector("technology")
 
 
 def test_get_sector_upstream_error(monkeypatch):
     def boom(key):
         raise RuntimeError("network down")
 
-    monkeypatch.setattr(client.yf, "Sector", boom)
+    monkeypatch.setattr(tickers.yf, "Sector", boom)
     with pytest.raises(ToolError):
-        client.get_sector("technology")
+        yahoo.get_sector("technology")
 
 
 def test_sector_keys_derived_from_const():
     # Keys come from yfinance's constant (or the fallback); both include these.
-    assert "technology" in client.SECTOR_KEYS
-    assert "healthcare" in client.SECTOR_KEYS
-    assert len(client.SECTOR_KEYS) >= 11
+    assert "technology" in yahoo.SECTOR_KEYS
+    assert "healthcare" in yahoo.SECTOR_KEYS
+    assert len(yahoo.SECTOR_KEYS) >= 11
 
 
 # --- get_industry ---------------------------------------------------------
@@ -1095,8 +1096,8 @@ def _fake_industry(name="Semiconductors", n_companies=2):
 
 
 def test_get_industry_returns_overview(monkeypatch):
-    monkeypatch.setattr(client.yf, "Industry", lambda key: _fake_industry())
-    out = client.get_industry("semiconductors")
+    monkeypatch.setattr(tickers.yf, "Industry", lambda key: _fake_industry())
+    out = yahoo.get_industry("semiconductors")
     assert out["name"] == "Semiconductors"
     assert out["sector_key"] == "technology"
     assert out["top_performing_companies"][0]["symbol"] == "NVDA"
@@ -1105,9 +1106,9 @@ def test_get_industry_returns_overview(monkeypatch):
 
 def test_get_industry_caps_top_companies(monkeypatch):
     monkeypatch.setattr(
-        client.yf, "Industry", lambda key: _fake_industry(n_companies=100)
+        tickers.yf, "Industry", lambda key: _fake_industry(n_companies=100)
     )
-    out = client.get_industry("semiconductors", limit=5)
+    out = yahoo.get_industry("semiconductors", limit=5)
     assert len(out["top_companies"]) == 5
 
 
@@ -1124,14 +1125,14 @@ def test_get_industry_unknown_key_raises(monkeypatch):
         top_performing_companies=None,
         top_growth_companies=None,
     )
-    monkeypatch.setattr(client.yf, "Industry", lambda key: none_industry)
+    monkeypatch.setattr(tickers.yf, "Industry", lambda key: none_industry)
     with pytest.raises(ToolError):
-        client.get_industry("not-an-industry")
+        yahoo.get_industry("not-an-industry")
 
 
 def test_get_industry_empty_key_raises():
     with pytest.raises(ToolError):
-        client.get_industry("")
+        yahoo.get_industry("")
 
 
 def test_get_industry_valid_key_no_data_raises_not_found(monkeypatch):
@@ -1147,18 +1148,18 @@ def test_get_industry_valid_key_no_data_raises_not_found(monkeypatch):
         top_performing_companies=None,
         top_growth_companies=None,
     )
-    monkeypatch.setattr(client.yf, "Industry", lambda key: none_industry)
+    monkeypatch.setattr(tickers.yf, "Industry", lambda key: none_industry)
     with pytest.raises(SymbolNotFoundError):
-        client.get_industry("semiconductors")
+        yahoo.get_industry("semiconductors")
 
 
 def test_get_industry_upstream_error(monkeypatch):
     def boom(key):
         raise RuntimeError("network down")
 
-    monkeypatch.setattr(client.yf, "Industry", boom)
+    monkeypatch.setattr(tickers.yf, "Industry", boom)
     with pytest.raises(ToolError):
-        client.get_industry("semiconductors")
+        yahoo.get_industry("semiconductors")
 
 
 # --- get_company_info -----------------------------------------------------
@@ -1176,7 +1177,7 @@ def test_get_company_info_returns_curated_fields(patch_ticker):
             }
         )
     )
-    info = client.get_company_info("aapl")
+    info = yahoo.get_company_info("aapl")
     assert info["symbol"] == "AAPL"
     assert info["shortName"] == "Apple Inc."
     assert info["sector"] == "Technology"
@@ -1187,7 +1188,7 @@ def test_get_company_info_returns_curated_fields(patch_ticker):
 def test_get_company_info_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(info={}))
     with pytest.raises(SymbolNotFoundError):
-        client.get_company_info("nope")
+        yahoo.get_company_info("nope")
 
 
 def test_get_company_info_echoes_the_input_symbol(patch_ticker):
@@ -1202,7 +1203,7 @@ def test_get_company_info_echoes_the_input_symbol(patch_ticker):
             info={"quoteType": "EQUITY", "shortName": "Apple Inc.", "symbol": "AAPL"}
         )
     )
-    info = client.get_company_info("US0378331005")
+    info = yahoo.get_company_info("US0378331005")
     assert info["symbol"] == "US0378331005"
     assert info["resolved_symbol"] == "AAPL"
 
@@ -1214,7 +1215,7 @@ def test_get_company_info_omits_resolved_symbol_when_identical(patch_ticker):
             info={"quoteType": "EQUITY", "shortName": "Apple Inc.", "symbol": "AAPL"}
         )
     )
-    info = client.get_company_info("aapl")
+    info = yahoo.get_company_info("aapl")
     assert info["symbol"] == "AAPL"
     assert "resolved_symbol" not in info
 
@@ -1230,12 +1231,12 @@ def test_search_clamps_limit(monkeypatch):
             captured["max_results"] = max_results
             self.quotes = []
 
-    monkeypatch.setattr(client.yf, "Search", FakeSearch)
+    monkeypatch.setattr(tickers.yf, "Search", FakeSearch)
 
-    client.search("x", limit=999)
+    yahoo.search("x", limit=999)
     assert captured["max_results"] == 25
 
-    client.search("x", limit=0)
+    yahoo.search("x", limit=0)
     assert captured["max_results"] == 1
 
 
@@ -1246,7 +1247,7 @@ def test_get_history_truncates_and_flags(patch_ticker):
     idx = pd.date_range("2024-01-01", periods=10, freq="D")
     df = pd.DataFrame({"Close": list(range(10))}, index=idx)
     patch_ticker(FakeTicker(history=df))
-    out = client.get_history("aapl", limit=3)
+    out = yahoo.get_history("aapl", limit=3)
     assert out["count"] == 3
     assert out["truncated"] is True
     # The most recent rows are kept (tail).
@@ -1257,76 +1258,76 @@ def test_get_history_truncates_and_flags(patch_ticker):
 
 
 def test_get_ticker_caches_and_is_case_insensitive(monkeypatch):
-    client._ticker_cache.clear()
+    tickers._ticker_cache.clear()
     constructed: list[str] = []
 
     def fake_ticker(symbol):
         constructed.append(symbol)
         return FakeTicker()
 
-    monkeypatch.setattr(client.yf, "Ticker", fake_ticker)
+    monkeypatch.setattr(tickers.yf, "Ticker", fake_ticker)
 
-    first = client._get_ticker("aapl")
-    second = client._get_ticker("AAPL")
+    first = tickers.get_ticker("aapl")
+    second = tickers.get_ticker("AAPL")
     assert first is second  # same cached instance
     assert constructed == ["AAPL"]  # built once, key upper-cased
 
 
 def test_get_ticker_cache_is_bounded(monkeypatch):
     """Distinct symbols past the cap evict the least recently used one."""
-    client._ticker_cache.clear()
-    monkeypatch.setattr(client, "_TICKER_CACHE_MAX", 3)
-    monkeypatch.setattr(client.yf, "Ticker", lambda symbol: FakeTicker())
+    tickers._ticker_cache.clear()
+    monkeypatch.setattr(tickers, "_TICKER_CACHE_MAX", 3)
+    monkeypatch.setattr(tickers.yf, "Ticker", lambda symbol: FakeTicker())
 
     for sym in ("A", "B", "C"):
-        client._get_ticker(sym)
-    client._get_ticker("A")  # A is now the most recently used
-    client._get_ticker("D")
-    assert list(client._ticker_cache) == ["C", "A", "D"]
+        tickers.get_ticker(sym)
+    tickers.get_ticker("A")  # A is now the most recently used
+    tickers.get_ticker("D")
+    assert list(tickers._ticker_cache) == ["C", "A", "D"]
 
 
 def test_get_ticker_cache_drops_expired_entries(monkeypatch):
     """A stale entry goes on the next insert, not only when it is asked for."""
-    client._ticker_cache.clear()
+    tickers._ticker_cache.clear()
     clock = [1000.0]
-    monkeypatch.setattr(client.time, "monotonic", lambda: clock[0])
-    monkeypatch.setattr(client.yf, "Ticker", lambda symbol: FakeTicker())
+    monkeypatch.setattr(tickers.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(tickers.yf, "Ticker", lambda symbol: FakeTicker())
 
-    client._get_ticker("OLD")
-    clock[0] += client._TICKER_TTL + 1
-    client._get_ticker("NEW")
-    assert list(client._ticker_cache) == ["NEW"]
+    tickers.get_ticker("OLD")
+    clock[0] += tickers._TICKER_TTL + 1
+    tickers.get_ticker("NEW")
+    assert list(tickers._ticker_cache) == ["NEW"]
 
 
 def test_get_ticker_unresolvable_isin_is_symbol_not_found(monkeypatch):
     """yfinance resolves ISIN-shaped input in the constructor and raises
     ValueError when Yahoo knows no such ISIN. That must not escape raw."""
-    client._ticker_cache.clear()
+    tickers._ticker_cache.clear()
 
     def unresolvable(symbol):
         raise ValueError(f"Invalid ISIN number: {symbol}")
 
-    monkeypatch.setattr(client.yf, "Ticker", unresolvable)
+    monkeypatch.setattr(tickers.yf, "Ticker", unresolvable)
     with pytest.raises(SymbolNotFoundError) as info:
-        client._get_ticker("zz0000000009")
+        tickers.get_ticker("zz0000000009")
     assert info.value.symbol == "ZZ0000000009"
-    assert "ZZ0000000009" not in client._ticker_cache
+    assert "ZZ0000000009" not in tickers._ticker_cache
 
 
 def test_get_ticker_rate_limit_while_resolving(monkeypatch):
-    client._ticker_cache.clear()
+    tickers._ticker_cache.clear()
 
     def throttled(symbol):
         raise YFRateLimitError()
 
-    monkeypatch.setattr(client.yf, "Ticker", throttled)
+    monkeypatch.setattr(tickers.yf, "Ticker", throttled)
     with pytest.raises(RateLimitError):
-        client._get_ticker("US0378331005")
+        tickers.get_ticker("US0378331005")
 
 
 def test_get_ticker_empty_symbol_raises():
     with pytest.raises(ToolError):
-        client._get_ticker("   ")
+        tickers.get_ticker("   ")
 
 
 # --- upstream error normalization -----------------------------------------
@@ -1343,27 +1344,27 @@ def _ticker_raising_on(attr, exc):
 
 # (attribute that fails, call that should trigger it)
 _UPSTREAM_CASES = [
-    ("fast_info", lambda: client.get_quote("AAPL")),
-    ("info", lambda: client.get_company_info("AAPL")),
-    ("income_stmt", lambda: client.get_financials("AAPL")),
-    ("dividends", lambda: client.get_dividends("AAPL")),
-    ("get_news", lambda: client.get_news("AAPL")),
-    ("recommendations", lambda: client.get_recommendations("AAPL")),
-    ("options", lambda: client.get_options("AAPL")),
-    ("get_earnings_dates", lambda: client.get_earnings("AAPL")),
-    ("earnings_estimate", lambda: client.get_estimates("AAPL")),
-    ("upgrades_downgrades", lambda: client.get_upgrades_downgrades("AAPL")),
-    ("major_holders", lambda: client.get_holders("AAPL")),
-    ("insider_transactions", lambda: client.get_insider_activity("AAPL")),
-    ("sec_filings", lambda: client.get_sec_filings("AAPL")),
-    ("calendar", lambda: client.get_calendar("AAPL")),
+    ("fast_info", lambda: yahoo.get_quote("AAPL")),
+    ("info", lambda: yahoo.get_company_info("AAPL")),
+    ("income_stmt", lambda: yahoo.get_financials("AAPL")),
+    ("dividends", lambda: yahoo.get_dividends("AAPL")),
+    ("get_news", lambda: yahoo.get_news("AAPL")),
+    ("recommendations", lambda: yahoo.get_recommendations("AAPL")),
+    ("options", lambda: yahoo.get_options("AAPL")),
+    ("get_earnings_dates", lambda: yahoo.get_earnings("AAPL")),
+    ("earnings_estimate", lambda: yahoo.get_estimates("AAPL")),
+    ("upgrades_downgrades", lambda: yahoo.get_upgrades_downgrades("AAPL")),
+    ("major_holders", lambda: yahoo.get_holders("AAPL")),
+    ("insider_transactions", lambda: yahoo.get_insider_activity("AAPL")),
+    ("sec_filings", lambda: yahoo.get_sec_filings("AAPL")),
+    ("calendar", lambda: yahoo.get_calendar("AAPL")),
 ]
 
 
 @pytest.mark.parametrize("attr,call", _UPSTREAM_CASES)
 def test_upstream_error_becomes_toolerror(monkeypatch, attr, call):
     monkeypatch.setattr(
-        client, "_get_ticker", lambda s: _ticker_raising_on(attr, RuntimeError("boom"))
+        tickers, "get_ticker", lambda s: _ticker_raising_on(attr, RuntimeError("boom"))
     )
     with pytest.raises(ToolError) as exc_info:
         call()
@@ -1374,7 +1375,7 @@ def test_upstream_error_becomes_toolerror(monkeypatch, attr, call):
 @pytest.mark.parametrize("attr,call", _UPSTREAM_CASES)
 def test_upstream_rate_limit_becomes_rate_limit_error(monkeypatch, attr, call):
     monkeypatch.setattr(
-        client, "_get_ticker", lambda s: _ticker_raising_on(attr, YFRateLimitError())
+        tickers, "get_ticker", lambda s: _ticker_raising_on(attr, YFRateLimitError())
     )
     with pytest.raises(RateLimitError):
         call()
@@ -1387,9 +1388,9 @@ def test_get_options_chain_upstream_error(monkeypatch):
         raise RuntimeError("chain failed")
 
     ticker.option_chain = boom
-    monkeypatch.setattr(client, "_get_ticker", lambda s: ticker)
+    monkeypatch.setattr(tickers, "get_ticker", lambda s: ticker)
     with pytest.raises(ToolError):
-        client.get_options("AAPL", expiration="2024-01-19")
+        yahoo.get_options("AAPL", expiration="2024-01-19")
 
 
 def test_get_options_chain_rate_limit(monkeypatch):
@@ -1399,9 +1400,9 @@ def test_get_options_chain_rate_limit(monkeypatch):
         raise YFRateLimitError()
 
     ticker.option_chain = boom
-    monkeypatch.setattr(client, "_get_ticker", lambda s: ticker)
+    monkeypatch.setattr(tickers, "get_ticker", lambda s: ticker)
     with pytest.raises(RateLimitError):
-        client.get_options("AAPL", expiration="2024-01-19")
+        yahoo.get_options("AAPL", expiration="2024-01-19")
 
 
 # --- get_market -------------------------------------------------------------
@@ -1454,9 +1455,9 @@ _SUMMARY = {
 
 def test_get_market_returns_status_and_indices(monkeypatch):
     monkeypatch.setattr(
-        client.yf, "Market", lambda key: _fake_market(_STATUS_US, _SUMMARY)
+        tickers.yf, "Market", lambda key: _fake_market(_STATUS_US, _SUMMARY)
     )
-    out = client.get_market("US")
+    out = yahoo.get_market("US")
     assert out["key"] == "US"
     assert out["status"]["status"] == "closed"
     assert out["status"]["name"] == "U.S. markets"
@@ -1470,19 +1471,19 @@ def test_get_market_returns_status_and_indices(monkeypatch):
 
 def test_get_market_lowercase_key_is_accepted(monkeypatch):
     monkeypatch.setattr(
-        client.yf, "Market", lambda key: _fake_market(_STATUS_US, _SUMMARY)
+        tickers.yf, "Market", lambda key: _fake_market(_STATUS_US, _SUMMARY)
     )
-    assert client.get_market("us")["key"] == "US"
+    assert yahoo.get_market("us")["key"] == "US"
 
 
 def test_get_market_status_unavailable_is_not_an_error(monkeypatch):
     """Only "US" serves a status upstream. Everything else must still work."""
     monkeypatch.setattr(
-        client.yf,
+        tickers.yf,
         "Market",
         lambda key: _fake_market(None, _SUMMARY, status_raises=True),
     )
-    out = client.get_market("EUROPE")
+    out = yahoo.get_market("EUROPE")
     assert out["status"] is None
     assert out["count"] == 1
 
@@ -1497,29 +1498,29 @@ def test_get_market_rate_limit_propagates(monkeypatch):
         def summary(self):
             return _SUMMARY
 
-    monkeypatch.setattr(client.yf, "Market", lambda key: _M())
+    monkeypatch.setattr(tickers.yf, "Market", lambda key: _M())
     with pytest.raises(RateLimitError):
-        client.get_market("US")
+        yahoo.get_market("US")
 
 
 def test_get_market_unknown_key_raises():
     with pytest.raises(ToolError) as exc:
-        client.get_market("MARS")
+        yahoo.get_market("MARS")
     assert "MARS" in str(exc.value)
     assert "US" in str(exc.value), "the error must list the valid keys"
 
 
 def test_get_market_empty_key_raises():
     with pytest.raises(ToolError):
-        client.get_market("   ")
+        yahoo.get_market("   ")
 
 
 def test_get_market_no_data_raises_not_found(monkeypatch):
     monkeypatch.setattr(
-        client.yf, "Market", lambda key: _fake_market(None, {}, status_raises=True)
+        tickers.yf, "Market", lambda key: _fake_market(None, {}, status_raises=True)
     )
     with pytest.raises(SymbolNotFoundError):
-        client.get_market("US")
+        yahoo.get_market("US")
 
 
 def test_get_market_summary_error_is_wrapped(monkeypatch):
@@ -1532,9 +1533,9 @@ def test_get_market_summary_error_is_wrapped(monkeypatch):
         def summary(self):
             raise RuntimeError("upstream broke")
 
-    monkeypatch.setattr(client.yf, "Market", lambda key: _M())
+    monkeypatch.setattr(tickers.yf, "Market", lambda key: _M())
     with pytest.raises(ToolError) as exc:
-        client.get_market("US")
+        yahoo.get_market("US")
     assert "market summary" in str(exc.value)
 
 
@@ -1544,7 +1545,7 @@ def test_get_market_status_none_becomes_null_not_empty_dict(monkeypatch):
     Both paths must produce the same answer, otherwise callers see an empty dict
     for one market and null for another.
     """
-    monkeypatch.setattr(client.yf, "Market", lambda key: _fake_market(None, _SUMMARY))
-    out = client.get_market("EUROPE")
+    monkeypatch.setattr(tickers.yf, "Market", lambda key: _fake_market(None, _SUMMARY))
+    out = yahoo.get_market("EUROPE")
     assert out["status"] is None
     assert out["count"] == 1
