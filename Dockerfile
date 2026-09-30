@@ -64,7 +64,9 @@ EXPOSE 8000
 # Persist the result cache across container restarts.
 VOLUME ["/cache"]
 
-# Basic liveness check: the configured HTTP port is accepting connections.
+# Basic liveness check: the configured HTTP port is accepting connections. It
+# reads the port from YF_MCP_PORT, since a healthcheck cannot see the
+# command line: set the port through the variable, never with --port.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import os, socket; socket.create_connection(('127.0.0.1', int(os.environ.get('YF_MCP_PORT', '8000'))), 3).close()" || exit 1
 
@@ -72,4 +74,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 # still be appended (they override the env), e.g.:
 #   docker run -e YF_MCP_PORT=9000 -p 9000:9000 IMAGE
 #   docker run IMAGE --log-level DEBUG
+# The port is the exception: an appended --port 9000 leaves the healthcheck
+# knocking on 8000, and the container stays unhealthy for good.
 ENTRYPOINT ["benethos-yahoo-finance-mcp"]

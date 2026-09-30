@@ -13,12 +13,14 @@ here first.
 
 from __future__ import annotations
 
+import math
 import os
 import sys
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 TRANSPORTS = ("stdio", "streamable-http", "sse")
@@ -168,7 +170,7 @@ def load_settings(
 
     ttls = dict(DEFAULT_TTLS)
     for name in DEFAULT_TTLS:
-        ttls[name] = from_env(f"YF_MCP_CACHE_TTL_{name.upper()}", float, ttls[name])
+        ttls[name] = from_env(f"YF_MCP_CACHE_TTL_{name.upper()}", _seconds, ttls[name])
     ttls.update(parse_ttl_items(given("cache_ttl") or ()))
 
     return Settings(
@@ -179,7 +181,7 @@ def load_settings(
         allowed_hosts=split_csv(
             given("allowed_hosts") or env.get("YF_MCP_ALLOWED_HOSTS")
         ),
-        allowed_origins=split_csv(
+        allowed_origins=origins_from(
             given("allowed_origins") or env.get("YF_MCP_ALLOWED_ORIGINS")
         ),
         log_level=log_level,
@@ -211,6 +213,18 @@ def _positive_int(raw: str) -> int:
     return value
 
 
+def _seconds(raw: str) -> float:
+    """A TTL: a finite number of seconds, zero or more.
+
+    ``float`` alone takes ``nan``, ``inf`` and negative values. A nan TTL made
+    every write fail with an IntegrityError, inf kept entries for ever.
+    """
+    value = float(raw)
+    if not math.isfinite(value) or value < 0:
+        raise ValueError(raw)
+    return value
+
+
 def _truthy(raw: str) -> bool:
     return raw.strip().lower() not in _FALSY
 
@@ -234,10 +248,39 @@ def parse_ttl_items(items: Any) -> dict[str, float]:
                 f"one of {', '.join(DEFAULT_TTLS)}"
             )
         try:
-            overrides[name] = float(raw)
+            overrides[name] = _seconds(raw)
         except ValueError:
-            raise SettingsError(f"invalid --cache-ttl seconds in {item!r}") from None
+            raise SettingsError(
+                f"invalid --cache-ttl seconds in {item!r}, expected a finite "
+                "number of 0 or more"
+            ) from None
     return overrides
+
+
+def origins_from(value: str | None) -> tuple[str, ...]:
+    """The allowed origins, each a scheme and a host, without a final slash.
+
+    A browser sends ``Origin`` as ``scheme://host[:port]`` and nothing more.
+    An origin without a scheme left the derived host list empty while the
+    guard stayed on, so every client got HTTP 421, and one with a final slash
+    never matched, so every browser got 403. A final slash is dropped, and an
+    origin without scheme or host stops the start: ignoring the whole list
+    would switch the guard off for an exposed bind, which is worse. It comes
+    from ``--allowed-origins`` or ``YF_MCP_ALLOWED_ORIGINS``, and the message
+    names both.
+    """
+    origins = []
+    for item in split_csv(value):
+        origin = item.rstrip("/")
+        parts = urlsplit(origin)
+        if not parts.scheme or not parts.netloc or parts.path:
+            raise SettingsError(
+                f"invalid allowed origin {item!r} in --allowed-origins or "
+                "YF_MCP_ALLOWED_ORIGINS, expected scheme://host[:port] such as "
+                "http://localhost:8000"
+            )
+        origins.append(origin)
+    return tuple(origins)
 
 
 def token_from(environ: Mapping[str, str]) -> str | None:

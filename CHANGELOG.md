@@ -84,6 +84,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The result cache kept a found-nothing answer that is a non-empty dict,
   `get_news` with `count: 0` say, for the whole TTL. A dict whose `count`
   is 0 now counts as empty, like an empty list.
+- `--path mcp` without a leading slash passed the start line and then ended
+  the server with an `AssertionError` from Starlette. It is a usage error
+  now, from the flag and from `YF_MCP_PATH` alike.
+- An allowed origin without a scheme left the derived host list empty while
+  the guard stayed on, so every client got HTTP 421, and one with a final
+  slash never matched, so every browser got 403. A final slash is dropped,
+  and an origin without scheme or host stops the start with a message
+  naming the expected form.
+- Cache TTLs took `nan`, `inf` and negative values. `nan` made every write
+  fail with an `IntegrityError`, `inf` never expired. A TTL is a finite
+  number of seconds, 0 or more: from the environment anything else is
+  reported and ignored, from `--cache-ttl` it is a usage error.
+- A failed write to the cache file left its transaction open, holding the
+  file's lock until the next write committed it along with its own. Every
+  write now commits or rolls back on its own.
+- The container's healthcheck reads the port from `YF_MCP_PORT`, while the
+  Dockerfile suggested appending CLI flags. With `--port 9000` appended the
+  container stayed unhealthy for good. The Dockerfile and the README now
+  say to set the port through the variable.
 - `get_history` and `get_shares` answered `end` before or on `start` with
   "No data found for symbol", the same wrong lead the argument checks were
   meant to remove. yfinance's `end` is exclusive, so a single day asked as

@@ -96,6 +96,21 @@ def test_rejects_a_cache_limit_below_one(capsys, value):
     assert "--cache-max-entries" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize(
+    "argv,env", [(["--path", "mcp"], None), ([], "mcp")], ids=["flag", "env"]
+)
+def test_a_path_without_a_leading_slash_is_a_usage_error(
+    monkeypatch, capsys, argv, env
+):
+    """Starlette asserted on it after the start line had already been logged."""
+    if env:
+        monkeypatch.setenv("YF_MCP_PATH", env)
+    with pytest.raises(SystemExit) as info:
+        _settings(["--transport", "streamable-http", *argv])
+    assert info.value.code == 2
+    assert "--path must start with '/'" in capsys.readouterr().err
+
+
 def test_rejects_unknown_transport():
     with pytest.raises(SystemExit):
         _settings(["--transport", "carrier-pigeon"])

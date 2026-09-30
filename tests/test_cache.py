@@ -223,6 +223,24 @@ def test_a_cache_directory_that_cannot_be_made_starts_without_a_cache(tmp_path):
         cache.configure(Settings())
 
 
+def test_a_failed_write_leaves_no_transaction_holding_the_lock(tmp_path):
+    """A nan TTL fails the INSERT. Its transaction stayed open, holding the lock."""
+    path = tmp_path / "c.sqlite"
+    rc = cache.ResultCache(path)
+    try:
+        with pytest.raises(sqlite3.IntegrityError):
+            rc.set("k", {"ok": True}, ttl=float("nan"))
+        assert not rc._conn.in_transaction
+        other = sqlite3.connect(str(path), timeout=0.1)
+        try:
+            other.execute("INSERT INTO cache VALUES ('x', 1, '1')")
+            other.commit()
+        finally:
+            other.close()
+    finally:
+        rc.close()
+
+
 def test_configure_hands_the_limit_on(tmp_path):
     cache.configure(
         Settings(cache_enabled=True, cache_dir=tmp_path, cache_max_entries=7)

@@ -150,6 +150,44 @@ class TestCacheMaxEntries:
             load_settings({"cache_max_entries": value}, {})
 
 
+class TestTtlBounds:
+    """float() takes nan, inf and negatives: nan broke every write, inf never
+    expired."""
+
+    @pytest.mark.parametrize("raw", ["nan", "inf", "-inf", "-1"])
+    def test_the_environment_value_is_ignored(self, raw):
+        resolved = load_settings({}, {"YF_MCP_CACHE_TTL_QUOTE": raw})
+        assert resolved.cache_ttls["quote"] == DEFAULT_TTLS["quote"]
+        assert resolved.ignored == (("YF_MCP_CACHE_TTL_QUOTE", raw),)
+
+    @pytest.mark.parametrize("raw", ["nan", "inf", "-5"])
+    def test_the_flag_is_an_error(self, raw):
+        with pytest.raises(SettingsError, match="finite"):
+            load_settings({"cache_ttl": [f"quote={raw}"]}, {})
+
+    def test_zero_still_turns_a_category_off(self):
+        assert load_settings({"cache_ttl": ["quote=0"]}, {}).cache_ttls["quote"] == 0
+
+
+class TestOrigins:
+    def test_a_final_slash_is_dropped(self):
+        env = {"YF_MCP_ALLOWED_ORIGINS": "http://localhost:8000/, https://a.example"}
+        assert load_settings({}, env).allowed_origins == (
+            "http://localhost:8000",
+            "https://a.example",
+        )
+
+    def test_a_port_wildcard_is_kept(self):
+        env = {"YF_MCP_ALLOWED_ORIGINS": "http://localhost:*"}
+        assert load_settings({}, env).allowed_origins == ("http://localhost:*",)
+
+    @pytest.mark.parametrize("origin", ["localhost:8000", "http://", "http://a/x"])
+    def test_an_origin_without_scheme_or_host_stops_the_start(self, origin):
+        """Ignoring it would leave the guard on with no hosts: 421 for everyone."""
+        with pytest.raises(SettingsError, match="scheme://host"):
+            load_settings({}, {"YF_MCP_ALLOWED_ORIGINS": origin})
+
+
 def test_unusable_environment_values_fall_back_and_are_recorded():
     env = {
         "YF_MCP_TRANSPORT": "carrier-pigeon",

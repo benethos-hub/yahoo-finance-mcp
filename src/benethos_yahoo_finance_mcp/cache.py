@@ -61,6 +61,10 @@ class ResultCache:
     Write order is the ``rowid``: ``INSERT OR REPLACE`` deletes the old row
     and inserts a new one, which takes a ``rowid`` above every other.
 
+    Every write runs in ``with self._conn:``, which commits it or rolls it
+    back. A failed INSERT or DELETE used to leave its transaction open, holding
+    the file's lock until the next write committed it along with its own.
+
     The pages a sweep frees go back to the file system, so the file follows
     what it holds. SQLite reuses freed pages but never hands them back on
     its own, and the file used to stay at its largest size for good.
@@ -134,8 +138,8 @@ class ResultCache:
                 return False, None
             expires_at, value = row
             if expires_at < now:
-                self._conn.execute("DELETE FROM cache WHERE key = ?", (key,))
-                self._conn.commit()
+                with self._conn:
+                    self._conn.execute("DELETE FROM cache WHERE key = ?", (key,))
                 return False, None
         try:
             return True, json.loads(value)
@@ -153,12 +157,12 @@ class ResultCache:
             return
         now = time.time()
         with self._lock:
-            self._conn.execute(
-                "INSERT OR REPLACE INTO cache (key, expires_at, value) "
-                "VALUES (?, ?, ?)",
-                (key, now + ttl, payload),
-            )
-            self._conn.commit()
+            with self._conn:
+                self._conn.execute(
+                    "INSERT OR REPLACE INTO cache (key, expires_at, value) "
+                    "VALUES (?, ?, ?)",
+                    (key, now + ttl, payload),
+                )
             self._writes += 1
             if self._writes % self.PURGE_EVERY == 0:
                 self._sweep(now)
@@ -175,21 +179,21 @@ class ResultCache:
         whose ``rowid`` is at or below the first one past them goes. With
         fewer rows the subquery finds nothing and nothing is dropped.
         """
-        self._conn.execute("DELETE FROM cache WHERE expires_at < ?", (now,))
-        dropped = self._conn.execute(
-            "DELETE FROM cache WHERE rowid <= "
-            "(SELECT rowid FROM cache ORDER BY rowid DESC LIMIT 1 OFFSET ?)",
-            (self._max_entries,),
-        ).rowcount
-        self._conn.commit()
+        with self._conn:
+            self._conn.execute("DELETE FROM cache WHERE expires_at < ?", (now,))
+            dropped = self._conn.execute(
+                "DELETE FROM cache WHERE rowid <= "
+                "(SELECT rowid FROM cache ORDER BY rowid DESC LIMIT 1 OFFSET ?)",
+                (self._max_entries,),
+            ).rowcount
         self._shrink()
         if dropped > 0:
             logbook.cache.capped(dropped, self._max_entries)
 
     def clear(self) -> None:
         with self._lock:
-            self._conn.execute("DELETE FROM cache")
-            self._conn.commit()
+            with self._conn:
+                self._conn.execute("DELETE FROM cache")
             self._shrink()
 
     def close(self) -> None:
