@@ -24,6 +24,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   count of days, weeks, months or years, since `7mo`, `3y` and `2wk` answer
   with data and a strict list would have refused them. Both parameter
   descriptions are now built from the same constants as the check.
+- Valid arguments can still find nothing: Yahoo keeps 1m bars for 8 days,
+  2m to 90m for 60 and hourly bars for 730, measured on 2026-09-30, so `1m`
+  over `1y` came back empty and was reported as an unknown symbol as well.
+  No intraday rows now says how far back that interval reaches, and names the
+  symbol only as the other possibility.
 
 ### Changed
 - The log follows written rules. Every tool call leaves one line: an INFO

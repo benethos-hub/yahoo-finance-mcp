@@ -297,6 +297,25 @@ def test_get_history_passes_4h_and_writes_the_interval_as_yahoo_does(patch_ticke
     assert ticker.history_kwargs["interval"] == "4h"
 
 
+def test_no_intraday_bars_is_not_called_an_unknown_symbol(patch_ticker):
+    """1m over a year is valid on its own and still empty: Yahoo keeps 8 days."""
+    patch_ticker(FakeTicker(history=pd.DataFrame()))
+    with pytest.raises(ToolError) as info:
+        yahoo.get_history("aapl", period="1y", interval="1m")
+    assert not isinstance(info.value, SymbolNotFoundError)
+    message = str(info.value)
+    assert message.startswith("No 1m bars for 'AAPL' in that range.")
+    assert "last 8 days" in message
+    assert "'search' tool" in message  # the symbol may still be the reason
+
+
+def test_every_intraday_interval_knows_how_far_back_it_reaches():
+    from benethos_yahoo_finance_mcp.yahoo import quotes
+
+    daily_and_up = set(yahoo.INTERVALS) - set(quotes._INTRADAY_DAYS)
+    assert daily_and_up == {"1d", "5d", "1wk", "1mo", "3mo"}
+
+
 def test_get_history_checks_only_what_it_uses(patch_ticker):
     """``period`` is ignored next to ``start`` and ``end`` without it, so
     neither is checked there."""

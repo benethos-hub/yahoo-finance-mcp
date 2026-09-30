@@ -183,6 +183,22 @@ INTERVALS = (
     "3mo",
 )
 
+# How many days back Yahoo keeps intraday bars, measured on 2026-09-30: 1m
+# answered for 8 days and nothing for 9, 2m to 90m for 60 days and nothing for
+# 61, the hourly bars for 730 days and nothing for 3 years. A range beyond
+# that comes back empty, which is no sign of an unknown symbol.
+_INTRADAY_DAYS = {
+    "1m": 8,
+    "2m": 60,
+    "5m": 60,
+    "15m": 60,
+    "30m": 60,
+    "90m": 60,
+    "60m": 730,
+    "1h": 730,
+    "4h": 730,
+}
+
 _DATE_SHAPE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 
@@ -244,6 +260,14 @@ def get_history(
         df = ticker.history(**kwargs)
 
     if df is None or df.empty:
+        if interval in _INTRADAY_DAYS:
+            raise ToolError(
+                f"No {interval} bars for {tickers.normalize(symbol)!r} in that "
+                f"range. Yahoo keeps {interval} bars for the last "
+                f"{_INTRADAY_DAYS[interval]} days only, so ask for a range inside "
+                "them or a larger interval. If the range is recent, the symbol "
+                "may be unknown: use the 'search' tool to look it up."
+            )
         raise SymbolNotFoundError(symbol)
 
     rows = dataframe_to_records(df, max_rows=limit, index_name="date")

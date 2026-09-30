@@ -360,6 +360,10 @@ values).
   shaped as a count of d, wk, mo or y (Yahoo serves `7mo` and `3y` too), and
   `start`/`end` as real dates written `YYYY-MM-DD`. Each is checked only when
   it is used, so `period` is not checked next to `start`.
+  Valid arguments can still come back empty: Yahoo keeps 1m bars for 8 days,
+  2m to 90m for 60 and the hourly bars for 730. No intraday rows is therefore
+  a `ToolError` naming that reach and the symbol as the other possibility,
+  not a `SymbolNotFoundError`.
 - `ToolError` derives from the SDK's own `ToolError`, and that is what carries
   the text. Since `mcp` 2.1.0 anything else raised from a tool is treated as
   unexpected: logged with a traceback, and reported to the client as
