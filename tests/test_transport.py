@@ -139,21 +139,6 @@ def test_unknown_scope_never_reaches_the_app(guarded):
     assert out["status"] is None
 
 
-class TestTokenFromEnv:
-    def test_unset_is_none(self, monkeypatch):
-        monkeypatch.delenv(transport.ENV_VAR, raising=False)
-        assert transport.token_from_env() is None
-
-    def test_blank_counts_as_unset(self, monkeypatch):
-        """`YF_MCP_BEARER_TOKEN=` reads as "off" to everyone who writes it."""
-        monkeypatch.setenv(transport.ENV_VAR, "   ")
-        assert transport.token_from_env() is None
-
-    def test_value_is_stripped(self, monkeypatch):
-        monkeypatch.setenv(transport.ENV_VAR, "  s3cret\n")
-        assert transport.token_from_env() == "s3cret"
-
-
 class TestHttpApp:
     """Which app comes back, and whether the guard is in front of it."""
 

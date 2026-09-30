@@ -20,6 +20,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `clear`. A file made by an earlier version is rewritten once when the
   server opens it, which takes a moment for a large one, and the log says
   so.
+- An unusable `YF_MCP_TRANSPORT`, `YF_MCP_PORT` or `YF_MCP_LOG_LEVEL` is
+  reported with a warning at startup, as an unusable `YF_MCP_CACHE_TTL_*`
+  already was. The server still falls back to the default. Before, a typo
+  such as `YF_MCP_TRANSPORT=streamable_http` started a stdio server that
+  nobody could reach, and nothing said why.
+- The console script now points at `benethos_yahoo_finance_mcp.cli:main`.
+  The command line is unchanged. The configuration is resolved once, flag
+  over environment over default, in the new `settings` module, and no module
+  reads the environment on its own any more.
 
 ## [0.6.1] - 2026-09-27
 

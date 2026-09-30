@@ -68,7 +68,7 @@ dev = [
 [project.scripts]
 # One name only, identical to the distribution name, so `uvx
 # benethos-yahoo-finance-mcp` works and every identifier matches.
-benethos-yahoo-finance-mcp = "benethos_yahoo_finance_mcp.server:main"
+benethos-yahoo-finance-mcp = "benethos_yahoo_finance_mcp.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/benethos_yahoo_finance_mcp"]

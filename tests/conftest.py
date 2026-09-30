@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from benethos_yahoo_finance_mcp import cache
+from benethos_yahoo_finance_mcp.settings import Settings
 
 
 @pytest.fixture(autouse=True)
@@ -16,4 +17,4 @@ def _cache_disabled_by_default(monkeypatch):
     """
     monkeypatch.setenv("YF_MCP_CACHE", "0")
     yield
-    cache.configure(enabled=False)
+    cache.configure(Settings())

@@ -10,9 +10,9 @@ entry point does at startup). Importing the package or calling client functions
 directly therefore does not touch the disk unless caching is explicitly turned
 on — convenient for tests and library use.
 
-Configuration precedence is CLI > environment > default, resolved by the caller
-(`server.main`); this module reads the environment only for the values it owns
-(per-tool TTLs and the cache directory fallback).
+Whether it is on, where its file lives and every TTL come from the
+:class:`~benethos_yahoo_finance_mcp.settings.Settings` handed to
+:func:`configure`. This module does not read the environment.
 """
 
 from __future__ import annotations
@@ -20,10 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import os
 import sqlite3
-import sys
-import tempfile
 import threading
 import time
 from collections.abc import Callable
@@ -31,39 +28,16 @@ from functools import wraps
 from pathlib import Path
 from typing import Any, TypeVar
 
+from . import settings as settings_mod
+from .settings import Settings
+
 logger = logging.getLogger(__name__)
 
 F = TypeVar("F", bound=Callable[..., Any])
 
-# Default time-to-live per tool category, in seconds. Tuned to the volatility of
-# each data type: quotes change constantly, fundamentals rarely.
-DEFAULT_TTLS: dict[str, float] = {
-    "search": 3600,
-    "quote": 30,
-    "quotes": 30,
-    "history": 600,
-    "company_info": 6 * 3600,
-    "financials": 24 * 3600,
-    "dividends": 6 * 3600,
-    "news": 600,
-    "recommendations": 6 * 3600,
-    "options": 600,
-    "earnings": 6 * 3600,
-    "estimates": 6 * 3600,
-    "upgrades_downgrades": 6 * 3600,
-    "holders": 24 * 3600,
-    "insider_activity": 6 * 3600,
-    "sec_filings": 6 * 3600,
-    "calendar": 6 * 3600,
-    "shares": 24 * 3600,
-    "fund_data": 24 * 3600,
-    "sector": 24 * 3600,
-    "industry": 24 * 3600,
-    # Index prices move constantly, the open/closed status changes twice a day.
-    "market": 60,
-}
-
-_FALSY = {"0", "false", "no", "off", ""}
+# The categories and their default time-to-live live with the rest of the
+# configuration. Re-exported because every category here is one of them.
+DEFAULT_TTLS = settings_mod.DEFAULT_TTLS
 
 # PRAGMA auto_vacuum: 0 none, 1 full, 2 incremental.
 _INCREMENTAL = 2
@@ -73,50 +47,6 @@ _lock = threading.Lock()
 _enabled = False
 _ttls: dict[str, float] = dict(DEFAULT_TTLS)
 _cache: ResultCache | None = None
-
-
-def env_enabled(default: bool = False) -> bool:
-    """Whether caching is enabled per the ``YF_MCP_CACHE`` env var.
-
-    Caching is **opt-in**: it is off unless ``YF_MCP_CACHE`` is truthy (or the
-    ``--cache`` flag is passed).
-    """
-    val = os.environ.get("YF_MCP_CACHE")
-    if val is None:
-        return default
-    return val.strip().lower() not in _FALSY
-
-
-def ttls_from_env() -> dict[str, float]:
-    """Read per-tool TTL overrides from ``YF_MCP_CACHE_TTL_<NAME>`` env vars."""
-    overrides: dict[str, float] = {}
-    for name in DEFAULT_TTLS:
-        raw = os.environ.get(f"YF_MCP_CACHE_TTL_{name.upper()}")
-        if raw is None:
-            continue
-        try:
-            overrides[name] = float(raw)
-        except ValueError:
-            logger.warning("Ignoring invalid TTL for %s: %r", name, raw)
-    return overrides
-
-
-def default_cache_dir() -> Path:
-    """Return the OS user cache directory for this app.
-
-    Honors ``YF_MCP_CACHE_DIR`` first, then the platform convention, falling
-    back to the system temp directory.
-    """
-    env = os.environ.get("YF_MCP_CACHE_DIR")
-    if env:
-        return Path(env)
-    if sys.platform == "win32":
-        base = os.environ.get("LOCALAPPDATA") or tempfile.gettempdir()
-    elif sys.platform == "darwin":
-        base = str(Path.home() / "Library" / "Caches")
-    else:
-        base = os.environ.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
-    return Path(base) / "benethos-yahoo-finance-mcp"
 
 
 class ResultCache:
@@ -241,26 +171,21 @@ class ResultCache:
             self._conn.close()
 
 
-def configure(
-    *,
-    enabled: bool,
-    cache_dir: str | None = None,
-    ttl_overrides: dict[str, float] | None = None,
-) -> None:
-    """Enable or disable the cache and apply TTL overrides.
+def configure(settings: Settings) -> None:
+    """Enable or disable the cache and apply the TTLs, as ``settings`` says.
 
     Called once at startup. Safe to call again (e.g. in tests); it closes any
     existing cache first.
     """
     global _enabled, _ttls, _cache
     with _lock:
-        _ttls = {**DEFAULT_TTLS, **(ttl_overrides or {})}
+        _ttls = {**DEFAULT_TTLS, **settings.cache_ttls}
         if _cache is not None:
             _cache.close()
             _cache = None
-        _enabled = enabled
-        if enabled:
-            directory = Path(cache_dir) if cache_dir else default_cache_dir()
+        _enabled = settings.cache_enabled
+        if _enabled:
+            directory: Path = settings.cache_dir or settings_mod.default_cache_dir()
             _cache = ResultCache(directory / "cache.sqlite")
             _cache.purge_expired()
             logger.info("Result cache enabled at %s", directory)

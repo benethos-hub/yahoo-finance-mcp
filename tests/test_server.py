@@ -6,7 +6,9 @@ import asyncio
 import subprocess
 import sys
 
-from benethos_yahoo_finance_mcp.server import mcp
+from benethos_yahoo_finance_mcp.server import build_server
+
+mcp = build_server()
 
 EXPECTED_TOOLS = {
     "search",
@@ -59,12 +61,15 @@ def test_every_parameter_has_a_description():
 def test_root_logging_is_ours_not_the_sdks():
     """Our plain stderr handler wins over the RichHandler the SDK installs.
 
-    Both call logging.basicConfig at import and only the first counts, so this
-    pins the ordering in server.py. Run in a fresh interpreter because pytest
-    has its own handlers on the root logger.
+    Both call logging.basicConfig and only the first counts, so this pins the
+    ordering in cli.main. Run in a fresh interpreter because pytest has its own
+    handlers on the root logger.
     """
     code = (
-        "import logging, sys, benethos_yahoo_finance_mcp.server; "
+        "import logging, sys; "
+        "from benethos_yahoo_finance_mcp import cli, transport; "
+        "transport.run_stdio = lambda server: None; "
+        "cli.main([]); "
         "h = logging.getLogger().handlers; "
         "print(len(h), type(h[0]).__name__, h[0].stream is sys.stderr)"
     )

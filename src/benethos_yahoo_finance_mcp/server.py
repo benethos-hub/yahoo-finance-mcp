@@ -1,140 +1,19 @@
-"""MCP server entry point exposing Yahoo Finance tools.
+"""The MCP server: its identity, its instructions and the tools it offers.
 
-Run directly (``python -m benethos_yahoo_finance_mcp``) or via the installed
-``benethos-yahoo-finance-mcp`` console script. The transport is selectable on the
-command line (``--transport``): ``stdio`` (default, for Claude Desktop and
-other local clients) or an HTTP transport (``streamable-http`` / ``sse``) for
-running the server as a standalone, network-reachable service.
-
-Logging always goes to stderr so that, under stdio, stdout stays reserved for
-the JSON-RPC stream.
+:func:`build_server` makes a server with every tool registered. Nothing runs at
+import beyond definitions, the command line in :mod:`.cli` decides when a server
+is built and which transport it is handed to.
 """
 
 from __future__ import annotations
 
-import argparse
-import logging
-import os
-import sys
 from typing import Annotated, Any
-from urllib.parse import urlsplit
 
 from mcp.server.mcpserver import MCPServer
-from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
-from . import __version__, cache, client, transport
-
-_LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-_TRANSPORTS = ["stdio", "streamable-http", "sse"]
-
-
-def _default_log_level() -> str:
-    """Default log level from the YF_MCP_LOG_LEVEL env var, falling back to INFO."""
-    level = os.environ.get("YF_MCP_LOG_LEVEL", "INFO").upper()
-    return level if level in _LOG_LEVELS else "INFO"
-
-
-def _default_transport() -> str:
-    """Default transport from the YF_MCP_TRANSPORT env var, falling back to stdio."""
-    name = os.environ.get("YF_MCP_TRANSPORT", "stdio").strip().lower()
-    return name if name in _TRANSPORTS else "stdio"
-
-
-def _default_port() -> int:
-    """Default port from the YF_MCP_PORT env var, falling back to 8000."""
-    try:
-        return int(os.environ.get("YF_MCP_PORT", "8000"))
-    except ValueError:
-        return 8000
-
-
-# Host values for which we keep DNS-rebinding protection on by default.
-_LOCALHOST_BINDS = frozenset({"127.0.0.1", "localhost", "::1", ""})
-
-
-def _split_csv(value: str | None) -> list[str]:
-    """Split a comma-separated option value into a clean list of items."""
-    if not value:
-        return []
-    return [item.strip() for item in value.split(",") if item.strip()]
-
-
-def _hosts_from_origins(origins: list[str]) -> list[str]:
-    """The Host header values the given origins imply, in order, deduplicated.
-
-    An origin's authority is exactly what a browser at that origin sends as
-    ``Host``, including a ``:*`` port wildcard, which the SDK understands in
-    both lists.
-    """
-    hosts: list[str] = []
-    for origin in origins:
-        netloc = urlsplit(origin).netloc
-        if netloc and netloc not in hosts:
-            hosts.append(netloc)
-    return hosts
-
-
-def _transport_security_for(
-    host: str, allowed_hosts: list[str], allowed_origins: list[str]
-) -> TransportSecuritySettings:
-    """Compute the transport security policy for the host the server binds.
-
-    The SDK defaults this to a localhost-only allow-list. Left alone, an HTTP
-    transport bound to a non-localhost host would reject every remote client
-    with HTTP 421 ("Invalid Host header"), which is exactly what containers and
-    gateways run into. Derive it from the host actually being bound:
-
-    - An explicit allow-list always wins: enable protection with those values.
-      Either list is derived from the other when only one is given.
-    - A localhost bind keeps the protective localhost defaults.
-    - A deliberately exposed bind (e.g. 0.0.0.0) with no allow-list turns
-      DNS-rebinding protection off, mirroring the SDK's own default for a
-      non-localhost bind.
-
-    The hosts have to be derived, not left empty. With protection on, the SDK
-    checks the Host header of every request against the list, and an empty
-    list matches nothing: origins alone used to lock out every client with
-    HTTP 421, the browser the origins were meant for included.
-    """
-    if allowed_hosts or allowed_origins:
-        origins = allowed_origins or [
-            f"{scheme}://{h}" for h in allowed_hosts for scheme in ("http", "https")
-        ]
-        allowed_hosts = allowed_hosts or _hosts_from_origins(allowed_origins)
-        return TransportSecuritySettings(
-            enable_dns_rebinding_protection=True,
-            allowed_hosts=allowed_hosts,
-            allowed_origins=origins,
-        )
-    if host in _LOCALHOST_BINDS:
-        return TransportSecuritySettings(
-            enable_dns_rebinding_protection=True,
-            allowed_hosts=["127.0.0.1:*", "localhost:*", "[::1]:*"],
-            allowed_origins=[
-                "http://127.0.0.1:*",
-                "http://localhost:*",
-                "http://[::1]:*",
-            ],
-        )
-    return TransportSecuritySettings(enable_dns_rebinding_protection=False)
-
-
-# Log to stderr only: stdout carries the MCP JSON-RPC protocol.
-#
-# This runs at import and has to stay above the MCPServer construction below.
-# The SDK's constructor calls logging.basicConfig itself, with a RichHandler,
-# and basicConfig only ever takes effect once. Whoever calls it first decides
-# the format. Moved into main(), this call would come second and do nothing,
-# and every log line would come out in Rich's layout, wrapped to a terminal
-# width that a container log does not have.
-logging.basicConfig(
-    level=_default_log_level(),
-    stream=sys.stderr,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-)
-logger = logging.getLogger("benethos_yahoo_finance_mcp")
+from . import __version__, client
 
 # Sent once during the initialize handshake, not per tool, so this is the
 # natural place for rules that hold across the whole server.
@@ -182,18 +61,6 @@ no more.
 Data is delayed and may be incomplete. This is not investment advice.
 """
 
-# Identity reported to clients during the MCP initialize handshake. ``name`` is
-# the programmatic identifier and is kept identical to the PyPI distribution
-# name, so the server a client lists is traceable to the package it came from.
-# ``title`` is what a client shows to a person.
-mcp = MCPServer(
-    name="benethos-yahoo-finance-mcp",
-    title="Unofficial Yahoo Finance MCP Server",
-    version=__version__,
-    instructions=_INSTRUCTIONS,
-)
-
-
 # Every tool here only reads, and every one of them asks Yahoo, so they all
 # carry the same two hints. A client may use them to call a read-only tool
 # without asking the user first. destructiveHint and idempotentHint are left
@@ -203,7 +70,6 @@ mcp = MCPServer(
 _READ_ONLY = ToolAnnotations(read_only_hint=True, open_world_hint=True)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def search(
     query: Annotated[
         str, Field(description="Company name, ticker symbol, or ISIN to look up.")
@@ -240,13 +106,11 @@ Symbol = Annotated[
 ]
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_quote(symbol: Symbol) -> dict[str, Any]:
     """Get the current price and key intraday figures for a Yahoo symbol."""
     return client.get_quote(symbol)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_quotes(
     symbols: Annotated[
         list[str],
@@ -266,7 +130,6 @@ def get_quotes(
     return client.get_quotes(symbols)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_history(
     symbol: Symbol,
     period: Annotated[
@@ -302,7 +165,6 @@ def get_history(
     )
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_company_info(symbol: Symbol) -> dict[str, Any]:
     """Get a company profile and key statistics for a Yahoo symbol.
 
@@ -313,7 +175,6 @@ def get_company_info(symbol: Symbol) -> dict[str, Any]:
     return client.get_company_info(symbol)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_financials(
     symbol: Symbol,
     statement: Annotated[
@@ -339,13 +200,11 @@ def get_financials(
     return client.get_financials(symbol, statement=statement, freq=freq)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_dividends(symbol: Symbol) -> dict[str, Any]:
     """Get the dividend and stock-split history for a Yahoo symbol."""
     return client.get_dividends(symbol)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_news(
     symbol: Symbol,
     limit: Annotated[
@@ -360,7 +219,6 @@ def get_news(
     return client.get_news(symbol, limit=limit)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_recommendations(symbol: Symbol) -> dict[str, Any]:
     """Get analyst recommendation trends and price targets for a Yahoo symbol.
 
@@ -370,7 +228,6 @@ def get_recommendations(symbol: Symbol) -> dict[str, Any]:
     return client.get_recommendations(symbol)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_options(
     symbol: Symbol,
     expiration: Annotated[
@@ -393,7 +250,6 @@ def get_options(
     return client.get_options(symbol, expiration=expiration)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_earnings(
     symbol: Symbol,
     limit: Annotated[
@@ -410,7 +266,6 @@ def get_earnings(
     return client.get_earnings(symbol, limit=limit)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_estimates(symbol: Symbol) -> dict[str, Any]:
     """Get forward analyst estimates for a Yahoo symbol.
 
@@ -421,7 +276,6 @@ def get_estimates(symbol: Symbol) -> dict[str, Any]:
     return client.get_estimates(symbol)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_upgrades_downgrades(
     symbol: Symbol,
     limit: Annotated[
@@ -437,7 +291,6 @@ def get_upgrades_downgrades(
     return client.get_upgrades_downgrades(symbol, limit=limit)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_holders(
     symbol: Symbol,
     limit: Annotated[
@@ -459,7 +312,6 @@ def get_holders(
     return client.get_holders(symbol, limit=limit)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_insider_activity(
     symbol: Symbol,
     limit: Annotated[
@@ -480,7 +332,6 @@ def get_insider_activity(
     return client.get_insider_activity(symbol, limit=limit)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_sec_filings(
     symbol: Symbol,
     limit: Annotated[
@@ -498,7 +349,6 @@ def get_sec_filings(
     return client.get_sec_filings(symbol, limit=limit)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_calendar(symbol: Symbol) -> dict[str, Any]:
     """Get upcoming corporate-calendar events for a Yahoo symbol.
 
@@ -508,7 +358,6 @@ def get_calendar(symbol: Symbol) -> dict[str, Any]:
     return client.get_calendar(symbol)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_shares(
     symbol: Symbol,
     start: Annotated[
@@ -540,7 +389,6 @@ def get_shares(
     return client.get_shares(symbol, start=start, end=end, limit=limit)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_fund_data(
     symbol: Symbol,
     limit: Annotated[
@@ -566,7 +414,6 @@ _SECTOR_KEYS_DESC = (
 )
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_sector(
     key: Annotated[
         str,
@@ -587,7 +434,6 @@ def get_sector(
     return client.get_sector(key, limit=limit)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_industry(
     key: Annotated[
         str,
@@ -612,7 +458,6 @@ def get_industry(
     return client.get_industry(key, limit=limit)
 
 
-@mcp.tool(annotations=_READ_ONLY)
 def get_market(
     key: Annotated[
         str,
@@ -636,190 +481,60 @@ def get_market(
     return client.get_market(key)
 
 
-def _build_parser() -> argparse.ArgumentParser:
-    """Build the command-line parser for the server entry point."""
-    parser = argparse.ArgumentParser(
-        prog="benethos-yahoo-finance-mcp",
-        description="Yahoo Finance MCP server. Defaults to stdio. Pass "
-        "--transport for an HTTP transport.",
-    )
-    # The same version the server reports in the MCP handshake, which is
-    # otherwise only reachable by opening a session. Someone running this from
-    # a container has no `pip show` to fall back on.
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"%(prog)s {__version__}",
-        help="Print the version and exit.",
-    )
-    parser.add_argument(
-        "--transport",
-        choices=_TRANSPORTS,
-        default=_default_transport(),
-        help="Transport to serve on (default: stdio, set via YF_MCP_TRANSPORT).",
-    )
-    parser.add_argument(
-        "--host",
-        default=os.environ.get("YF_MCP_HOST", "127.0.0.1"),
-        help="Host to bind for HTTP transports (default: 127.0.0.1, set via "
-        "YF_MCP_HOST). Use 0.0.0.0 to accept remote connections.",
-    )
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=_default_port(),
-        help="Port for HTTP transports (default: 8000, set via YF_MCP_PORT).",
-    )
-    parser.add_argument(
-        "--path",
-        default=os.environ.get("YF_MCP_PATH"),
-        help="URL path to serve MCP on for HTTP transports (default: /mcp for "
-        "streamable-http, /sse for sse, set via YF_MCP_PATH).",
-    )
-    parser.add_argument(
-        "--allowed-hosts",
-        default=os.environ.get("YF_MCP_ALLOWED_HOSTS"),
-        metavar="HOST[,HOST...]",
-        help="Comma-separated Host header allow-list for the DNS-rebinding "
-        "guard on HTTP transports (e.g. benethos-yahoo-finance-mcp:8000). Set via "
-        "YF_MCP_ALLOWED_HOSTS. A localhost bind keeps its protective default. "
-        "An exposed bind (e.g. 0.0.0.0) with no list accepts any Host.",
-    )
-    parser.add_argument(
-        "--allowed-origins",
-        default=os.environ.get("YF_MCP_ALLOWED_ORIGINS"),
-        metavar="ORIGIN[,ORIGIN...]",
-        help="Comma-separated Origin header allow-list for HTTP transports. "
-        "Set via YF_MCP_ALLOWED_ORIGINS. Defaults to http(s) origins derived "
-        "from --allowed-hosts.",
-    )
-    parser.add_argument(
-        "--log-level",
-        choices=_LOG_LEVELS,
-        default=_default_log_level(),
-        help="Logging verbosity. Defaults to the YF_MCP_LOG_LEVEL env var, "
-        "or INFO if unset.",
-    )
-    parser.add_argument(
-        "--cache",
-        action=argparse.BooleanOptionalAction,
-        default=cache.env_enabled(),
-        help="Enable the persistent result cache (default: off, "
-        "set via YF_MCP_CACHE). Use --cache to enable.",
-    )
-    parser.add_argument(
-        "--cache-dir",
-        default=os.environ.get("YF_MCP_CACHE_DIR"),
-        help="Directory for the cache file (default: the OS user cache dir, "
-        "set via YF_MCP_CACHE_DIR).",
-    )
-    parser.add_argument(
-        "--cache-ttl",
-        action="append",
-        default=[],
-        metavar="<NAME>=<SECONDS>",
-        help="Override a tool's cache TTL, e.g. --cache-ttl quote=15. May be "
-        "repeated. Valid names: " + ", ".join(cache.DEFAULT_TTLS) + ".",
-    )
-    return parser
+# The listing order a client sees.
+_TOOLS = (
+    search,
+    get_quote,
+    get_quotes,
+    get_history,
+    get_company_info,
+    get_financials,
+    get_dividends,
+    get_news,
+    get_recommendations,
+    get_options,
+    get_earnings,
+    get_estimates,
+    get_upgrades_downgrades,
+    get_holders,
+    get_insider_activity,
+    get_sec_filings,
+    get_calendar,
+    get_shares,
+    get_fund_data,
+    get_sector,
+    get_industry,
+    get_market,
+)
 
 
-def _parse_ttl_overrides(
-    parser: argparse.ArgumentParser, items: list[str]
-) -> dict[str, float]:
-    """Parse ``<NAME>=<SECONDS>`` ``--cache-ttl`` items into a mapping."""
-    overrides: dict[str, float] = {}
-    for item in items:
-        name, sep, raw = item.partition("=")
-        name = name.strip().lower()
-        if not sep or name not in cache.DEFAULT_TTLS:
-            parser.error(
-                f"invalid --cache-ttl {item!r}, expected <NAME>=<SECONDS> with <NAME> "
-                f"one of {', '.join(cache.DEFAULT_TTLS)}"
-            )
-        try:
-            overrides[name] = float(raw)
-        except ValueError:
-            parser.error(f"invalid --cache-ttl seconds in {item!r}")
-    return overrides
+def build_server() -> MCPServer:
+    """A server with every tool registered, ready to be handed to a transport.
 
-
-def _http_path(args: argparse.Namespace) -> str:
-    """The URL path an HTTP transport serves on, defaulted per transport."""
-    if args.path:
-        return args.path
-    return "/sse" if args.transport == "sse" else "/mcp"
-
-
-def main(argv: list[str] | None = None) -> None:
-    """Console-script entry point: parse CLI args and run the MCP server."""
-    parser = _build_parser()
-    args = parser.parse_args(argv)
-
-    logging.getLogger().setLevel(args.log_level)
-
-    # Result cache: CLI overrides win over env vars, which win over defaults.
-    ttl_overrides = {
-        **cache.ttls_from_env(),
-        **_parse_ttl_overrides(parser, args.cache_ttl),
-    }
-    cache.configure(
-        enabled=args.cache, cache_dir=args.cache_dir, ttl_overrides=ttl_overrides
+    ``name`` is the programmatic identifier reported in the MCP initialize
+    handshake and is kept identical to the PyPI distribution name, so the
+    server a client lists is traceable to the package it came from. ``title``
+    is what a client shows to a person.
+    """
+    server = MCPServer(
+        name="benethos-yahoo-finance-mcp",
+        title="Unofficial Yahoo Finance MCP Server",
+        version=__version__,
+        instructions=_INSTRUCTIONS,
     )
-
-    token = transport.token_from_env()
-
-    if args.transport == "stdio":
-        logger.info("Starting Yahoo Finance MCP server (stdio)")
-        if token is not None:
-            logger.warning(
-                "%s is set, but stdio has no port for anyone to reach. The "
-                "client owns this process, so the token is ignored.",
-                transport.ENV_VAR,
-            )
-        mcp.run(transport="stdio")
-        return
-
-    # Checked here rather than by argparse, because YF_MCP_PORT arrives as the
-    # parser's default and argparse never validates a default. Only an HTTP
-    # transport binds the port, so stdio does not trip over a stray value.
-    if not 1 <= args.port <= 65535:
-        parser.error(f"--port must be between 1 and 65535, got {args.port}")
-
-    path = _http_path(args)
-    logger.info(
-        "Starting Yahoo Finance MCP server (%s) on http://%s:%s%s",
-        args.transport,
-        args.host,
-        args.port,
-        path,
-    )
-    if token is None:
-        logger.warning(
-            "No %s set: anything that can reach %s:%s can call every tool. "
-            "That is fine for a loopback bind on your own machine and is not "
-            "fine anywhere else.",
-            transport.ENV_VAR,
-            args.host,
-            args.port,
-        )
-    else:
-        logger.info("Bearer token required: requests without it get HTTP 401.")
-
-    app = transport.http_app(
-        mcp,
-        transport=args.transport,
-        path=path,
-        host=args.host,
-        transport_security=_transport_security_for(
-            args.host,
-            _split_csv(args.allowed_hosts),
-            _split_csv(args.allowed_origins),
-        ),
-        token=token,
-    )
-    transport.run_http(app, host=args.host, port=args.port, log_level=args.log_level)
+    for tool in _TOOLS:
+        server.add_tool(tool, annotations=_READ_ONLY)
+    return server
 
 
-if __name__ == "__main__":
-    main()
+def __getattr__(name: str) -> Any:
+    """``server.mcp``: a server built on first use, for inspecting the tools.
+
+    Kept for the one-liners that list what a client would see, see CLAUDE.md.
+    Serving goes through :func:`build_server` from the command line.
+    """
+    if name == "mcp":
+        server = build_server()
+        globals()["mcp"] = server
+        return server
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -17,7 +17,9 @@ import pytest
 
 from benethos_yahoo_finance_mcp import client
 from benethos_yahoo_finance_mcp.errors import SymbolNotFoundError
-from benethos_yahoo_finance_mcp.server import mcp
+from benethos_yahoo_finance_mcp.server import build_server
+
+mcp = build_server()
 
 # Minimal valid arguments to invoke each tool (one per registered tool). Optional
 # parameters are omitted; required ones use a representative value.
