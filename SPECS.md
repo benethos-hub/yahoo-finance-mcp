@@ -96,6 +96,16 @@ submodules.
   logging. Every line is a function in `logbook/` (`lifecycle`, `calls`,
   `cache`, `upstream`), and nothing else imports `logging`, which
   `tests/test_logbook_catalog.py` checks along with the parameter vocabulary.
+  - **How a line looks** (`logbook/formats.py`). Without a terminal, in a
+    container log or the file Claude Desktop keeps, a line is plain with the
+    full logger name and the time to the millisecond with its offset:
+    `2026-09-30 13:19:02.840+02:00 INFO     uvicorn.error: Started server
+    process`. When stderr is a terminal and `NO_COLOR` is not set, the time
+    is local and dim, the level in colour, the source short in cyan
+    (`server`, `tools`, `yahoo`, `cache`, `uvicorn`, `http`) and a request is
+    method, path, status in colour and the client. `uvicorn.error` is
+    uvicorn's server log, not a log of errors, which is why it shows there as
+    `uvicorn`.
   - **Levels.** ERROR only from the SDK, with a traceback, for an exception
     that is not a `ToolError`. WARNING for a tool call that raised, a Yahoo
     rate limit, arguments a schema refused, a cache file that failed, an

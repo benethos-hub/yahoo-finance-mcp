@@ -318,6 +318,11 @@ is logged with the address that tried. `DEBUG` adds every answered request.
 The log never contains the bearer token, a search query, a URL's query
 string, the data Yahoo returned or the text of an error message.
 
+At a terminal the lines come in colour with short sources, `uvicorn` for
+uvicorn's server log and `http` for requests. Set `NO_COLOR` to turn that off.
+Anywhere else, in a container log say, each line is plain text with the full
+logger name and the time to the millisecond with its offset.
+
 > **Bearer token (optional).** Set `YF_MCP_BEARER_TOKEN` and every HTTP request
 > must carry `Authorization: Bearer <token>`. Anything else gets **HTTP 401**.
 > It is off by default, because the ordinary case is a server on the loopback
