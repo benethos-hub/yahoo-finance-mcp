@@ -18,7 +18,7 @@ How to work in this repository. Read this before making changes. See
 4. **Read-only domain.** This server only reads market data. Do not add write
    or trade operations, and do not authenticate to Yahoo or any paid feed (see
    non-goals in SPECS.md). Guarding this server's own HTTP port is a different
-   thing and is allowed — see `transport.py`.
+   thing and is allowed — see `transport/http.py`.
 
 ## Environment
 
@@ -35,48 +35,70 @@ How to work in this repository. Read this before making changes. See
 
 ```
 src/benethos_yahoo_finance_mcp/
-  server.py       # MCPServer instance + @mcp.tool() definitions + CLI main()
+  cli.py          # parser + main(): settings, log, cache, build, hand to transport
   __main__.py     # enables `python -m benethos_yahoo_finance_mcp`
-  client.py       # all yfinance access, in-memory ticker cache, error mapping
+  settings.py     # every YF_MCP_* variable and flag, resolved once, TTL defaults
+  server.py       # instructions + build_server() + refused-arguments logging
+  tools/          # the tools a client sees, one module per subject, thin
+    _base.py      #   Symbol, READ_ONLY, register_tool (adds the log line)
+  yahoo/          # all yfinance access, the same seven subjects as tools/
+    tickers.py    #   ticker cache, get_ticker, upstream(), normalize()
   cache.py        # opt-in persistent result cache (SQLite) with per-tool TTLs
   formatting.py   # pandas/yfinance -> compact JSON-safe values
+  logbook/        # every log line as a function, the one stderr handler
+  transport/      # stdio.py, http.py (Host allow-list + optional bearer guard)
   errors.py       # ToolError / SymbolNotFoundError / RateLimitError
-  transport.py    # HTTP app + optional bearer guard (stdio never uses it)
   py.typed        # PEP 561 marker, without it the annotations reach nobody
 tests/            # mocked, offline unit tests (+ live smoke.py, not collected)
+  yahoo/          #   one test file per yahoo module, FakeTicker in fakes.py
 .github/workflows/
   ci.yml          # lint, test matrix, fresh-install, lowest-versions, docker
   publish.yml     # PyPI + ghcr on a published GitHub release
 ```
 
-Keep the layers separate: **tools in `server.py` stay thin** and delegate to
-`client.py`. Put any new yfinance call in `client.py`, not in a tool function.
+Keep the layers separate: **tools stay thin** and hand their arguments to the
+yahoo function of the same name. Put any new yfinance call in `yahoo/`, never
+in a tool. `tests/test_layers.py` holds the import table (which unit may
+import which), and a new module needs a line there. Packages are entered only
+through their `__init__.py`, so a new public name goes into its `__all__`.
+
+**Logging goes through `logbook/`.** No other module imports `logging`. A new
+line is a function in `logbook/lifecycle.py`, `calls.py`, `cache.py` or
+`upstream.py`, taking parameters from the vocabulary in
+`tests/test_logbook_catalog.py`, and it never carries a search query, the
+token, a URL's query string, Yahoo's data or an error's text (see SPECS §4).
+A tool writes no line of its own, `register_tool` writes one per call.
 
 ## How to add or change a tool
 
-1. Add the data-fetching logic to `client.py`. Put every yfinance call inside
-   `with _upstream("Failed to load ... for {symbol!r}"):`, which routes
-   failures through `_wrap_upstream` so rate limits map to `RateLimitError`
-   and other errors keep context. Raise `SymbolNotFoundError(symbol)` on empty
-   results, and echo the symbol as `_normalize_symbol(symbol)`. Decorate the
-   function with `@cache.cached("<category>")` and add that category with a
-   TTL to `cache.DEFAULT_TTLS` (the cache is opt-in; the decorator is a no-op
+1. Add the data-fetching logic to the matching module in `yahoo/`. Put every
+   yfinance call inside
+   `with tickers.upstream("Failed to load ... for {symbol!r}"):`, which routes
+   failures through `wrap_upstream` so rate limits map to `RateLimitError`
+   and other errors keep context. Get the ticker with `tickers.get_ticker`,
+   called through the module so the tests' one patch reaches it. Raise
+   `SymbolNotFoundError(symbol)` on empty results, and echo the symbol as
+   `tickers.normalize(symbol)`. Decorate the function with
+   `@cache.cached("<category>")` and add that category with a TTL to
+   `settings.DEFAULT_TTLS` (the cache is opt-in, and the decorator is a no-op
    until enabled). If "nothing found" is a non-empty value, pass
-   `worth_keeping=` so it is not cached.
+   `worth_keeping=` so it is not cached. Export it from `yahoo/__init__.py`.
 2. Convert pandas output with `formatting.dataframe_to_records` / `to_jsonable`.
    It takes `None`, caps at `max_rows` and keeps the tail. Pass `head=True` for
    a frame ranked from the top. Cap silently only where the tail or head is
    obviously what a caller wants, and otherwise report `truncated`.
-3. Expose it in `server.py` with `@mcp.tool(annotations=_READ_ONLY)`, the
-   shared `readOnlyHint`/`openWorldHint` pair every tool carries (a test
-   asserts it for all of them). The **docstring becomes the
+3. Expose it in the `tools/` module of the same name and add it to that
+   module's `register()`. `register_tool` gives it the shared
+   `readOnlyHint`/`openWorldHint` pair every tool carries (a test asserts it
+   for all of them) and its log line. The **docstring becomes the
    tool description** Claude sees — write it for an LLM caller, and leave
    allowed values to the parameter descriptions rather than repeating them.
    Give every parameter an `Annotated[type, Field(description=...)]` (reuse
    the `Symbol` alias for ticker arguments); add `ge`/`le` bounds for numeric
-   limits. A row cap is called `limit`, in the tool and in the client.
-4. Add unit tests in `tests/` using the `FakeTicker` pattern (mock
-   `client._get_ticker` / `client.yf.Search`). Do not hit the network in tests.
+   limits. A row cap is called `limit`, in the tool and in the yahoo function.
+4. Add unit tests in `tests/yahoo/test_<module>.py` using the `FakeTicker`
+   pattern (the `patch_ticker` fixture patches `tickers.get_ticker`, or patch
+   `tickers.yf.Search`). Do not hit the network in tests.
 
 ## Verifying
 
@@ -105,8 +127,8 @@ baseline and again afterwards, and check that every section returned data rather
 than trusting the exit code. Without the baseline a green run afterwards cannot
 be told apart from Yahoo simply having a good day.
 
-**They do not cover an `mcp` upgrade either.** The suite stops at `client.py`
-and never travels through the SDK, so a change in the layer between the tools
+**They do not cover an `mcp` upgrade either.** The suite stops at the yahoo
+package and never travels through the SDK, so a change in the layer between the tools
 and the client passes every gate. Version 2.1.0 did exactly that: it began
 forwarding a tool's error text only for exceptions deriving from the SDK's own
 `ToolError`, and the messages here reached the model as

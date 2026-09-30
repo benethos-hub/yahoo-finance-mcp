@@ -308,7 +308,14 @@ containers), with one deliberate exception noted below. Precedence is
 | `--cache-ttl <NAME>=<SECONDS>` | `YF_MCP_CACHE_TTL_<NAME>` | per-tool defaults | Override one tool's TTL. |
 
 Logging always goes to stderr, so under stdio stdout stays reserved for the
-JSON-RPC protocol.
+JSON-RPC protocol. At `INFO` every tool call leaves one line with its symbol,
+the size of the answer, the time it took and whether the result cache
+answered, for example `get_history SAP.DE 250 rows, truncated, 412 ms`. A
+failed call is a `WARNING` naming the error's class, and so is a Yahoo rate
+limit. Over HTTP a refused request (status 400 and up, 401 and 421 included)
+is logged with the address that tried. `DEBUG` adds every answered request.
+The log never contains the bearer token, a search query, a URL's query
+string, the data Yahoo returned or the text of an error message.
 
 > **Bearer token (optional).** Set `YF_MCP_BEARER_TOKEN` and every HTTP request
 > must carry `Authorization: Bearer <token>`. Anything else gets **HTTP 401**.

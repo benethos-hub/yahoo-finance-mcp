@@ -23,38 +23,81 @@ of any kind.
 ## 3. Architecture
 
 ```
-MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
-                                              |
-                          +-------------------+--------------------+
-                          v                   v                    v
-                     (tool funcs)         client.py           formatting.py
-                                     (yfinance wrapper      (DataFrame/dict ->
-                                      + TTL cache)           compact JSON)
-                                              |
+MCP client (Claude)  --stdio / HTTP-->  transport/  -->  server.py (MCPServer)
+                                                              |
+                                                    tools/<subject>.py
+                                                  (schemas + descriptions)
+                                                              |
+                                                    yahoo/<subject>.py  --> cache.py
+                                              (yfinance calls, error mapping)
+                                                              |
                                           yfinance --> query1/2.finance.yahoo.com
 ```
 
+`cli.py` resolves the settings, sets up the log, builds the server and hands
+it to a transport. `tools/` and `yahoo/` have the same seven modules, one per
+subject (quotes, company, analysts, ownership, options, funds, browse), so
+`tools/options.py` exposes exactly what `yahoo/options.py` fetches.
+
 | Module | Responsibility |
 |--------|----------------|
-| `server.py` | MCPServer instance, tool definitions (signatures + docstrings), CLI/`main()`. |
-| `__main__.py` | Enables `python -m benethos_yahoo_finance_mcp` (delegates to `server.main`). |
-| `client.py` | All direct yfinance usage, ticker cache, error normalization. |
-| `cache.py` | Opt-in persistent result cache (SQLite) with per-tool TTLs. Off until `configure()` enables it. |
+| `cli.py` | Command-line parser and `main()`: resolve settings, configure the log and the cache, build the server, hand it to `run_stdio` or `run_http`. |
+| `__main__.py` | Enables `python -m benethos_yahoo_finance_mcp` (delegates to `cli.main`). |
+| `settings.py` | Every `YF_MCP_*` variable and flag, resolved once into a `Settings` dataclass (flag > env > default), plus the default cache TTLs. The only module that reads the environment. |
+| `server.py` | The server's identity and instructions, `build_server()`, and the `call_tool` override that logs refused arguments. |
+| `tools/` | The tools a client sees, thin: parameters, descriptions, and a call to the yahoo function of the same name. `_base.py` holds the `Symbol` parameter, the shared annotations and `register_tool`, which wraps every tool with its log line. |
+| `yahoo/` | All yfinance usage, one module per subject. `tickers.py` holds the ticker cache and the error mapping every subject shares. The only package that imports yfinance. |
+| `cache.py` | Opt-in persistent result cache (SQLite) with per-tool TTLs. Off until `configure(settings)` enables it. |
 | `formatting.py` | Convert pandas/yfinance output to compact, JSON-safe values. |
-| `transport.py` | Builds the HTTP app and serves it, with the optional bearer guard in front. stdio never touches this. |
+| `logbook/` | Every log line, as a function, and the one stderr handler. The only package that imports `logging` (see §4). |
+| `transport/` | `stdio.py`, and `http.py`: the HTTP app with the DNS-rebinding policy and the optional bearer guard in front, served by uvicorn. stdio never touches the HTTP half. |
 | `errors.py` | `ToolError`, `SymbolNotFoundError`, `RateLimitError`. |
 | `py.typed` | PEP 561 marker. Without it a type checker skips the installed package and every annotation in it goes unused. |
+
+The layers are held by `tests/test_layers.py`, which reads every import from
+the source: errors, settings and logbook stand on nothing, formatting on
+errors, cache on errors, settings and logbook, yahoo on those and formatting,
+tools on errors, logbook and yahoo (never formatting, a tool returns what yahoo
+built), server on tools, and transport on server. Packages are entered only
+through their `__init__.py` and its `__all__`, and a new module needs a line
+in the test's table.
 
 ## 4. Transport & runtime
 
 - **Transport:** selectable via `--transport`:
   - `stdio` (default) — local subprocess for Claude Desktop and similar.
   - `streamable-http` / `sse` — standalone, network-reachable HTTP service.
-- **Logging:** always to stderr (`logging.basicConfig(stream=sys.stderr)`), so
-  under stdio stdout carries JSON-RPC only. The call runs at import, above the
-  `MCPServer` construction, and has to stay there: the SDK's constructor calls
-  `basicConfig` with a `RichHandler`, only the first call takes effect, and a
-  test pins that the root handler is ours.
+- **Logging:** always to stderr, one handler, installed by `cli.main` through
+  `logbook.output.configure` and never at import, so under stdio stdout
+  carries JSON-RPC only. `build_server` takes back the `RichHandler` the SDK's
+  constructor installs, so a program that imports the package keeps its own
+  logging. Every line is a function in `logbook/` (`lifecycle`, `calls`,
+  `cache`, `upstream`), and nothing else imports `logging`, which
+  `tests/test_logbook_catalog.py` checks along with the parameter vocabulary.
+  - **Levels.** ERROR only from the SDK, with a traceback, for an exception
+    that is not a `ToolError`. WARNING for a tool call that raised, a Yahoo
+    rate limit, arguments a schema refused, a cache file that failed, an
+    unguarded port, a token under stdio, an unusable setting. INFO for
+    startup, the cache state and one line per tool call. DEBUG for every
+    answered HTTP request.
+  - **One line per call**, written by the wrapper `register_tool` puts around
+    every tool: `get_history SAP.DE 250 rows, truncated, 412 ms`, with
+    `cached` appended when the result cache answered (the cache notes that in
+    a context variable).
+  - **What a line may carry.** A symbol or a key, since both are public
+    identifiers. Never the bearer token, a search query (free text a person
+    typed, the line gives the number of matches), a URL's query string,
+    anything from Yahoo's answer, or the text of an error this server raised,
+    which is written for the model. A line names the error's class instead.
+  - **Other loggers.** `mcp`, `sse_starlette`, `yfinance`, `curl_cffi`,
+    `urllib3`, `peewee`, `httpx` and `httpcore` are held at WARNING whatever
+    the level: `mcp` quotes every failed call's text at INFO and
+    `sse_starlette` logs every tool result in full at DEBUG. uvicorn gets no
+    handlers of its own. Its request log reaches the same stderr handler
+    without the query string, at INFO only for a refused request (status 400
+    and up, with the address that tried) and at DEBUG for all. yfinance's own
+    ERROR lines, such as `$FOO: possibly delisted`, are upstream's reasoning
+    and stay.
 - **CLI flags:** `--version`, `--transport`, `--host` (default 127.0.0.1), `--port`
   (default 8000, 1-65535, checked once an HTTP transport binds it), `--path`
   (default `/mcp`, `/sse` for sse), `--allowed-hosts`, `--allowed-origins`,
@@ -67,7 +110,10 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
   `YF_MCP_ALLOWED_HOSTS`, `YF_MCP_ALLOWED_ORIGINS`, `YF_MCP_LOG_LEVEL`, and the
   cache vars `YF_MCP_CACHE`, `YF_MCP_CACHE_DIR`, `YF_MCP_CACHE_TTL_<NAME>`.
   `YF_MCP_BEARER_TOKEN` is the one exception with no flag: an argument is
-  visible in the process list to every other user on the machine.
+  visible in the process list to every other user on the machine. All of them
+  are read once, by `settings.load_settings`. A value that cannot be used
+  falls back to its default with a warning in the log, a flag value that
+  cannot be used is a usage error.
 - **Entry points:** `python -m benethos_yahoo_finance_mcp` or the
   `benethos-yahoo-finance-mcp` console script.
 - **Python:** 3.11-3.14, all covered by the CI matrix.
@@ -108,8 +154,8 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
 ## 5. Data source rules
 
 - Single source: `yfinance`. No other provider, no direct HTTP scraping.
-- Two cache layers: `Ticker` objects are cached in-memory for `_TICKER_TTL`
-  (60 s) to coalesce bursts within a process, at most `_TICKER_CACHE_MAX`
+- Two cache layers: `Ticker` objects are cached in-memory by
+  `yahoo.tickers.get_ticker` for `_TICKER_TTL` (60 s) to coalesce bursts within a process, at most `_TICKER_CACHE_MAX`
   (256) of them: expired entries are dropped on every insert and beyond the
   cap the least recently used goes first, since each `Ticker` keeps whatever
   it has loaded and over HTTP a caller decides how many symbols that is.
@@ -152,7 +198,7 @@ MCP client (Claude)  --stdio/JSON-RPC-->  server.py (MCPServer)
 
 All tools are read-only, and each one carries the MCP annotations
 `readOnlyHint: true` and `openWorldHint: true` (one shared `ToolAnnotations`
-in `server.py`). `destructiveHint` and `idempotentHint` are omitted because
+in `tools/_base.py`, set by `register_tool`). `destructiveHint` and `idempotentHint` are omitted because
 the spec defines them only for tools that are not read-only. `symbol` always
 means a Yahoo ticker or an ISIN (see §6). The three exceptions are
 `get_sector` / `get_industry`, which take a sector/industry **key** (e.g.
@@ -244,9 +290,9 @@ values).
 - **Opt-in: off by default.** Within a single process yfinance already reuses
   identical requests, so the cache mainly helps across restarts and as
   rate-limit protection. Enable it with `--cache` / `YF_MCP_CACHE=1`.
-- Disabled until `configure()` is called (which `server.main` does), so
-  importing the package or calling client functions in tests/library use does
-  not touch disk unless caching is explicitly enabled.
+- Disabled until `configure(settings)` is called (which `cli.main` does), so
+  importing the package or calling the yahoo functions in tests/library use
+  does not touch disk unless caching is explicitly enabled.
 - Config precedence CLI > env > default: `--cache/--no-cache` (`YF_MCP_CACHE`),
   `--cache-dir` (`YF_MCP_CACHE_DIR`), `--cache-ttl <NAME>=<SECONDS>`
   (`YF_MCP_CACHE_TTL_<NAME>`). A TTL of `0` bypasses caching for that tool.
@@ -273,11 +319,11 @@ values).
   (surfaced to the client, never a raw traceback).
   - `SymbolNotFoundError` — unknown symbol / empty result.
   - `RateLimitError` — Yahoo throttling (`YFRateLimitError` is mapped to it via
-    `client._wrap_upstream`).
-- All upstream yfinance exceptions are normalized through `_wrap_upstream`,
+    `yahoo.tickers.wrap_upstream`).
+- All upstream yfinance exceptions are normalized through `wrap_upstream`,
   which preserves operation-specific context for non-rate-limit errors.
-  Client functions run their yfinance calls inside the `_upstream(message)`
-  context manager, which does exactly that. The `Ticker` constructor is
+  The yahoo functions run their yfinance calls inside the
+  `tickers.upstream(message)` context manager, which does exactly that. The `Ticker` constructor is
   covered as well: an ISIN-shaped string Yahoo cannot resolve raises there
   and becomes a `SymbolNotFoundError`, and in `get_quotes` such a symbol is
   listed under `not_found` instead of failing the batch.
@@ -290,20 +336,24 @@ values).
 
 ## 10. Testing
 
-- Unit tests mock `yfinance` and run **offline**, covering the client wrapper
-  and error normalization, formatting, the cache, CLI/transport selection, tool
-  registration/schema, and end-to-end tool invocation via `mcp.call_tool`
-  (`tests/test_client.py`, `test_formatting.py`, `test_cache.py`, `test_cli.py`,
-  `test_server.py`, `test_tools_integration.py`, `test_transport.py`). Two
-  more guard what ships rather than what runs: `test_packaging.py` on the
-  PEP 561 marker and the version examples, `test_readme.py` on link targets
-  PyPI cannot resolve and on the tool list matching the registry.
+- Unit tests mock `yfinance` and run **offline**, covering the yahoo
+  functions and error normalization (`tests/yahoo/`, one file per yahoo
+  module), formatting, the cache, settings, CLI/transport selection, the log
+  lines, tool registration/schema, and end-to-end tool invocation via
+  `mcp.call_tool` (`test_formatting.py`, `test_cache.py`, `test_settings.py`,
+  `test_cli.py`, `test_logbook.py`, `test_server.py`,
+  `test_tools_integration.py`, `test_transport.py`). Two guard the shape of
+  the code: `test_layers.py` the import table, `test_logbook_catalog.py` that
+  every line is a logbook function. Two more guard what ships rather than
+  what runs: `test_packaging.py` on the PEP 561 marker and the version
+  examples, `test_readme.py` on link targets PyPI cannot resolve and on the
+  tool list matching the registry.
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo, and it is not part of
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
-  of 80% (currently ~95%).
+  of 80% (currently ~96%).
 - **What the gates cannot see.** The suite mocks yfinance and stops at
-  `client.py`, so a behaviour change in either boundary passes every gate. For
+  the yahoo package, so a behaviour change in either boundary passes every gate. For
   `yfinance` the answer is `tests/smoke.py` run before and after a bump, with a
   baseline to compare against. For `mcp` it is `tests/test_tools_integration.py`,
   which travels through `mcp.call_tool` and asserts a `ToolError`'s message
@@ -410,7 +460,7 @@ tools surface that as an empty result, not an error.
 ### Proposed new tools (grouped, not one-per-method)
 
 Grouping keeps the tool list legible for the LLM. Each takes a `Symbol`, is
-wrapped via `_wrap_upstream`, cached with a per-tool TTL, and row-capped.
+wrapped via `tickers.upstream`, cached with a per-tool TTL, and row-capped.
 
 | Tool | Backed by | Notes |
 |------|-----------|-------|
@@ -442,7 +492,7 @@ new tool), the screener (`screen` / `EquityQuery`), and bulk history
 
 The sector/industry key set is sourced from yfinance's own constant
 (`yfinance.const.SECTOR_INDUSTY_MAPPING_LC`, imported defensively in
-`client.py`), so the validation, the tool descriptions, and the error messages
+`yahoo/browse.py`), so the validation, the tool descriptions, and the error messages
 share one source of truth. The README's collapsible **"Sector & industry keys"**
 block is produced from the same constant — regenerate it after a yfinance bump
 (one sector per paragraph) and paste it over the existing `<details>` block:
@@ -470,9 +520,9 @@ output rather than typing them.)
 ### Process
 
 Per the working agreement: **plan (this section) → implement → test → update
-docs**. Each tool follows the established pattern (client.py logic +
-`@cache.cached`, server.py `@mcp.tool(annotations=_READ_ONLY)` with
-`Annotated` Fields, FakeTicker
+docs**. Each tool follows the established pattern (logic in the yahoo module +
+`@cache.cached`, a thin function in the tools module of the same name, added
+to its `register()`, with `Annotated` Fields, FakeTicker
 unit tests, and a smoke-test entry). Land in reviewable PRs (CI must stay
 green).
 
