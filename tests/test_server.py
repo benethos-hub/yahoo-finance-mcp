@@ -6,7 +6,9 @@ import asyncio
 import subprocess
 import sys
 
-from benethos_yahoo_finance_mcp.server import mcp
+from benethos_yahoo_finance_mcp.server import build_server
+
+mcp = build_server()
 
 EXPECTED_TOOLS = {
     "search",
@@ -43,6 +45,11 @@ def test_all_expected_tools_are_registered():
     assert names == EXPECTED_TOOLS
 
 
+def test_search_is_listed_first():
+    """A name has to be resolved before anything else can use it."""
+    assert _list_tools()[0].name == "search"
+
+
 def test_every_tool_has_a_description():
     for tool in _list_tools():
         assert tool.description and tool.description.strip(), tool.name
@@ -56,22 +63,50 @@ def test_every_parameter_has_a_description():
             assert spec.get("description"), f"{tool.name}.{param} missing description"
 
 
-def test_root_logging_is_ours_not_the_sdks():
-    """Our plain stderr handler wins over the RichHandler the SDK installs.
-
-    Both call logging.basicConfig at import and only the first counts, so this
-    pins the ordering in server.py. Run in a fresh interpreter because pytest
-    has its own handlers on the root logger.
-    """
-    code = (
-        "import logging, sys, benethos_yahoo_finance_mcp.server; "
-        "h = logging.getLogger().handlers; "
-        "print(len(h), type(h[0]).__name__, h[0].stream is sys.stderr)"
-    )
+def _fresh(code: str) -> list[str]:
+    """Run ``code`` in a fresh interpreter, whose root logger pytest has not touched."""
     out = subprocess.run(
         [sys.executable, "-c", code], capture_output=True, text=True, check=True
     )
-    assert out.stdout.split() == ["1", "StreamHandler", "True"]
+    return out.stdout.split()
+
+
+def test_root_logging_is_ours_not_the_sdks():
+    """One plain handler on stderr, not the RichHandler the SDK installs."""
+    code = (
+        "import logging, sys; "
+        "from benethos_yahoo_finance_mcp import cli, transport; "
+        "transport.run_stdio = lambda server: None; "
+        "cli.main([]); "
+        "h = logging.getLogger().handlers; "
+        "print(len(h), isinstance(h[0], logging.StreamHandler), "
+        "h[0].stream is sys.stderr)"
+    )
+    assert _fresh(code) == ["1", "True", "True"]
+
+
+def test_building_a_server_leaves_the_root_logger_alone():
+    """The SDK's constructor calls basicConfig with a RichHandler.
+
+    Nothing may be left of it, whatever order a program builds and logs in.
+    """
+    code = (
+        "import logging; "
+        "from benethos_yahoo_finance_mcp.server import build_server; "
+        "build_server(); "
+        "root = logging.getLogger(); "
+        "print(len(root.handlers), logging.getLevelName(root.level))"
+    )
+    assert _fresh(code) == ["0", "WARNING"]
+
+
+def test_importing_the_package_configures_no_logging():
+    code = (
+        "import logging; "
+        "import benethos_yahoo_finance_mcp.cli, benethos_yahoo_finance_mcp.server; "
+        "print(len(logging.getLogger().handlers))"
+    )
+    assert _fresh(code) == ["0"]
 
 
 def test_every_tool_is_annotated_read_only_and_open_world():

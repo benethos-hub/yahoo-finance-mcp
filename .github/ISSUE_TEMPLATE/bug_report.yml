@@ -30,7 +30,7 @@ body:
           required: true
         - label: >-
             The symbol is a Yahoo ticker such as `AAPL` or `SAP.DE`, or a plain
-            ISIN such as `US0378331005` — Yahoo resolves those too. A company
+            ISIN such as `US0378331005`, which resolves to its ticker. A company
             name is not a symbol, so use the `search` tool for one. German WKNs
             resolve nowhere, not even through `search`.
           required: true

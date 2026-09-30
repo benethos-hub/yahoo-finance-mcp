@@ -8,6 +8,7 @@ import time
 import pytest
 
 from benethos_yahoo_finance_mcp import cache
+from benethos_yahoo_finance_mcp.settings import DEFAULT_TTLS, Settings
 
 
 @pytest.fixture
@@ -17,9 +18,9 @@ def enabled_cache(tmp_path):
     Depends on ``tmp_path`` so its teardown (closing the SQLite connection)
     runs before ``tmp_path`` is removed.
     """
-    cache.configure(enabled=True, cache_dir=str(tmp_path))
+    cache.configure(Settings(cache_enabled=True, cache_dir=tmp_path))
     yield tmp_path
-    cache.configure(enabled=False)
+    cache.configure(Settings())
 
 
 # --- ResultCache ----------------------------------------------------------
@@ -189,7 +190,7 @@ def test_cached_decorator_key_is_case_insensitive(enabled_cache):
 
 
 def test_cached_decorator_passthrough_when_disabled():
-    cache.configure(enabled=False)
+    cache.configure(Settings())
     calls = {"n": 0}
 
     @cache.cached("quote")
@@ -229,7 +230,8 @@ def test_cached_decorator_honours_worth_keeping(enabled_cache):
 
 
 def test_get_quotes_does_not_pin_a_complete_miss(enabled_cache, monkeypatch):
-    from benethos_yahoo_finance_mcp import client
+    from benethos_yahoo_finance_mcp import yahoo
+    from benethos_yahoo_finance_mcp.yahoo import tickers
 
     built = {"n": 0}
 
@@ -240,9 +242,9 @@ def test_get_quotes_does_not_pin_a_complete_miss(enabled_cache, monkeypatch):
         built["n"] += 1
         return Empty()
 
-    monkeypatch.setattr(client, "_get_ticker", fake)
-    assert client.get_quotes(["AAPL"])["count"] == 0
-    client.get_quotes(["AAPL"])
+    monkeypatch.setattr(tickers, "get_ticker", fake)
+    assert yahoo.get_quotes(["AAPL"])["count"] == 0
+    yahoo.get_quotes(["AAPL"])
     assert built["n"] == 2
 
 
@@ -262,7 +264,8 @@ def test_cached_decorator_does_not_cache_exceptions(enabled_cache):
 
 
 def test_ttl_override_zero_disables_category(tmp_path):
-    cache.configure(enabled=True, cache_dir=str(tmp_path), ttl_overrides={"quote": 0})
+    ttls = {**DEFAULT_TTLS, "quote": 0}
+    cache.configure(Settings(cache_enabled=True, cache_dir=tmp_path, cache_ttls=ttls))
     try:
         calls = {"n": 0}
 
@@ -275,7 +278,7 @@ def test_ttl_override_zero_disables_category(tmp_path):
         fetch("AAPL")
         assert calls["n"] == 2  # ttl 0 -> not stored
     finally:
-        cache.configure(enabled=False)
+        cache.configure(Settings())
 
 
 # --- key building ---------------------------------------------------------
@@ -302,31 +305,6 @@ def test_make_key_kwargs_order_independent_but_value_sensitive():
     assert a == b  # kwargs are sorted -> order does not matter
     # kwarg values matter
     assert k("history", ("AAPL",), {"period": "1y", "interval": "1d"}) != a
-
-
-# --- config helpers -------------------------------------------------------
-
-
-def test_env_enabled(monkeypatch):
-    monkeypatch.delenv("YF_MCP_CACHE", raising=False)
-    assert cache.env_enabled() is False  # opt-in: off unless set
-    monkeypatch.setenv("YF_MCP_CACHE", "off")
-    assert cache.env_enabled() is False
-    monkeypatch.setenv("YF_MCP_CACHE", "1")
-    assert cache.env_enabled() is True
-
-
-def test_ttls_from_env(monkeypatch):
-    monkeypatch.setenv("YF_MCP_CACHE_TTL_QUOTE", "15")
-    monkeypatch.setenv("YF_MCP_CACHE_TTL_NEWS", "not-a-number")
-    out = cache.ttls_from_env()
-    assert out["quote"] == 15.0
-    assert "news" not in out  # invalid value ignored
-
-
-def test_default_cache_dir_honors_env(monkeypatch, tmp_path):
-    monkeypatch.setenv("YF_MCP_CACHE_DIR", str(tmp_path))
-    assert cache.default_cache_dir() == tmp_path
 
 
 # --- cache failures never fail the call -----------------------------------

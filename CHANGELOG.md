@@ -6,7 +6,39 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- The server instructions said Yahoo resolves an ISIN server-side. It does
+  so only in its search: asked for `US0378331005` on 2026-09-30, the search
+  endpoint answered `AAPL`, while the quote, quoteSummary and chart
+  endpoints answered with nothing or 404. yfinance's `Ticker` looks the ISIN
+  up through that search and uses the ticker it finds. The instructions now
+  say so, and so do the code comments, SPECS and the bug report template.
+  The tool schemas are unchanged.
+
 ### Changed
+- The log follows written rules. Every tool call leaves one line: an INFO
+  with the tool, its symbol or key, how many rows came back, whether the
+  result was cut, how long it took and whether the result cache answered,
+  or a WARNING naming the error's class. Before, a call left no line at all
+  unless it failed, and then only the SDK's INFO line quoting the message
+  written for the model. A Yahoo rate limit is now a WARNING of its own, and
+  so are arguments a tool's schema refused, by field name.
+  A line may carry a symbol or a key. It never carries the bearer token, a
+  search query, a URL's query string, anything from Yahoo's answer or the
+  text of an error. The SDK's `mcp` logger and `sse_starlette` are held at
+  WARNING whatever the level: the first quoted every failed call's text at
+  INFO, the second logged every tool result in full at DEBUG. yfinance,
+  curl_cffi, urllib3, peewee, httpx and httpcore are held there too. The
+  log level applies to this server's own lines and the request log only.
+  Every other library stays at WARNING, where `--log-level DEBUG` used to
+  open all of them, asyncio's line about its event loop included.
+  uvicorn's request log goes to stderr with everything else instead of to
+  stdout, without the query string. At INFO it shows only refused requests,
+  status 400 and above, 401 and 421 included, with the address that tried.
+  At DEBUG it shows every request.
+  Logging is set up by the command line, no longer at import, and a server
+  built by a program that imports the package leaves its logging alone. The
+  SDK's Rich handler, which its constructor installs, is taken back.
 - The compose file caps the log Docker keeps of the container at 5 files
   of 10 MB, the oldest dropped first. Before, the log grew for as long as
   the container ran, and uvicorn adds a line per request to it. The README
@@ -20,6 +52,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `clear`. A file made by an earlier version is rewritten once when the
   server opens it, which takes a moment for a large one, and the log says
   so.
+- An unusable `YF_MCP_TRANSPORT`, `YF_MCP_PORT` or `YF_MCP_LOG_LEVEL` is
+  reported with a warning at startup, as an unusable `YF_MCP_CACHE_TTL_*`
+  already was. The server still falls back to the default. Before, a typo
+  such as `YF_MCP_TRANSPORT=streamable_http` started a stdio server that
+  nobody could reach, and nothing said why.
+- The console script now points at `benethos_yahoo_finance_mcp.cli:main`.
+  The command line is unchanged. The configuration is resolved once, flag
+  over environment over default, in the new `settings` module, and no module
+  reads the environment on its own any more.
+- `client.py` is now the `yahoo` package, one module per subject: quotes,
+  company, analysts, ownership, options, funds and browse, with the shared
+  ticker cache and error mapping in `yahoo.tickers`. The functions are
+  unchanged and importable from `benethos_yahoo_finance_mcp.yahoo`.
+- The tools moved from `server.py` into the `tools` package, which mirrors
+  `yahoo` module for module. Their names, parameters, descriptions and
+  annotations are byte for byte the same. The order a client lists them in
+  now follows the subjects: search and quotes first, then company data,
+  analysts, ownership, options, funds and browsing by key. `search` stays
+  first, and `get_calendar` and `get_shares` now sit with the other company
+  tools, ahead of the analyst ones.
 
 ## [0.6.1] - 2026-09-27
 

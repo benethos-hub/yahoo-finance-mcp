@@ -2,7 +2,7 @@
 
 import json
 
-from benethos_yahoo_finance_mcp import client
+from benethos_yahoo_finance_mcp import yahoo
 
 
 def show(title, value):
@@ -11,25 +11,25 @@ def show(title, value):
 
 
 if __name__ == "__main__":
-    show("search('Apple')", client.search("Apple", limit=3))
-    show("search('US0378331005')  # AAPL ISIN", client.search("US0378331005", limit=3))
-    show("get_quote('AAPL')", client.get_quote("AAPL"))
+    show("search('Apple')", yahoo.search("Apple", limit=3))
+    show("search('US0378331005')  # AAPL ISIN", yahoo.search("US0378331005", limit=3))
+    show("get_quote('AAPL')", yahoo.get_quote("AAPL"))
     show(
         "get_quotes(['AAPL','MSFT','SPY','NOTAREALSYMBOL'])",
-        client.get_quotes(["AAPL", "MSFT", "SPY", "NOTAREALSYMBOL"]),
+        yahoo.get_quotes(["AAPL", "MSFT", "SPY", "NOTAREALSYMBOL"]),
     )
 
-    hist = client.get_history("AAPL", period="5d", interval="1d")
+    hist = yahoo.get_history("AAPL", period="5d", interval="1d")
     hist_preview = {**hist, "rows": hist["rows"][:2]}
     show("get_history('AAPL', 5d/1d) [first 2 rows]", hist_preview)
 
-    show("get_company_info('AAPL')", client.get_company_info("AAPL"))
+    show("get_company_info('AAPL')", yahoo.get_company_info("AAPL"))
     show(
         "get_financials('AAPL', income/annual)",
-        client.get_financials("AAPL", statement="income", freq="annual"),
+        yahoo.get_financials("AAPL", statement="income", freq="annual"),
     )
 
-    divs = client.get_dividends("AAPL")
+    divs = yahoo.get_dividends("AAPL")
     divs_preview = {
         "symbol": divs["symbol"],
         "dividends": divs["dividends"][-3:],
@@ -37,14 +37,14 @@ if __name__ == "__main__":
     }
     show("get_dividends('AAPL') [last 3]", divs_preview)
 
-    show("get_news('AAPL', limit=3)", client.get_news("AAPL", limit=3))
-    show("get_recommendations('AAPL')", client.get_recommendations("AAPL"))
+    show("get_news('AAPL', limit=3)", yahoo.get_news("AAPL", limit=3))
+    show("get_recommendations('AAPL')", yahoo.get_recommendations("AAPL"))
 
-    opts = client.get_options("AAPL")
+    opts = yahoo.get_options("AAPL")
     show("get_options('AAPL') [expirations]", opts)
     if opts.get("expirations"):
         first = opts["expirations"][0]
-        chain = client.get_options("AAPL", expiration=first)
+        chain = yahoo.get_options("AAPL", expiration=first)
         chain_preview = {
             "symbol": chain["symbol"],
             "expiration": chain["expiration"],
@@ -53,7 +53,7 @@ if __name__ == "__main__":
         }
         show(f"get_options('AAPL', {first}) [first 2 each]", chain_preview)
 
-    earnings = client.get_earnings("AAPL", limit=4)
+    earnings = yahoo.get_earnings("AAPL", limit=4)
     show(
         "get_earnings('AAPL', limit=4)",
         {
@@ -63,12 +63,12 @@ if __name__ == "__main__":
         },
     )
 
-    show("get_estimates('AAPL')", client.get_estimates("AAPL"))
+    show("get_estimates('AAPL')", yahoo.get_estimates("AAPL"))
 
-    ud = client.get_upgrades_downgrades("AAPL", limit=3)
+    ud = yahoo.get_upgrades_downgrades("AAPL", limit=3)
     show("get_upgrades_downgrades('AAPL', limit=3)", ud)
 
-    holders = client.get_holders("AAPL", limit=3)
+    holders = yahoo.get_holders("AAPL", limit=3)
     show(
         "get_holders('AAPL', limit=3)",
         {
@@ -79,7 +79,7 @@ if __name__ == "__main__":
         },
     )
 
-    insider = client.get_insider_activity("AAPL", limit=3)
+    insider = yahoo.get_insider_activity("AAPL", limit=3)
     show(
         "get_insider_activity('AAPL', limit=3)",
         {
@@ -90,22 +90,22 @@ if __name__ == "__main__":
         },
     )
 
-    show("get_sec_filings('AAPL', limit=3)", client.get_sec_filings("AAPL", limit=3))
-    show("get_calendar('AAPL')", client.get_calendar("AAPL"))
+    show("get_sec_filings('AAPL', limit=3)", yahoo.get_sec_filings("AAPL", limit=3))
+    show("get_calendar('AAPL')", yahoo.get_calendar("AAPL"))
 
     show(
         "get_financials('AAPL', income/ttm)",
-        client.get_financials("AAPL", statement="income", freq="ttm"),
+        yahoo.get_financials("AAPL", statement="income", freq="ttm"),
     )
 
-    shares = client.get_shares("AAPL", limit=3)
+    shares = yahoo.get_shares("AAPL", limit=3)
     show("get_shares('AAPL', limit=3)", shares)
 
     # Fund data is ETF/fund-only; use SPY.
-    fund = client.get_fund_data("SPY", limit=3)
+    fund = yahoo.get_fund_data("SPY", limit=3)
     show("get_fund_data('SPY', limit=3)", fund)
 
-    sector = client.get_sector("technology", limit=3)
+    sector = yahoo.get_sector("technology", limit=3)
     show(
         "get_sector('technology', limit=3)",
         {
@@ -117,7 +117,7 @@ if __name__ == "__main__":
         },
     )
 
-    industry = client.get_industry("semiconductors", limit=3)
+    industry = yahoo.get_industry("semiconductors", limit=3)
     show(
         "get_industry('semiconductors', limit=3)",
         {
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     )
 
     for market_key in ("US", "EUROPE"):
-        market = client.get_market(market_key)
+        market = yahoo.get_market(market_key)
         show(
             f"get_market({market_key!r})",
             {

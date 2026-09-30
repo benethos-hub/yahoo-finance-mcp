@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
+
 import pytest
 
 from benethos_yahoo_finance_mcp import cache
+from benethos_yahoo_finance_mcp.settings import Settings
 
 
 @pytest.fixture(autouse=True)
@@ -16,4 +19,17 @@ def _cache_disabled_by_default(monkeypatch):
     """
     monkeypatch.setenv("YF_MCP_CACHE", "0")
     yield
-    cache.configure(enabled=False)
+    cache.configure(Settings())
+
+
+# Loggers whose level cli.main and logbook.output.configure set. Restored after
+# every test, so a level one test chose is not what the next one starts with.
+_LOGGERS = ("", "benethos_yahoo_finance_mcp", "uvicorn.access", "uvicorn.error")
+
+
+@pytest.fixture(autouse=True)
+def _logging_levels_restored():
+    saved = {name: logging.getLogger(name).level for name in _LOGGERS}
+    yield
+    for name, level in saved.items():
+        logging.getLogger(name).setLevel(level)

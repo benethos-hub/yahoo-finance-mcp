@@ -94,7 +94,7 @@ jobs:
           echo "--- registered tools ---"
           # An assertion, not a report. Printing the count would stay green at
           # zero, and zero is exactly the interesting failure: it means the
-          # import worked but the decorators never registered anything. Naming
+          # server was built but register_tools added nothing. Naming
           # one tool catches a registry that is populated but wrong.
           /tmp/fresh/bin/python - <<'PY'
           import asyncio
