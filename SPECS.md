@@ -403,8 +403,11 @@ values).
   `freq` of `get_financials`, the sector, industry and market keys, and the
   arguments of `get_history`: `interval` from a fixed set, `period` listed or
   shaped as a count of d, wk, mo or y (Yahoo serves `7mo` and `3y` too), and
-  `start`/`end` as real dates written `YYYY-MM-DD`. Each is checked only when
-  it is used, so `period` is not checked next to `start`.
+  `start`/`end` as real dates written `YYYY-MM-DD`, with `end` after `start`.
+  yfinance's `end` is exclusive, so the same day twice is no day at all, and
+  the description says so. `get_shares` takes its dates through the same
+  check, `tickers.checked_range`. Each is checked only when it is used, so
+  `period` is not checked next to `start`.
   Valid arguments can still come back empty: Yahoo keeps 1m bars for 8 days,
   2m to 90m for 60 and the hourly bars for 730. No intraday rows is therefore
   a `ToolError` naming that reach and the symbol as the other possibility,

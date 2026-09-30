@@ -179,6 +179,25 @@ def test_get_shares_returns_recent_points(patch_ticker):
     assert ticker.shares_full_kwargs == {"start": "2024-01-01", "end": None}
 
 
+@pytest.mark.parametrize(
+    "kwargs,starts",
+    [
+        ({"start": "01.01.2024"}, "Invalid start '01.01.2024'"),
+        ({"end": "2024-13-01"}, "Invalid end '2024-13-01'"),
+        ({"start": "2024-06-01", "end": "2024-01-01"}, "end '2024-01-01' must be"),
+    ],
+)
+def test_get_shares_checks_its_dates_before_asking_yahoo(patch_ticker, kwargs, starts):
+    """A wrong format brought strptime's text to the model, a range the wrong
+    way round came back as "not found"."""
+    ticker = patch_ticker(FakeTicker(shares_full=None))
+    with pytest.raises(ToolError) as info:
+        yahoo.get_shares("aapl", **kwargs)
+    assert not isinstance(info.value, SymbolNotFoundError)
+    assert str(info.value).startswith(starts)
+    assert not hasattr(ticker, "shares_full_kwargs")
+
+
 def test_get_shares_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(shares_full=pd.Series(dtype="float64")))
     with pytest.raises(SymbolNotFoundError):

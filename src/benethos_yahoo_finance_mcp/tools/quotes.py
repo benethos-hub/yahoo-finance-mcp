@@ -76,7 +76,10 @@ def get_history(
     ] = None,
     end: Annotated[
         str | None,
-        Field(description="End date 'YYYY-MM-DD'. Used only together with 'start'."),
+        Field(
+            description="End date 'YYYY-MM-DD', exclusive: for one day pass the "
+            "day after. Used only together with 'start'."
+        ),
     ] = None,
 ) -> dict[str, Any]:
     """Get historical OHLCV (open/high/low/close/volume) data for a symbol.

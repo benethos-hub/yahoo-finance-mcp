@@ -88,7 +88,10 @@ def get_shares(
     ] = None,
     end: Annotated[
         str | None,
-        Field(description="End date 'YYYY-MM-DD' to bound the series (optional)."),
+        Field(
+            description="End date 'YYYY-MM-DD' to bound the series (optional), "
+            "after 'start'."
+        ),
     ] = None,
     limit: Annotated[
         int,

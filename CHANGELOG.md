@@ -34,6 +34,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   never pushed out by yesterday's financials.
 
 ### Fixed
+- `get_history` and `get_shares` answered `end` before or on `start` with
+  "No data found for symbol", the same wrong lead the argument checks were
+  meant to remove. yfinance's `end` is exclusive, so a single day asked as
+  the same date twice came back empty too, and the description did not say
+  so. Both now require `end` after `start`, the error says why, and the
+  `get_history` description calls `end` exclusive. `get_shares` also checks
+  the date format first: a wrong one used to bring Python's `strptime` text
+  to the model.
 - A damaged or locked cache file stopped the server at startup with
   `DatabaseError: file is not a database`, although the cache is only an
   optimisation and a failing cache never fails a call. The server now logs a

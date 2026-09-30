@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from datetime import date
 from typing import Any
 
 import yfinance as yf
@@ -199,20 +198,6 @@ _INTRADAY_DAYS = {
     "4h": 730,
 }
 
-_DATE_SHAPE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
-
-
-def _checked_date(name: str, value: str) -> str:
-    """``value`` if it is a real date written YYYY-MM-DD, else a ``ToolError``."""
-    value = value.strip()
-    try:
-        if _DATE_SHAPE.fullmatch(value):
-            date.fromisoformat(value)
-            return value
-    except ValueError:
-        pass
-    raise ToolError(f"Invalid {name} {value!r}, expected a date as YYYY-MM-DD.")
-
 
 @cache.cached("history")
 def get_history(
@@ -237,8 +222,7 @@ def get_history(
             f"Invalid interval {interval!r}, expected one of {', '.join(INTERVALS)}."
         )
     if start:
-        start = _checked_date("start", start)
-        end = _checked_date("end", end) if end else None
+        start, end = tickers.checked_range(start, end)
     else:
         period = (period or "").strip().lower()
         if period not in PERIODS and not _PERIOD_SHAPE.fullmatch(period):

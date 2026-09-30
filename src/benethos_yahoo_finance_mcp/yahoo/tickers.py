@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import date
 from typing import Any
 
 import yfinance as yf
@@ -51,6 +52,38 @@ def upstream(message: str) -> Iterator[None]:
         yield
     except Exception as exc:  # noqa: BLE001 - normalize upstream errors
         raise wrap_upstream(exc, message) from exc
+
+
+_DATE_SHAPE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
+
+
+def checked_date(name: str, value: str) -> str:
+    """``value`` if it is a real date written YYYY-MM-DD, else a ``ToolError``."""
+    value = value.strip()
+    try:
+        if _DATE_SHAPE.fullmatch(value):
+            date.fromisoformat(value)
+            return value
+    except ValueError:
+        pass
+    raise ToolError(f"Invalid {name} {value!r}, expected a date as YYYY-MM-DD.")
+
+
+def checked_range(start: str | None, end: str | None) -> tuple[str | None, str | None]:
+    """``start`` and ``end`` as real dates, ``end`` after ``start`` when both are set.
+
+    yfinance's ``end`` is exclusive: 2024-01-02 to 2024-01-02 is no day at all,
+    and a range the wrong way round is none either. Yahoo answers both with no
+    rows, which reads as an unknown symbol, so the order is checked first.
+    """
+    start = checked_date("start", start) if start else None
+    end = checked_date("end", end) if end else None
+    if start and end and end <= start:
+        raise ToolError(
+            f"end {end!r} must be after start {start!r}. end is exclusive: for "
+            "one day, pass the day after it as end."
+        )
+    return start, end
 
 
 def normalize(symbol: str) -> str:

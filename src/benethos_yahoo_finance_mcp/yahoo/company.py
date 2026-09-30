@@ -240,6 +240,7 @@ def get_shares(
     looks back 548 days (18 months) from ``end``, not over the whole history.
     Only the most recent ``limit`` points are returned.
     """
+    start, end = tickers.checked_range(start, end)
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load shares for {symbol!r}"):
         series = ticker.get_shares_full(start=start, end=end)
