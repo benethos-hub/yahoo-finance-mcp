@@ -33,6 +33,7 @@ VOCABULARY = {
     "fields",  # names of arguments a schema refused, never their values
     "variable",  # the name of an environment variable
     "value",  # an unusable setting's value, never the token's
+    "version",  # this package's version
     "transport",
     "host",
     "port",

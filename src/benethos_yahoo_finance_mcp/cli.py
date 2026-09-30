@@ -145,14 +145,18 @@ def main(argv: list[str] | None = None) -> None:
     server = build_server()
 
     if settings.transport == "stdio":
-        lifecycle.starting_stdio()
+        lifecycle.starting_stdio(__version__)
         if settings.bearer_token is not None:
             lifecycle.token_ignored_under_stdio(TOKEN_VAR)
         transport.run_stdio(server)
         return
 
     lifecycle.starting_http(
-        settings.transport, settings.host, settings.port, settings.http_path
+        __version__,
+        settings.transport,
+        settings.host,
+        settings.port,
+        settings.http_path,
     )
     if settings.bearer_token is None:
         lifecycle.port_unguarded(TOKEN_VAR, settings.host, settings.port)

@@ -126,6 +126,17 @@ def test_an_unusable_environment_value_is_reported(monkeypatch, caplog):
     assert "Ignoring invalid YF_MCP_PORT: 'eighty'" in messages
 
 
+def test_the_start_line_names_the_version(monkeypatch, caplog):
+    """A log handed in with a bug report says which release wrote it."""
+    from benethos_yahoo_finance_mcp import __version__
+
+    monkeypatch.setattr(transport, "run_stdio", lambda server: None)
+    with caplog.at_level(logging.INFO):
+        cli.main([])
+    messages = [r.getMessage() for r in _ours(caplog)]
+    assert f"Starting Yahoo Finance MCP server {__version__} (stdio)" in messages
+
+
 class TestAccessLog:
     def _record(self, path: str, status: int) -> logging.LogRecord:
         return logging.LogRecord(

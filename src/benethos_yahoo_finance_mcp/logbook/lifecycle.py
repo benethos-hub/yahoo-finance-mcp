@@ -18,8 +18,8 @@ def setting_ignored(variable: str, value: str) -> None:
     _log.warning("Ignoring invalid %s: %r", variable, value)
 
 
-def starting_stdio() -> None:
-    _log.info("Starting Yahoo Finance MCP server (stdio)")
+def starting_stdio(version: str) -> None:
+    _log.info("Starting Yahoo Finance MCP server %s (stdio)", version)
 
 
 def token_ignored_under_stdio(variable: str) -> None:
@@ -30,9 +30,12 @@ def token_ignored_under_stdio(variable: str) -> None:
     )
 
 
-def starting_http(transport: str, host: str, port: int, path: str) -> None:
+def starting_http(
+    version: str, transport: str, host: str, port: int, path: str
+) -> None:
     _log.info(
-        "Starting Yahoo Finance MCP server (%s) on http://%s:%s%s",
+        "Starting Yahoo Finance MCP server %s (%s) on http://%s:%s%s",
+        version,
         transport,
         host,
         port,
