@@ -16,8 +16,9 @@ from datetime import date
 from typing import Any
 
 import yfinance as yf
-from yfinance.exceptions import YFRateLimitError
+from yfinance.exceptions import YFException, YFRateLimitError
 
+from .. import logbook
 from ..errors import RateLimitError, SymbolNotFoundError, ToolError
 from ..formatting import to_jsonable
 
@@ -33,12 +34,25 @@ _SYMBOL_SHAPE = re.compile(rf"[A-Z0-9.\-^=&]{{1,{SYMBOL_MAX}}}")
 def wrap_upstream(exc: Exception, message: str) -> ToolError:
     """Normalize an upstream yfinance exception into a ``ToolError``.
 
-    Rate limiting gets a dedicated, actionable message; any other failure keeps
-    the operation-specific context so the client knows what was being attempted.
+    Rate limiting gets a dedicated, actionable message. Every other failure
+    keeps ``message``, so the client knows what was being attempted, but
+    only yfinance's own errors bring their text along, since that is written
+    for a user. A network error's text can carry the full URL with Yahoo's
+    crumb in it, and anything else is a fault in code, this package's or
+    yfinance's, whose text tells the model nothing. Both are named by class
+    only, and the unexpected kind goes to the log with its traceback. The
+    HTTP clients yfinance uses derive their errors from ``OSError``.
     """
     if isinstance(exc, YFRateLimitError):
         return RateLimitError()
-    return ToolError(f"{message}: {exc}")
+    if isinstance(exc, YFException):
+        return ToolError(f"{message}: {exc}")
+    if isinstance(exc, OSError):
+        return ToolError(
+            f"{message}: Yahoo could not be reached ({type(exc).__name__})."
+        )
+    logbook.upstream.unexpected(exc)
+    return ToolError(f"{message}: unexpected {type(exc).__name__}.")
 
 
 @contextmanager

@@ -135,16 +135,22 @@ submodules.
   - **Other loggers.** The chosen level applies to this package and to
     uvicorn's request log only. The root logger stays at WARNING, so every
     other library, including one nobody thought of, says only what went
-    wrong. `mcp`, `sse_starlette`, `yfinance`, `curl_cffi`, `urllib3`,
+    wrong. `mcp`, `sse_starlette`, `curl_cffi`, `urllib3`,
     `peewee`, `httpx` and `httpcore` are also pinned at WARNING by name:
     `mcp` quotes every failed call's text at INFO and `sse_starlette` logs
     every tool result in full at DEBUG. uvicorn's server log is held at INFO
     for its startup lines. uvicorn gets no
     handlers of its own. Its request log reaches the same stderr handler
     without the query string, at INFO only for a refused request (status 400
-    and up, with the address that tried) and at DEBUG for all. yfinance's own
-    ERROR lines, such as `$FOO: possibly delisted`, are upstream's reasoning
-    and stay.
+    and up, with the address that tried) and at DEBUG for all. `yfinance` is
+    held at CRITICAL, which is silent: it logs an unknown symbol as up to four
+    ERROR lines, one of them Yahoo's whole answer body, after the tool has
+    already said "not found" in its own line. What yfinance raises still
+    reaches the log through that line, and an unexpected exception through
+    `wrap_upstream` with its traceback. `wrap_upstream` hands the model the
+    text of yfinance's own exceptions only. A network error is named by
+    class, since its text can carry the URL with Yahoo's crumb, and anything
+    else by class as well.
 - **CLI flags:** `--version`, `--transport`, `--host` (default 127.0.0.1), `--port`
   (default 8000, 1-65535, checked once an HTTP transport binds it), `--path`
   (default `/mcp`, `/sse` for sse), `--allowed-hosts`, `--allowed-origins`,
@@ -180,7 +186,9 @@ submodules.
   The MCP HTTP transport also runs a DNS-rebinding `Host`/`Origin` guard. It is
   derived from the actual bind host and passed to the SDK's app builder
   (`streamable_http_app` / `sse_app`, via `transport.http_app`) as an
-  explicit argument: a localhost bind keeps the protective localhost allow-list,
+  explicit argument: a localhost bind keeps the protective localhost allow-list
+  (decided by address, so `LOCALHOST`, `127.0.0.2` and `[::1]` count, and
+  `YF_MCP_HOST` is trimmed first),
   an exposed bind accepts any `Host` unless `--allowed-hosts` /
   `--allowed-origins` narrow it (mismatches get HTTP 421). Either list is
   derived from the other when only one is given. stdio has no HTTP

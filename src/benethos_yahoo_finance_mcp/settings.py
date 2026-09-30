@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import os
 import sys
-import tempfile
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -149,7 +148,13 @@ def load_settings(
     cache_dir_raw = given("cache_dir") or env.get("YF_MCP_CACHE_DIR")
     cache_dir: Path | None = Path(cache_dir_raw) if cache_dir_raw else None
     if cache_enabled and cache_dir is None:
-        cache_dir = default_cache_dir(env)
+        try:
+            cache_dir = default_cache_dir(env)
+        except RuntimeError:
+            raise SettingsError(
+                "the cache is on, but there is no home directory to keep it in. "
+                "Set YF_MCP_CACHE_DIR or --cache-dir."
+            ) from None
 
     cache_max_entries = given("cache_max_entries")
     if cache_max_entries is None:
@@ -168,7 +173,7 @@ def load_settings(
 
     return Settings(
         transport=transport,
-        host=given("host") or env.get("YF_MCP_HOST", "127.0.0.1"),
+        host=(given("host") or env.get("YF_MCP_HOST") or "").strip() or "127.0.0.1",
         port=port,
         path=given("path") or env.get("YF_MCP_PATH") or None,
         allowed_hosts=split_csv(
@@ -248,12 +253,15 @@ def token_from(environ: Mapping[str, str]) -> str | None:
 def default_cache_dir(environ: Mapping[str, str] | None = None) -> Path:
     """The OS user cache directory for this app.
 
-    Follows the platform convention, falling back to the system temp directory
-    on Windows when ``LOCALAPPDATA`` is missing.
+    Follows the platform convention. On Windows without ``LOCALAPPDATA`` it is
+    the same place under the home directory. It used to be the system temp
+    directory, which every user shares, and another user could leave a cache
+    file there whose contents were then served as tool results. Raises
+    ``RuntimeError`` when there is no home directory either.
     """
     env = os.environ if environ is None else environ
     if sys.platform == "win32":
-        base = env.get("LOCALAPPDATA") or tempfile.gettempdir()
+        base = env.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
     elif sys.platform == "darwin":
         base = str(Path.home() / "Library" / "Caches")
     else:

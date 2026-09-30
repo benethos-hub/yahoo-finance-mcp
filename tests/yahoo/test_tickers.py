@@ -92,6 +92,41 @@ def test_get_ticker_empty_symbol_raises():
 # --- upstream error normalization -----------------------------------------
 
 
+def test_yfinances_own_error_keeps_its_text():
+    from yfinance.exceptions import YFTickerMissingError
+
+    err = tickers.wrap_upstream(YFTickerMissingError("XYZ", "no timezone"), "Failed")
+    assert "XYZ" in str(err) and "no timezone" in str(err)
+
+
+def test_a_network_error_is_named_without_its_url():
+    """A curl error's text carries the full URL, Yahoo's crumb included."""
+    from curl_cffi.requests.exceptions import ConnectionError as CurlConnectionError
+
+    exc = CurlConnectionError(
+        "Failed to perform, curl: (7) https://query2.finance.yahoo.com/v10/x?crumb=s3cr3t"
+    )
+    text = str(tickers.wrap_upstream(exc, "Failed to load quote for 'AAPL'"))
+    assert text == (
+        "Failed to load quote for 'AAPL': Yahoo could not be reached (ConnectionError)."
+    )
+    assert "crumb" not in text
+
+
+def test_an_unexpected_error_is_named_to_the_model_and_traced_for_the_operator(
+    caplog,
+):
+    with caplog.at_level("WARNING", logger="benethos_yahoo_finance_mcp.yahoo"):
+        try:
+            {}["price"]
+        except KeyError as exc:
+            text = str(tickers.wrap_upstream(exc, "Failed to load quote"))
+    assert text == "Failed to load quote: unexpected KeyError."
+    [record] = caplog.records
+    assert record.getMessage() == "Unexpected KeyError while asking Yahoo"
+    assert record.exc_info is not None
+
+
 def _ticker_raising_on(attr, exc):
     """A FakeTicker subclass whose ``attr`` access raises ``exc``."""
 

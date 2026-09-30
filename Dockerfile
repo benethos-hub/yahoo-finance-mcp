@@ -1,9 +1,11 @@
-# syntax=docker/dockerfile:1
-
 # Both base images are pinned by digest as well as tag. A tag is a pointer the
 # publisher can move, and the digest is the content itself, so a rebuild of the
 # same commit gets the same bytes. The tag stays for the reader and for
 # Dependabot, which raises the digest when the tag moves.
+#
+# There is no `# syntax=` line on purpose. It pulls a frontend image by a
+# moving tag on every build, which is the one pull the rule above did not
+# cover, and nothing here needs more than the frontend built into BuildKit.
 
 # ---- builder: install locked deps + package into /opt/venv via uv ----
 FROM python:3.14-slim@sha256:51dafde81dbdb6ebde285137a295cf18a47ca95234fe388a343719cb97305b3d AS builder

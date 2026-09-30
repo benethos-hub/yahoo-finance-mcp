@@ -22,6 +22,27 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   schema says, and the shape Yahoo uses (letters, digits, `. - ^ = &`).
   Anything else is "not found" before yfinance is asked. 128 symbols from 25
   live searches all fit.
+- A loopback bind was recognised by its exact spelling, and `YF_MCP_HOST` was
+  not trimmed. `" 127.0.0.1"`, `LOCALHOST` or `127.0.0.2` counted as an
+  exposed bind and turned the DNS-rebinding guard off. The decision is now
+  made by address.
+- The text of every exception inside a Yahoo call went to the model, a
+  network error's full URL with Yahoo's crumb in it and a `KeyError` from
+  code included. Only yfinance's own errors keep their text now. A network
+  error is named by class, and anything unexpected by class too, with its
+  traceback in the log.
+- On Windows without `LOCALAPPDATA` the cache went to the system temp
+  directory, which every user shares, so another user could leave a cache
+  file there whose contents were served as tool results. It now goes under
+  the home directory. Without a home directory either, the server refuses
+  to start with the cache on and says to set `YF_MCP_CACHE_DIR`, instead of
+  failing with a bare `RuntimeError`.
+- yfinance logged an unknown symbol as up to four ERROR lines, one of them
+  Yahoo's whole answer body, which no line of this server may carry. It is
+  held at CRITICAL now, the tool's own line still says what failed.
+- The Dockerfile's `# syntax=` line pulled a frontend image by a moving tag
+  on every build, the one pull the digest pinning did not cover. Nothing
+  needs it, and it is gone.
 
 ### Added
 - The result cache keeps at most 10 000 entries, set with

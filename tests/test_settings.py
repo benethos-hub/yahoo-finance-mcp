@@ -75,6 +75,24 @@ class TestCacheDir:
         monkeypatch.setattr(settings.sys, "platform", "linux")
         assert load_settings({}, {}).cache_dir is None
 
+    def test_windows_without_localappdata_stays_under_home(self, monkeypatch, tmp_path):
+        """Not the shared temp directory, where another user could plant a file."""
+        monkeypatch.setattr(settings.sys, "platform", "win32")
+        monkeypatch.setattr(settings.Path, "home", staticmethod(lambda: tmp_path))
+        cache_dir = load_settings({}, {"YF_MCP_CACHE": "1"}).cache_dir
+        assert (
+            cache_dir == tmp_path / "AppData" / "Local" / "benethos-yahoo-finance-mcp"
+        )
+
+    def test_no_home_with_the_cache_on_says_what_to_set(self, monkeypatch):
+        def no_home() -> Path:
+            raise RuntimeError("Could not determine home directory.")
+
+        monkeypatch.setattr(settings.Path, "home", staticmethod(no_home))
+        monkeypatch.setattr(settings.sys, "platform", "linux")
+        with pytest.raises(SettingsError, match="YF_MCP_CACHE_DIR"):
+            load_settings({}, {"YF_MCP_CACHE": "1"})
+
     def test_the_platform_default_when_on(self, monkeypatch, tmp_path):
         monkeypatch.setattr(settings.sys, "platform", "linux")
         env = {"YF_MCP_CACHE": "1", "XDG_CACHE_HOME": str(tmp_path)}

@@ -222,6 +222,13 @@ def test_chatty_libraries_are_held_at_warning():
         assert logging.getLogger(name).level == logging.WARNING, name
 
 
+def test_yfinance_stays_out_of_the_log():
+    """It logs an unknown symbol as ERROR lines, one with Yahoo's whole answer."""
+    output.configure("DEBUG")
+    assert logging.getLogger("yfinance").level == logging.CRITICAL
+    assert not logging.getLogger("yfinance.base").isEnabledFor(logging.ERROR)
+
+
 def test_debug_lowers_this_server_and_the_request_log_only():
     """A library nobody named, asyncio say, stays at the root's WARNING."""
     output.configure("DEBUG")

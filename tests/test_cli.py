@@ -239,6 +239,28 @@ def test_transport_security_localhost_keeps_protection():
     assert "127.0.0.1:*" in ts.allowed_hosts
 
 
+@pytest.mark.parametrize(
+    "host", ["LOCALHOST", "127.0.0.2", " 127.0.0.1", "[::1]", "::1", "localhost"]
+)
+def test_every_loopback_spelling_keeps_the_guard_on(host):
+    """Decided by address, not by the exact string."""
+    ts = http_transport.transport_security_for(host, [], [])
+    assert ts.enable_dns_rebinding_protection is True
+
+
+@pytest.mark.parametrize("host", ["0.0.0.0", "::", "192.168.1.5", "mcp.example"])
+def test_a_bind_off_this_machine_is_exposed(host):
+    ts = http_transport.transport_security_for(host, [], [])
+    assert ts.enable_dns_rebinding_protection is False
+
+
+def test_the_host_from_the_environment_is_trimmed(monkeypatch):
+    monkeypatch.setenv("YF_MCP_HOST", " 127.0.0.1 ")
+    assert _settings([]).host == "127.0.0.1"
+    monkeypatch.setenv("YF_MCP_HOST", "  ")
+    assert _settings([]).host == "127.0.0.1"
+
+
 def test_transport_security_exposed_bind_disables_protection():
     ts = http_transport.transport_security_for("0.0.0.0", [], [])
     assert ts.enable_dns_rebinding_protection is False
