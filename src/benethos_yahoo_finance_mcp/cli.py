@@ -13,6 +13,7 @@ the JSON-RPC stream.
 from __future__ import annotations
 
 import argparse
+from typing import TYPE_CHECKING
 
 from . import __version__, cache, transport
 from .logbook import lifecycle, output
@@ -27,6 +28,9 @@ from .settings import (
     SettingsError,
     load_settings,
 )
+
+if TYPE_CHECKING:  # pragma: no cover - imported for typing only
+    from mcp.server.mcpserver import MCPServer
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -152,6 +156,19 @@ def main(argv: list[str] | None = None) -> None:
     cache.configure(settings)
     server = build_server()
 
+    try:
+        _serve(settings, server)
+    except KeyboardInterrupt:
+        # Ctrl+C. uvicorn shuts down cleanly first and then raises the signal
+        # again, so that the process ends as interrupted. Uncaught, that
+        # printed a traceback after "Finished server process", which read as
+        # a crash. stdio stops the same way. 130 is 128 plus SIGINT.
+        lifecycle.interrupted()
+        raise SystemExit(130) from None
+
+
+def _serve(settings: Settings, server: MCPServer) -> None:
+    """Say what is starting and hand ``server`` to the chosen transport."""
     if settings.transport == "stdio":
         lifecycle.starting_stdio(__version__)
         if settings.bearer_token is not None:

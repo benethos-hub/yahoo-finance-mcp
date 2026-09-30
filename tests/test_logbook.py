@@ -137,6 +137,22 @@ def test_the_start_line_names_the_version(monkeypatch, caplog):
     assert f"Starting Yahoo Finance MCP server {__version__} (stdio)" in messages
 
 
+@pytest.mark.parametrize("where", ["run_stdio", "run_http"])
+def test_ctrl_c_ends_with_a_line_not_a_traceback(monkeypatch, caplog, where):
+    """uvicorn shuts down cleanly and then raises the interrupt again."""
+
+    def interrupted(*args):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(transport, where, interrupted)
+    argv = [] if where == "run_stdio" else ["--transport", "streamable-http"]
+    with caplog.at_level(logging.INFO), pytest.raises(SystemExit) as info:
+        cli.main(argv)
+    assert info.value.code == 130
+    assert info.value.__context__ is None or info.value.__suppress_context__
+    assert [r.getMessage() for r in _ours(caplog)][-1] == "Stopped by an interrupt"
+
+
 class TestAccessLog:
     def _record(self, path: str, status: int) -> logging.LogRecord:
         return logging.LogRecord(
