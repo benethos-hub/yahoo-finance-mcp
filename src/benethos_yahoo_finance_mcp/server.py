@@ -30,8 +30,9 @@ Read-only access to Yahoo Finance market data. Three things decide whether a \
 call succeeds, and two more decide whether its answer is read correctly.
 
 Symbols. Every tool taking a `symbol` accepts a Yahoo ticker such as `AAPL`, \
-`SAP.DE` or `BTC-USD`, or a plain ISIN such as `US0378331005`, which Yahoo \
-resolves server-side. Pass either through unchanged — a symbol should never be \
+`SAP.DE` or `BTC-USD`, or a plain ISIN such as `US0378331005`, which is \
+looked up through Yahoo's search and replaced by its ticker before the call. \
+Pass either through unchanged — a symbol should never be \
 assembled or transformed. A company name is not a symbol: resolve it with \
 `search` and pass back what that returns. German WKNs resolve nowhere, not even \
 through `search`, so ask for a ticker, an ISIN or the company name instead. \

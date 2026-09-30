@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- The server instructions said Yahoo resolves an ISIN server-side. It does
+  so only in its search: asked for `US0378331005` on 2026-09-30, the search
+  endpoint answered `AAPL`, while the quote, quoteSummary and chart
+  endpoints answered with nothing or 404. yfinance's `Ticker` looks the ISIN
+  up through that search and uses the ticker it finds. The instructions now
+  say so, and so do the code comments, SPECS and the bug report template.
+  The tool schemas are unchanged.
+
 ### Changed
 - The log follows written rules. Every tool call leaves one line: an INFO
   with the tool, its symbol or key, how many rows came back, whether the

@@ -72,8 +72,10 @@ def get_company_info(symbol: str) -> dict[str, Any]:
         raise SymbolNotFoundError(symbol)
 
     profile: dict[str, Any] = {"symbol": tickers.normalize(symbol)}
-    # Yahoo resolves an ISIN to a ticker server-side. Surface that, since the
-    # caller has no other way to learn it, but never in place of the echo.
+    # yfinance swaps an ISIN for its ticker, found through Yahoo's search,
+    # when it builds the Ticker, and `info` reports that ticker. Surface it,
+    # since the caller has no other way to learn it, but never in place of
+    # the echo.
     resolved = info.get("symbol")
     if resolved and resolved != profile["symbol"]:
         profile["resolved_symbol"] = resolved

@@ -211,7 +211,7 @@ means a Yahoo ticker or an ISIN (see §6). The three exceptions are
 | `get_quote` | `symbol` | `{symbol, currency, exchange, quoteType, lastPrice, previousClose, open, dayHigh, dayLow, lastVolume, marketCap, 50/200d avg, yearHigh/Low, yearChange}` |
 | `get_quotes` | `symbols[]` (≤50) | `{count, quotes[{symbol, currency, lastPrice, previousClose, open, dayHigh, dayLow, marketCap}], not_found[], truncated}` |
 | `get_history` | `symbol`, `period` (=1mo), `interval` (=1d), `start?`, `end?` | `{symbol, interval, period, start, end, count, truncated, rows[]}` (OHLCV, ≤250 rows, tail kept) |
-| `get_company_info` | `symbol` | curated profile + key statistics, plus `resolved_symbol` when Yahoo resolves the input to a different ticker (i.e. for an ISIN) |
+| `get_company_info` | `symbol` | curated profile + key statistics, plus `resolved_symbol` when the input resolves to a different ticker (i.e. for an ISIN, see §6) |
 | `get_financials` | `symbol`, `statement` (income/balance/cashflow), `freq` (annual/quarterly/ttm — ttm income/cashflow only) | `{symbol, statement, freq, rows[]}` (every line item, columns = period-end dates as `YYYY-MM-DD`) |
 | `get_dividends` | `symbol` | `{symbol, dividends[], splits[]}` (both empty for an instrument that never paid or split, an unknown symbol raises) |
 | `get_news` | `symbol`, `limit` 1-10 (=10, Yahoo serves no more) | `{symbol, count, articles[{title, summary, publisher, published, url}]}` |

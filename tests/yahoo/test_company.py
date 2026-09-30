@@ -243,7 +243,7 @@ def test_get_company_info_empty_raises(patch_ticker):
 def test_get_company_info_echoes_the_input_symbol(patch_ticker):
     """An ISIN in must not come back out as a ticker.
 
-    Yahoo resolves an ISIN server-side and reports the ticker in `info`. That
+    yfinance resolves an ISIN to its ticker, which `info` then reports. That
     used to overwrite the echoed input, so this one tool answered `AAPL` to a
     question asked about `US0378331005` while every other tool echoed the ISIN.
     """

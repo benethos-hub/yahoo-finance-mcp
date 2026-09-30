@@ -31,10 +31,14 @@ READ_ONLY = ToolAnnotations(read_only_hint=True, open_world_hint=True)
 # Repeated once per symbol-taking tool, so every character here is paid 17 times
 # in the client's context.
 #
-# This used to carry a long warning that an ISIN is not a symbol. Yahoo now
-# resolves plain ISINs server-side — measured 2026-08-16, all 18 symbol-taking
-# tools return correct data for one — so the warning guarded against a failure
-# mode that no longer exists. Only the company-name case still needs `search`.
+# This used to carry a long warning that an ISIN is not a symbol. A plain ISIN
+# works now — measured 2026-08-16, all 18 symbol-taking tools return correct
+# data for one — so the warning guarded against a failure mode that no longer
+# exists. Only the company-name case still needs `search`.
+#
+# The resolution is not Yahoo's. Its data endpoints answer an ISIN with 404 or
+# no rows, checked 2026-09-30. yfinance's Ticker constructor recognises the
+# ISIN pattern, looks it up through Yahoo's search and uses the ticker found.
 Symbol = Annotated[
     str,
     Field(
