@@ -80,8 +80,9 @@ integers again.
   `get_earnings`, `get_estimates`, `get_upgrades_downgrades`, `get_holders`,
   `get_insider_activity` and `get_calendar`. They now say that Yahoo keeps
   this data for single stocks only, as `get_options` and `get_sec_filings`
-  already did for their cases, and their descriptions say an ETF gets that
-  error instead of promising an empty answer.
+  already did for their cases, and their descriptions and the server
+  instructions say an ETF gets that error instead of promising an empty
+  answer.
 - `get_quote` answered an unreachable Yahoo with "symbol not found": every
   field came back empty and that read as an unknown symbol. It now says
   Yahoo could not be reached. Measured with a dead proxy, an unknown symbol

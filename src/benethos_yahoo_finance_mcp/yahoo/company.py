@@ -213,7 +213,9 @@ def get_calendar(symbol: str) -> dict[str, Any]:
     """Return upcoming corporate-calendar events for ``symbol``.
 
     Includes the next earnings date(s) with analyst estimate ranges and the next
-    dividend / ex-dividend dates. Equity-only; empty for ETFs/funds/crypto.
+    dividend / ex-dividend dates.
+    Equity-only: an ETF, fund or crypto
+    symbol raises SymbolNotFoundError with ``tickers.EQUITY_ONLY_REASON``.
     """
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load calendar for {symbol!r}"):

@@ -24,9 +24,9 @@ body:
           required: true
         - label: >-
             The field is not simply empty for this kind of instrument. Analyst,
-            holder, earnings and calendar data are equity-only and come back
-            empty for ETFs, funds and crypto. `get_fund_data` is the inverse and
-            raises for stocks.
+            holder, earnings and calendar data are equity-only, and for ETFs,
+            funds and crypto those tools answer with an error that says so.
+            `get_fund_data` is the inverse and raises for stocks.
           required: true
         - label: >-
             The symbol is a Yahoo ticker such as `AAPL` or `SAP.DE`, or a plain

@@ -20,8 +20,8 @@ from benethos_yahoo_finance_mcp.errors import (
 from benethos_yahoo_finance_mcp.settings import Settings
 from benethos_yahoo_finance_mcp.yahoo import tickers
 
-# The six tools whose description says "empty for ETFs, funds, and crypto",
-# each with the fake that answers nothing.
+# The six equity-only tools, each with the fake that answers nothing. Their
+# descriptions used to promise an empty answer for ETFs, funds and crypto.
 EQUITY_ONLY = [
     ("get_earnings", FakeTicker(earnings_dates=None, earnings_history=None)),
     (

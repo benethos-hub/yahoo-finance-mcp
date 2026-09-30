@@ -15,8 +15,9 @@ def get_holders(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     """Return the ownership breakdown for ``symbol``.
 
     Combines the high-level holder summary (insider/institutional percentages)
-    with the top institutional and mutual-fund holders. Equity-only; empty for
-    ETFs/funds/crypto.
+    with the top institutional and mutual-fund holders.
+    Equity-only: an ETF, fund or crypto
+    symbol raises SymbolNotFoundError with ``tickers.EQUITY_ONLY_REASON``.
     """
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load holders for {symbol!r}"):
@@ -44,8 +45,9 @@ def get_insider_activity(symbol: str, *, limit: int = 50) -> dict[str, Any]:
     """Return insider trading activity for ``symbol``.
 
     Combines individual insider transactions, a 6-month purchases/sales summary,
-    and the current insider roster (with shares owned). Equity-only; empty for
-    ETFs/funds/crypto.
+    and the current insider roster (with shares owned).
+    Equity-only: an ETF, fund or crypto
+    symbol raises SymbolNotFoundError with ``tickers.EQUITY_ONLY_REASON``.
     """
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load insider activity for {symbol!r}"):
@@ -82,8 +84,9 @@ def get_sec_filings(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     """Return recent SEC filings for ``symbol``.
 
     Each entry has the filing date, type (e.g. ``10-K``, ``10-Q``, ``8-K``),
-    title, the Yahoo EDGAR URL, and exhibit links. Equity-only; empty for
-    ETFs/funds/crypto.
+    title, the Yahoo EDGAR URL, and exhibit links. A symbol without SEC
+    filings, a non-US issuer or an ETF, fund or crypto, raises
+    SymbolNotFoundError with ``_NO_SEC_FILINGS_REASON``.
     """
     limit = max(1, min(int(limit), 100))
     ticker = tickers.get_ticker(symbol)
