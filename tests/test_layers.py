@@ -1,8 +1,10 @@
 """The layers of the package, read from the source rather than from memory.
 
 Each top-level module or package is a unit, and the table below says which
-units it may import. A unit missing from the table fails the suite, so a new
-module is placed deliberately rather than by whatever it happened to need.
+units it may import. SPECS.md §3 shows the same table to a reader, and a test
+keeps the two in agreement. A unit missing from the table fails the suite, so
+a new module is placed deliberately rather than by whatever it happened to
+need.
 
 Packages speak to each other only through their ``__init__.py``: a name taken
 from another package must be in that package's ``__all__``, and no import
@@ -14,6 +16,7 @@ from __future__ import annotations
 
 import ast
 import importlib
+import re
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -102,6 +105,28 @@ def _edges() -> Iterator[tuple[Path, str, str, int]]:
                 used = {n if n in LAYERS else ROOT for n in names}
             for other in used - {unit}:
                 yield path, unit, other, line
+
+
+def _specs_table() -> dict[str, set[str]]:
+    """The layer table in SPECS.md §3, as ``LAYERS`` spells it."""
+    text = (PACKAGE.parent.parent / "SPECS.md").read_text(encoding="utf-8")
+    block = text.split("<!-- layers:start -->")[1].split("<!-- layers:end -->")[0]
+    table: dict[str, set[str]] = {}
+    for row in block.splitlines():
+        cells = [c.strip() for c in row.strip().strip("|").split("|")]
+        if len(cells) != 2 or not cells[0].startswith("`"):
+            continue
+        unit = cells[0].strip("`").removesuffix(".py")
+        names = {n.removesuffix(".py") for n in re.findall(r"`([^`]+)`", cells[1])}
+        if cells[1].startswith("everything except"):
+            names = set(LAYERS) - names - {unit}
+        table[unit] = names
+    return table
+
+
+def test_the_specs_table_matches_this_one():
+    """SPECS §3 shows the layers to a reader. It must say what is enforced."""
+    assert _specs_table() == LAYERS
 
 
 def test_every_unit_has_a_line_in_the_table():

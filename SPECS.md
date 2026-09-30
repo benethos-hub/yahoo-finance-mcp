@@ -54,13 +54,35 @@ subject (quotes, company, analysts, ownership, options, funds, browse), so
 | `errors.py` | `ToolError`, `SymbolNotFoundError`, `RateLimitError`. |
 | `py.typed` | PEP 561 marker. Without it a type checker skips the installed package and every annotation in it goes unused. |
 
-The layers are held by `tests/test_layers.py`, which reads every import from
-the source: errors, settings and logbook stand on nothing, formatting on
-errors, cache on errors, settings and logbook, yahoo on those and formatting,
-tools on errors, logbook and yahoo (never formatting, a tool returns what yahoo
-built), server on tools, and transport on server. Packages are entered only
-through their `__init__.py` and its `__all__`, and a new module needs a line
-in the test's table.
+### Layers
+
+Each top-level module or package may import only what its row names.
+`tests/test_layers.py` reads every import from the source and checks it
+against this table, and it checks that this table and its own copy agree, so
+a new module needs a row in both.
+
+<!-- layers:start -->
+| Unit | May import |
+|------|------------|
+| `__init__.py` | — |
+| `errors` | — |
+| `settings` | — |
+| `logbook` | — |
+| `formatting` | `errors` |
+| `cache` | `errors`, `settings`, `logbook` |
+| `yahoo` | `errors`, `logbook`, `cache`, `formatting` |
+| `tools` | `errors`, `logbook`, `yahoo` |
+| `server` | `__init__.py`, `tools`, `settings`, `logbook` |
+| `transport` | `server`, `errors`, `settings`, `logbook` |
+| `cli` | everything except `__main__` |
+| `__main__` | `cli` |
+<!-- layers:end -->
+
+`tools` never imports `formatting`: a tool returns what yahoo built. Only
+`__main__` imports `cli`, and only `yahoo` imports yfinance. Packages are
+entered only through their `__init__.py`: a name taken from another package
+must be in its `__all__`, and no import reaches into another package's
+submodules.
 
 ## 4. Transport & runtime
 
