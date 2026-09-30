@@ -27,7 +27,7 @@ from functools import wraps
 from pathlib import Path
 from typing import Any, TypeVar
 
-from . import logbook
+from . import __version__, logbook
 from . import settings as settings_mod
 from .settings import Settings
 
@@ -36,6 +36,9 @@ F = TypeVar("F", bound=Callable[..., Any])
 # The categories and their default time-to-live live with the rest of the
 # configuration. Re-exported because every category here is one of them.
 DEFAULT_TTLS = settings_mod.DEFAULT_TTLS
+
+# Seconds SQLite waits for another process's lock, see ResultCache.__init__.
+LOCK_TIMEOUT = 0.5
 
 # PRAGMA auto_vacuum: 0 none, 1 full, 2 incremental.
 _INCREMENTAL = 2
@@ -77,7 +80,13 @@ class ResultCache:
     ) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         self._max_entries = max_entries
-        self._conn = sqlite3.connect(str(path), check_same_thread=False)
+        # Half a second, not SQLite's five, to wait for another process that
+        # holds the file. The wait happens under this cache's lock, and every
+        # tool call stood still for as long as it lasted. Past it the call
+        # runs without the cache, the fallback for a locked file anyway.
+        self._conn = sqlite3.connect(
+            str(path), timeout=LOCK_TIMEOUT, check_same_thread=False
+        )
         try:
             self._make_shrinkable()
             self._conn.execute(
@@ -234,12 +243,36 @@ def configure(settings: Settings) -> None:
         logbook.cache.enabled(directory)
 
 
+def _canonical(value: Any) -> Any:
+    """``value`` as it goes into a key: text trimmed and lower-cased, the rest typed.
+
+    A symbol is case-insensitive, so ``aapl`` and ``AAPL`` share an entry. Every
+    other value keeps its type, which JSON writes out: ``True`` and ``"true"``,
+    ``5`` and ``"5"`` used to be one key, because everything went through
+    ``str()``.
+    """
+    if isinstance(value, str):
+        return value.strip().lower()
+    if isinstance(value, (list, tuple)):
+        return [_canonical(item) for item in value]
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    return str(value)
+
+
 def _make_key(category: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> str:
-    """Build a stable cache key from the call's category and arguments."""
+    """Build a stable cache key from the call's category and arguments.
+
+    The package version is part of it. A release that changes a result's shape
+    would otherwise serve the old shape from the cache for up to a day, so each
+    release starts from an empty cache in effect, the old entries expiring on
+    their own.
+    """
     raw = {
+        "v": __version__,
         "c": category,
-        "a": [str(a).strip().lower() for a in args],
-        "k": {k: str(v).strip().lower() for k, v in sorted(kwargs.items())},
+        "a": [_canonical(a) for a in args],
+        "k": {k: _canonical(v) for k, v in sorted(kwargs.items())},
     }
     blob = json.dumps(raw, sort_keys=True)
     return hashlib.sha1(blob.encode("utf-8")).hexdigest()

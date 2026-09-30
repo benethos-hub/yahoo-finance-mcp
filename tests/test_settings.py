@@ -150,6 +150,12 @@ class TestCacheMaxEntries:
             load_settings({"cache_max_entries": value}, {})
 
 
+def test_the_token_stays_out_of_repr():
+    resolved = load_settings({}, {TOKEN_VAR: "s3cr3t-token"})
+    assert resolved.bearer_token == "s3cr3t-token"
+    assert "s3cr3t" not in repr(resolved)
+
+
 class TestTtlBounds:
     """float() takes nan, inf and negatives: nan broke every write, inf never
     expired."""

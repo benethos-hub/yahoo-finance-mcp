@@ -43,6 +43,7 @@ jobs:
     # A manual run has no version to publish, and PyPI rejects a re-upload.
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: pypi
       url: https://pypi.org/p/benethos-yahoo-finance-mcp
@@ -86,6 +87,7 @@ jobs:
     # A release, or a manual run on main. See the header.
     if: github.event_name == 'release' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       contents: read
       packages: write # push to ghcr.io as the GITHUB_TOKEN identity

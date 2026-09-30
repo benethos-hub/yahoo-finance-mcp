@@ -91,7 +91,9 @@ class Settings:
     cache_dir: Path | None = None
     cache_ttls: Mapping[str, float] = field(default_factory=lambda: dict(DEFAULT_TTLS))
     cache_max_entries: int = CACHE_MAX_ENTRIES
-    bearer_token: str | None = None
+    # Out of repr, so a Settings that ends up in a log line or a traceback
+    # does not carry the secret with it.
+    bearer_token: str | None = field(default=None, repr=False)
     # ``(variable, value)`` for every environment value that was unusable and
     # replaced by its default.
     ignored: tuple[tuple[str, str], ...] = ()

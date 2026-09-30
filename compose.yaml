@@ -41,6 +41,13 @@ services:
       # Change the host port (the middle number) if 8000 is already taken.
       - "127.0.0.1:8000:8000"
     restart: unless-stopped
+    # The server runs as a non-root user on a port above 1024 and needs no
+    # Linux capability at all, so it gets none, and no process in it can gain
+    # privileges through a setuid binary either.
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     # Docker keeps what a container writes to stdout and stderr, and the
     # server writes a line per tool call to stderr, and every request at
     # DEBUG. Without a cap the log grows for as long as the container runs.

@@ -143,6 +143,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   symbol only as the other possibility.
 
 ### Changed
+- The result cache's key carries the package version, so a release never
+  serves a result shape from before it, and keeps the type of every value
+  that is not text: `True` and `"true"` were one key. Existing cache entries
+  are not read again and expire on their own.
+- The cache waits at most half a second for another process holding its
+  file, not five. The wait blocked every tool call, and past it the call
+  runs without the cache as before.
+- Compose drops every Linux capability and sets `no-new-privileges`. The
+  server runs as a non-root user on a high port and needs none.
+- Every CI and publish job has a `timeout-minutes`, well above what it
+  takes today.
+- Dependabot groups minor and patch updates per ecosystem into one pull
+  request. Major updates still come alone, and so do `yfinance` and `mcp`,
+  which need their own checks.
+- `.dockerignore` keeps `dist`, `build`, coverage and tool caches and
+  `.claude` out of the build context.
+- The bearer token no longer appears in the `repr` of the settings.
 - Every log line names its source short: `server`, `tools`, `yahoo`,
   `cache`, `uvicorn`, `http`, instead of the full logger name.
   `uvicorn.error` read as if something had failed while it is only

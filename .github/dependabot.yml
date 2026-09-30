@@ -1,4 +1,8 @@
 version: 2
+# Minor and patch updates arrive as one pull request per ecosystem and week
+# instead of one each. They are the routine ones, and a single run of the
+# gates covers them together. A major update still comes on its own, since
+# that is where behaviour changes and it wants its own review.
 updates:
   # Python dependencies. The ecosystem is "uv", not "pip", because the versions
   # that actually get installed are the ones pinned in uv.lock, and the pip
@@ -12,6 +16,12 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+        # These two always come alone, whatever the size of the bump: the
+        # gates mock both, so each needs its own checks (CLAUDE.md, Verifying).
+        exclude-patterns: ["yfinance", "mcp"]
 
   # The actions the workflows use, each pinned to a full commit SHA with the
   # version it stands for in a trailing comment. A tag, even an exact one, is a
@@ -30,6 +40,9 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
 
   # The base image in the Dockerfile. It was pinned to python:3.12-slim long
   # after 3.14 was out, and nothing said so: the image built, the container ran
@@ -40,3 +53,6 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]

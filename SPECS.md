@@ -69,7 +69,7 @@ a new module needs a row in both.
 | `settings` | — |
 | `logbook` | — |
 | `formatting` | `errors` |
-| `cache` | `errors`, `settings`, `logbook` |
+| `cache` | `__init__.py`, `errors`, `settings`, `logbook` |
 | `yahoo` | `errors`, `logbook`, `cache`, `formatting` |
 | `tools` | `errors`, `logbook`, `yahoo` |
 | `server` | `__init__.py`, `tools`, `settings`, `logbook` |
@@ -371,6 +371,14 @@ values).
   "nothing found" looks different passes its own test via
   `cached(..., worth_keeping=...)`: a `get_quotes` call in which every symbol
   missed is not stored.
+- The key is a hash of the package version, the category and the arguments.
+  Text is trimmed and lower-cased, so a symbol is case-insensitive, and every
+  other value keeps its type (`True` and `"true"` are two keys). The version
+  makes a release start from an empty cache in effect, so a changed result
+  shape is never served from before it.
+- SQLite waits at most `LOCK_TIMEOUT` (0.5 s) for another process holding
+  the file. The wait happens under the cache's own lock, where every tool
+  call stands still, and past it the call runs without the cache.
 - The cache never fails a call, and never the start. A database another
   process holds locked, or a damaged file, is logged as a warning and the
   result is fetched and returned as if caching were off. At startup the same

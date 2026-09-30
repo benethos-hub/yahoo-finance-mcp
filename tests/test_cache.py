@@ -241,6 +241,38 @@ def test_a_failed_write_leaves_no_transaction_holding_the_lock(tmp_path):
         rc.close()
 
 
+def test_a_foreign_lock_costs_half_a_second_not_five(tmp_path):
+    """The wait holds this cache's lock, and with it every tool call."""
+    path = tmp_path / "c.sqlite"
+    rc = cache.ResultCache(path)
+    holder = sqlite3.connect(str(path))
+    try:
+        holder.execute("BEGIN EXCLUSIVE")
+        started = time.monotonic()
+        with pytest.raises(sqlite3.OperationalError, match="locked"):
+            rc.set("k", {"ok": True}, ttl=60)
+        waited = time.monotonic() - started
+        assert cache.LOCK_TIMEOUT <= waited + 0.05 < 2
+    finally:
+        holder.rollback()
+        holder.close()
+        rc.close()
+
+
+def test_the_key_keeps_the_type_and_ignores_the_case():
+    key = cache._make_key
+    assert key("quote", ("AAPL",), {}) == key("quote", (" aapl ",), {})
+    assert key("x", (), {"flag": True}) != key("x", (), {"flag": "true"})
+    assert key("x", (), {"n": 5}) != key("x", (), {"n": "5"})
+
+
+def test_the_key_changes_with_the_release(monkeypatch):
+    """A new release never gets an old result shape from the cache."""
+    before = cache._make_key("quote", ("AAPL",), {})
+    monkeypatch.setattr(cache, "__version__", "99.0.0")
+    assert cache._make_key("quote", ("AAPL",), {}) != before
+
+
 def test_configure_hands_the_limit_on(tmp_path):
     cache.configure(
         Settings(cache_enabled=True, cache_dir=tmp_path, cache_max_entries=7)
