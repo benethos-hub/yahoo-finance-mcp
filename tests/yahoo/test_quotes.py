@@ -265,6 +265,19 @@ def test_get_history_rejects_an_argument_before_asking_yahoo(
     assert not hasattr(ticker, "history_kwargs")  # Yahoo was never asked
 
 
+@pytest.mark.parametrize(
+    "start,end", [("2024-01-02", "2024-01-02"), ("2024-01-05", "2024-01-02")]
+)
+def test_get_history_wants_end_after_start(patch_ticker, start, end):
+    """end is exclusive, so the same day is no day, and Yahoo answers no rows."""
+    ticker = patch_ticker(FakeTicker(history=pd.DataFrame()))
+    with pytest.raises(ToolError) as info:
+        yahoo.get_history("aapl", start=start, end=end)
+    assert not isinstance(info.value, SymbolNotFoundError)
+    assert "end is exclusive" in str(info.value)
+    assert not hasattr(ticker, "history_kwargs")
+
+
 def test_a_rejected_interval_lists_every_valid_one(patch_ticker):
     patch_ticker(FakeTicker())
     with pytest.raises(ToolError) as info:

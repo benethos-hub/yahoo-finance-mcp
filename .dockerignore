@@ -22,3 +22,13 @@ SPECS.md
 CLAUDE.md
 Dockerfile
 .dockerignore
+
+# Build and tool output. Nothing here is copied into the image, but a stale
+# wheel in dist/ or a tool cache has no business in the build context either.
+dist
+build
+.coverage
+htmlcov
+.mypy_cache
+.ruff_cache
+.claude

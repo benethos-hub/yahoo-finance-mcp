@@ -69,7 +69,7 @@ a new module needs a row in both.
 | `settings` | — |
 | `logbook` | — |
 | `formatting` | `errors` |
-| `cache` | `errors`, `settings`, `logbook` |
+| `cache` | `__init__.py`, `errors`, `settings`, `logbook` |
 | `yahoo` | `errors`, `logbook`, `cache`, `formatting` |
 | `tools` | `errors`, `logbook`, `yahoo` |
 | `server` | `__init__.py`, `tools`, `settings`, `logbook` |
@@ -125,23 +125,32 @@ submodules.
     `cached` appended when the result cache answered (the cache notes that in
     a context variable).
   - **What a line may carry.** A symbol or a key, since both are public
-    identifiers. Never the bearer token, a search query (free text a person
+    identifiers, with printable characters only and cut at 32, because the
+    caller chose them and the line is written before Yahoo says whether they
+    exist. A line break would forge a second line, an escape sequence would
+    reach a terminal. Never the bearer token, a search query (free text a person
     typed, the line gives the number of matches), a URL's query string,
     anything from Yahoo's answer, or the text of an error this server raised,
     which is written for the model. A line names the error's class instead.
   - **Other loggers.** The chosen level applies to this package and to
     uvicorn's request log only. The root logger stays at WARNING, so every
     other library, including one nobody thought of, says only what went
-    wrong. `mcp`, `sse_starlette`, `yfinance`, `curl_cffi`, `urllib3`,
+    wrong. `mcp`, `sse_starlette`, `curl_cffi`, `urllib3`,
     `peewee`, `httpx` and `httpcore` are also pinned at WARNING by name:
     `mcp` quotes every failed call's text at INFO and `sse_starlette` logs
     every tool result in full at DEBUG. uvicorn's server log is held at INFO
     for its startup lines. uvicorn gets no
     handlers of its own. Its request log reaches the same stderr handler
     without the query string, at INFO only for a refused request (status 400
-    and up, with the address that tried) and at DEBUG for all. yfinance's own
-    ERROR lines, such as `$FOO: possibly delisted`, are upstream's reasoning
-    and stay.
+    and up, with the address that tried) and at DEBUG for all. `yfinance` is
+    held at CRITICAL, which is silent: it logs an unknown symbol as up to four
+    ERROR lines, one of them Yahoo's whole answer body, after the tool has
+    already said "not found" in its own line. What yfinance raises still
+    reaches the log through that line, and an unexpected exception through
+    `wrap_upstream` with its traceback. `wrap_upstream` hands the model the
+    text of yfinance's own exceptions only. A network error is named by
+    class, since its text can carry the URL with Yahoo's crumb, and anything
+    else by class as well.
 - **CLI flags:** `--version`, `--transport`, `--host` (default 127.0.0.1), `--port`
   (default 8000, 1-65535, checked once an HTTP transport binds it), `--path`
   (default `/mcp`, `/sse` for sse), `--allowed-hosts`, `--allowed-origins`,
@@ -177,11 +186,17 @@ submodules.
   The MCP HTTP transport also runs a DNS-rebinding `Host`/`Origin` guard. It is
   derived from the actual bind host and passed to the SDK's app builder
   (`streamable_http_app` / `sse_app`, via `transport.http_app`) as an
-  explicit argument: a localhost bind keeps the protective localhost allow-list,
+  explicit argument: a localhost bind keeps the protective localhost allow-list
+  (decided by address, so `LOCALHOST`, `127.0.0.2` and `[::1]` count, and
+  `YF_MCP_HOST` is trimmed first),
   an exposed bind accepts any `Host` unless `--allowed-hosts` /
   `--allowed-origins` narrow it (mismatches get HTTP 421). Either list is
   derived from the other when only one is given. stdio has no HTTP
-  surface and is handed no transport options at all.
+  surface and is handed no transport options at all. `compose.yaml` sets
+  `YF_MCP_ALLOWED_HOSTS` to the loopback names and its service name, because
+  the image binds `0.0.0.0` and the guard would otherwise be off while the
+  port sits on the host's loopback, reachable by a rebound browser page.
+  `tests/test_cli.py` holds it to that.
 - **Deployment:** a `Dockerfile` (multi-stage, non-root, healthcheck,
   dependencies installed reproducibly from `uv.lock` via uv) and a
   `compose.yaml` host the server over streamable-HTTP on port 8000. The image
@@ -218,6 +233,13 @@ submodules.
 - All `get_*` tools pass the given `symbol` through to yfinance unchanged
   apart from trimming and uppercasing. The server itself resolves nothing
   (Variant A) and never assembles or rewrites a symbol.
+- A symbol has at most 32 characters, which the schema says (`maxLength`), and
+  must have the shape Yahoo uses: letters, digits and `. - ^ = &`, as in
+  `^GSPC`, `EURUSD=X`, `BRK-B`, `M&M.NS`. `yahoo.tickers.get_ticker` answers
+  anything else with `SymbolNotFoundError` before yfinance is asked, since the
+  symbol goes into the path of Yahoo's URLs. 128 symbols from 25 live
+  searches across markets, futures, currencies and crypto all fit, checked
+  2026-09-30.
 - In practice that accepts both a **Yahoo ticker** (`AAPL`, `SAP.DE`) and a
   **plain ISIN** (`US0378331005`). The ISIN is resolved by yfinance, not by
   this server and not by the data endpoints: `yf.Ticker` recognises anything
@@ -343,13 +365,25 @@ values).
   `--cache-ttl <NAME>=<SECONDS>` (`YF_MCP_CACHE_TTL_<NAME>`). A TTL of `0`
   bypasses caching for that tool.
 - Only successful, non-empty returns are cached. Exceptions propagate and are
-  never cached, and empty results (e.g. a search with no matches) are not
-  pinned for the TTL. A function whose "nothing found" is a non-empty value
-  passes its own test via `cached(..., worth_keeping=...)`: a `get_quotes`
-  call in which every symbol missed is not stored.
-- The cache never fails a call. A database another process holds locked, or
-  a damaged file, is logged as a warning and the result is fetched and
-  returned as if caching were off.
+  never cached, and empty results are not pinned for the TTL. Empty means a
+  falsy value, a search with no matches say, or a dict whose `count` is 0,
+  `get_news` without articles say (`cache.has_content`). A function whose
+  "nothing found" looks different passes its own test via
+  `cached(..., worth_keeping=...)`: a `get_quotes` call in which every symbol
+  missed is not stored.
+- The key is a hash of the package version, the category and the arguments.
+  Text is trimmed and lower-cased, so a symbol is case-insensitive, and every
+  other value keeps its type (`True` and `"true"` are two keys). The version
+  makes a release start from an empty cache in effect, so a changed result
+  shape is never served from before it.
+- SQLite waits at most `LOCK_TIMEOUT` (0.5 s) for another process holding
+  the file. The wait happens under the cache's own lock, where every tool
+  call stands still, and past it the call runs without the cache.
+- The cache never fails a call, and never the start. A database another
+  process holds locked, or a damaged file, is logged as a warning and the
+  result is fetched and returned as if caching were off. At startup the same
+  goes for the file or its directory: `configure` logs a warning and the
+  server runs without a cache.
 - Housekeeping: an expired entry is deleted when it is read, and every
   hundredth write sweeps the whole file. Startup used to be the only sweep,
   and a long-running HTTP server kept every entry nobody asked for again.
@@ -387,8 +421,11 @@ values).
   `freq` of `get_financials`, the sector, industry and market keys, and the
   arguments of `get_history`: `interval` from a fixed set, `period` listed or
   shaped as a count of d, wk, mo or y (Yahoo serves `7mo` and `3y` too), and
-  `start`/`end` as real dates written `YYYY-MM-DD`. Each is checked only when
-  it is used, so `period` is not checked next to `start`.
+  `start`/`end` as real dates written `YYYY-MM-DD`, with `end` after `start`.
+  yfinance's `end` is exclusive, so the same day twice is no day at all, and
+  the description says so. `get_shares` takes its dates through the same
+  check, `tickers.checked_range`. Each is checked only when it is used, so
+  `period` is not checked next to `start`.
   Valid arguments can still come back empty: Yahoo keeps 1m bars for 8 days,
   2m to 90m for 60 and the hourly bars for 730. No intraday rows is therefore
   a `ToolError` naming that reach and the symbol as the other possibility,

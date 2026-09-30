@@ -1,9 +1,11 @@
-# syntax=docker/dockerfile:1
-
 # Both base images are pinned by digest as well as tag. A tag is a pointer the
 # publisher can move, and the digest is the content itself, so a rebuild of the
 # same commit gets the same bytes. The tag stays for the reader and for
 # Dependabot, which raises the digest when the tag moves.
+#
+# There is no `# syntax=` line on purpose. It pulls a frontend image by a
+# moving tag on every build, which is the one pull the rule above did not
+# cover, and nothing here needs more than the frontend built into BuildKit.
 
 # ---- builder: install locked deps + package into /opt/venv via uv ----
 FROM python:3.14-slim@sha256:51dafde81dbdb6ebde285137a295cf18a47ca95234fe388a343719cb97305b3d AS builder
@@ -62,7 +64,9 @@ EXPOSE 8000
 # Persist the result cache across container restarts.
 VOLUME ["/cache"]
 
-# Basic liveness check: the configured HTTP port is accepting connections.
+# Basic liveness check: the configured HTTP port is accepting connections. It
+# reads the port from YF_MCP_PORT, since a healthcheck cannot see the
+# command line: set the port through the variable, never with --port.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import os, socket; socket.create_connection(('127.0.0.1', int(os.environ.get('YF_MCP_PORT', '8000'))), 3).close()" || exit 1
 
@@ -70,4 +74,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 # still be appended (they override the env), e.g.:
 #   docker run -e YF_MCP_PORT=9000 -p 9000:9000 IMAGE
 #   docker run IMAGE --log-level DEBUG
+# The port is the exception: an appended --port 9000 leaves the healthcheck
+# knocking on 8000, and the container stays unhealthy for good.
 ENTRYPOINT ["benethos-yahoo-finance-mcp"]

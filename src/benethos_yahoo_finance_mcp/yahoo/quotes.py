@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from datetime import date
 from typing import Any
 
 import yfinance as yf
@@ -75,7 +74,9 @@ def get_quote(symbol: str) -> dict[str, Any]:
 
     quote = {
         "symbol": tickers.normalize(symbol),
-        **tickers.fast_fields(fast, _QUOTE_FAST_FIELDS),
+        **tickers.fast_fields(
+            fast, _QUOTE_FAST_FIELDS, f"Failed to load quote for {symbol!r}"
+        ),
     }
     if quote["lastPrice"] is None:
         raise SymbolNotFoundError(symbol)
@@ -130,8 +131,12 @@ def get_quotes(symbols: list[str], *, limit: int = _MAX_QUOTES) -> dict[str, Any
     for sym in cleaned:
         try:
             ticker = tickers.get_ticker(sym)
-        except SymbolNotFoundError:
-            # An ISIN-shaped symbol Yahoo cannot resolve fails already here.
+        except RateLimitError:
+            raise  # every further symbol would hit it too
+        except ToolError:
+            # An ISIN-shaped symbol Yahoo cannot resolve fails already here,
+            # and so does a lookup that failed another way. One symbol does
+            # not cost the batch, which the description promises.
             not_found.append(sym)
             continue
         try:
@@ -142,7 +147,10 @@ def get_quotes(symbols: list[str], *, limit: int = _MAX_QUOTES) -> dict[str, Any
             not_found.append(sym)
             continue
 
-        row = {"symbol": sym, **tickers.fast_fields(fast, _QUOTES_FAST_FIELDS)}
+        fields = tickers.fast_fields(
+            fast, _QUOTES_FAST_FIELDS, f"Failed to load quote for {sym!r}"
+        )
+        row = {"symbol": sym, **fields}
         if row["lastPrice"] is None:
             not_found.append(sym)
         else:
@@ -199,20 +207,6 @@ _INTRADAY_DAYS = {
     "4h": 730,
 }
 
-_DATE_SHAPE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
-
-
-def _checked_date(name: str, value: str) -> str:
-    """``value`` if it is a real date written YYYY-MM-DD, else a ``ToolError``."""
-    value = value.strip()
-    try:
-        if _DATE_SHAPE.fullmatch(value):
-            date.fromisoformat(value)
-            return value
-    except ValueError:
-        pass
-    raise ToolError(f"Invalid {name} {value!r}, expected a date as YYYY-MM-DD.")
-
 
 @cache.cached("history")
 def get_history(
@@ -237,8 +231,7 @@ def get_history(
             f"Invalid interval {interval!r}, expected one of {', '.join(INTERVALS)}."
         )
     if start:
-        start = _checked_date("start", start)
-        end = _checked_date("end", end) if end else None
+        start, end = tickers.checked_range(start, end)
     else:
         period = (period or "").strip().lower()
         if period not in PERIODS and not _PERIOD_SHAPE.fullmatch(period):

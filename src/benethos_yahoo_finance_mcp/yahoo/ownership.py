@@ -29,7 +29,7 @@ def get_holders(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     institutional_rows = dataframe_to_records(institutional, max_rows=limit, head=True)
     mutualfund_rows = dataframe_to_records(mutualfund, max_rows=limit, head=True)
     if not major_rows and not institutional_rows and not mutualfund_rows:
-        raise SymbolNotFoundError(symbol)
+        raise SymbolNotFoundError(symbol, reason=tickers.EQUITY_ONLY_REASON)
 
     return {
         "symbol": tickers.normalize(symbol),
@@ -58,7 +58,7 @@ def get_insider_activity(symbol: str, *, limit: int = 50) -> dict[str, Any]:
     purchases_rows = dataframe_to_records(purchases, max_rows=10)
     roster_rows = dataframe_to_records(roster, max_rows=limit, head=True)
     if not transactions_rows and not purchases_rows and not roster_rows:
-        raise SymbolNotFoundError(symbol)
+        raise SymbolNotFoundError(symbol, reason=tickers.EQUITY_ONLY_REASON)
 
     return {
         "symbol": tickers.normalize(symbol),

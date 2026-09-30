@@ -13,13 +13,14 @@ here first.
 
 from __future__ import annotations
 
+import math
 import os
 import sys
-import tempfile
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 TRANSPORTS = ("stdio", "streamable-http", "sse")
@@ -90,7 +91,9 @@ class Settings:
     cache_dir: Path | None = None
     cache_ttls: Mapping[str, float] = field(default_factory=lambda: dict(DEFAULT_TTLS))
     cache_max_entries: int = CACHE_MAX_ENTRIES
-    bearer_token: str | None = None
+    # Out of repr, so a Settings that ends up in a log line or a traceback
+    # does not carry the secret with it.
+    bearer_token: str | None = field(default=None, repr=False)
     # ``(variable, value)`` for every environment value that was unusable and
     # replaced by its default.
     ignored: tuple[tuple[str, str], ...] = ()
@@ -149,7 +152,13 @@ def load_settings(
     cache_dir_raw = given("cache_dir") or env.get("YF_MCP_CACHE_DIR")
     cache_dir: Path | None = Path(cache_dir_raw) if cache_dir_raw else None
     if cache_enabled and cache_dir is None:
-        cache_dir = default_cache_dir(env)
+        try:
+            cache_dir = default_cache_dir(env)
+        except RuntimeError:
+            raise SettingsError(
+                "the cache is on, but there is no home directory to keep it in. "
+                "Set YF_MCP_CACHE_DIR or --cache-dir."
+            ) from None
 
     cache_max_entries = given("cache_max_entries")
     if cache_max_entries is None:
@@ -163,18 +172,18 @@ def load_settings(
 
     ttls = dict(DEFAULT_TTLS)
     for name in DEFAULT_TTLS:
-        ttls[name] = from_env(f"YF_MCP_CACHE_TTL_{name.upper()}", float, ttls[name])
+        ttls[name] = from_env(f"YF_MCP_CACHE_TTL_{name.upper()}", _seconds, ttls[name])
     ttls.update(parse_ttl_items(given("cache_ttl") or ()))
 
     return Settings(
         transport=transport,
-        host=given("host") or env.get("YF_MCP_HOST", "127.0.0.1"),
+        host=(given("host") or env.get("YF_MCP_HOST") or "").strip() or "127.0.0.1",
         port=port,
         path=given("path") or env.get("YF_MCP_PATH") or None,
         allowed_hosts=split_csv(
             given("allowed_hosts") or env.get("YF_MCP_ALLOWED_HOSTS")
         ),
-        allowed_origins=split_csv(
+        allowed_origins=origins_from(
             given("allowed_origins") or env.get("YF_MCP_ALLOWED_ORIGINS")
         ),
         log_level=log_level,
@@ -206,6 +215,18 @@ def _positive_int(raw: str) -> int:
     return value
 
 
+def _seconds(raw: str) -> float:
+    """A TTL: a finite number of seconds, zero or more.
+
+    ``float`` alone takes ``nan``, ``inf`` and negative values. A nan TTL made
+    every write fail with an IntegrityError, inf kept entries for ever.
+    """
+    value = float(raw)
+    if not math.isfinite(value) or value < 0:
+        raise ValueError(raw)
+    return value
+
+
 def _truthy(raw: str) -> bool:
     return raw.strip().lower() not in _FALSY
 
@@ -229,10 +250,39 @@ def parse_ttl_items(items: Any) -> dict[str, float]:
                 f"one of {', '.join(DEFAULT_TTLS)}"
             )
         try:
-            overrides[name] = float(raw)
+            overrides[name] = _seconds(raw)
         except ValueError:
-            raise SettingsError(f"invalid --cache-ttl seconds in {item!r}") from None
+            raise SettingsError(
+                f"invalid --cache-ttl seconds in {item!r}, expected a finite "
+                "number of 0 or more"
+            ) from None
     return overrides
+
+
+def origins_from(value: str | None) -> tuple[str, ...]:
+    """The allowed origins, each a scheme and a host, without a final slash.
+
+    A browser sends ``Origin`` as ``scheme://host[:port]`` and nothing more.
+    An origin without a scheme left the derived host list empty while the
+    guard stayed on, so every client got HTTP 421, and one with a final slash
+    never matched, so every browser got 403. A final slash is dropped, and an
+    origin without scheme or host stops the start: ignoring the whole list
+    would switch the guard off for an exposed bind, which is worse. It comes
+    from ``--allowed-origins`` or ``YF_MCP_ALLOWED_ORIGINS``, and the message
+    names both.
+    """
+    origins = []
+    for item in split_csv(value):
+        origin = item.rstrip("/")
+        parts = urlsplit(origin)
+        if not parts.scheme or not parts.netloc or parts.path:
+            raise SettingsError(
+                f"invalid allowed origin {item!r} in --allowed-origins or "
+                "YF_MCP_ALLOWED_ORIGINS, expected scheme://host[:port] such as "
+                "http://localhost:8000"
+            )
+        origins.append(origin)
+    return tuple(origins)
 
 
 def token_from(environ: Mapping[str, str]) -> str | None:
@@ -248,12 +298,15 @@ def token_from(environ: Mapping[str, str]) -> str | None:
 def default_cache_dir(environ: Mapping[str, str] | None = None) -> Path:
     """The OS user cache directory for this app.
 
-    Follows the platform convention, falling back to the system temp directory
-    on Windows when ``LOCALAPPDATA`` is missing.
+    Follows the platform convention. On Windows without ``LOCALAPPDATA`` it is
+    the same place under the home directory. It used to be the system temp
+    directory, which every user shares, and another user could leave a cache
+    file there whose contents were then served as tool results. Raises
+    ``RuntimeError`` when there is no home directory either.
     """
     env = os.environ if environ is None else environ
     if sys.platform == "win32":
-        base = env.get("LOCALAPPDATA") or tempfile.gettempdir()
+        base = env.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
     elif sys.platform == "darwin":
         base = str(Path.home() / "Library" / "Caches")
     else:

@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Annotated, Any
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
-from .. import logbook
+from .. import logbook, yahoo
 from ..errors import RateLimitError
 
 if TYPE_CHECKING:  # pragma: no cover - imported for typing only
@@ -39,13 +39,18 @@ READ_ONLY = ToolAnnotations(read_only_hint=True, open_world_hint=True)
 # The resolution is not Yahoo's. Its data endpoints answer an ISIN with 404 or
 # no rows, checked 2026-09-30. yfinance's Ticker constructor recognises the
 # ISIN pattern, looks it up through Yahoo's search and uses the ticker found.
+#
+# The length is bounded in the schema as well, so a caller cannot hand the
+# server an arbitrarily long string to carry around. The shape itself is
+# checked in yahoo.tickers, which answers anything else with "not found".
 Symbol = Annotated[
     str,
     Field(
         description=(
             "A Yahoo ticker or an ISIN, e.g. 'AAPL', 'SAP.DE' or "
             "'US0378331005'. For a company name, use 'search' first."
-        )
+        ),
+        max_length=yahoo.tickers.SYMBOL_MAX,
     ),
 ]
 

@@ -34,7 +34,7 @@ LAYERS: dict[str, set[str]] = {
     "settings": set(),
     "logbook": set(),
     "formatting": {"errors"},
-    "cache": {"errors", "settings", "logbook"},
+    "cache": {ROOT, "errors", "settings", "logbook"},
     "yahoo": {"errors", "logbook", "cache", "formatting"},
     # Never formatting: a tool returns what yahoo built.
     "tools": {"errors", "logbook", "yahoo"},

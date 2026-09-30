@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 
 import pytest
 from mcp.server.mcpserver import MCPServer
@@ -93,6 +94,21 @@ def test_rejects_a_cache_limit_below_one(capsys, value):
         _settings(["--cache-max-entries", value])
     assert info.value.code == 2
     assert "--cache-max-entries" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "argv,env", [(["--path", "mcp"], None), ([], "mcp")], ids=["flag", "env"]
+)
+def test_a_path_without_a_leading_slash_is_a_usage_error(
+    monkeypatch, capsys, argv, env
+):
+    """Starlette asserted on it after the start line had already been logged."""
+    if env:
+        monkeypatch.setenv("YF_MCP_PATH", env)
+    with pytest.raises(SystemExit) as info:
+        _settings(["--transport", "streamable-http", *argv])
+    assert info.value.code == 2
+    assert "--path must start with '/'" in capsys.readouterr().err
 
 
 def test_rejects_unknown_transport():
@@ -238,6 +254,28 @@ def test_transport_security_localhost_keeps_protection():
     assert "127.0.0.1:*" in ts.allowed_hosts
 
 
+@pytest.mark.parametrize(
+    "host", ["LOCALHOST", "127.0.0.2", " 127.0.0.1", "[::1]", "::1", "localhost"]
+)
+def test_every_loopback_spelling_keeps_the_guard_on(host):
+    """Decided by address, not by the exact string."""
+    ts = http_transport.transport_security_for(host, [], [])
+    assert ts.enable_dns_rebinding_protection is True
+
+
+@pytest.mark.parametrize("host", ["0.0.0.0", "::", "192.168.1.5", "mcp.example"])
+def test_a_bind_off_this_machine_is_exposed(host):
+    ts = http_transport.transport_security_for(host, [], [])
+    assert ts.enable_dns_rebinding_protection is False
+
+
+def test_the_host_from_the_environment_is_trimmed(monkeypatch):
+    monkeypatch.setenv("YF_MCP_HOST", " 127.0.0.1 ")
+    assert _settings([]).host == "127.0.0.1"
+    monkeypatch.setenv("YF_MCP_HOST", "  ")
+    assert _settings([]).host == "127.0.0.1"
+
+
 def test_transport_security_exposed_bind_disables_protection():
     ts = http_transport.transport_security_for("0.0.0.0", [], [])
     assert ts.enable_dns_rebinding_protection is False
@@ -249,6 +287,29 @@ def test_transport_security_explicit_allow_list_wins_even_when_exposed():
     assert ts.allowed_hosts == ["mcp:8000"]
     # Origins are derived from the hosts when not given explicitly.
     assert ts.allowed_origins == ["http://mcp:8000", "https://mcp:8000"]
+
+
+def test_compose_keeps_the_rebinding_guard_on():
+    """The container binds 0.0.0.0, which alone turns the guard off.
+
+    A page whose domain points at 127.0.0.1 could then call every tool from a
+    browser on the host. Compose sets the allow-list, not as a comment.
+    """
+    from pathlib import Path
+
+    from mcp.server.transport_security import TransportSecurityMiddleware
+
+    compose = (Path(__file__).parent.parent / "compose.yaml").read_text("utf-8")
+    [raw] = re.findall(r'^ +YF_MCP_ALLOWED_HOSTS: "([^"]+)"$', compose, re.M)
+    ts = http_transport.transport_security_for("0.0.0.0", settings.split_csv(raw), [])
+    assert ts.enable_dns_rebinding_protection is True
+    guard = TransportSecurityMiddleware(ts)
+    for host in ("localhost:8000", "127.0.0.1:8000", "[::1]:8000"):
+        assert guard._validate_host(host), host
+    assert guard._validate_host("benethos-yahoo-finance-mcp:8000")
+    assert not guard._validate_host("attacker.example:8000")
+    assert guard._validate_origin("http://localhost:8000")
+    assert not guard._validate_origin("http://attacker.example:8000")
 
 
 def test_transport_security_explicit_origins_are_kept():

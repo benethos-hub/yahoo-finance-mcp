@@ -141,6 +141,10 @@ def parse_settings(argv: list[str] | None = None) -> Settings:
     # the port, so stdio does not trip over a stray value.
     if settings.transport != "stdio" and not 1 <= settings.port <= 65535:
         parser.error(f"--port must be between 1 and 65535, got {settings.port}")
+    # Starlette asserts on a route path without a leading slash, which ended
+    # the server with an AssertionError after its start line.
+    if settings.path is not None and not settings.path.startswith("/"):
+        parser.error(f"--path must start with '/', got {settings.path!r}")
     return settings
 
 

@@ -93,6 +93,37 @@ def test_a_rate_limit_is_named_for_the_operator(monkeypatch, caplog):
     assert record.getMessage() == "Yahoo rate limited get_news for AAPL"
 
 
+def test_a_symbol_cannot_forge_a_line_or_colour_the_terminal(monkeypatch, caplog):
+    """The caller chooses the symbol, and it is logged before Yahoo is asked."""
+
+    def boom(*a, **k):
+        raise SymbolNotFoundError("X")
+
+    monkeypatch.setattr(yahoo, "get_quote", boom)
+    forged = "AAPL\n2026 INFO x\x1b[31m"
+    with caplog.at_level(logging.INFO), pytest.raises(Exception):  # noqa: B017
+        _call("get_quote", {"symbol": forged})
+    [record] = _ours(caplog)
+    message = record.getMessage()
+    assert "\n" not in message
+    assert "\x1b" not in message
+    assert message.startswith("get_quote AAPL2026 INFO X[31M failed")
+
+
+def test_a_long_key_is_cut_in_the_line():
+    from benethos_yahoo_finance_mcp.logbook import _describe
+
+    subject = _describe.subject({"key": "k" * 500})
+    assert subject == "k" * 29 + "..."
+
+
+def test_a_symbol_longer_than_any_ticker_is_refused_by_the_schema(caplog):
+    with caplog.at_level(logging.INFO), pytest.raises(Exception):  # noqa: B017
+        _call("get_quote", {"symbol": "A" * 33})
+    [record] = _ours(caplog)
+    assert record.getMessage() == "get_quote refused arguments: symbol"
+
+
 def test_refused_arguments_name_the_field_not_the_value(caplog):
     with caplog.at_level(logging.INFO), pytest.raises(Exception):  # noqa: B017
         _call("get_news", {"symbol": "AAPL", "limit": 31337})
@@ -189,6 +220,13 @@ def test_chatty_libraries_are_held_at_warning():
     output.configure("DEBUG")
     for name in output.QUIET:
         assert logging.getLogger(name).level == logging.WARNING, name
+
+
+def test_yfinance_stays_out_of_the_log():
+    """It logs an unknown symbol as ERROR lines, one with Yahoo's whole answer."""
+    output.configure("DEBUG")
+    assert logging.getLogger("yfinance").level == logging.CRITICAL
+    assert not logging.getLogger("yfinance.base").isEnabledFor(logging.ERROR)
 
 
 def test_debug_lowers_this_server_and_the_request_log_only():

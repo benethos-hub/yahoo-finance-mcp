@@ -31,13 +31,20 @@ from ._describe import PACKAGE
 QUIET = (
     "mcp",
     "sse_starlette",
-    "yfinance",
     "curl_cffi",
     "urllib3",
     "peewee",
     "httpx",
     "httpcore",
 )
+
+# Held at CRITICAL, which in practice means silent. yfinance logs an unknown
+# symbol as up to four ERROR lines, one of them Yahoo's whole answer body,
+# while the tool has already said "not found" in a line of its own, or listed
+# the symbol under not_found in a clean answer. That is Yahoo's data in the log,
+# which no line here may carry. What yfinance raises still reaches the log,
+# through the tool's own line and, for the unexpected kind, with a traceback.
+SILENT = ("yfinance",)
 
 
 class _Handler(logging.StreamHandler):
@@ -69,6 +76,8 @@ def configure(level: str) -> None:
     logging.getLogger(PACKAGE).setLevel(level)
     for name in QUIET:
         logging.getLogger(name).setLevel(logging.WARNING)
+    for name in SILENT:
+        logging.getLogger(name).setLevel(logging.CRITICAL)
     access.configure(level)
 
 

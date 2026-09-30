@@ -21,6 +21,17 @@ def rate_limited(tool: str, arguments: Mapping[str, Any]) -> None:
     _log.warning("Yahoo rate limited %s", f"{tool} for {subject}" if subject else tool)
 
 
+def unexpected(error: BaseException) -> None:
+    """yfinance, or this package around it, raised something nobody planned for.
+
+    The model hears only the class. The operator gets the traceback, which is
+    the one thing that says where it broke.
+    """
+    _log.warning(
+        "Unexpected %s while asking Yahoo", _describe.error(error), exc_info=error
+    )
+
+
 def sector_keys_unavailable() -> None:
     _log.warning(
         "yfinance.const sector mapping unavailable; "

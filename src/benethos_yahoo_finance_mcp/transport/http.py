@@ -23,6 +23,7 @@ network, put a reverse proxy with real authentication in front.
 from __future__ import annotations
 
 import hmac
+import ipaddress
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
@@ -45,8 +46,22 @@ __all__ = [
     "transport_security_for",
 ]
 
-# Host values for which we keep DNS-rebinding protection on by default.
-_LOCALHOST_BINDS = frozenset({"127.0.0.1", "localhost", "::1", ""})
+
+def _is_loopback(host: str) -> bool:
+    """Whether binding ``host`` keeps the server on this machine.
+
+    Decided by address, not by spelling: ``LOCALHOST``, ``127.0.0.2`` and
+    ``[::1]`` are loopback as much as ``127.0.0.1``, and each used to count
+    as an exposed bind, which turned the DNS-rebinding guard off. An empty
+    host counts too, so it errs towards keeping the guard on.
+    """
+    name = host.strip().strip("[]").lower()
+    if name in ("", "localhost"):
+        return True
+    try:
+        return ipaddress.ip_address(name).is_loopback
+    except ValueError:
+        return False
 
 
 def _hosts_from_origins(origins: Sequence[str]) -> list[str]:
@@ -96,7 +111,7 @@ def transport_security_for(
             allowed_hosts=hosts,
             allowed_origins=origins,
         )
-    if host in _LOCALHOST_BINDS:
+    if _is_loopback(host):
         return TransportSecuritySettings(
             enable_dns_rebinding_protection=True,
             allowed_hosts=["127.0.0.1:*", "localhost:*", "[::1]:*"],

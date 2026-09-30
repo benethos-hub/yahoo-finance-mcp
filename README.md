@@ -347,7 +347,10 @@ line is plain text.
 > it down again, set `--allowed-hosts` (e.g. `benethos-yahoo-finance-mcp:8000`) — clients
 > whose `Host` is not on the list then get **HTTP 421**. `--allowed-origins`
 > works on its own as well, and either list is derived from the other when
-> only one is given.
+> only one is given. `compose.yaml` sets the list for you:
+> `localhost:*,127.0.0.1:*,[::1]:*,benethos-yahoo-finance-mcp:*`. Without it a
+> web page whose domain an attacker points at 127.0.0.1 could call every tool
+> from a browser on the host. Add the name a proxy in front uses.
 
 ### Docker
 
@@ -392,7 +395,9 @@ docker run --rm -p 9000:9000 \
 ```
 
 The image runs as a non-root user and includes a healthcheck on the configured
-HTTP port. The cache is off by default. Enable it with `-e YF_MCP_CACHE=1`, in
+HTTP port. The healthcheck reads that port from `YF_MCP_PORT`, so change it with
+`-e YF_MCP_PORT=9000`, not with an appended `--port 9000`, or the container
+stays unhealthy. The cache is off by default. Enable it with `-e YF_MCP_CACHE=1`, in
 which case it is written to `/cache` (declared as a volume) — mount a named
 volume there to keep it across container restarts. To require a bearer token
 on every request, put `YF_MCP_BEARER_TOKEN=...` in a `.env` (see

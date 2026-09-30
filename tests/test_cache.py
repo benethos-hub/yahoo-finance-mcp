@@ -190,6 +190,89 @@ def test_a_sweep_under_the_limit_drops_nothing_and_says_nothing(tmp_path, caplog
         rc.close()
 
 
+def test_a_damaged_cache_file_starts_the_server_without_a_cache(tmp_path, caplog):
+    """SPECS 8a promises the cache never stops a call. It stopped the start."""
+    (tmp_path / "cache.sqlite").write_bytes(b"not a database, " * 20)
+    with caplog.at_level("INFO", logger="benethos_yahoo_finance_mcp.cache"):
+        cache.configure(Settings(cache_enabled=True, cache_dir=tmp_path))
+    try:
+        assert cache._enabled is False
+        assert cache._cache is None
+        [record] = caplog.records
+        assert record.levelname == "WARNING"
+        assert record.getMessage().startswith(
+            f"Result cache at {tmp_path} unusable, running without it: DatabaseError"
+        )
+
+        @cache.cached("quote")
+        def fetch() -> dict:
+            return {"ok": True}
+
+        assert fetch() == {"ok": True}  # served directly
+    finally:
+        cache.configure(Settings())
+
+
+def test_a_cache_directory_that_cannot_be_made_starts_without_a_cache(tmp_path):
+    blocker = tmp_path / "file"
+    blocker.write_text("a file where the directory should go")
+    cache.configure(Settings(cache_enabled=True, cache_dir=blocker / "cache"))
+    try:
+        assert cache._enabled is False
+    finally:
+        cache.configure(Settings())
+
+
+def test_a_failed_write_leaves_no_transaction_holding_the_lock(tmp_path):
+    """A nan TTL fails the INSERT. Its transaction stayed open, holding the lock."""
+    path = tmp_path / "c.sqlite"
+    rc = cache.ResultCache(path)
+    try:
+        with pytest.raises(sqlite3.IntegrityError):
+            rc.set("k", {"ok": True}, ttl=float("nan"))
+        assert not rc._conn.in_transaction
+        other = sqlite3.connect(str(path), timeout=0.1)
+        try:
+            other.execute("INSERT INTO cache VALUES ('x', 1, '1')")
+            other.commit()
+        finally:
+            other.close()
+    finally:
+        rc.close()
+
+
+def test_a_foreign_lock_costs_half_a_second_not_five(tmp_path):
+    """The wait holds this cache's lock, and with it every tool call."""
+    path = tmp_path / "c.sqlite"
+    rc = cache.ResultCache(path)
+    holder = sqlite3.connect(str(path))
+    try:
+        holder.execute("BEGIN EXCLUSIVE")
+        started = time.monotonic()
+        with pytest.raises(sqlite3.OperationalError, match="locked"):
+            rc.set("k", {"ok": True}, ttl=60)
+        waited = time.monotonic() - started
+        assert cache.LOCK_TIMEOUT <= waited + 0.05 < 2
+    finally:
+        holder.rollback()
+        holder.close()
+        rc.close()
+
+
+def test_the_key_keeps_the_type_and_ignores_the_case():
+    key = cache._make_key
+    assert key("quote", ("AAPL",), {}) == key("quote", (" aapl ",), {})
+    assert key("x", (), {"flag": True}) != key("x", (), {"flag": "true"})
+    assert key("x", (), {"n": 5}) != key("x", (), {"n": "5"})
+
+
+def test_the_key_changes_with_the_release(monkeypatch):
+    """A new release never gets an old result shape from the cache."""
+    before = cache._make_key("quote", ("AAPL",), {})
+    monkeypatch.setattr(cache, "__version__", "99.0.0")
+    assert cache._make_key("quote", ("AAPL",), {}) != before
+
+
 def test_configure_hands_the_limit_on(tmp_path):
     cache.configure(
         Settings(cache_enabled=True, cache_dir=tmp_path, cache_max_entries=7)

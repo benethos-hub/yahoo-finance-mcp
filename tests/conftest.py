@@ -24,7 +24,13 @@ def _cache_disabled_by_default(monkeypatch):
 
 # Loggers whose level cli.main and logbook.output.configure set. Restored after
 # every test, so a level one test chose is not what the next one starts with.
-_LOGGERS = ("", "benethos_yahoo_finance_mcp", "uvicorn.access", "uvicorn.error")
+_LOGGERS = (
+    "",
+    "benethos_yahoo_finance_mcp",
+    "uvicorn.access",
+    "uvicorn.error",
+    "yfinance",
+)
 
 
 @pytest.fixture(autouse=True)

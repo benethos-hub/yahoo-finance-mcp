@@ -180,7 +180,10 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    compare links.
 4. After the squash merge: annotated tag `vX.Y.Z`, push it, then
    `gh release create vX.Y.Z --verify-tag` with the changelog section as the
-   notes. Publishing the release is what triggers `publish.yml`.
+   notes. Publishing the release is what triggers `publish.yml`. Both of
+   its jobs stop first when the tag is not `v` plus the version in
+   `pyproject.toml` (`.github/scripts/tag_matches_version.py`), and a
+   pre-release leaves `latest` where it is.
 5. **Check what shipped, not the build.** The three ghcr tags (`X.Y.Z`, `X.Y`,
    `latest`) must carry the same `org.opencontainers.image.revision`
    annotation, the versions *inside* the image must be what the lockfile says

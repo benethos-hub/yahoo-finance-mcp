@@ -10,11 +10,7 @@ import pytest
 from yfinance.exceptions import YFRateLimitError
 
 from benethos_yahoo_finance_mcp import yahoo
-from benethos_yahoo_finance_mcp.errors import (
-    RateLimitError,
-    SymbolNotFoundError,
-    ToolError,
-)
+from benethos_yahoo_finance_mcp.errors import RateLimitError, ToolError
 from benethos_yahoo_finance_mcp.yahoo import tickers
 
 # --- get_sector -----------------------------------------------------------
@@ -84,7 +80,7 @@ def test_get_sector_empty_key_raises():
         yahoo.get_sector("   ")
 
 
-def test_get_sector_valid_key_no_data_raises_not_found(monkeypatch):
+def test_get_sector_valid_key_no_data_is_not_called_a_symbol(monkeypatch):
     import types
 
     none_sector = types.SimpleNamespace(
@@ -96,9 +92,9 @@ def test_get_sector_valid_key_no_data_raises_not_found(monkeypatch):
         top_mutual_funds=None,
         industries=None,
     )
-    # A valid key that returns no data is a not-found, not an unknown-key error.
+    # A valid key with no data is neither an unknown key nor an unknown symbol.
     monkeypatch.setattr(tickers.yf, "Sector", lambda key: none_sector)
-    with pytest.raises(SymbolNotFoundError):
+    with pytest.raises(ToolError, match="Yahoo returned nothing for the sector"):
         yahoo.get_sector("technology")
 
 
@@ -188,7 +184,7 @@ def test_get_industry_empty_key_raises():
         yahoo.get_industry("")
 
 
-def test_get_industry_valid_key_no_data_raises_not_found(monkeypatch):
+def test_get_industry_valid_key_no_data_is_not_called_a_symbol(monkeypatch):
     import types
 
     none_industry = types.SimpleNamespace(
@@ -202,7 +198,7 @@ def test_get_industry_valid_key_no_data_raises_not_found(monkeypatch):
         top_growth_companies=None,
     )
     monkeypatch.setattr(tickers.yf, "Industry", lambda key: none_industry)
-    with pytest.raises(SymbolNotFoundError):
+    with pytest.raises(ToolError, match="Yahoo returned nothing for the industry"):
         yahoo.get_industry("semiconductors")
 
 
@@ -325,11 +321,11 @@ def test_get_market_empty_key_raises():
         yahoo.get_market("   ")
 
 
-def test_get_market_no_data_raises_not_found(monkeypatch):
+def test_get_market_no_data_is_not_called_a_symbol(monkeypatch):
     monkeypatch.setattr(
         tickers.yf, "Market", lambda key: _fake_market(None, {}, status_raises=True)
     )
-    with pytest.raises(SymbolNotFoundError):
+    with pytest.raises(ToolError, match="Yahoo returned nothing for the market"):
         yahoo.get_market("US")
 
 

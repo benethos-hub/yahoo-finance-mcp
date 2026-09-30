@@ -6,6 +6,44 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+- `compose.yaml` sets `YF_MCP_ALLOWED_HOSTS` to the loopback names and its
+  service name. The image binds `0.0.0.0`, and an exposed bind without an
+  allow-list turns the DNS-rebinding guard off, while Compose publishes the
+  port on the host's loopback: a web page whose domain an attacker points at
+  127.0.0.1 could call every tool from a browser on that machine. The list
+  was only a commented-out option.
+- A symbol or key from the caller reached the log unfiltered. A line break
+  in it forged a second line, an escape sequence reached the terminal, and
+  nothing bounded its length. The line keeps printable characters only and
+  cuts at 32.
+- A symbol goes into the path of Yahoo's URLs, and a slash, a question mark
+  or `..` went along unchecked. It now has at most 32 characters, which the
+  schema says, and the shape Yahoo uses (letters, digits, `. - ^ = &`).
+  Anything else is "not found" before yfinance is asked. 128 symbols from 25
+  live searches all fit.
+- A loopback bind was recognised by its exact spelling, and `YF_MCP_HOST` was
+  not trimmed. `" 127.0.0.1"`, `LOCALHOST` or `127.0.0.2` counted as an
+  exposed bind and turned the DNS-rebinding guard off. The decision is now
+  made by address.
+- The text of every exception inside a Yahoo call went to the model, a
+  network error's full URL with Yahoo's crumb in it and a `KeyError` from
+  code included. Only yfinance's own errors keep their text now. A network
+  error is named by class, and anything unexpected by class too, with its
+  traceback in the log.
+- On Windows without `LOCALAPPDATA` the cache went to the system temp
+  directory, which every user shares, so another user could leave a cache
+  file there whose contents were served as tool results. It now goes under
+  the home directory. Without a home directory either, the server refuses
+  to start with the cache on and says to set `YF_MCP_CACHE_DIR`, instead of
+  failing with a bare `RuntimeError`.
+- yfinance logged an unknown symbol as up to four ERROR lines, one of them
+  Yahoo's whole answer body, which no line of this server may carry. It is
+  held at CRITICAL now, the tool's own line still says what failed.
+- The Dockerfile's `# syntax=` line pulled a frontend image by a moving tag
+  on every build, the one pull the digest pinning did not cover. Nothing
+  needs it, and it is gone.
+
 ### Added
 - The result cache keeps at most 10 000 entries, set with
   `--cache-max-entries` or `YF_MCP_CACHE_MAX_ENTRIES`. The TTLs bounded how
@@ -17,6 +55,66 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   never pushed out by yesterday's financials.
 
 ### Fixed
+- Publishing never compared the release tag with the package version. A tag
+  `v0.7.0` on a commit that still said 0.6.1 would have had PyPI refuse the
+  upload while the image job pushed `0.7.0`, `0.7` and `latest` with the old
+  code. Both publish jobs now stop first when the two differ.
+- A pre-release moved the `latest` image tag, and a manual run of the
+  publish workflow pushed `edge` from whatever branch it was started on,
+  although `edge` is documented as main's state. `latest` now follows full
+  releases only, and a manual run builds from main only.
+- Six tools describe themselves as empty for ETFs, funds and crypto, then
+  answered a correct `SPY` with "No data found, use the search tool":
+  `get_earnings`, `get_estimates`, `get_upgrades_downgrades`, `get_holders`,
+  `get_insider_activity` and `get_calendar`. They now say that Yahoo keeps
+  this data for single stocks only, as `get_options` and `get_sec_filings`
+  already did for their cases.
+- `get_quote` answered an unreachable Yahoo with "symbol not found": every
+  field came back empty and that read as an unknown symbol. It now says
+  Yahoo could not be reached. Measured with a dead proxy, an unknown symbol
+  and a network failure differ in exactly that `ConnectionError`.
+- `get_quotes` threw the whole batch away when looking up one ISIN failed
+  in any way other than "not found", against its description. That symbol
+  is now listed under `not_found`, and only a rate limit stops the batch.
+- A valid sector, industry or market key with nothing from Yahoo answered
+  "No data found for symbol 'technology'. Use the search tool". It now says
+  Yahoo returned nothing for that key.
+- Integer columns came back as floats whenever the frame also held floats,
+  every history row's `Volume` as `56123400.0`. They stay integers now.
+- The result cache kept a found-nothing answer that is a non-empty dict,
+  `get_news` with `count: 0` say, for the whole TTL. A dict whose `count`
+  is 0 now counts as empty, like an empty list.
+- `--path mcp` without a leading slash passed the start line and then ended
+  the server with an `AssertionError` from Starlette. It is a usage error
+  now, from the flag and from `YF_MCP_PATH` alike.
+- An allowed origin without a scheme left the derived host list empty while
+  the guard stayed on, so every client got HTTP 421, and one with a final
+  slash never matched, so every browser got 403. A final slash is dropped,
+  and an origin without scheme or host stops the start with a message
+  naming the expected form.
+- Cache TTLs took `nan`, `inf` and negative values. `nan` made every write
+  fail with an `IntegrityError`, `inf` never expired. A TTL is a finite
+  number of seconds, 0 or more: from the environment anything else is
+  reported and ignored, from `--cache-ttl` it is a usage error.
+- A failed write to the cache file left its transaction open, holding the
+  file's lock until the next write committed it along with its own. Every
+  write now commits or rolls back on its own.
+- The container's healthcheck reads the port from `YF_MCP_PORT`, while the
+  Dockerfile suggested appending CLI flags. With `--port 9000` appended the
+  container stayed unhealthy for good. The Dockerfile and the README now
+  say to set the port through the variable.
+- `get_history` and `get_shares` answered `end` before or on `start` with
+  "No data found for symbol", the same wrong lead the argument checks were
+  meant to remove. yfinance's `end` is exclusive, so a single day asked as
+  the same date twice came back empty too, and the description did not say
+  so. Both now require `end` after `start`, the error says why, and the
+  `get_history` description calls `end` exclusive. `get_shares` also checks
+  the date format first: a wrong one used to bring Python's `strptime` text
+  to the model.
+- A damaged or locked cache file stopped the server at startup with
+  `DatabaseError: file is not a database`, although the cache is only an
+  optimisation and a failing cache never fails a call. The server now logs a
+  warning and runs without the cache.
 - Ctrl+C printed a traceback that read as a crash. The shutdown itself was
   clean: uvicorn finishes and then raises the interrupt again on purpose, so
   the process ends as interrupted, and nothing caught it. The server now
@@ -45,6 +143,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   symbol only as the other possibility.
 
 ### Changed
+- The result cache's key carries the package version, so a release never
+  serves a result shape from before it, and keeps the type of every value
+  that is not text: `True` and `"true"` were one key. Existing cache entries
+  are not read again and expire on their own.
+- The cache waits at most half a second for another process holding its
+  file, not five. The wait blocked every tool call, and past it the call
+  runs without the cache as before.
+- Compose drops every Linux capability and sets `no-new-privileges`. The
+  server runs as a non-root user on a high port and needs none.
+- Every CI and publish job has a `timeout-minutes`, well above what it
+  takes today.
+- Dependabot groups minor and patch updates per ecosystem into one pull
+  request. Major updates still come alone, and so do `yfinance` and `mcp`,
+  which need their own checks.
+- `.dockerignore` keeps `dist`, `build`, coverage and tool caches and
+  `.claude` out of the build context.
+- The bearer token no longer appears in the `repr` of the settings.
 - Every log line names its source short: `server`, `tools`, `yahoo`,
   `cache`, `uvicorn`, `http`, instead of the full logger name.
   `uvicorn.error` read as if something had failed while it is only

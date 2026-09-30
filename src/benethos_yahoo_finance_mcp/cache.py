@@ -22,12 +22,12 @@ import json
 import sqlite3
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from functools import wraps
 from pathlib import Path
 from typing import Any, TypeVar
 
-from . import logbook
+from . import __version__, logbook
 from . import settings as settings_mod
 from .settings import Settings
 
@@ -36,6 +36,9 @@ F = TypeVar("F", bound=Callable[..., Any])
 # The categories and their default time-to-live live with the rest of the
 # configuration. Re-exported because every category here is one of them.
 DEFAULT_TTLS = settings_mod.DEFAULT_TTLS
+
+# Seconds SQLite waits for another process's lock, see ResultCache.__init__.
+LOCK_TIMEOUT = 0.5
 
 # PRAGMA auto_vacuum: 0 none, 1 full, 2 incremental.
 _INCREMENTAL = 2
@@ -61,6 +64,10 @@ class ResultCache:
     Write order is the ``rowid``: ``INSERT OR REPLACE`` deletes the old row
     and inserts a new one, which takes a ``rowid`` above every other.
 
+    Every write runs in ``with self._conn:``, which commits it or rolls it
+    back. A failed INSERT or DELETE used to leave its transaction open, holding
+    the file's lock until the next write committed it along with its own.
+
     The pages a sweep frees go back to the file system, so the file follows
     what it holds. SQLite reuses freed pages but never hands them back on
     its own, and the file used to stay at its largest size for good.
@@ -73,13 +80,24 @@ class ResultCache:
     ) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         self._max_entries = max_entries
-        self._conn = sqlite3.connect(str(path), check_same_thread=False)
-        self._make_shrinkable()
-        self._conn.execute(
-            "CREATE TABLE IF NOT EXISTS cache "
-            "(key TEXT PRIMARY KEY, expires_at REAL NOT NULL, value TEXT NOT NULL)"
+        # Half a second, not SQLite's five, to wait for another process that
+        # holds the file. The wait happens under this cache's lock, and every
+        # tool call stood still for as long as it lasted. Past it the call
+        # runs without the cache, the fallback for a locked file anyway.
+        self._conn = sqlite3.connect(
+            str(path), timeout=LOCK_TIMEOUT, check_same_thread=False
         )
-        self._conn.commit()
+        try:
+            self._make_shrinkable()
+            self._conn.execute(
+                "CREATE TABLE IF NOT EXISTS cache "
+                "(key TEXT PRIMARY KEY, expires_at REAL NOT NULL, value TEXT NOT NULL)"
+            )
+            self._conn.commit()
+        except sqlite3.Error:
+            # A damaged file fails here. Closed, so it is not held open.
+            self._conn.close()
+            raise
         self._lock = threading.Lock()
         self._writes = 0
 
@@ -129,8 +147,8 @@ class ResultCache:
                 return False, None
             expires_at, value = row
             if expires_at < now:
-                self._conn.execute("DELETE FROM cache WHERE key = ?", (key,))
-                self._conn.commit()
+                with self._conn:
+                    self._conn.execute("DELETE FROM cache WHERE key = ?", (key,))
                 return False, None
         try:
             return True, json.loads(value)
@@ -148,12 +166,12 @@ class ResultCache:
             return
         now = time.time()
         with self._lock:
-            self._conn.execute(
-                "INSERT OR REPLACE INTO cache (key, expires_at, value) "
-                "VALUES (?, ?, ?)",
-                (key, now + ttl, payload),
-            )
-            self._conn.commit()
+            with self._conn:
+                self._conn.execute(
+                    "INSERT OR REPLACE INTO cache (key, expires_at, value) "
+                    "VALUES (?, ?, ?)",
+                    (key, now + ttl, payload),
+                )
             self._writes += 1
             if self._writes % self.PURGE_EVERY == 0:
                 self._sweep(now)
@@ -170,21 +188,21 @@ class ResultCache:
         whose ``rowid`` is at or below the first one past them goes. With
         fewer rows the subquery finds nothing and nothing is dropped.
         """
-        self._conn.execute("DELETE FROM cache WHERE expires_at < ?", (now,))
-        dropped = self._conn.execute(
-            "DELETE FROM cache WHERE rowid <= "
-            "(SELECT rowid FROM cache ORDER BY rowid DESC LIMIT 1 OFFSET ?)",
-            (self._max_entries,),
-        ).rowcount
-        self._conn.commit()
+        with self._conn:
+            self._conn.execute("DELETE FROM cache WHERE expires_at < ?", (now,))
+            dropped = self._conn.execute(
+                "DELETE FROM cache WHERE rowid <= "
+                "(SELECT rowid FROM cache ORDER BY rowid DESC LIMIT 1 OFFSET ?)",
+                (self._max_entries,),
+            ).rowcount
         self._shrink()
         if dropped > 0:
             logbook.cache.capped(dropped, self._max_entries)
 
     def clear(self) -> None:
         with self._lock:
-            self._conn.execute("DELETE FROM cache")
-            self._conn.commit()
+            with self._conn:
+                self._conn.execute("DELETE FROM cache")
             self._shrink()
 
     def close(self) -> None:
@@ -205,35 +223,83 @@ def configure(settings: Settings) -> None:
             _cache.close()
             _cache = None
         _enabled = settings.cache_enabled
-        if _enabled:
-            directory: Path = settings.cache_dir or settings_mod.default_cache_dir()
-            _cache = ResultCache(directory / "cache.sqlite", settings.cache_max_entries)
-            _cache.purge_expired()
-            logbook.cache.enabled(directory)
-        else:
+        if not _enabled:
             logbook.cache.disabled()
+            return
+        directory: Path = settings.cache_dir or settings_mod.default_cache_dir()
+        # The cache is an optimisation, and a file it cannot use, damaged or
+        # held by another process, must not stop the server. It runs without.
+        store: ResultCache | None = None
+        try:
+            store = ResultCache(directory / "cache.sqlite", settings.cache_max_entries)
+            store.purge_expired()
+        except (sqlite3.Error, OSError) as exc:
+            if store is not None:
+                store.close()
+            _enabled = False
+            logbook.cache.unusable(directory, exc)
+            return
+        _cache = store
+        logbook.cache.enabled(directory)
+
+
+def _canonical(value: Any) -> Any:
+    """``value`` as it goes into a key: text trimmed and lower-cased, the rest typed.
+
+    A symbol is case-insensitive, so ``aapl`` and ``AAPL`` share an entry. Every
+    other value keeps its type, which JSON writes out: ``True`` and ``"true"``,
+    ``5`` and ``"5"`` used to be one key, because everything went through
+    ``str()``.
+    """
+    if isinstance(value, str):
+        return value.strip().lower()
+    if isinstance(value, (list, tuple)):
+        return [_canonical(item) for item in value]
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    return str(value)
 
 
 def _make_key(category: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> str:
-    """Build a stable cache key from the call's category and arguments."""
+    """Build a stable cache key from the call's category and arguments.
+
+    The package version is part of it. A release that changes a result's shape
+    would otherwise serve the old shape from the cache for up to a day, so each
+    release starts from an empty cache in effect, the old entries expiring on
+    their own.
+    """
     raw = {
+        "v": __version__,
         "c": category,
-        "a": [str(a).strip().lower() for a in args],
-        "k": {k: str(v).strip().lower() for k, v in sorted(kwargs.items())},
+        "a": [_canonical(a) for a in args],
+        "k": {k: _canonical(v) for k, v in sorted(kwargs.items())},
     }
     blob = json.dumps(raw, sort_keys=True)
     return hashlib.sha1(blob.encode("utf-8")).hexdigest()
 
 
+def has_content(result: Any) -> bool:
+    """The default test of whether a result is worth keeping.
+
+    Not an empty value, a search with no matches say, and not a dict that
+    counts nothing. ``get_news`` answers no articles with ``{"count": 0,
+    ...}``, which is truthy, and the plain ``bool`` this replaces pinned that
+    for the whole TTL.
+    """
+    if not result:
+        return False
+    return not (isinstance(result, Mapping) and result.get("count") == 0)
+
+
 def cached(
-    category: str, *, worth_keeping: Callable[[Any], bool] = bool
+    category: str, *, worth_keeping: Callable[[Any], bool] = has_content
 ) -> Callable[[F], F]:
     """Decorate a client function to cache its successful results under ``category``.
 
-    ``worth_keeping`` decides whether a result is stored. The default skips
-    empty ones, a search with no matches say, so a transient empty response is
-    not pinned for the whole TTL. A function whose "nothing found" is a
-    non-empty dict passes its own test.
+    ``worth_keeping`` decides whether a result is stored. The default,
+    :func:`has_content`, skips empty ones, so a transient empty response is
+    not pinned for the whole TTL. A function whose "nothing found" looks
+    different passes its own test.
 
     When caching is disabled the wrapper is a transparent pass-through. Only
     successful returns are stored; exceptions propagate and are never cached.

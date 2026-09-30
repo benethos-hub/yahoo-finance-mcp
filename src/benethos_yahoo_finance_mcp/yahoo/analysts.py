@@ -52,7 +52,7 @@ def get_earnings(symbol: str, *, limit: int = 12) -> dict[str, Any]:
     dates_rows = dataframe_to_records(dates, max_rows=limit, index_name="earnings_date")
     history_rows = dataframe_to_records(history, max_rows=limit, index_name="quarter")
     if not dates_rows and not history_rows:
-        raise SymbolNotFoundError(symbol)
+        raise SymbolNotFoundError(symbol, reason=tickers.EQUITY_ONLY_REASON)
 
     return {
         "symbol": tickers.normalize(symbol),
@@ -91,7 +91,7 @@ def get_estimates(symbol: str) -> dict[str, Any]:
         out[key] = rows
 
     if not have_data:
-        raise SymbolNotFoundError(symbol)
+        raise SymbolNotFoundError(symbol, reason=tickers.EQUITY_ONLY_REASON)
     return out
 
 
@@ -111,6 +111,6 @@ def get_upgrades_downgrades(symbol: str, *, limit: int = 50) -> dict[str, Any]:
         df = df.sort_index(ascending=False)
     rows = dataframe_to_records(df, max_rows=limit, index_name="date", head=True)
     if not rows:
-        raise SymbolNotFoundError(symbol)
+        raise SymbolNotFoundError(symbol, reason=tickers.EQUITY_ONLY_REASON)
 
     return {"symbol": tickers.normalize(symbol), "changes": rows}

@@ -12,6 +12,21 @@ from typing import Any
 
 PACKAGE = "benethos_yahoo_finance_mcp"
 
+# Longer than any ticker, ISIN or sector key, short enough for one line.
+_SUBJECT_MAX = 32
+
+
+def printable(text: str, limit: int = _SUBJECT_MAX) -> str:
+    """``text`` with printable characters only, at most ``limit`` of them.
+
+    A symbol or a key comes from the caller, and a line is written before
+    Yahoo says whether it exists. A line break in it would forge a second log
+    line, an escape sequence would reach a terminal, and nothing else bounds
+    its length. A cut is marked with ``...``.
+    """
+    kept = "".join(ch for ch in text if ch.isprintable())
+    return kept if len(kept) <= limit else kept[: limit - 3] + "..."
+
 
 def subject(arguments: Mapping[str, Any]) -> str:
     """What a call was about: its symbol, its key, or how many symbols.
@@ -19,13 +34,14 @@ def subject(arguments: Mapping[str, Any]) -> str:
     A ticker, an ISIN or a sector key is a public identifier and tells the
     operator more than anything else could. A search query is free text a
     person typed and is never named, the line for a search has no subject.
+    Both pass through :func:`printable`, since the caller chose them.
     """
     symbol = arguments.get("symbol")
     if isinstance(symbol, str) and symbol.strip():
-        return symbol.strip().upper()
+        return printable(symbol.strip().upper())
     key = arguments.get("key")
     if isinstance(key, str) and key.strip():
-        return key.strip()
+        return printable(key.strip())
     symbols = arguments.get("symbols")
     if isinstance(symbols, list):
         return f"{len(symbols)} symbols"
