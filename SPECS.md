@@ -351,7 +351,7 @@ values).
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo, and it is not part of
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
-  of 80% (currently ~96%).
+  of 80% (currently ~97%).
 - **What the gates cannot see.** The suite mocks yfinance and stops at
   the yahoo package, so a behaviour change in either boundary passes every gate. For
   `yfinance` the answer is `tests/smoke.py` run before and after a bump, with a
