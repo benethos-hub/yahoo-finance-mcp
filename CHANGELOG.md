@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-30
+
+A review closed several security gaps, above all a DNS-rebinding guard that
+Compose left off. The log follows written rules and has a new look,
+`get_history` checks its arguments before asking Yahoo, the result cache
+gets an entry limit, and many errors now name their real cause instead of
+an unknown symbol. Underneath, the code is reorganised by subject. A client
+sees the tools listed grouped by subject, a limit of 32 characters on
+symbols, changed descriptions for `period`, `interval` and `end` and for
+the six equity-only tools, and integer columns such as `Volume` as
+integers again.
+
 ### Security
 - `compose.yaml` sets `YF_MCP_ALLOWED_HOSTS` to the loopback names and its
   service name. The image binds `0.0.0.0`, and an exposed bind without an
@@ -68,7 +80,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `get_earnings`, `get_estimates`, `get_upgrades_downgrades`, `get_holders`,
   `get_insider_activity` and `get_calendar`. They now say that Yahoo keeps
   this data for single stocks only, as `get_options` and `get_sec_filings`
-  already did for their cases.
+  already did for their cases, and their descriptions and the server
+  instructions say an ETF gets that error instead of promising an empty
+  answer.
 - `get_quote` answered an unreachable Yahoo with "symbol not found": every
   field came back empty and that read as an unknown symbol. It now says
   Yahoo could not be reached. Measured with a dead proxy, an unknown symbol
@@ -143,6 +157,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   symbol only as the other possibility.
 
 ### Changed
+- Locked dependency refresh of seven packages, none of them direct:
+  `sse-starlette` 3.4 → 3.5, `pyjwt`, `peewee`, `platformdirs`,
+  `charset-normalizer`, and `coverage` and `librt` for development only. The
+  tool schemas are byte-identical before and after, stdio, streamable-http
+  and sse answer alike, and the live smoke test returned the same data.
 - The result cache's key carries the package version, so a release never
   serves a result shape from before it, and keeps the type of every value
   that is not text: `True` and `"true"` were one key. Existing cache entries
@@ -228,12 +247,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   over environment over default, in the new `settings` module, and no module
   reads the environment on its own any more.
 - `client.py` is now the `yahoo` package, one module per subject: quotes,
-  company, analysts, ownership, options, funds and browse, with the shared
-  ticker cache and error mapping in `yahoo.tickers`. The functions are
+  company, analysts, ownership, options, funds and browse, with the `Ticker`
+  construction and error mapping in `yahoo.tickers`. The functions are
   unchanged and importable from `benethos_yahoo_finance_mcp.yahoo`.
 - The tools moved from `server.py` into the `tools` package, which mirrors
   `yahoo` module for module. Their names, parameters, descriptions and
-  annotations are byte for byte the same. The order a client lists them in
+  annotations were byte for byte the same at the move, and what this release
+  changes in them is listed above. The order a client lists them in
   now follows the subjects: search and quotes first, then company data,
   analysts, ownership, options, funds and browsing by key. `search` stays
   first, and `get_calendar` and `get_shares` now sit with the other company
@@ -912,7 +932,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.1...v0.5.2

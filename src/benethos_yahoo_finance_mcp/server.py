@@ -39,9 +39,10 @@ through `search`, so ask for a ticker, an ISIN or the company name instead. \
 `get_sector`, `get_industry` and `get_market` are the exceptions: they take a \
 key, not a ticker.
 
-Empty results are normal. Analyst, holder, earnings, insider, filing and \
-calendar data exist for equities only and come back empty for ETFs, funds and \
-crypto. `get_fund_data` is the reverse and fails for anything that is not a \
+Missing data is normal. Analyst, holder, earnings, insider, filing and \
+calendar data exist for equities only, and for an ETF, fund or crypto those \
+tools answer with an error that says so, which does not mean the symbol is \
+wrong. `get_fund_data` is the reverse and fails for anything that is not a \
 fund. An empty field usually means the instrument has no such data, not that \
 the call went wrong.
 

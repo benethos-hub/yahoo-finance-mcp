@@ -205,9 +205,11 @@ submodules.
   optional `.env` next to `compose.yaml`, read through `env_file` and ignored
   by git and the build context, with `.env.example` as the tracked template.
   Only Compose (or `docker run --env-file`) reads it, the server itself loads
-  no file. Compose publishes the port on **127.0.0.1 only** and caps the log
-  Docker keeps of the container at 5 files of 10 MB, since uvicorn writes a
-  line per request and Docker's default keeps everything.
+  no file. Compose publishes the port on **127.0.0.1 only**, drops every
+  Linux capability and sets `no-new-privileges`, since the server runs as a
+  non-root user on a high port and needs none, and caps the log Docker keeps
+  of the container at 5 files of 10 MB, since uvicorn writes a line per
+  request and Docker's default keeps everything.
   Drop that prefix only behind a reverse proxy that authenticates, or at the
   very least with `YF_MCP_BEARER_TOKEN` set.
 
@@ -353,9 +355,11 @@ values).
   | `sector` | `get_sector` | 24 h |
   | `industry` | `get_industry` | 24 h |
   | `market` | `get_market` | 60 s |
-- **Opt-in: off by default.** Within a single process yfinance already reuses
-  identical requests, so the cache mainly helps across restarts and as
-  rate-limit protection. Enable it with `--cache` / `YF_MCP_CACHE=1`.
+- **Opt-in: off by default.** Every call asks Yahoo anew (§5), so the cache
+  is what makes a repeat cheap, across restarts and as rate-limit protection.
+  It stays off because the ordinary case is an interactive stdio session,
+  where a repeat is rare and fresh data counts for more, and a file on disk
+  is the operator's choice. Enable it with `--cache` / `YF_MCP_CACHE=1`.
 - Disabled until `configure(settings)` is called (which `cli.main` does), so
   importing the package or calling the yahoo functions in tests/library use
   does not touch disk unless caching is explicitly enabled.
@@ -409,8 +413,10 @@ values).
   - `SymbolNotFoundError` — unknown symbol / empty result.
   - `RateLimitError` — Yahoo throttling (`YFRateLimitError` is mapped to it via
     `yahoo.tickers.wrap_upstream`).
-- All upstream yfinance exceptions are normalized through `wrap_upstream`,
-  which preserves operation-specific context for non-rate-limit errors.
+- All upstream exceptions are normalized through `wrap_upstream`: a rate
+  limit becomes `RateLimitError`, yfinance's own exceptions keep their text
+  behind the operation's message, and a network error or anything unexpected
+  is named by class only (§4 says why).
   The yahoo functions run their yfinance calls inside the
   `tickers.upstream(message)` context manager, which does exactly that. The `Ticker` constructor is
   covered as well: an ISIN-shaped string Yahoo cannot resolve raises there
@@ -480,8 +486,7 @@ values).
   version it stands for in a trailing comment, and the two base images in the
   `Dockerfile` by digest next to their tag. A tag is a pointer its owner can
   move, and the publish workflow holds the credentials that push to PyPI and
-  ghcr. Dependabot reads the comment and raises SHA and comment together,
-  one pull request per release.
+  ghcr. Dependabot reads the comment and raises SHA and comment together.
 - Dependabot covers GitHub Actions, the Docker base image and, since 0.5.1, the
   Python dependencies in `uv.lock`. That last entry used to name the `pip`
   ecosystem, which does not read `uv.lock` — and with every requirement declared
@@ -494,15 +499,23 @@ values).
   CLAUDE.md. 0.5.2 is why: three direct packages had moved through Dependabot
   and eleven transitive ones underneath had not, and an image that ships the
   first without the second is half a rebuild.
+  Minor and patch updates arrive grouped, one pull request per ecosystem and
+  week, a major on its own, and `yfinance` and `mcp` always on their own,
+  since each needs the checks CLAUDE.md describes.
 - A separate `publish` workflow runs when a GitHub release is published and does
   two independent things. It builds the sdist + wheel (`uv build`) and uploads
   them to **PyPI via Trusted Publishing (OIDC)**, and it builds the container
   image for `linux/amd64` and `linux/arm64` and pushes it to **ghcr.io** as
   `ghcr.io/benethos-hub/yahoo-finance-mcp`, authenticating with the automatic
   `GITHUB_TOKEN`. Neither half stores a secret, and a failure in one does not
-  withhold the other. Release tags become `X.Y.Z`, `X.Y` and `latest`. The
-  workflow can also be started by hand, which pushes the image as `edge` and
-  skips PyPI, because a version may only be uploaded there once. Note that a
+  withhold the other. Release tags become `X.Y.Z`, `X.Y` and `latest`, a
+  pre-release its exact version only, so `latest` stays on the last full
+  release. Both jobs stop first when the tag is not `v` plus the version in
+  `pyproject.toml` (`.github/scripts/tag_matches_version.py`), since PyPI
+  would refuse the upload while the image job pushed its tags with the old
+  code. The workflow can also be started by hand, from `main` only, which
+  pushes the image as `edge` and skips PyPI, because a version may only be
+  uploaded there once. Note that a
   ghcr package is private when first created and has to be made public by an
   organisation owner, which is also gated by an organisation-level setting. A
   public package is still absent from the repository sidebar for a logged-out
@@ -528,7 +541,9 @@ Goal: expose every **working** yfinance method as an MCP tool. "Working" was
 verified empirically (probed live on a stock `AAPL`, an ETF `SPY`, and a crypto
 pair `BTC-USD`). Only methods that return real data are in scope. Availability
 is symbol-dependent (equity fields are empty for ETFs/crypto and vice versa) —
-tools surface that as an empty result, not an error.
+a tool answers that with a `SymbolNotFoundError` whose reason says Yahoo keeps
+the data for single stocks only (`tickers.EQUITY_ONLY_REASON`), so the model
+does not go looking for another ticker.
 
 ### Verified data sources (probe results)
 
@@ -545,7 +560,7 @@ tools surface that as an empty result, not an error.
   `fast_info`/`info` (rich), `history_metadata`, `isin` — so `get_quote`,
   `get_history`, and `get_company_info` already cover crypto. All
   equity-specific methods (analysts, holders, earnings, financials, calendar)
-  are empty, so the new tools return empty for crypto.
+  are empty, so the equity-only tools answer crypto with that error.
 - **Excluded — upstream empty for all probed symbols:** `sustainability` (ESG),
   `capital_gains`.
 - **Out of scope (non-goals, §2):** `live`/`WebSocket` (streaming), and the SDK's
