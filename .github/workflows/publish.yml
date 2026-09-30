@@ -8,7 +8,14 @@ name: Publish
 #
 # `workflow_dispatch` exercises the container half alone and tags the result
 # `edge`. PyPI is skipped there, because a version may only be uploaded once and
-# a manual run carries no release tag to derive one from.
+# a manual run carries no release tag to derive one from. A manual run builds
+# from main only: `edge` is documented as main's state, and a run started on
+# another branch would have pushed that branch under the same name.
+#
+# Both jobs first check that the release tag is the package version. The two
+# are written in different places, and a tag v0.7.0 on a commit that still
+# says 0.6.1 made PyPI refuse the upload while the image job pushed 0.7.0,
+# 0.7 and latest with the old code.
 #
 # One-time setup on PyPI (project owner): add a "pending publisher" for the
 # project `benethos-yahoo-finance-mcp` with:
@@ -44,6 +51,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: The release tag is the package version
+        run: python3 .github/scripts/tag_matches_version.py
+
       - name: Install uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
 
@@ -73,12 +83,18 @@ jobs:
 
   ghcr-publish:
     name: Build and publish the image
+    # A release, or a manual run on main. See the header.
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write # push to ghcr.io as the GITHUB_TOKEN identity
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: The release tag is the package version
+        if: github.event_name == 'release'
+        run: python3 .github/scripts/tag_matches_version.py
 
       # arm64 is emulated on the amd64 runner. Nothing is compiled from source
       # here (pandas and numpy ship aarch64 wheels), so the cost stays modest.
@@ -97,7 +113,9 @@ jobs:
 
       # Derives the tags from the release tag (v0.4.0 -> 0.4.0, 0.4, latest)
       # and emits the OCI labels, among them org.opencontainers.image.source,
-      # which is what links the package to this repository on GitHub.
+      # which is what links the package to this repository on GitHub. A
+      # pre-release gets its exact version only: latest stays on the last
+      # full release, and the action writes no minor tag for a pre-release.
       - name: Derive image tags, labels and annotations
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
@@ -114,7 +132,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' && !github.event.release.prerelease }}
             type=raw,value=edge,enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Build and push

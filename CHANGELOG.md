@@ -34,6 +34,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   never pushed out by yesterday's financials.
 
 ### Fixed
+- Publishing never compared the release tag with the package version. A tag
+  `v0.7.0` on a commit that still said 0.6.1 would have had PyPI refuse the
+  upload while the image job pushed `0.7.0`, `0.7` and `latest` with the old
+  code. Both publish jobs now stop first when the two differ.
+- A pre-release moved the `latest` image tag, and a manual run of the
+  publish workflow pushed `edge` from whatever branch it was started on,
+  although `edge` is documented as main's state. `latest` now follows full
+  releases only, and a manual run builds from main only.
 - `get_history` and `get_shares` answered `end` before or on `start` with
   "No data found for symbol", the same wrong lead the argument checks were
   meant to remove. yfinance's `end` is exclusive, so a single day asked as
