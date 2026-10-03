@@ -172,6 +172,10 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    or `mcp` checks above for anything that sits under those. A security hole
    does not wait for this step: Dependabot's security updates read the whole
    lockfile, transitive packages included, and arrive on their own.
+   The same goes for the two image digests in the `Dockerfile`: look up the
+   current digest of each tag in its registry and pin it. Dependabot proposes
+   a newer tag, but not reliably a rebuild under the same one, and the Debian
+   fixes in `python:3.14-slim` arrive as exactly that.
 2. Bump `version` in `pyproject.toml`, then `uv lock` and `uv sync --extra dev`
    (the packaging tests read the *installed* metadata). Let
    `tests/test_packaging.py` name every stale version example instead of

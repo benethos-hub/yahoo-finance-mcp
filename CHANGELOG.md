@@ -6,6 +6,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- The container image is built on Python 3.14.8 (was 3.14.7) and uv 0.12.22
+  (was 0.12.19). The uv image is now a build stage of its own, pinned to its
+  patch release. Dependabot reads `FROM` lines only and proposes only tags of
+  the precision already written, so the old `COPY --from=…uv:0.12` reference
+  never produced a pull request.
+- Locked dependency refresh of seven packages, none of them direct:
+  `cryptography` 50.0.2 under `mcp`, `tzdata` 2026.5 and `websockets` 17.2
+  under `yfinance`, `python-dotenv` for the `cli` extra, and `ruff`, `mypy`
+  and `ast-serialize` for development only. The tool schemas are
+  byte-identical before and after, stdio, streamable-http and sse answer
+  alike, and the live smoke test returned the same data.
+- **`mcp` 2.2.0 → 2.3.0**, kept out of the refresh above. The one change a
+  client sees is that `initialize` no longer announces an empty
+  `experimental` capability. The tool schemas are byte-identical, and the
+  error text of a refused argument and a live quote arrive alike over all
+  three transports.
+
 ## [0.7.0] - 2026-09-30
 
 A review closed several security gaps, above all a DNS-rebinding guard that
