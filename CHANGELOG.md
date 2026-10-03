@@ -18,6 +18,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and `ast-serialize` for development only. The tool schemas are
   byte-identical before and after, stdio, streamable-http and sse answer
   alike, and the live smoke test returned the same data.
+- **`mcp` 2.2.0 → 2.3.0**, kept out of the refresh above. The one change a
+  client sees is that `initialize` no longer announces an empty
+  `experimental` capability. The tool schemas are byte-identical, and the
+  error text of a refused argument and a live quote arrive alike over all
+  three transports.
 
 ## [0.7.0] - 2026-09-30
 
