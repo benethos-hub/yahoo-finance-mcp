@@ -1,17 +1,27 @@
 # Both base images are pinned by digest as well as tag. A tag is a pointer the
 # publisher can move, and the digest is the content itself, so a rebuild of the
 # same commit gets the same bytes. The tag stays for the reader and for
-# Dependabot, which raises the digest when the tag moves.
+# Dependabot, which proposes a newer tag of the same precision: `3.14-slim`
+# moves on to `3.15-slim`, and uv, pinned to its patch, to each patch release.
+# A rebuild under an unchanged tag is not reliably proposed, so a release
+# refreshes both digests (CLAUDE.md, Releasing).
+#
+# Dependabot reads FROM lines only. An image named inside `COPY --from=` is
+# invisible to it, which is why uv has a stage of its own below: written
+# inline, it fell three patch releases behind without a pull request.
 #
 # There is no `# syntax=` line on purpose. It pulls a frontend image by a
 # moving tag on every build, which is the one pull the rule above did not
 # cover, and nothing here needs more than the frontend built into BuildKit.
 
+# ---- uv: only the source of the binary, a stage so Dependabot sees it ----
+FROM ghcr.io/astral-sh/uv:0.12.22@sha256:f513a91fc62fe7c17567eee97230dd198e43edb8a9fbecca843714a4358fe1bc AS uv
+
 # ---- builder: install locked deps + package into /opt/venv via uv ----
-FROM python:3.14-slim@sha256:51dafde81dbdb6ebde285137a295cf18a47ca95234fe388a343719cb97305b3d AS builder
+FROM python:3.14-slim@sha256:0741d101873c12ab927e6f8653feb8862b9bd58771177acb1b885b95141f91b4 AS builder
 
 # Bring in the uv binary.
-COPY --from=ghcr.io/astral-sh/uv:0.12@sha256:04d046b13e60d6bcec73cbc5e1cad25d680dea90c8573340950a0ac2d1aef424 /uv /usr/local/bin/uv
+COPY --from=uv /uv /usr/local/bin/uv
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -31,7 +41,7 @@ COPY src ./src
 RUN uv sync --frozen --no-dev --no-editable
 
 # ---- runtime: minimal image that just runs the server ----
-FROM python:3.14-slim@sha256:51dafde81dbdb6ebde285137a295cf18a47ca95234fe388a343719cb97305b3d AS runtime
+FROM python:3.14-slim@sha256:0741d101873c12ab927e6f8653feb8862b9bd58771177acb1b885b95141f91b4 AS runtime
 
 # All runtime configuration is via environment variables, so the container
 # needs no CMD args and stays fully configurable with `docker run -e ...`.

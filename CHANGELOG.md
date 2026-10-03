@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- The container image is built on Python 3.14.8 (was 3.14.7) and uv 0.12.22
+  (was 0.12.19). The uv image is now a build stage of its own, pinned to its
+  patch release. Dependabot reads `FROM` lines only and proposes only tags of
+  the precision already written, so the old `COPY --from=…uv:0.12` reference
+  never produced a pull request.
+
 ## [0.7.0] - 2026-09-30
 
 A review closed several security gaps, above all a DNS-rebinding guard that

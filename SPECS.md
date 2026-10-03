@@ -487,8 +487,12 @@ values).
   `Dockerfile` by digest next to their tag. A tag is a pointer its owner can
   move, and the publish workflow holds the credentials that push to PyPI and
   ghcr. Dependabot reads the comment and raises SHA and comment together.
-- Dependabot covers GitHub Actions, the Docker base image and, since 0.5.1, the
-  Python dependencies in `uv.lock`. That last entry used to name the `pip`
+- Dependabot covers GitHub Actions, the two images in the `Dockerfile` and,
+  since 0.5.1, the Python dependencies in `uv.lock`. It reads `FROM` lines
+  only, so the uv image is a stage of its own rather than a `COPY --from=`
+  reference, and pinned to its patch, since Dependabot proposes only tags of
+  the precision already written. Up to 0.7.0 it was neither and fell three
+  patch releases behind unnoticed. That last entry used to name the `pip`
   ecosystem, which does not read `uv.lock` — and with every requirement declared
   as an open `>=` range there was no constraint for it to raise either, so it
   proposed nothing at all while the lockfile drifted fourteen packages behind.
