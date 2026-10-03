@@ -12,6 +12,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   patch release. Dependabot reads `FROM` lines only and proposes only tags of
   the precision already written, so the old `COPY --from=…uv:0.12` reference
   never produced a pull request.
+- Locked dependency refresh of seven packages, none of them direct:
+  `cryptography` 50.0.2 under `mcp`, `tzdata` 2026.5 and `websockets` 17.2
+  under `yfinance`, `python-dotenv` for the `cli` extra, and `ruff`, `mypy`
+  and `ast-serialize` for development only. The tool schemas are
+  byte-identical before and after, stdio, streamable-http and sse answer
+  alike, and the live smoke test returned the same data.
 
 ## [0.7.0] - 2026-09-30
 
