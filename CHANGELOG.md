@@ -23,6 +23,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `experimental` capability. The tool schemas are byte-identical, and the
   error text of a refused argument and a live quote arrive alike over all
   three transports.
+- A second locked refresh of three packages, none of them direct:
+  `platformdirs` 4.12.3 and `pytz` 2026.5 under `yfinance`, `rpds-py`
+  2026.9.1 under `mcp`. Same checks, same result, and the smoke test
+  differed only in the live market prices.
 
 ## [0.7.0] - 2026-09-30
 
