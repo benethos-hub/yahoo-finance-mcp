@@ -15,7 +15,7 @@
 # cover, and nothing here needs more than the frontend built into BuildKit.
 
 # ---- uv: only the source of the binary, a stage so Dependabot sees it ----
-FROM ghcr.io/astral-sh/uv:0.12.22@sha256:f513a91fc62fe7c17567eee97230dd198e43edb8a9fbecca843714a4358fe1bc AS uv
+FROM ghcr.io/astral-sh/uv:0.12.23@sha256:61d393e44e249f2e4b526b6c7ddcecce245946826e608e11c93ad4f5bba55b21 AS uv
 
 # ---- builder: install locked deps + package into /opt/venv via uv ----
 FROM python:3.14-slim@sha256:0741d101873c12ab927e6f8653feb8862b9bd58771177acb1b885b95141f91b4 AS builder
