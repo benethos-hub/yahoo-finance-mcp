@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-10-05
+
+A maintenance release for the container image and the PyPI page. No tool,
+schema or API changes. The image moves to Python 3.14.8 and `mcp` 2.3.0,
+where an index installation got the newest `mcp` already, and the README
+the PyPI page shows opens with what the server is for.
+
 ### Changed
 - The container image is built on Python 3.14.8 (was 3.14.7) and uv 0.12.23
   (was 0.12.19). The uv image is now a build stage of its own, pinned to its
@@ -958,7 +965,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.5.2...v0.6.0
