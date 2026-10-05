@@ -27,6 +27,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `platformdirs` 4.12.3 and `pytz` 2026.5 under `yfinance`, `rpds-py`
   2026.9.1 under `mcp`. Same checks, same result, and the smoke test
   differed only in the live market prices.
+- The README opens with what the server is for. A new section right after
+  the disclaimer names the purpose and the typical uses and holds the
+  example prompts, and symbol resolution now follows the tool table it
+  explains. The other sections are unchanged and keep their anchors.
 
 ## [0.7.0] - 2026-09-30
 

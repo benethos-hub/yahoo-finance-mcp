@@ -28,6 +28,114 @@ Yahoo's unofficial endpoints.
 > - For **commercial use**, review Yahoo's Terms of Service and consider a
 >   properly licensed market-data provider instead of the unofficial endpoints.
 
+## What it is for
+
+The server lets an MCP client such as Claude Desktop answer questions about
+markets from live Yahoo Finance data: the price of a share and how it moved,
+what a company earns, what analysts expect, who owns it, what an ETF holds,
+and how a sector or a market is doing. You ask in plain language, the client
+picks the tools, and the answer rests on what Yahoo returns rather than on
+what the model remembers.
+
+Typical uses:
+
+- **Quick lookups in a chat.** A quote, the 52-week range, the next earnings
+  date or the dividend history, without opening a browser.
+- **Research on one company.** Profile, financial statements, estimates,
+  rating changes, holders and insider trades in one conversation, summarised
+  by the model.
+- **Comparisons.** Several tickers side by side, the top companies of a sector
+  or an industry, the holdings and weightings of an ETF.
+- **Calculations on raw data.** Six months of daily closes for an RSI, a MACD
+  or a drawdown, which the model works out from the series.
+- **A shared service.** Run over HTTP, in Docker, for a team's web front end or
+  an automation such as n8n, with an optional result cache in front of Yahoo.
+
+Everything is read-only. The server places no orders, holds no portfolio and
+signs in nowhere. The data comes from unofficial endpoints, may be delayed and
+is no basis for a trading decision, see the disclaimer above.
+
+### Example prompts
+
+Once the server is connected, ask the client in plain language and it will pick
+the tools. Replace the bracketed placeholders with concrete values.
+
+**Price & quote**
+
+- "What's the current price of [Ticker], and how far is it from its 52-week high?"
+- "Is [Ticker] trading above or below its 50- and 200-day moving averages?"
+- "Get the daily closes of [Ticker] for the last 6 months and compute RSI and MACD."
+- "What was the deepest drawdown of [Ticker] in the last 12 months?"
+- "Compare [Ticker A] and [Ticker B] over the last 3 months and show which held up better."
+- "Get current quotes for [Ticker A], [Ticker B] and [Ticker C] and compare them in a table."
+
+**Company & valuation**
+
+- "Give me P/E, beta, market cap and dividend yield for [Ticker]."
+- "What does [Company name] actually do, and which sector and industry is it in?"
+- "Show the last three annual income statements for [Ticker] and how revenue developed."
+- "How has [Ticker]'s share count changed over the past years, and does that mean buybacks or dilution?"
+
+**Analysts & news**
+
+- "What's the analyst consensus for [Ticker], and how far is the average price target from the current price?"
+- "Any upgrades or downgrades for [Ticker] in the last few weeks?"
+- "What are the forward revenue and EPS estimates for [Ticker], and how were they revised recently?"
+- "Summarize the recent news on [Ticker]."
+
+**Earnings & calendar**
+
+- "When does [Ticker] report next, and what EPS is expected?"
+- "How did [Ticker] do against estimates in the last few quarters?"
+- "When are [Ticker]'s next earnings and ex-dividend dates?"
+
+**Dividends**
+
+- "Show [Ticker]'s dividends over the last ten years and the current yield."
+- "Has [Ticker] cut its dividend in the last 20 years, and did it split the stock?"
+
+**Ownership & insiders**
+
+- "Who are the largest institutional holders of [Ticker]?"
+- "What share of [Ticker] is held by insiders versus institutions?"
+- "Has there been notable insider buying or selling in [Ticker] recently?"
+
+**Funds & ETFs**
+
+- "What are the top holdings and sector weightings of the ETF [Ticker]?"
+- "What's the asset-class split of [ETF Ticker], and which fund family runs it?"
+
+**Filings**
+
+- "Show the most recent SEC filings for [US Ticker] with links."
+
+**Options**
+
+- "Which option expiration dates are available for [US Ticker]?"
+- "Show the calls and puts for [US Ticker] expiring [Date]."
+
+**Sectors & markets**
+
+- "What are the top companies and industries in the technology sector?"
+- "Show the top-performing companies in the semiconductors industry."
+- "Is the US market open right now, and when does it open next?"
+- "How did the major indices in Europe and Asia close?"
+
+**Finding a symbol**
+
+- "Which Yahoo ticker belongs to [Company name] on [Exchange]?"
+- "Resolve the ISIN [ISIN] to a Yahoo ticker."
+
+**A daily round-up**
+
+- "For [Ticker A], [Ticker B] and [Ticker C]: pull quote, six months of history,
+  company info and analyst recommendations, then give me a short picture of each."
+
+> **The server computes nothing itself.** It passes through what Yahoo returns,
+> which already includes derived figures such as moving averages, P/E, beta and
+> dividend yield. Anything Yahoo does not carry — RSI, MACD, drawdown,
+> sentiment, total return — the model works out from the raw series.
+
 ## Tools
 
 Every tool only reads, and each one says so to the client with the MCP
@@ -104,6 +212,29 @@ key (e.g. `US`).
 `utilities—diversified`, `utilities—independent-power-producers`, `utilities—regulated-electric`, `utilities—regulated-gas`, `utilities—regulated-water`, `utilities—renewable`
 
 </details>
+
+## Symbol resolution
+
+All `get_*` tools expect a Yahoo Finance **symbol**. Both a ticker (`AAPL`,
+`SAP.DE`) and a plain ISIN (`US0378331005`) work. An ISIN is resolved by
+`yfinance` itself: anything shaped like one is looked up through Yahoo's search
+the moment the ticker object is created, and the ticker found stands in for it
+from then on. The server passes the symbol through unchanged apart from
+trimming and uppercasing, and echoes what it was given. A symbol has at most
+32 characters and the shape Yahoo uses, letters, digits and `. - ^ = &`, as in
+`^GSPC`, `EURUSD=X` or `BRK-B`. Anything else, and an ISIN-shaped string that
+Yahoo cannot resolve, answers as an unknown symbol.
+
+To turn a **company name** into a symbol, call `search` first — the same Yahoo
+search endpoint handles free text, tickers, and ISINs. A ticker is preferable to
+an ISIN in any case, because the `symbol` reported back then stays consistent
+across tools.
+
+Two caveats. That ISINs work is **observed behaviour of an unofficial endpoint**,
+not a guarantee: it did not work in earlier versions and it may stop again.
+And German **WKNs resolve nowhere**, not through the tools and not through
+`search` — Yahoo has no lookup for them, so ask for a ticker, an ISIN or the
+company name instead.
 
 ## Compatible clients
 
@@ -479,110 +610,6 @@ With the venv interpreter directly (Windows: `.venv\Scripts\python.exe`):
 ```bash
 .venv/bin/python -m benethos_yahoo_finance_mcp --transport streamable-http
 ```
-
-## Example prompts
-
-Once the server is connected, ask the client in plain language and it will pick
-the tools. Replace the bracketed placeholders with concrete values.
-
-**Price & quote**
-
-- "What's the current price of [Ticker], and how far is it from its 52-week high?"
-- "Is [Ticker] trading above or below its 50- and 200-day moving averages?"
-- "Get the daily closes of [Ticker] for the last 6 months and compute RSI and MACD."
-- "What was the deepest drawdown of [Ticker] in the last 12 months?"
-- "Compare [Ticker A] and [Ticker B] over the last 3 months and show which held up better."
-- "Get current quotes for [Ticker A], [Ticker B] and [Ticker C] and compare them in a table."
-
-**Company & valuation**
-
-- "Give me P/E, beta, market cap and dividend yield for [Ticker]."
-- "What does [Company name] actually do, and which sector and industry is it in?"
-- "Show the last three annual income statements for [Ticker] and how revenue developed."
-- "How has [Ticker]'s share count changed over the past years, and does that mean buybacks or dilution?"
-
-**Analysts & news**
-
-- "What's the analyst consensus for [Ticker], and how far is the average price target from the current price?"
-- "Any upgrades or downgrades for [Ticker] in the last few weeks?"
-- "What are the forward revenue and EPS estimates for [Ticker], and how were they revised recently?"
-- "Summarize the recent news on [Ticker]."
-
-**Earnings & calendar**
-
-- "When does [Ticker] report next, and what EPS is expected?"
-- "How did [Ticker] do against estimates in the last few quarters?"
-- "When are [Ticker]'s next earnings and ex-dividend dates?"
-
-**Dividends**
-
-- "Show [Ticker]'s dividends over the last ten years and the current yield."
-- "Has [Ticker] cut its dividend in the last 20 years, and did it split the stock?"
-
-**Ownership & insiders**
-
-- "Who are the largest institutional holders of [Ticker]?"
-- "What share of [Ticker] is held by insiders versus institutions?"
-- "Has there been notable insider buying or selling in [Ticker] recently?"
-
-**Funds & ETFs**
-
-- "What are the top holdings and sector weightings of the ETF [Ticker]?"
-- "What's the asset-class split of [ETF Ticker], and which fund family runs it?"
-
-**Filings**
-
-- "Show the most recent SEC filings for [US Ticker] with links."
-
-**Options**
-
-- "Which option expiration dates are available for [US Ticker]?"
-- "Show the calls and puts for [US Ticker] expiring [Date]."
-
-**Sectors & markets**
-
-- "What are the top companies and industries in the technology sector?"
-- "Show the top-performing companies in the semiconductors industry."
-- "Is the US market open right now, and when does it open next?"
-- "How did the major indices in Europe and Asia close?"
-
-**Finding a symbol**
-
-- "Which Yahoo ticker belongs to [Company name] on [Exchange]?"
-- "Resolve the ISIN [ISIN] to a Yahoo ticker."
-
-**A daily round-up**
-
-- "For [Ticker A], [Ticker B] and [Ticker C]: pull quote, six months of history,
-  company info and analyst recommendations, then give me a short picture of each."
-
-> **The server computes nothing itself.** It passes through what Yahoo returns,
-> which already includes derived figures such as moving averages, P/E, beta and
-> dividend yield. Anything Yahoo does not carry — RSI, MACD, drawdown,
-> sentiment, total return — the model works out from the raw series.
-
-## Symbol resolution
-
-All `get_*` tools expect a Yahoo Finance **symbol**. Both a ticker (`AAPL`,
-`SAP.DE`) and a plain ISIN (`US0378331005`) work. An ISIN is resolved by
-`yfinance` itself: anything shaped like one is looked up through Yahoo's search
-the moment the ticker object is created, and the ticker found stands in for it
-from then on. The server passes the symbol through unchanged apart from
-trimming and uppercasing, and echoes what it was given. A symbol has at most
-32 characters and the shape Yahoo uses, letters, digits and `. - ^ = &`, as in
-`^GSPC`, `EURUSD=X` or `BRK-B`. Anything else, and an ISIN-shaped string that
-Yahoo cannot resolve, answers as an unknown symbol.
-
-To turn a **company name** into a symbol, call `search` first — the same Yahoo
-search endpoint handles free text, tickers, and ISINs. A ticker is preferable to
-an ISIN in any case, because the `symbol` reported back then stays consistent
-across tools.
-
-Two caveats. That ISINs work is **observed behaviour of an unofficial endpoint**,
-not a guarantee: it did not work in earlier versions and it may stop again.
-And German **WKNs resolve nowhere**, not through the tools and not through
-`search` — Yahoo has no lookup for them, so ask for a ticker, an ISIN or the
-company name instead.
 
 ## Caching
 
