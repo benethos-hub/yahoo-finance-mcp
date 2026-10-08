@@ -36,8 +36,9 @@ Pass either through unchanged — a symbol should never be \
 assembled or transformed. A company name is not a symbol: resolve it with \
 `search` and pass back what that returns. German WKNs resolve nowhere, not even \
 through `search`, so ask for a ticker, an ISIN or the company name instead. \
-`get_sector`, `get_industry` and `get_market` are the exceptions: they take a \
-key, not a ticker.
+Four tools are the exceptions: `get_sector`, `get_industry` and `get_market` \
+take a key, not a ticker, and `screen` takes filters and finds the symbols \
+itself.
 
 Missing data is normal. Analyst, holder, earnings, insider, filing and \
 calendar data exist for equities only, and for an ETF, fund or crypto those \

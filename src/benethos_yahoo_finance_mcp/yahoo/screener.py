@@ -16,9 +16,8 @@ from numbers import Real
 from typing import Any
 
 import yfinance as yf
-from yfinance.const import EQUITY_SCREENER_EQ_MAP, EQUITY_SCREENER_FIELDS
 
-from .. import cache
+from .. import cache, logbook
 from ..errors import ToolError
 from ..formatting import to_jsonable
 from . import tickers
@@ -71,11 +70,6 @@ SCREEN_ALIASES: dict[str, str] = {
 SCREEN_OPERATORS: tuple[str, ...] = ("eq", "gt", "gte", "lt", "lte", "btwn", "is-in")
 _COMPARISONS = frozenset({"gt", "gte", "lt", "lte", "btwn"})
 
-# Every field Yahoo's screener accepts, lower-cased as it spells them.
-_FIELDS: frozenset[str] = frozenset(
-    field for group in EQUITY_SCREENER_FIELDS.values() for field in group
-)
-
 
 def _slug(value: str) -> str:
     """``value`` lower-cased with every run of other characters as one hyphen.
@@ -95,11 +89,32 @@ def _values(raw: Any) -> list[str]:
     return sorted(str(v) for v in raw)
 
 
-# Categorical field -> {slug: the value as Yahoo spells it}.
-_CATEGORIES: dict[str, dict[str, str]] = {
-    field: {_slug(value): value for value in _values(raw)}
-    for field, raw in EQUITY_SCREENER_EQ_MAP.items()
-}
+def _load_fields() -> tuple[frozenset[str], dict[str, dict[str, str]]]:
+    """Every field Yahoo's screener accepts, and the categorical ones' values.
+
+    Both come from yfinance's constants, the fields lower-cased as Yahoo
+    spells them, each category as ``{slug: the value as Yahoo spells it}``.
+    The constants are semi-internal, so the import is defensive: should they
+    be renamed or reshaped, the server still starts with both empty, and
+    ``screen`` says it is unavailable instead of the whole server failing.
+    """
+    try:
+        from yfinance.const import EQUITY_SCREENER_EQ_MAP, EQUITY_SCREENER_FIELDS
+
+        fields = frozenset(
+            str(field) for group in EQUITY_SCREENER_FIELDS.values() for field in group
+        )
+        categories = {
+            str(field): {_slug(value): value for value in _values(raw)}
+            for field, raw in EQUITY_SCREENER_EQ_MAP.items()
+        }
+    except Exception:  # noqa: BLE001 - constants are semi-internal, degrade
+        logbook.upstream.screener_fields_unavailable()
+        return frozenset(), {}
+    return fields, categories
+
+
+_FIELDS, _CATEGORIES = _load_fields()
 
 _HIT_COLUMNS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("symbol", ("symbol",)),
@@ -236,6 +251,11 @@ def screen(
     is stable. ``total`` is how many stocks match in all, which says more
     than the rows do when it runs into the thousands.
     """
+    if not _FIELDS:
+        raise ToolError(
+            "Screening is unavailable: the installed yfinance does not provide "
+            "the screener's field list. The other tools are not affected."
+        )
     query = _query(filters)
     sort_field = _field(sort_by)
     if sort_field in _CATEGORIES:

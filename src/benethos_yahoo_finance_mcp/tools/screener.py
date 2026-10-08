@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictFloat
 
 from .. import yahoo
 from ._base import register_tool
@@ -13,6 +13,9 @@ if TYPE_CHECKING:  # pragma: no cover - imported for typing only
     from mcp.server.mcpserver import MCPServer
 
 _Text = Annotated[str, Field(max_length=64)]
+# Strict, so a JSON true is refused instead of passing as 1.0. Whole numbers
+# still pass.
+_Number = StrictFloat
 
 
 class ScreenFilter(BaseModel):
@@ -20,8 +23,8 @@ class ScreenFilter(BaseModel):
 
     field: _Text = Field(description="An alias or a raw Yahoo screener field.")
     op: Literal["eq", "gt", "gte", "lt", "lte", "btwn", "is-in"]
-    value: float | _Text | Annotated[list[float | _Text], Field(max_length=50)] = Field(
-        description="A number, [low, high] for btwn, a list for is-in."
+    value: _Number | _Text | Annotated[list[_Number | _Text], Field(max_length=50)] = (
+        Field(description="A number, [low, high] for btwn, a list for is-in.")
     )
 
 
@@ -66,9 +69,9 @@ def screen(
     company sits, so 'de' includes foreign companies traded in Germany, and a
     company appears once per listing. Returns total (all matches) and one row
     per match with price, valuation and dividend figures. A row's
-    dividend_yield comes from other data than the filter and can lie slightly
-    outside its bounds. The figures behind the other filters are in
-    get_company_info.
+    dividend_yield can be missing or differ markedly from the filter, which
+    holds for Yahoo's screener data, not for that column. The figures behind
+    the other filters are in get_company_info.
     """
     return yahoo.screen(
         tuple(
