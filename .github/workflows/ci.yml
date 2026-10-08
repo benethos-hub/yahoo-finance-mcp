@@ -200,7 +200,7 @@ jobs:
                   else:
                       assert "build" not in service, f"{where} builds instead of pulling"
                       assert service["image"].startswith(
-                          "ghcr.io/benethos-hub/yahoo-finance-mcp:"
+                          "ghcr.io/benethos-hub/benethos-yahoo-finance-mcp:"
                       ), f"{where} runs {service['image']}, not the published image"
                   print(f"OK: {where} is read-only and {'builds' if folder == 'development' else 'pulls'}")
           PY
