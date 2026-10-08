@@ -8,6 +8,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`screen`**, a stock screener. Filters such as
+  `{"field": "dividend_yield", "op": "gt", "value": 3}` must all hold, on
+  31 readable aliases (market cap, P/E, dividend yield, dividend growth
+  years, return on equity, debt to equity, region, sector, industry and
+  more) or any raw field of Yahoo's screener. Sorted by market cap unless
+  told otherwise, up to 100 rows a page with `offset` for the next, each
+  row with price, valuation and dividend figures, and `total` saying how
+  many stocks match in all. A filter Yahoo would refuse is answered before
+  the call with a message saying what to change, and an industry is
+  accepted as `get_sector` names it. Cached for 10 minutes under `screen`
+  when the cache is on.
 - Two more release checks in the test suite. The changelog must open with
   `[Unreleased]` and then the current version with its date, and the two
   compare links at its foot must point at that version. Before, a version

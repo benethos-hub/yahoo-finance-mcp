@@ -41,7 +41,7 @@ src/benethos_yahoo_finance_mcp/
   server.py       # instructions + build_server() + refused-arguments logging
   tools/          # the tools a client sees, one module per subject, thin
     _base.py      #   Symbol, READ_ONLY, register_tool (adds the log line)
-  yahoo/          # all yfinance access, the same seven subjects as tools/
+  yahoo/          # all yfinance access, the same eight subjects as tools/
     tickers.py    #   get_ticker, upstream(), normalize()
   cache.py        # opt-in persistent result cache (SQLite) with per-tool TTLs
   formatting.py   # pandas/yfinance -> compact JSON-safe values

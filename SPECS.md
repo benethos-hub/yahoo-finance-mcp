@@ -35,8 +35,9 @@ MCP client (Claude)  --stdio / HTTP-->  transport/  -->  server.py (MCPServer)
 ```
 
 `cli.py` resolves the settings, sets up the log, builds the server and hands
-it to a transport. `tools/` and `yahoo/` have the same seven modules, one per
-subject (quotes, company, analysts, ownership, options, funds, browse), so
+it to a transport. `tools/` and `yahoo/` have the same eight modules, one per
+subject (quotes, company, analysts, ownership, options, funds, browse,
+screener), so
 `tools/options.py` exposes exactly what `yahoo/options.py` fetches.
 
 | Module | Responsibility |
@@ -277,10 +278,11 @@ All tools are read-only, and each one carries the MCP annotations
 `readOnlyHint: true` and `openWorldHint: true` (one shared `ToolAnnotations`
 in `tools/_base.py`, set by `register_tool`). `destructiveHint` and `idempotentHint` are omitted because
 the spec defines them only for tools that are not read-only. `symbol` always
-means a Yahoo ticker or an ISIN (see §6). The three exceptions are
+means a Yahoo ticker or an ISIN (see §6). The four exceptions are
 `get_sector` / `get_industry`, which take a sector/industry **key** (e.g.
-`technology`, `semiconductors`), and `get_market`, which takes a market key
-(e.g. `US`), rather than a symbol.
+`technology`, `semiconductors`), `get_market`, which takes a market key
+(e.g. `US`), rather than a symbol, and `screen`, which takes filters and
+returns symbols.
 
 | Tool | Inputs | Output (shape) |
 |------|--------|----------------|
@@ -306,6 +308,7 @@ means a Yahoo ticker or an ISIN (see §6). The three exceptions are
 | `get_sector` | `key` (sector key), `limit` 1-100 (=25) | `{key, name, index_symbol, overview, top_companies[], top_etfs, top_mutual_funds, industries[]}` (module-level, not a symbol) |
 | `get_industry` | `key` (industry key), `limit` 1-100 (=25) | `{key, name, index_symbol, sector_key, sector_name, overview, top_companies[], top_performing_companies[], top_growth_companies[]}` (module-level, not a symbol) |
 | `get_market` | `key` (market key, =US) | `{key, status, count, indices[{symbol, shortName, fullExchangeName, marketState, price, previous close, change, change %}]}` (module-level, `status` only for `US`, null elsewhere) |
+| `screen` | `filters[{field, op, value}]` (up to 10, all must hold), `sort_by` (=market_cap), `sort_desc` (=true), `limit` 1-100 (=25), `offset` 0-9900 (=0) | `{total, count, offset, matches[{symbol, name, exchange, currency, price, change_percent, market_cap, pe_ratio, price_to_book, eps, dividend_yield, change_52w_percent, avg_volume_3m}]}` (empty columns left out, module-level, see §12) |
 
 ### Parameter descriptions
 
@@ -347,6 +350,7 @@ values).
   | `history` | `get_history` | 10 min |
   | `news` | `get_news` | 10 min |
   | `options` | `get_options` | 10 min |
+  | `screen` | `screen` | 10 min |
   | `search` | `search` | 1 h |
   | `company_info` | `get_company_info` | 6 h |
   | `dividends` | `get_dividends` | 6 h |
@@ -562,7 +566,10 @@ values).
 
 ## 11. Future work (not yet implemented)
 
-- Stale-on-error: serve an expired cache entry when Yahoo is rate limiting.
+Nothing beyond the optional roadmap in §12. Serving an expired cache entry
+while Yahoo rate-limits was considered and dropped: the cache is off by
+default, a quote from hours ago is worse than the rate-limit message, and
+every answer would need to carry its age.
 
 (Multi-symbol batch quoting is implemented as `get_quotes` — see §7 and §12.)
 
@@ -627,9 +634,9 @@ tool already returns as `recommendation_trend`.
 
 These take no per-symbol `Ticker`. `Sector` / `Industry` browsing landed in
 Phase 4 (`get_sector` / `get_industry`), `Market` later as `get_market`, and
-multi-symbol quotes as `get_quotes` (Phase 5). Still open: `Lookup` (richer
-search — overlaps the existing `search`, so likely an extension rather than a
-new tool), the screener (`screen` / `EquityQuery`), and bulk history
+multi-symbol quotes as `get_quotes` (Phase 5), the screener as `screen`
+(Phase 6). Still open: `Lookup` (richer search — overlaps the existing
+`search`, so likely an extension rather than a new tool) and bulk history
 (`download`). See the roadmap below for where each stands.
 
 The sector/industry key set is sourced from yfinance's own constant
@@ -686,6 +693,7 @@ green).
   per-symbol `fast_info` (yfinance's `Tickers` is only a convenience wrapper, not
   true batching, and `yf.download` is reserved for a possible future bulk-history
   tool, which needs hard payload caps).
+- **Phase 6 — done:** `screen` (`yf.screen` / `EquityQuery`), see below.
 
 ### Remaining roadmap (optional, not yet built)
 
@@ -696,12 +704,21 @@ left is a smaller, optional set. In rough priority / effort order:
   live: only `US` serves a trading status, every other key raises upstream when
   asked for one, so `status` is `null` there. The index summary works for all
   eight, which is why the tool leads with it and treats the status as optional.
-- **Screener** (`yf.screen` / `EquityQuery`) — **next.** The only remaining
-  candidate that adds a capability rather than convenience: filtering the market
-  by criteria is impossible with any current tool. Probed live and working. Most
-  design work of the four, since it needs a query schema (field/operator/value)
-  exposed to the LLM, and the raw hits carry a lot of noise that wants curating.
-  Consult `yfinance.const.EQUITY_SCREENER_FIELDS` / `EQUITY_SCREENER_EQ_MAP`.
+- **Screener** (`yf.screen` / `EquityQuery`) — **done** as `screen`. The only
+  candidate that added a capability rather than convenience. Yahoo knows 92
+  fields with names no model guesses, so the description lists 31 aliases in
+  groups and raw names stay accepted. Filters are a flat list that must all
+  hold. Yahoo's OR and nesting are not exposed, real screening questions are
+  conjunctions, and two calls replace an OR. Every filter is checked before
+  the call, each mistake with its own message. Category values are matched
+  after lower-casing and turning every run of other characters into one
+  hyphen, since the screener writes `Software—Infrastructure` with an em dash
+  where get_sector hands out `software-infrastructure`. Probed live on
+  2026-10-08 (yfinance 1.7.0): every alias filters and sorts, percentages
+  are in percent, `region` is the listing country (`de` returns Nvidia on
+  XETRA), a company comes back once per listing, and Yahoo serves offsets up
+  to about 10,000. Each hit carries over 80 fields, the row keeps 13 named
+  like the aliases, plus `total`. 25 rows are about 8 KB.
 - **Bulk history** (`yf.download`) — deferred. Probed live and working, but it
   returns a **MultiIndex** over columns (`('Close', 'AAPL')`) that
   `dataframe_to_records` does not handle, the payload grows with symbols × rows,
@@ -714,7 +731,7 @@ left is a smaller, optional set. In rough priority / effort order:
   `search` rather than adding a tool.
 
 A note on the ordering above: it is deliberately not "everything that is
-technically possible". With 22 tools already registered, every additional
+technically possible". With 23 tools already registered, every additional
 description competes for the model's attention on every single request. A tool
 that only saves a loop is a net loss.
 
