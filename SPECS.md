@@ -635,9 +635,8 @@ tool already returns as `recommendation_trend`.
 These take no per-symbol `Ticker`. `Sector` / `Industry` browsing landed in
 Phase 4 (`get_sector` / `get_industry`), `Market` later as `get_market`, and
 multi-symbol quotes as `get_quotes` (Phase 5), the screener as `screen`
-(Phase 6). Still open: `Lookup` (richer search — overlaps the existing
-`search`, so likely an extension rather than a new tool) and bulk history
-(`download`). See the roadmap below for where each stands.
+(Phase 6). Still open: bulk history (`download`). `Lookup` was dropped. See
+the roadmap below for both.
 
 The sector/industry key set is sourced from yfinance's own constant
 (`yfinance.const.SECTOR_INDUSTY_MAPPING_LC`, imported defensively in
@@ -724,11 +723,11 @@ left is a smaller, optional set. In rough priority / effort order:
   `dataframe_to_records` does not handle, the payload grows with symbols × rows,
   and `download` does not raise on bad symbols (silent NaN columns). The model
   can already loop over `get_history`, so this buys convenience, not capability.
-- **`Lookup`** (`yf.Lookup`) — deferred. Probed live: 25 rows carrying
-  `regularMarketPrice`, `industryName` and `rank`, so genuinely richer than
-  `search`. But it overlaps `search` almost entirely, and two near-duplicate
-  tools make the toolset harder for a model to navigate. If ever, extend
-  `search` rather than adding a tool.
+- **`Lookup`** (`yf.Lookup`) — **dropped.** Probed live: 25 rows carrying
+  `regularMarketPrice`, `industryName` and `rank`, so richer than `search`.
+  But it answers the same question, and a near-duplicate tool makes the
+  toolset harder for a model to navigate. A price is one `get_quotes` call
+  away, and filtering by industry is what `screen` does.
 
 A note on the ordering above: it is deliberately not "everything that is
 technically possible". With 23 tools already registered, every additional
