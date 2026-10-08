@@ -46,8 +46,8 @@ FROM python:3.14-slim@sha256:c3e521df8b2b498a7a682e7e18676771cb80c6b75b8699af886
 # All runtime configuration is via environment variables, so the container
 # needs no CMD args and stays fully configurable with `docker run -e ...`.
 # Defaults: serve streamable-HTTP on all interfaces. The result cache is
-# opt-in (off by default); enable it with `-e YF_MCP_CACHE=1`, in which case it
-# is written to the mounted /cache volume. Override anything with -e.
+# opt-in (off by default). Enable it with `-e YF_MCP_CACHE=1`, and it is
+# written to the mounted /cache volume. Override anything with -e.
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH" \
@@ -59,7 +59,7 @@ ENV PYTHONUNBUFFERED=1 \
     YF_MCP_CACHE=0 \
     YF_MCP_CACHE_DIR=/cache
 
-# Run as a non-root user; create the cache dir it owns.
+# Run as a non-root user, with the cache dir it owns.
 RUN useradd --create-home --uid 10001 appuser \
     && mkdir -p /cache \
     && chown appuser:appuser /cache
