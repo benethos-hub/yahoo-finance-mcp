@@ -27,6 +27,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   bump with the changelog still open passed every test. And the installed
   version must be the one in `pyproject.toml`, so a bump without `uv sync`
   says exactly that instead of calling the documentation stale.
+- HTTPS for the production compose file. With `COMPOSE_PROFILES=https`,
+  `YAHOO_FINANCE_MCP_DOMAIN` and the bearer token set in `.env`, Caddy starts
+  in front of the server on ports 80 and 443, with a certificate from
+  Let's Encrypt, from its own CA or from files under `secrets/tls/`
+  (`YAHOO_FINANCE_MCP_TLS`). A request without an `Authorization` header
+  gets 401 from Caddy, and the domain is added to the server's allowed
+  hosts. The server's own port stays on `127.0.0.1`. The production folder
+  now has three files, fetch the new `Caddyfile` along with the other two.
 
 ### Changed
 

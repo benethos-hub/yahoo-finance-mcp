@@ -11,6 +11,9 @@
 #
 # To update, set YAHOO_FINANCE_MCP_VERSION in .env to the new version, then
 #   docker compose pull && docker compose up -d
+#
+# For clients on other machines, the profile https puts Caddy in front, see
+# the service `caddy` below and the Caddyfile beside this file.
 
 # Project name for all resources compose creates (network, volume). It is the
 # name the compose file at the repository root had, so the cache volume of a
@@ -80,9 +83,10 @@ services:
       # then call every tool from a browser on this machine, same-origin, no
       # CORS involved. These are the names a client really uses: the published
       # loopback port, and the service name for another container on the same
-      # network. Add a name here when you put a proxy in front, anything else
-      # gets HTTP 421.
-      YF_MCP_ALLOWED_HOSTS: "localhost:*,127.0.0.1:*,[::1]:*,benethos-yahoo-finance-mcp:*"
+      # network. YAHOO_FINANCE_MCP_DOMAIN is appended when set, the name
+      # clients use through Caddy. Add a name here when you put another proxy
+      # in front, anything else gets HTTP 421.
+      YF_MCP_ALLOWED_HOSTS: "localhost:*,127.0.0.1:*,[::1]:*,benethos-yahoo-finance-mcp:*${YAHOO_FINANCE_MCP_DOMAIN:+,${YAHOO_FINANCE_MCP_DOMAIN}}"
       # A bearer token on every HTTP request is off by default: on a
       # loopback-published port it guards against nothing, and anything that
       # can reach the port can otherwise call every tool. Set
@@ -102,5 +106,66 @@ services:
       # Used only when the cache is enabled, and keeps it across restarts.
       - cache:/cache
 
+  # HTTPS for clients on other machines, off unless the profile `https` is
+  # active (COMPOSE_PROFILES=https in .env). Caddy takes ports 80 and 443 on
+  # every address, gets a certificate and forwards to the server over the
+  # compose network, so the server's own port stays on 127.0.0.1. The
+  # Caddyfile beside this file says how. With the profile on, set
+  # YF_MCP_BEARER_TOKEN: the server is then reachable from everywhere.
+  caddy:
+    # The major line, so `docker compose pull` brings Caddy's security fixes
+    # without anyone editing this file. Caddy keeps its configuration
+    # compatible within a major version.
+    image: caddy:2
+    container_name: benethos-yahoo-finance-mcp-caddy
+    profiles:
+      - https
+    # Compose cannot require the domain for one profile only, `:?` would stop
+    # every start without it. Without a domain Caddy fails on a line further
+    # down with a message that does not name it, so this says it instead.
+    command:
+      - sh
+      - -c
+      - >-
+        test -n "$$YAHOO_FINANCE_MCP_DOMAIN" ||
+        { echo "Set YAHOO_FINANCE_MCP_DOMAIN in .env for the profile https." >&2; exit 1; };
+        exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+    logging: *logging
+    ports:
+      # 80 for the ACME challenge and the redirect to HTTPS, 443 over TCP for
+      # HTTP/1.1 and HTTP/2, over UDP for HTTP/3.
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    depends_on:
+      benethos-yahoo-finance-mcp:
+        condition: service_healthy
+    restart: unless-stopped
+    # Caddy writes its certificates and state to the two volumes below and
+    # nothing else outside /tmp.
+    read_only: true
+    tmpfs:
+      - /tmp
+    # Binding 80 and 443 is the one privilege Caddy needs.
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      YAHOO_FINANCE_MCP_DOMAIN: ${YAHOO_FINANCE_MCP_DOMAIN:-}
+      YAHOO_FINANCE_MCP_TLS: ${YAHOO_FINANCE_MCP_TLS:-acme}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Only read with YAHOO_FINANCE_MCP_TLS=files: cert.pem and key.pem.
+      - ./secrets/tls:/secrets/tls:ro
+      # The certificates and the ACME account. Losing them means asking the
+      # CA again, which it limits per week.
+      - caddy-data:/data
+      - caddy-config:/config
+
 volumes:
   cache:
+  caddy-data:
+  caddy-config:

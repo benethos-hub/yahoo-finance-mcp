@@ -1,0 +1,42 @@
+# HTTPS in front of the server, started only with the compose profile
+# `https`. Caddy reads the two values below from the environment compose
+# hands it, which takes them from .env:
+#   YAHOO_FINANCE_MCP_DOMAIN  the name clients use, e.g. mcp.example.com
+#   YAHOO_FINANCE_MCP_TLS     where the certificate comes from, one of the
+#                             three snippets below (default acme)
+{
+	# Caddy would put its own CA into the container's trust store, which is
+	# read-only and trusted by nobody. Clients need it, see tls-internal.
+	skip_install_trust
+}
+
+# A certificate from a public CA (Let's Encrypt, ZeroSSL), requested and
+# renewed by Caddy. The domain must resolve to this host in public DNS and
+# ports 80 and 443 must be reachable from the internet.
+(tls-acme) {
+}
+
+# A certificate from Caddy's own CA, for a name on a private network. Clients
+# trust it only once that CA's root, kept in the caddy-data volume under
+# caddy/pki/authorities/local/root.crt, is installed on them.
+(tls-internal) {
+	tls internal
+}
+
+# Your own certificate and key, from secrets/tls/ beside compose.yaml.
+(tls-files) {
+	tls /secrets/tls/cert.pem /secrets/tls/key.pem
+}
+
+{$YAHOO_FINANCE_MCP_DOMAIN} {
+	import tls-{$YAHOO_FINANCE_MCP_TLS:acme}
+
+	# The server checks the bearer token itself. A request without any
+	# Authorization header cannot pass that check and stops here, so a scan
+	# of the internet never reaches the server.
+	@unauthenticated not header Authorization *
+	header @unauthenticated WWW-Authenticate Bearer
+	respond @unauthenticated 401
+
+	reverse_proxy benethos-yahoo-finance-mcp:8000
+}

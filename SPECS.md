@@ -197,6 +197,8 @@ submodules.
   `YF_MCP_ALLOWED_HOSTS` to the loopback names and their service name, because
   the image binds `0.0.0.0` and the guard would otherwise be off while the
   port sits on the host's loopback, reachable by a rebound browser page.
+  Production appends `YAHOO_FINANCE_MCP_DOMAIN` when it is set, the name
+  clients use through Caddy (see Deployment), which would otherwise get 421.
   `tests/test_cli.py` holds it to that.
 - **Deployment:** everything for containers sits in `containers/`. The
   `Dockerfile` in `containers/images/yahoo-finance-mcp/` (multi-stage,
@@ -222,6 +224,25 @@ submodules.
   development builds and that production pulls the published image.
   Drop the loopback prefix only behind a reverse proxy that authenticates, or
   at the very least with `YF_MCP_BEARER_TOKEN` set.
+  Production brings that proxy along under the compose profile `https`
+  (`COMPOSE_PROFILES=https` in `.env`): Caddy, configured by the `Caddyfile`
+  beside the compose file, on ports 80 and 443 of every address, TCP and,
+  for HTTP/3, UDP. It forwards to the server by service name over the
+  compose network, so the server's port stays on 127.0.0.1. The domain comes
+  from `YAHOO_FINANCE_MCP_DOMAIN`, the certificate from one of three
+  snippets picked by `YAHOO_FINANCE_MCP_TLS`: `acme` (default, a public CA),
+  `internal` (Caddy's own CA) or `files` (`secrets/tls/cert.pem` and
+  `key.pem`, ignored by git). A request without an `Authorization` header
+  gets 401 from Caddy and never reaches the server, which checks the token
+  of every other, and the token is required with the profile. The server
+  trusts no forwarded header, so its log names Caddy's address for a
+  refused request, not the client's. Compose cannot require the domain for
+  one profile only, since `:?` fails every start without it, so Caddy's
+  command checks it first and stops with a message naming it. Caddy runs
+  read-only with a tmpfs for `/tmp`, every capability dropped except
+  `NET_BIND_SERVICE`, `no-new-privileges` and the same log cap, and keeps
+  certificates and the ACME account in the volumes `caddy-data` and
+  `caddy-config`. It starts once the server reports healthy.
 
 ## 5. Data source rules
 
@@ -489,8 +510,9 @@ values).
 - CI (GitHub Actions): a `lint` job (ruff + mypy), a `test` matrix running
   `pytest` with coverage on Python 3.11-3.14, a `docker` job that builds the
   image for amd64 and arm64, smoke-tests that the container serves HTTP and
-  passes its health check, and checks both compose files (valid, every port
-  on the loopback address, read-only root, development builds and production
+  passes its health check, and checks both compose files, production with
+  its profile `https` (valid, every port on the loopback address except
+  Caddy's 80 and 443, read-only root, development builds and production
   pulls), and a `fresh-install`
   job. The first three install from `uv.lock` (`uv sync --frozen`) for
   reproducibility. `fresh-install` deliberately does **not**: it builds the
@@ -510,6 +532,12 @@ values).
   their tag. A tag is a pointer its owner can
   move, and the publish workflow holds the credentials that push to PyPI and
   ghcr. Dependabot reads the comment and raises SHA and comment together.
+  Caddy in the production compose file is the deliberate exception: `caddy:2`
+  follows its major line. It is a server facing the internet that someone
+  else runs, so `docker compose pull` should bring its security fixes the
+  day they ship rather than with the next release here, and Caddy keeps its
+  configuration compatible within a major version. Nothing is built from
+  it, so no credentials depend on it.
 - Dependabot covers GitHub Actions, the two images in the `Dockerfile` and,
   since 0.5.1, the Python dependencies in `uv.lock`. It reads `FROM` lines
   only, so the uv image is a stage of its own rather than a `COPY --from=`
