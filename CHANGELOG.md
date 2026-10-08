@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-08
+
+A stock screener and HTTPS for the container. `screen` finds stocks by
+criteria such as dividend yield, P/E, region or sector, on readable aliases
+and checked before Yahoo is asked. The production compose file can put Caddy
+in front of the server for clients on other machines. yfinance 1.6.0 is now
+the minimum, and the image is published under its new name only.
+
 ### Added
 
 - **`screen`**, a stock screener. Filters such as
@@ -45,6 +53,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   published under `ghcr.io/benethos-hub/yahoo-finance-mcp`, were copied over
   with the same digest, minor-line tags included. Nothing changed under the
   old name.
+
+### Removed
+
+- The image is no longer pushed under the old name
+  `ghcr.io/benethos-hub/yahoo-finance-mcp`, as announced with 0.7.2. Its tags
+  up to 0.7.2 stay where they are and get nothing new, `:0.7` and `:latest`
+  there included. Switch to `ghcr.io/benethos-hub/benethos-yahoo-finance-mcp`,
+  which holds every release from 0.4.0 on.
 
 ## [0.7.2] - 2026-10-08
 
@@ -1082,7 +1098,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.1...v0.7.0

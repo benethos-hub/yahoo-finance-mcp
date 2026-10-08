@@ -134,16 +134,13 @@ jobs:
           # config all along.
           DOCKER_METADATA_ANNOTATIONS_LEVELS: index,manifest
         # The image carries the distribution's name. Up to 0.7.1 it was named
-        # after the repository, yahoo-finance-mcp, and the 0.7 line is still
-        # pushed there as well, from the same build and with the same digest,
-        # so whoever follows `:0.7` or `:latest` under the old name keeps
-        # getting updates until the end of that line. From 0.8.0 on the old
-        # name gets nothing: tests/test_packaging.py goes red on the version
-        # bump until the second line below is removed.
+        # after the repository, yahoo-finance-mcp, and the 0.7 line was pushed
+        # there as well, from the same build and with the same digest. From
+        # 0.8.0 on the old name gets nothing, and tests/test_packaging.py goes
+        # red should it come back into this list.
         with:
           images: |
             ghcr.io/${{ github.repository_owner }}/benethos-yahoo-finance-mcp
-            ghcr.io/${{ github.repository_owner }}/yahoo-finance-mcp
           flavor: latest=false
           tags: |
             type=semver,pattern={{version}}
@@ -170,8 +167,8 @@ jobs:
       # the description in its configuration all along, and by the time anyone
       # looks at that page the release has already happened.
       #
-      # Every tag under every name is read, not only the first: each must be the
-      # very same index, byte for byte, or one name would serve another build.
+      # Every tag is read, not only the first: each must be the very same
+      # index, byte for byte, or one tag would serve another build.
       - name: The published index carries what the package page reads
         env:
           TAGS: ${{ steps.meta.outputs.tags }}

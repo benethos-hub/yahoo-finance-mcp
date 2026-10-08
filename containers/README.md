@@ -105,9 +105,9 @@ version as the PyPI package. A release `v1.2.3` is tagged `1.2.3`, `1.2` and
 
 Up to 0.7.1 the image was named `ghcr.io/benethos-hub/yahoo-finance-mcp`.
 Those releases, 0.4.0 to 0.7.1 with their minor-line tags, were copied to the
-new name with the same digest, so every release is there. The 0.7 line is
-pushed under the old name as well, and 0.8.0 is the first release without
-it. Switch to the new name before then.
+new name with the same digest, so every release is there. The 0.7 line was
+pushed under the old name as well. Since 0.8.0 only the new name gets
+releases.
 
 Built from the repository root:
 
