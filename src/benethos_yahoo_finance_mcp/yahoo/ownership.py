@@ -9,15 +9,20 @@ from ..errors import SymbolNotFoundError
 from ..formatting import dataframe_to_records, to_jsonable
 from . import tickers
 
+# The holder breakdown and the insider purchase summary are summaries of a
+# few labelled rows each, not lists: 4 and 7 on 2026-10-08 for AAPL. The cap
+# keeps them whole, it is not a page size like ``limit``.
+_SUMMARY_ROWS = 10
+
 
 @cache.cached("holders")
 def get_holders(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     """Return the ownership breakdown for ``symbol``.
 
     Combines the high-level holder summary (insider/institutional percentages)
-    with the top institutional and mutual-fund holders.
-    Equity-only: an ETF, fund or crypto
-    symbol raises SymbolNotFoundError with ``tickers.EQUITY_ONLY_REASON``.
+    with the top institutional and mutual-fund holders. Equity-only: an ETF,
+    fund or crypto symbol raises SymbolNotFoundError with
+    ``tickers.EQUITY_ONLY_REASON``.
     """
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load holders for {symbol!r}"):
@@ -25,7 +30,9 @@ def get_holders(symbol: str, *, limit: int = 25) -> dict[str, Any]:
         institutional = ticker.institutional_holders
         mutualfund = ticker.mutualfund_holders
 
-    major_rows = dataframe_to_records(major, max_rows=10, index_name="metric")
+    major_rows = dataframe_to_records(
+        major, max_rows=_SUMMARY_ROWS, index_name="metric"
+    )
     # Both lists are sorted largest-holder-first, so the cap keeps the head.
     institutional_rows = dataframe_to_records(institutional, max_rows=limit, head=True)
     mutualfund_rows = dataframe_to_records(mutualfund, max_rows=limit, head=True)
@@ -45,9 +52,9 @@ def get_insider_activity(symbol: str, *, limit: int = 50) -> dict[str, Any]:
     """Return insider trading activity for ``symbol``.
 
     Combines individual insider transactions, a 6-month purchases/sales summary,
-    and the current insider roster (with shares owned).
-    Equity-only: an ETF, fund or crypto
-    symbol raises SymbolNotFoundError with ``tickers.EQUITY_ONLY_REASON``.
+    and the current insider roster (with shares owned). Equity-only: an ETF,
+    fund or crypto symbol raises SymbolNotFoundError with
+    ``tickers.EQUITY_ONLY_REASON``.
     """
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load insider activity for {symbol!r}"):
@@ -57,7 +64,7 @@ def get_insider_activity(symbol: str, *, limit: int = 50) -> dict[str, Any]:
 
     # Transactions are newest-first, so the cap keeps the head.
     transactions_rows = dataframe_to_records(transactions, max_rows=limit, head=True)
-    purchases_rows = dataframe_to_records(purchases, max_rows=10)
+    purchases_rows = dataframe_to_records(purchases, max_rows=_SUMMARY_ROWS)
     roster_rows = dataframe_to_records(roster, max_rows=limit, head=True)
     if not transactions_rows and not purchases_rows and not roster_rows:
         raise SymbolNotFoundError(symbol, reason=tickers.EQUITY_ONLY_REASON)

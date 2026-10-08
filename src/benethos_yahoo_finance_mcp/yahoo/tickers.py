@@ -64,15 +64,25 @@ def wrap_upstream(exc: Exception, message: str) -> ToolError:
 
 
 @contextmanager
-def upstream(message: str) -> Iterator[None]:
+def upstream(
+    message: str,
+    *,
+    not_found: tuple[type[Exception], ...] = (),
+    symbol: str = "",
+) -> Iterator[None]:
     """Run a block of yfinance calls, normalising whatever it raises.
 
     ``message`` says what was being attempted and ends up in the error the
-    client sees, see :func:`wrap_upstream`.
+    client sees, see :func:`wrap_upstream`. ``not_found`` names the
+    exceptions that mean ``symbol`` simply has no such data, such as
+    yfinance's ``YFDataException`` for the fund data of a stock. They become
+    a ``SymbolNotFoundError``, except a rate limit, which keeps its own.
     """
     try:
         yield
     except Exception as exc:  # noqa: BLE001 - normalize upstream errors
+        if isinstance(exc, not_found) and not isinstance(exc, YFRateLimitError):
+            raise SymbolNotFoundError(symbol) from exc
         raise wrap_upstream(exc, message) from exc
 
 

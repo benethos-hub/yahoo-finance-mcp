@@ -143,7 +143,7 @@ def get_financials(
 
 
 @cache.cached("dividends")
-def get_dividends(symbol: str, *, limit: int = 250) -> dict[str, Any]:
+def get_dividends(symbol: str, *, limit: int = MAX_ROWS) -> dict[str, Any]:
     """Return historical dividends and stock splits for ``symbol``."""
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load dividends for {symbol!r}"):
@@ -213,9 +213,8 @@ def get_calendar(symbol: str) -> dict[str, Any]:
     """Return upcoming corporate-calendar events for ``symbol``.
 
     Includes the next earnings date(s) with analyst estimate ranges and the next
-    dividend / ex-dividend dates.
-    Equity-only: an ETF, fund or crypto
-    symbol raises SymbolNotFoundError with ``tickers.EQUITY_ONLY_REASON``.
+    dividend / ex-dividend dates. Equity-only: an ETF, fund or crypto symbol
+    raises SymbolNotFoundError with ``tickers.EQUITY_ONLY_REASON``.
     """
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load calendar for {symbol!r}"):

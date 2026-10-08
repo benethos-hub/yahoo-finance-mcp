@@ -33,10 +33,6 @@ from .settings import Settings
 
 F = TypeVar("F", bound=Callable[..., Any])
 
-# The categories and their default time-to-live live with the rest of the
-# configuration. Re-exported because every category here is one of them.
-DEFAULT_TTLS = settings_mod.DEFAULT_TTLS
-
 # Seconds SQLite waits for another process's lock, see ResultCache.__init__.
 LOCK_TIMEOUT = 0.5
 
@@ -46,7 +42,9 @@ _INCREMENTAL = 2
 # --- module state (set by configure) --------------------------------------
 _lock = threading.Lock()
 _enabled = False
-_ttls: dict[str, float] = dict(DEFAULT_TTLS)
+# The categories and their default time-to-live live with the rest of the
+# configuration, in settings.
+_ttls: dict[str, float] = dict(settings_mod.DEFAULT_TTLS)
 _cache: ResultCache | None = None
 
 
@@ -218,7 +216,7 @@ def configure(settings: Settings) -> None:
     """
     global _enabled, _ttls, _cache
     with _lock:
-        _ttls = {**DEFAULT_TTLS, **settings.cache_ttls}
+        _ttls = {**settings_mod.DEFAULT_TTLS, **settings.cache_ttls}
         if _cache is not None:
             _cache.close()
             _cache = None

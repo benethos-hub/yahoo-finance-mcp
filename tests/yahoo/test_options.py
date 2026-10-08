@@ -30,6 +30,24 @@ def test_get_options_unknown_expiration_raises(patch_ticker):
         yahoo.get_options("aapl", expiration="2030-01-01")
 
 
+def test_get_options_expiration_is_read_like_any_other_date(patch_ticker):
+    """A trailing space matched no listed date and read as "not available"."""
+    import types
+
+    chain = types.SimpleNamespace(
+        calls=pd.DataFrame({"strike": [100.0]}), puts=pd.DataFrame({"strike": [90.0]})
+    )
+    patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
+    out = yahoo.get_options("aapl", expiration=" 2024-01-19 ")
+    assert out["expiration"] == "2024-01-19"
+
+
+def test_get_options_rejects_an_expiration_that_is_no_date(patch_ticker):
+    patch_ticker(FakeTicker(options=("2024-01-19",)))
+    with pytest.raises(ToolError, match="Invalid expiration '2024-02-30'"):
+        yahoo.get_options("aapl", expiration="2024-02-30")
+
+
 def test_get_options_no_options_raises(patch_ticker):
     patch_ticker(FakeTicker(options=()))
     with pytest.raises(SymbolNotFoundError):
