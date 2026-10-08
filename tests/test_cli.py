@@ -289,13 +289,12 @@ def test_transport_security_explicit_allow_list_wins_even_when_exposed():
     assert ts.allowed_origins == ["http://mcp:8000", "https://mcp:8000"]
 
 
-@pytest.mark.parametrize("folder", ["development", "production"])
-def test_compose_keeps_the_rebinding_guard_on(folder):
-    """The container binds 0.0.0.0, which alone turns the guard off.
+def _compose_guard(folder: str, env: dict[str, str]):
+    """The rebinding guard ``folder``'s compose file sets up, under ``env``.
 
-    A page whose domain points at 127.0.0.1 could then call every tool from a
-    browser on the host. Compose sets the allow-list, not as a comment, in
-    both folders.
+    The allow-list is read from the file and its ``${NAME:+,${NAME}}``
+    suffixes resolved the way compose does: the value after a comma when set
+    and not empty, nothing otherwise.
     """
     from pathlib import Path
 
@@ -304,15 +303,42 @@ def test_compose_keeps_the_rebinding_guard_on(folder):
     path = Path(__file__).parent.parent / "containers" / folder / "compose.yaml"
     compose = path.read_text("utf-8")
     [raw] = re.findall(r'^ +YF_MCP_ALLOWED_HOSTS: "([^"]+)"$', compose, re.M)
+    raw = re.sub(
+        r"\$\{(\w+):\+,\$\{\1\}\}",
+        lambda m: f",{env[m[1]]}" if env.get(m[1]) else "",
+        raw,
+    )
+    assert "$" not in raw, f"compose interpolates more than this test: {raw}"
     ts = http_transport.transport_security_for("0.0.0.0", settings.split_csv(raw), [])
     assert ts.enable_dns_rebinding_protection is True
-    guard = TransportSecurityMiddleware(ts)
+    return TransportSecurityMiddleware(ts)
+
+
+@pytest.mark.parametrize("folder", ["development", "production"])
+def test_compose_keeps_the_rebinding_guard_on(folder):
+    """The container binds 0.0.0.0, which alone turns the guard off.
+
+    A page whose domain points at 127.0.0.1 could then call every tool from a
+    browser on the host. Compose sets the allow-list, not as a comment, in
+    both folders.
+    """
+    guard = _compose_guard(folder, {})
     for host in ("localhost:8000", "127.0.0.1:8000", "[::1]:8000"):
         assert guard._validate_host(host), host
     assert guard._validate_host("benethos-yahoo-finance-mcp:8000")
     assert not guard._validate_host("attacker.example:8000")
     assert guard._validate_origin("http://localhost:8000")
     assert not guard._validate_origin("http://attacker.example:8000")
+
+
+def test_compose_lets_the_https_domain_through():
+    """Caddy keeps the client's Host, so without the domain every call gets 421."""
+    guard = _compose_guard("production", {"YAHOO_FINANCE_MCP_DOMAIN": "mcp.test"})
+    assert guard._validate_host("mcp.test")
+    assert guard._validate_origin("https://mcp.test")
+    assert guard._validate_host("localhost:8000")
+    assert not guard._validate_host("attacker.example")
+    assert not _compose_guard("production", {})._validate_host("mcp.test")
 
 
 def test_transport_security_explicit_origins_are_kept():

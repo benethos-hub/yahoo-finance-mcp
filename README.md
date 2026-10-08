@@ -585,15 +585,15 @@ Two compose files, each in a folder of its own under
 
 | Folder | For | Image | Port |
 |---|---|---|---|
-| `containers/production/` | running the released server, no clone needed | `ghcr.io/benethos-hub/benethos-yahoo-finance-mcp` at the version in `.env` | `127.0.0.1:8000` |
+| `containers/production/` | running the released server, no clone needed | `ghcr.io/benethos-hub/benethos-yahoo-finance-mcp` at the version in `.env` | `127.0.0.1:8000`, with the profile `https` Caddy on 80 and 443 |
 | `containers/development/` | trying a change, the only way to run an unreleased `main` | built from this checkout | `127.0.0.1:8001` |
 
-To operate the server, fetch the production folder's two files into an empty
-folder and start it there:
+To operate the server, fetch the production folder's three files into an
+empty folder and start it there:
 
 ```bash
 mkdir yahoo-finance-mcp && cd yahoo-finance-mcp
-for file in compose.yaml .env.example; do
+for file in compose.yaml Caddyfile .env.example; do
   curl -fsSL -o "$file" "https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/main/containers/production/$file"
 done
 cp .env.example .env      # names the version, set the token here too
@@ -617,6 +617,16 @@ server is unauthenticated unless `YF_MCP_BEARER_TOKEN` is set. To expose it,
 remove the `127.0.0.1:` prefix from the `ports:` entry, set the token at the
 very least, and put a reverse proxy with authentication in front of it. Set
 `YAHOO_FINANCE_MCP_PORT` in `.env` if the host port is taken.
+
+For clients on other machines, the production folder brings such a proxy
+along. With `COMPOSE_PROFILES=https`, `YAHOO_FINANCE_MCP_DOMAIN` and
+`YF_MCP_BEARER_TOKEN` in `.env`, Caddy starts in front of the server on
+ports 80 and 443, gets a certificate for the domain from Let's Encrypt, from
+its own CA or from files you provide (`YAHOO_FINANCE_MCP_TLS`), and turns
+away a request without an `Authorization` header before it reaches the
+server. The server's port stays on `127.0.0.1`. The
+[containers README](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/containers/README.md#with-https)
+has the details.
 
 Both files run the container with a read-only root file system, no Linux
 capabilities and `no-new-privileges`, with a tmpfs for `/tmp` and for

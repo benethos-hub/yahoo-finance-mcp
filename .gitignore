@@ -27,6 +27,8 @@ coverage.xml
 .env
 .env.*
 !.env.example
+# Certificates and keys for the compose profile https (secrets/tls/).
+secrets/
 # Claude Code's per-machine permissions. Local by convention, and hatchling
 # puts every file .gitignore does not exclude into a locally built sdist.
 .claude/settings.local.json

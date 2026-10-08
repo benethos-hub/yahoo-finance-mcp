@@ -170,23 +170,46 @@ jobs:
       # This constrains the files in this repository and nothing else. Anyone
       # running them stays free to publish on the LAN by editing their copy or
       # adding an override file, neither of which CI ever sees. Production
-      # needs its version, which it reads from the template here.
+      # needs its version, which it reads from the template here, and is
+      # rendered with its profile https, so Caddy is checked as well. Caddy is
+      # the one exception to the loopback rule: it exists to answer on 80 and
+      # 443 from everywhere, and it may publish those two ports and no other.
       - name: Compose files are valid, loopback only, and what their folder says
         run: |
           set -euo pipefail
           docker compose -f containers/development/compose.yaml config --format json \
             > /tmp/development.json
           docker compose -f containers/production/compose.yaml \
-            --env-file containers/production/.env.example config --format json \
-            > /tmp/production.json
+            --env-file containers/production/.env.example --profile https \
+            config --format json > /tmp/production.json
           python3 - <<'PY'
           import json
+
+          # The proxy in production, the only service that may publish beyond
+          # the loopback address, and only these ports.
+          PROXY = ("production", "caddy")
+          PROXY_PORTS = {("80", "tcp"), ("443", "tcp"), ("443", "udp")}
 
           for folder in ("development", "production"):
               services = json.load(open(f"/tmp/{folder}.json"))["services"]
               assert services, f"the {folder} Compose file defines no services"
+              if folder == "production":
+                  assert "caddy" in services, "production renders without its Caddy"
               for name, service in services.items():
                   where = f"{folder}: {name}"
+                  if (folder, name) == PROXY:
+                      published = {
+                          (port.get("published"), port.get("protocol"))
+                          for port in service.get("ports") or []
+                      }
+                      assert published == PROXY_PORTS, (
+                          f"{where} publishes {sorted(published)}, not 80 and 443"
+                      )
+                      assert service.get("read_only") is True, f"{where} is not read-only"
+                      assert "build" not in service, f"{where} builds instead of pulling"
+                      assert service.get("cap_drop") == ["ALL"], f"{where} keeps capabilities"
+                      print(f"OK: {where} publishes 80 and 443 only, read-only, pulls")
+                      continue
                   for port in service.get("ports") or []:
                       host_ip = port.get("host_ip")
                       assert host_ip in ("127.0.0.1", "::1"), (
