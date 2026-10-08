@@ -533,11 +533,13 @@ values).
   automatic `GITHUB_TOKEN`. The image carries the distribution's name, and
   the PyPI job deploys to the environment `pypi-benethos-yahoo-finance-mcp`.
   Up to 0.7.1 they were `ghcr.io/benethos-hub/yahoo-finance-mcp` and `pypi`.
-  The 0.7 line is pushed under the old image name as well, the same index
-  with the same digest, which the workflow reads back for every tag, and
-  0.8.0 drops it. `tests/test_packaging.py` refuses a version of 0.8.0 or
-  later while `publish.yml` still names it. Neither half stores a secret, and a failure in one does not
-  withhold the other. Release tags become `X.Y.Z`, `X.Y` and `latest`, a
+  Those releases were copied to the new name once, digest for digest, so the
+  new name holds every release from 0.4.0 on. The 0.7 line is pushed under
+  the old image name as well, the same index with the same digest, which the
+  workflow reads back for every tag, and 0.8.0 drops it.
+  `tests/test_packaging.py` refuses a version of 0.8.0 or later while
+  `publish.yml` still names it. Neither half stores a secret, and a failure
+  in one does not withhold the other. Release tags become `X.Y.Z`, `X.Y` and `latest`, a
   pre-release its exact version only, so `latest` stays on the last full
   release. Both jobs stop first when the tag is not `v` plus the version in
   `pyproject.toml` (`.github/scripts/tag_matches_version.py`), since PyPI

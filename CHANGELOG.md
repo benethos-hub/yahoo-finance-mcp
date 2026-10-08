@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Every release from 0.4.0 on is available under the new image name
+  `ghcr.io/benethos-hub/benethos-yahoo-finance-mcp`. The releases up to 0.7.1,
+  published under `ghcr.io/benethos-hub/yahoo-finance-mcp`, were copied over
+  with the same digest, minor-line tags included. Nothing changed under the
+  old name.
+
 ## [0.7.2] - 2026-10-08
 
 A release for running the server in a container. No tool, schema or API
