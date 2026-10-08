@@ -18,7 +18,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   many stocks match in all. A filter Yahoo would refuse is answered before
   the call with a message saying what to change, and an industry is
   accepted as `get_sector` names it. Cached for 10 minutes under `screen`
-  when the cache is on.
+  when the cache is on. A JSON `true` as a value is refused rather than
+  read as 1, and should yfinance ever drop the screener's field list, the
+  server still starts and `screen` says it is unavailable.
 - Two more release checks in the test suite. The changelog must open with
   `[Unreleased]` and then the current version with its date, and the two
   compare links at its foot must point at that version. Before, a version

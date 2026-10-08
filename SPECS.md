@@ -705,8 +705,12 @@ the module-level candidates, each built or dropped:
 - **Screener** (`yf.screen` / `EquityQuery`) — **done** as `screen`. The only
   candidate that added a capability rather than convenience. Yahoo knows 92
   fields with names no model guesses, so the description lists 31 aliases in
-  groups and raw names stay accepted. Filters are a flat list that must all
-  hold. Yahoo's OR and nesting are not exposed, real screening questions are
+  groups and raw names stay accepted. The fields and category values come
+  from `yfinance.const` (`EQUITY_SCREENER_FIELDS`, `EQUITY_SCREENER_EQ_MAP`),
+  imported defensively like the sector keys: without them the server still
+  starts and `screen` answers that it is unavailable. Filters are a flat
+  list that must all hold. Yahoo's OR and nesting are not exposed, real
+  screening questions are
   conjunctions, and two calls replace an OR. Every filter is checked before
   the call, each mistake with its own message. Category values are matched
   after lower-casing and turning every run of other characters into one

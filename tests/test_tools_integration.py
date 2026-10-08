@@ -216,3 +216,15 @@ def test_a_bad_screen_filter_reaches_the_model_as_text(monkeypatch):
 
     message = str(excinfo.value)
     assert "is a category, compare it with eq or is-in" in message, message
+
+
+@pytest.mark.parametrize("value", [True, [1, True]])
+def test_a_boolean_screen_value_is_refused_not_read_as_one(monkeypatch, value):
+    """JSON's true would otherwise pass as 1.0 and screen for something else."""
+
+    def never(*a, **k):  # pragma: no cover - must not be reached
+        raise AssertionError("Yahoo was asked")
+
+    monkeypatch.setattr(yahoo, "screen", never)
+    with pytest.raises(Exception):  # noqa: B017 - the type is the SDK's
+        _call("screen", {"filters": [{"field": "beta", "op": "gt", "value": value}]})

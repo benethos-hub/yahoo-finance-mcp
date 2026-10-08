@@ -37,3 +37,9 @@ def sector_keys_unavailable() -> None:
         "yfinance.const sector mapping unavailable; "
         "falling back to a static sector list."
     )
+
+
+def screener_fields_unavailable() -> None:
+    _log.warning(
+        "yfinance.const screener fields unavailable, the screen tool is disabled."
+    )

@@ -75,6 +75,37 @@ def test_no_two_values_of_a_category_share_a_slug(field):
     assert len(screener._CATEGORIES[field]) == len(set(values))
 
 
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [("EQUITY_SCREENER_FIELDS", None), ("EQUITY_SCREENER_EQ_MAP", ["region"])],
+    ids=["renamed", "reshaped"],
+)
+def test_without_the_field_list_the_server_still_starts(monkeypatch, name, value):
+    """The constants are semi-internal, losing them must not take the server."""
+    import yfinance.const
+
+    if value is None:
+        monkeypatch.delattr(yfinance.const, name)
+    else:
+        monkeypatch.setattr(yfinance.const, name, value)
+    logged: list[bool] = []
+    monkeypatch.setattr(
+        screener.logbook.upstream,
+        "screener_fields_unavailable",
+        lambda: logged.append(True),
+    )
+    assert screener._load_fields() == (frozenset(), {})
+    assert logged == [True]
+
+
+def test_screen_says_it_is_unavailable_without_the_field_list(monkeypatch, fake_screen):
+    monkeypatch.setattr(screener, "_FIELDS", frozenset())
+    monkeypatch.setattr(screener, "_CATEGORIES", {})
+    with pytest.raises(ToolError, match="Screening is unavailable"):
+        yahoo.screen((US,))
+    assert fake_screen == []
+
+
 # --- the query ------------------------------------------------------------
 
 
