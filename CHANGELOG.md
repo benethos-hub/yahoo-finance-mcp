@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- A security policy, `SECURITY.md`: how to report a vulnerability privately
+  through GitHub (now switched on for this repository), that fixes go into
+  the latest minor line only, and what counts as a finding.
+
 ### Changed
 
 - Everything for containers moves to `containers/`. The `Dockerfile` is now
