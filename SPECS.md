@@ -520,8 +520,14 @@ values).
   two independent things. It builds the sdist + wheel (`uv build`) and uploads
   them to **PyPI via Trusted Publishing (OIDC)**, and it builds the container
   image for `linux/amd64` and `linux/arm64` and pushes it to **ghcr.io** as
-  `ghcr.io/benethos-hub/yahoo-finance-mcp`, authenticating with the automatic
-  `GITHUB_TOKEN`. Neither half stores a secret, and a failure in one does not
+  `ghcr.io/benethos-hub/benethos-yahoo-finance-mcp`, authenticating with the
+  automatic `GITHUB_TOKEN`. The image carries the distribution's name, and
+  the PyPI job deploys to the environment `pypi-benethos-yahoo-finance-mcp`.
+  Up to 0.7.1 they were `ghcr.io/benethos-hub/yahoo-finance-mcp` and `pypi`.
+  The 0.7 line is pushed under the old image name as well, the same index
+  with the same digest, which the workflow reads back for every tag, and
+  0.8.0 drops it. `tests/test_packaging.py` refuses a version of 0.8.0 or
+  later while `publish.yml` still names it. Neither half stores a secret, and a failure in one does not
   withhold the other. Release tags become `X.Y.Z`, `X.Y` and `latest`, a
   pre-release its exact version only, so `latest` stays on the last full
   release. Both jobs stop first when the tag is not `v` plus the version in
