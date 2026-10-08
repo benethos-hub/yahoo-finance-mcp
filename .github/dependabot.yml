@@ -49,7 +49,7 @@ updates:
   # and every gate stayed green on a base two releases behind. A stale base is
   # not a build failure, it is unpatched packages in something people pull.
   - package-ecosystem: "docker"
-    directory: "/"
+    directory: "/containers/images/yahoo-finance-mcp"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5

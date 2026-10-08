@@ -16,11 +16,13 @@ __pycache__
 .env
 .env.*
 
-# Not needed inside the image
+# Not needed inside the image. containers/ holds the Dockerfile itself, which
+# the build reads through -f and never from the context, and the compose files
+# with an .env beside them that may carry a token.
 tests
 SPECS.md
 CLAUDE.md
-Dockerfile
+containers
 .dockerignore
 
 # Build and tool output. Nothing here is copied into the image, but a stale

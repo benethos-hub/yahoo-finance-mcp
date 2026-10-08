@@ -154,36 +154,55 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build image
-        run: docker build -t benethos-yahoo-finance-mcp:ci .
+        run: docker build -f containers/images/yahoo-finance-mcp/Dockerfile -t benethos-yahoo-finance-mcp:ci .
 
-      # No test reaches the Compose file: the suite is offline Python and a
-      # Compose file is neither. Two things are asserted. That it is valid at
-      # all, and that the published port stays on the loopback address, which
-      # is a deliberate choice - the server has no authentication of its own
-      # and no business on the LAN. Until now that decision lived in a comment,
-      # and a comment is not something a change can trip over.
+      # No test reaches the Compose files: the suite is offline Python and a
+      # Compose file is neither. Both are read as compose resolves them, and
+      # three things are asserted. That they are valid at all. That every
+      # published port stays on the loopback address, which is a deliberate
+      # choice - the server has no authentication of its own and no business
+      # on the LAN. And that each folder is what its name says: development
+      # builds from the checkout, production pulls the published image and
+      # builds nothing, and both keep the root file system read-only. Until
+      # now such decisions lived in comments, and a comment is not something
+      # a change can trip over.
       #
-      # This constrains the file in this repository and nothing else. Anyone
-      # running it stays free to publish on the LAN by editing their copy or
-      # adding an override file, neither of which CI ever sees.
-      - name: Compose is valid and keeps the port on the loopback address
+      # This constrains the files in this repository and nothing else. Anyone
+      # running them stays free to publish on the LAN by editing their copy or
+      # adding an override file, neither of which CI ever sees. Production
+      # needs its version, which it reads from the template here.
+      - name: Compose files are valid, loopback only, and what their folder says
         run: |
           set -euo pipefail
-          docker compose config -q
-          docker compose config --format json > /tmp/compose.json
+          docker compose -f containers/development/compose.yaml config --format json \
+            > /tmp/development.json
+          docker compose -f containers/production/compose.yaml \
+            --env-file containers/production/.env.example config --format json \
+            > /tmp/production.json
           python3 - <<'PY'
           import json
 
-          services = json.load(open("/tmp/compose.json"))["services"]
-          assert services, "the Compose file defines no services"
-          for name, service in services.items():
-              for port in service.get("ports") or []:
-                  host_ip = port.get("host_ip")
-                  assert host_ip in ("127.0.0.1", "::1"), (
-                      f"{name} publishes port {port.get('published')} on "
-                      f"{host_ip or 'every interface'}, not on the loopback address"
-                  )
-                  print(f"OK: {name} publishes {host_ip}:{port.get('published')}")
+          for folder in ("development", "production"):
+              services = json.load(open(f"/tmp/{folder}.json"))["services"]
+              assert services, f"the {folder} Compose file defines no services"
+              for name, service in services.items():
+                  where = f"{folder}: {name}"
+                  for port in service.get("ports") or []:
+                      host_ip = port.get("host_ip")
+                      assert host_ip in ("127.0.0.1", "::1"), (
+                          f"{where} publishes port {port.get('published')} on "
+                          f"{host_ip or 'every interface'}, not on the loopback address"
+                      )
+                      print(f"OK: {where} publishes {host_ip}:{port.get('published')}")
+                  assert service.get("read_only") is True, f"{where} is not read-only"
+                  if folder == "development":
+                      assert "build" in service, f"{where} does not build from the checkout"
+                  else:
+                      assert "build" not in service, f"{where} builds instead of pulling"
+                      assert service["image"].startswith(
+                          "ghcr.io/benethos-hub/yahoo-finance-mcp:"
+                      ), f"{where} runs {service['image']}, not the published image"
+                  print(f"OK: {where} is read-only and {'builds' if folder == 'development' else 'pulls'}")
           PY
 
       # The release workflow publishes linux/amd64 *and* linux/arm64, but only
@@ -201,6 +220,7 @@ jobs:
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
+          file: containers/images/yahoo-finance-mcp/Dockerfile
           platforms: linux/arm64
           push: false
           cache-from: type=gha
