@@ -58,6 +58,8 @@ DEFAULT_TTLS: dict[str, float] = {
     "industry": 24 * 3600,
     # Index prices move constantly, the open/closed status changes twice a day.
     "market": 60,
+    # A screen ranks thousands of stocks by figures that move with the price.
+    "screen": 600,
 }
 
 # How many entries the result cache keeps at most. The TTLs bound how long an

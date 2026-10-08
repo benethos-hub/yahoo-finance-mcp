@@ -140,3 +140,18 @@ if __name__ == "__main__":
                 "indices": market["indices"][:3],
             },
         )
+
+    # Two filters, a category and a range, the shape most screens take.
+    screened = yahoo.screen(
+        (("region", "eq", "us"), ("dividend_yield", "btwn", (3, 4))), limit=3
+    )
+    show("screen(region us, dividend_yield 3-4, limit=3)", screened)
+
+    # get_sector's industry key, which the screener spells with an em dash.
+    screened = yahoo.screen(
+        (("industry", "eq", "software-infrastructure"), ("pe_ratio", "lt", 40)),
+        sort_by="pe_ratio",
+        sort_desc=False,
+        limit=3,
+    )
+    show("screen(industry software-infrastructure, pe_ratio < 40, limit=3)", screened)

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from . import analysts, browse, company, funds, options, ownership, quotes
+from . import analysts, browse, company, funds, options, ownership, quotes, screener
 
 if TYPE_CHECKING:  # pragma: no cover - imported for typing only
     from mcp.server.mcpserver import MCPServer
@@ -18,7 +18,7 @@ if TYPE_CHECKING:  # pragma: no cover - imported for typing only
 __all__ = ["register_tools"]
 
 # The order of this tuple is the order a client lists the tools in.
-_MODULES = (quotes, company, analysts, ownership, options, funds, browse)
+_MODULES = (quotes, company, analysts, ownership, options, funds, browse, screener)
 
 
 def register_tools(server: MCPServer) -> None:

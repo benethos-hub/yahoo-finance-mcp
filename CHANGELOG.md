@@ -8,6 +8,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`screen`**, a stock screener. Filters such as
+  `{"field": "dividend_yield", "op": "gt", "value": 3}` must all hold, on
+  31 readable aliases (market cap, P/E, dividend yield, dividend growth
+  years, return on equity, debt to equity, region, sector, industry and
+  more) or any raw field of Yahoo's screener. Sorted by market cap unless
+  told otherwise, up to 100 rows a page with `offset` for the next, each
+  row with price, valuation and dividend figures, and `total` saying how
+  many stocks match in all. A filter Yahoo would refuse is answered before
+  the call with a message saying what to change, and an industry is
+  accepted as `get_sector` names it. Cached for 10 minutes under `screen`
+  when the cache is on.
 - Two more release checks in the test suite. The changelog must open with
   `[Unreleased]` and then the current version with its date, and the two
   compare links at its foot must point at that version. Before, a version
@@ -17,6 +28,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- yfinance 1.6.0 or later is required, up from 1.4.1. Earlier versions do
+  not know the screener field behind `dividend_yield`.
 - Every release from 0.4.0 on is available under the new image name
   `ghcr.io/benethos-hub/benethos-yahoo-finance-mcp`. The releases up to 0.7.1,
   published under `ghcr.io/benethos-hub/yahoo-finance-mcp`, were copied over

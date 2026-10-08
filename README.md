@@ -121,6 +121,12 @@ the tools. Replace the bracketed placeholders with concrete values.
 - "Is the US market open right now, and when does it open next?"
 - "How did the major indices in Europe and Asia close?"
 
+**Screening**
+
+- "Find US stocks with a dividend yield above 4 % and a P/E below 15."
+- "Which companies have raised their dividend for at least 25 years in a row?"
+- "List the largest German-listed technology stocks with a positive P/E under 20."
+
 **Finding a symbol**
 
 - "Which Yahoo ticker belongs to [Company name] on [Exchange]?"
@@ -166,12 +172,15 @@ run the tools without asking for confirmation each time.
 | `get_sector` | Browse a market sector by key: overview, top companies/ETFs/funds, industries. |
 | `get_industry` | Browse an industry by key: overview, parent sector, top/top-performing/top-growth companies. |
 | `get_market` | Trading status and headline index summary for a market (US, EUROPE, ASIA, …). |
+| `screen` | Find stocks by criteria (dividend yield, P/E, market cap, region, sector, …), ranked, with the total number of matches. |
 
 Most `get_*` tools take a Yahoo Finance **symbol** — either a ticker (`AAPL`,
-`SAP.DE`) or a plain ISIN. Use `search` to turn a company name into one. Three
+`SAP.DE`) or a plain ISIN. Use `search` to turn a company name into one. Four
 tools are exceptions: `get_sector` and `get_industry` take a sector or industry
-**key** (e.g. `technology`, `semiconductors`), and `get_market` takes a market
-key (e.g. `US`).
+**key** (e.g. `technology`, `semiconductors`), `get_market` takes a market
+key (e.g. `US`), and `screen` takes **filters** such as
+`{"field": "dividend_yield", "op": "gt", "value": 3}` and finds the symbols
+itself.
 
 <details>
 <summary><b>📊 Sector &amp; industry keys</b> — click to expand (11 sectors, 145 industries, generated)</summary>
@@ -673,6 +682,7 @@ Cache names (used for `--cache-ttl <NAME>=<SECONDS>` and
 | `history` | `get_history` | 10 min |
 | `news` | `get_news` | 10 min |
 | `options` | `get_options` | 10 min |
+| `screen` | `screen` | 10 min |
 | `search` | `search` | 1 h |
 | `company_info` | `get_company_info` | 6 h |
 | `dividends` | `get_dividends` | 6 h |

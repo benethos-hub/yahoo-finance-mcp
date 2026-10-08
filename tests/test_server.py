@@ -33,6 +33,7 @@ EXPECTED_TOOLS = {
     "get_sector",
     "get_industry",
     "get_market",
+    "screen",
 }
 
 
