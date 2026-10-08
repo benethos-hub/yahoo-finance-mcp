@@ -132,6 +132,35 @@ def test_no_stale_version_pin_anywhere_in_the_repository():
     )
 
 
+# The image was named after the repository up to 0.7.1 and after the
+# distribution since. The 0.7 line is pushed under both names, so whoever
+# follows `:0.7` under the old one keeps getting its patches, and 0.8.0 is the
+# announced end of it. Dropping a line from a workflow on the day it is due is
+# exactly the kind of step that is forgotten, so the version bump asks for it.
+OLD_IMAGE_LINE = re.compile(
+    r"^\s*ghcr\.io/\$\{\{ github\.repository_owner \}\}/yahoo-finance-mcp\s*$", re.M
+)
+
+
+def test_the_old_image_name_ends_with_the_0_7_line():
+    workflow = (REPO / ".github/workflows/publish.yml").read_text(encoding="utf-8")
+    still_pushed = bool(OLD_IMAGE_LINE.search(workflow))
+    major, minor = (
+        int(p) for p in benethos_yahoo_finance_mcp.__version__.split(".")[:2]
+    )
+    if (major, minor) <= (0, 7):
+        assert still_pushed, (
+            "publish.yml no longer pushes the old image name, but the 0.7 line "
+            "promised it updates until 0.8.0."
+        )
+    else:
+        assert not still_pushed, (
+            "publish.yml still pushes ghcr.io/benethos-hub/yahoo-finance-mcp. The "
+            "changelog announced 0.8.0 as the first release without it: remove "
+            "that line from the image list."
+        )
+
+
 @pytest.mark.parametrize(("relative_path", "pattern"), VERSION_EXAMPLES)
 def test_documented_version_examples_are_current(relative_path, pattern):
     text = (REPO / relative_path).read_text(encoding="utf-8")

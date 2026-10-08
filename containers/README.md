@@ -61,9 +61,15 @@ not versioned, is optional:
 
 ## The image
 
-`ghcr.io/benethos-hub/yahoo-finance-mcp`, for `linux/amd64` and
-`linux/arm64`, built by `.github/workflows/publish.yml` with the same version
-as the PyPI package. A release `v1.2.3` is tagged `1.2.3`, `1.2` and `latest`.
+`ghcr.io/benethos-hub/benethos-yahoo-finance-mcp`, for `linux/amd64` and
+`linux/arm64`, built by `.github/workflows/publish.yml` with the same name and
+version as the PyPI package. A release `v1.2.3` is tagged `1.2.3`, `1.2` and
+`latest`. A run started by hand from `main` is tagged `edge`.
+
+Up to 0.7.1 the image was named `ghcr.io/benethos-hub/yahoo-finance-mcp`.
+The 0.7 line is pushed under that name as well, the same image with the same
+digest, and 0.8.0 is the first release without it. Switch to the new name
+before then.
 
 Built from the repository root:
 

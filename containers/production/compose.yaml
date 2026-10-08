@@ -32,7 +32,7 @@ services:
     # The version is required and has no default: `latest` would change what
     # runs here on any pull, without anyone deciding it. A minor line (`X.Y`)
     # follows its patch releases, an exact version (`X.Y.Z`) stays put.
-    image: ghcr.io/benethos-hub/yahoo-finance-mcp:${YAHOO_FINANCE_MCP_VERSION:?set YAHOO_FINANCE_MCP_VERSION in .env}
+    image: ghcr.io/benethos-hub/benethos-yahoo-finance-mcp:${YAHOO_FINANCE_MCP_VERSION:?set YAHOO_FINANCE_MCP_VERSION in .env}
     container_name: benethos-yahoo-finance-mcp
     logging: *logging
     ports:

@@ -2,7 +2,8 @@ name: Publish
 
 # Publishes the release artefacts when a GitHub release is published:
 #   * sdist + wheel to PyPI, via Trusted Publishing (OIDC, no stored token)
-#   * the container image to ghcr.io, via the automatic GITHUB_TOKEN
+#   * the container image to ghcr.io, via the automatic GITHUB_TOKEN, as
+#     benethos-yahoo-finance-mcp, the name of the distribution
 #
 # The two jobs are independent, so a failure in one does not withhold the other.
 #
@@ -22,7 +23,11 @@ name: Publish
 #   Owner: benethos-hub
 #   Repository: yahoo-finance-mcp
 #   Workflow filename: publish.yml
-#   Environment: pypi
+#   Environment: pypi-benethos-yahoo-finance-mcp
+#
+# The environment is named `pypi-` plus the distribution, so the Deployments
+# list on GitHub says what was deployed where. Up to 0.7.1 it was plain `pypi`,
+# and PyPI accepts an upload only from the environment its publisher names.
 #
 # One-time setup for ghcr, only possible after the first successful push: a new
 # package is private even when its repository is public, so `docker pull` fails
@@ -45,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
-      name: pypi
+      name: pypi-benethos-yahoo-finance-mcp
       url: https://pypi.org/p/benethos-yahoo-finance-mcp
     permissions:
       id-token: write # required for Trusted Publishing (OIDC)
@@ -128,8 +133,17 @@ jobs:
           # "No description provided" while carrying the description in its image
           # config all along.
           DOCKER_METADATA_ANNOTATIONS_LEVELS: index,manifest
+        # The image carries the distribution's name. Up to 0.7.1 it was named
+        # after the repository, yahoo-finance-mcp, and the 0.7 line is still
+        # pushed there as well, from the same build and with the same digest,
+        # so whoever follows `:0.7` or `:latest` under the old name keeps
+        # getting updates until the end of that line. From 0.8.0 on the old
+        # name gets nothing: tests/test_packaging.py goes red on the version
+        # bump until the second line below is removed.
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: |
+            ghcr.io/${{ github.repository_owner }}/benethos-yahoo-finance-mcp
+            ghcr.io/${{ github.repository_owner }}/yahoo-finance-mcp
           flavor: latest=false
           tags: |
             type=semver,pattern={{version}}
@@ -155,6 +169,9 @@ jobs:
       # package page reading "No description provided" while the image carried
       # the description in its configuration all along, and by the time anyone
       # looks at that page the release has already happened.
+      #
+      # Every tag under every name is read, not only the first: each must be the
+      # very same index, byte for byte, or one name would serve another build.
       - name: The published index carries what the package page reads
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
@@ -163,6 +180,15 @@ jobs:
           ref=$(printf '%s\n' "$TAGS" | head -1)
           echo "inspecting ${ref}"
           docker buildx imagetools inspect "$ref" --raw > /tmp/index.json
+          printf '%s\n' "$TAGS" | while read -r tag; do
+            [ -n "$tag" ] || continue
+            docker buildx imagetools inspect "$tag" --raw > /tmp/other.json
+            if ! cmp -s /tmp/index.json /tmp/other.json; then
+              echo "::error::${tag} is not the same index as ${ref}"
+              exit 1
+            fi
+            echo "same index: ${tag}"
+          done
           python3 - <<'PY'
           import json
 

@@ -33,6 +33,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   development only. The tool schemas are byte-identical before and after,
   stdio, streamable-http and sse answer alike, and the live smoke test
   differed only in the live market prices.
+- **The container image is now `ghcr.io/benethos-hub/benethos-yahoo-finance-mcp`**,
+  the name of the PyPI distribution. Up to 0.7.1 it was named after the
+  repository, `ghcr.io/benethos-hub/yahoo-finance-mcp`. The whole 0.7 line is
+  pushed under the old name as well, the same image with the same digest, so
+  `:0.7` and `:latest` there keep getting updates. **0.8.0 is the first
+  release without the old name**, switch before then. The production compose
+  file and the README use the new name.
+- The PyPI job deploys to the GitHub environment
+  `pypi-benethos-yahoo-finance-mcp` instead of `pypi`, so the Deployments list
+  names what was deployed. The README's PyPI and container badges name the
+  distribution and the image.
 - The container image's base `python:3.14-slim` is pinned to its rebuild of
   2026-10-06, for amd64 and arm64 alike. Python stays 3.14.8, the rebuild
   brings the Debian packages underneath up to date.

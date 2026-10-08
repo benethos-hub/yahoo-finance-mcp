@@ -1,8 +1,8 @@
 # Unofficial Yahoo Finance MCP Server
 
 [![CI](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/benethos-yahoo-finance-mcp)](https://pypi.org/project/benethos-yahoo-finance-mcp/)
-[![Container](https://img.shields.io/badge/ghcr.io-yahoo--finance--mcp-2496ED?logo=docker&logoColor=white)](https://github.com/benethos-hub/yahoo-finance-mcp/pkgs/container/yahoo-finance-mcp)
+[![PyPI benethos-yahoo-finance-mcp](https://img.shields.io/pypi/v/benethos-yahoo-finance-mcp?label=PyPI%20benethos-yahoo-finance-mcp)](https://pypi.org/project/benethos-yahoo-finance-mcp/)
+[![Container benethos-yahoo-finance-mcp](https://img.shields.io/badge/ghcr.io-benethos--yahoo--finance--mcp-2496ED?logo=docker&logoColor=white)](https://github.com/benethos-hub/yahoo-finance-mcp/pkgs/container/benethos-yahoo-finance-mcp)
 [![Python](https://img.shields.io/pypi/pyversions/benethos-yahoo-finance-mcp)](https://pypi.org/project/benethos-yahoo-finance-mcp/)
 [![Coverage](https://img.shields.io/badge/coverage-97%25-brightgreen)](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/LICENSE)
@@ -490,13 +490,18 @@ clone, no build. Every release is pushed to the GitHub Container Registry for
 `linux/amd64` and `linux/arm64`:
 
 ```bash
-docker run --rm -p 8000:8000 ghcr.io/benethos-hub/yahoo-finance-mcp:latest
+docker run --rm -p 8000:8000 ghcr.io/benethos-hub/benethos-yahoo-finance-mcp:latest
 # Server is now reachable at http://localhost:8000/mcp
 ```
 
 Pin a version for anything you depend on — `:0.7.1` for an exact release, `:0.7`
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
 built from `main` on demand and is not a release at all.
+
+The image carries the name of the PyPI distribution from 0.7.2 on. Up to 0.7.1
+it was `ghcr.io/benethos-hub/yahoo-finance-mcp`, and the 0.7 line is pushed
+there as well, the same image with the same digest. 0.8.0 is the first release
+without the old name, so switch before then.
 
 The image hosts the server over the streamable-HTTP transport. The stdio
 transport is for local subprocess use and is not what you containerize.
@@ -550,7 +555,7 @@ time zone cache and asks Yahoo again each time:
 docker run --rm -p 8000:8000 --read-only --tmpfs /tmp \
     --tmpfs /home/appuser/.cache:uid=10001,gid=10001,mode=0700 \
     --cap-drop ALL --security-opt no-new-privileges:true \
-    ghcr.io/benethos-hub/yahoo-finance-mcp:latest
+    ghcr.io/benethos-hub/benethos-yahoo-finance-mcp:latest
 ```
 
 The server needs a home directory it can resolve, because `yfinance` keeps a
@@ -569,7 +574,7 @@ Two compose files, each in a folder of its own under
 
 | Folder | For | Image | Port |
 |---|---|---|---|
-| `containers/production/` | running the released server, no clone needed | `ghcr.io/benethos-hub/yahoo-finance-mcp` at the version in `.env` | `127.0.0.1:8000` |
+| `containers/production/` | running the released server, no clone needed | `ghcr.io/benethos-hub/benethos-yahoo-finance-mcp` at the version in `.env` | `127.0.0.1:8000` |
 | `containers/development/` | trying a change, the only way to run an unreleased `main` | built from this checkout | `127.0.0.1:8001` |
 
 To operate the server, fetch the production folder's two files into an empty
