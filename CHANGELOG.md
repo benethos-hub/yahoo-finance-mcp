@@ -47,6 +47,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The container image's base `python:3.14-slim` is pinned to its rebuild of
   2026-10-06, for amd64 and arm64 alike. Python stays 3.14.8, the rebuild
   brings the Debian packages underneath up to date.
+- The build backend is bounded, `hatchling>=1.27,<2` instead of any version.
+  It was the one part of the release pipeline that `uv build` resolved fresh
+  and without a limit at publish time. The package builds with 1.27.0 and
+  with the newest release.
 
 ## [0.7.1] - 2026-10-05
 
