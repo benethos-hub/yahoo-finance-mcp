@@ -192,26 +192,35 @@ submodules.
   an exposed bind accepts any `Host` unless `--allowed-hosts` /
   `--allowed-origins` narrow it (mismatches get HTTP 421). Either list is
   derived from the other when only one is given. stdio has no HTTP
-  surface and is handed no transport options at all. `compose.yaml` sets
-  `YF_MCP_ALLOWED_HOSTS` to the loopback names and its service name, because
+  surface and is handed no transport options at all. Both compose files set
+  `YF_MCP_ALLOWED_HOSTS` to the loopback names and their service name, because
   the image binds `0.0.0.0` and the guard would otherwise be off while the
   port sits on the host's loopback, reachable by a rebound browser page.
   `tests/test_cli.py` holds it to that.
-- **Deployment:** a `Dockerfile` (multi-stage, non-root, healthcheck,
-  dependencies installed reproducibly from `uv.lock` via uv) and a
-  `compose.yaml` host the server over streamable-HTTP on port 8000. The image
-  is configured entirely via env vars (no default CMD args) and persists its
-  cache to a `/cache` volume. Secrets such as the bearer token go in an
-  optional `.env` next to `compose.yaml`, read through `env_file` and ignored
-  by git and the build context, with `.env.example` as the tracked template.
-  Only Compose (or `docker run --env-file`) reads it, the server itself loads
-  no file. Compose publishes the port on **127.0.0.1 only**, drops every
-  Linux capability and sets `no-new-privileges`, since the server runs as a
-  non-root user on a high port and needs none, and caps the log Docker keeps
-  of the container at 5 files of 10 MB, since uvicorn writes a line per
-  request and Docker's default keeps everything.
-  Drop that prefix only behind a reverse proxy that authenticates, or at the
-  very least with `YF_MCP_BEARER_TOKEN` set.
+- **Deployment:** everything for containers sits in `containers/`. The
+  `Dockerfile` in `containers/images/yahoo-finance-mcp/` (multi-stage,
+  non-root, healthcheck, dependencies installed reproducibly from `uv.lock`
+  via uv, build context the repository root) hosts the server over
+  streamable-HTTP on port 8000. The image is configured entirely via env vars
+  (no default CMD args) and persists its cache to a `/cache` volume. Two
+  compose files run it: `containers/production/` pulls the published image at
+  the version `.env` names, required and without a default, and needs no
+  clone, `containers/development/` builds from the checkout under a project
+  name and host port of its own (8001), so both run side by side. Secrets such
+  as the bearer token go in an optional `.env` beside the compose file, read
+  through `env_file` and ignored by git and the build context, with
+  `containers/production/.env.example` as the tracked template. Only Compose
+  (or `docker run --env-file`) reads it, the server itself loads no file.
+  Both publish the port on **127.0.0.1 only**, drop every Linux capability
+  and set `no-new-privileges`, since the server runs as a non-root user on a
+  high port and needs none, run on a read-only root file system with a tmpfs
+  for `/tmp` and for `yfinance`'s cookie and time zone cache in the home
+  directory, and cap the log Docker keeps of the container at 5 files of
+  10 MB, since uvicorn writes a line per request and Docker's default keeps
+  everything. CI asserts the loopback port, the read-only root, that
+  development builds and that production pulls the published image.
+  Drop the loopback prefix only behind a reverse proxy that authenticates, or
+  at the very least with `YF_MCP_BEARER_TOKEN` set.
 
 ## 5. Data source rules
 
@@ -484,7 +493,8 @@ values).
   bound in `pyproject.toml` needs raising.
 - Every action in both workflows is pinned to a full commit SHA, with the
   version it stands for in a trailing comment, and the two base images in the
-  `Dockerfile` by digest next to their tag. A tag is a pointer its owner can
+  `Dockerfile` (`containers/images/yahoo-finance-mcp/`) by digest next to
+  their tag. A tag is a pointer its owner can
   move, and the publish workflow holds the credentials that push to PyPI and
   ghcr. Dependabot reads the comment and raises SHA and comment together.
 - Dependabot covers GitHub Actions, the two images in the `Dockerfile` and,

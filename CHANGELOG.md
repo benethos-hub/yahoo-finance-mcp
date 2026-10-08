@@ -6,6 +6,28 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Everything for containers moves to `containers/`. The `Dockerfile` is now
+  `containers/images/yahoo-finance-mcp/Dockerfile`, built from the repository
+  root with `-f`. The compose file at the root, which switched between
+  building and pulling by swapping commented lines, is gone. Instead there
+  are two, each in a folder of its own. `containers/production/` pulls the
+  published image at the version `YAHOO_FINANCE_MCP_VERSION` in `.env` names,
+  required and without a default, and needs no clone.
+  `containers/development/` builds from the checkout on `127.0.0.1:8001` under
+  a project name of its own, so both can run side by side.
+  `containers/README.md` says which is for what. **To move a running setup**,
+  take `containers/production/`, copy your old `.env` beside it and add
+  `YAHOO_FINANCE_MCP_VERSION`. The project name is the same, so the cache
+  volume stays.
+- Both compose files run the container on a read-only root file system, with
+  a tmpfs for `/tmp` and one for `yfinance`'s cookie and time zone cache in
+  the home directory. Without the second, `yfinance` silently does without
+  that cache. The README shows the same flags for `docker run`.
+- CI checks both compose files: valid, every port on the loopback address,
+  read-only, development builds and production pulls the published image.
+
 ## [0.7.1] - 2026-10-05
 
 A maintenance release for the container image and the PyPI page. No tool,

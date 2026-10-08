@@ -478,7 +478,7 @@ line is plain text.
 > it down again, set `--allowed-hosts` (e.g. `benethos-yahoo-finance-mcp:8000`) — clients
 > whose `Host` is not on the list then get **HTTP 421**. `--allowed-origins`
 > works on its own as well, and either list is derived from the other when
-> only one is given. `compose.yaml` sets the list for you:
+> only one is given. Both compose files in `containers/` set the list for you:
 > `localhost:*,127.0.0.1:*,[::1]:*,benethos-yahoo-finance-mcp:*`. Without it a
 > web page whose domain an attacker points at 127.0.0.1 could call every tool
 > from a browser on the host. Add the name a proxy in front uses.
@@ -509,8 +509,9 @@ options table above) — it carries no default command arguments, so overriding 
 single setting with `-e` does not disturb the others.
 
 ```bash
-# Build it yourself instead of pulling (e.g. to run an unreleased main)
-docker build -t benethos-yahoo-finance-mcp .
+# Build it yourself instead of pulling (e.g. to run an unreleased main),
+# from the repository root
+docker build -f containers/images/yahoo-finance-mcp/Dockerfile -t benethos-yahoo-finance-mcp .
 
 # Run with the built-in defaults (streamable-HTTP on 0.0.0.0:8000)
 docker run --rm -p 8000:8000 benethos-yahoo-finance-mcp
@@ -532,13 +533,25 @@ stays unhealthy. The cache is off by default. Enable it with `-e YF_MCP_CACHE=1`
 which case it is written to `/cache` (declared as a volume) — mount a named
 volume there to keep it across container restarts. To require a bearer token
 on every request, put `YF_MCP_BEARER_TOKEN=...` in a `.env` (see
-`.env.example`) and pass `--env-file .env`. `-e YF_MCP_BEARER_TOKEN=...` works
+`containers/production/.env.example`) and pass `--env-file .env`. `-e YF_MCP_BEARER_TOKEN=...` works
 as well, but leaves the secret in your shell history. Beyond a trusted network,
 front it with a reverse proxy that authenticates. Docker keeps the
 container's log without a cap unless told otherwise, so add
 `--log-opt max-size=10m --log-opt max-file=5` to a `docker run` that is meant
 to stay up, or set the same in the daemon's `log-opts` once for every
 container.
+
+The container runs with a read-only root file system, as the compose files do,
+when it gets a writable `/tmp` and a writable cache for `yfinance` in the home
+directory. Without the second, `yfinance` silently does without its cookie and
+time zone cache and asks Yahoo again each time:
+
+```bash
+docker run --rm -p 8000:8000 --read-only --tmpfs /tmp \
+    --tmpfs /home/appuser/.cache:uid=10001,gid=10001,mode=0700 \
+    --cap-drop ALL --security-opt no-new-privileges:true \
+    ghcr.io/benethos-hub/yahoo-finance-mcp:latest
+```
 
 The server needs a home directory it can resolve, because `yfinance` keeps a
 small cache of its own there and looks the location up as soon as it is
@@ -551,46 +564,65 @@ systemd unit can do, the server stops at startup with
 
 ### Docker Compose
 
-A `compose.yaml` is provided (settings under `environment:`, secrets in an
-optional `.env`, cache in a named volume). As shipped it **builds** from this
-checkout, which is what you want while developing and the only way to run an
-unreleased `main`. To **operate**
-the released server instead, swap two commented lines at the top of the service
-so it pulls `ghcr.io/benethos-hub/yahoo-finance-mcp` — the file is then all you
-need, with no clone and no Dockerfile. The choice and the `pull_policy` values
-are documented in the file itself.
+Two compose files, each in a folder of its own under
+[`containers/`](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/containers/README.md):
+
+| Folder | For | Image | Port |
+|---|---|---|---|
+| `containers/production/` | running the released server, no clone needed | `ghcr.io/benethos-hub/yahoo-finance-mcp` at the version in `.env` | `127.0.0.1:8000` |
+| `containers/development/` | trying a change, the only way to run an unreleased `main` | built from this checkout | `127.0.0.1:8001` |
+
+To operate the server, fetch the production folder's two files into an empty
+folder and start it there:
 
 ```bash
-docker compose up -d      # build (if needed) and start in the background
+mkdir yahoo-finance-mcp && cd yahoo-finance-mcp
+for file in compose.yaml .env.example; do
+  curl -fsSL -o "$file" "https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/main/containers/production/$file"
+done
+cp .env.example .env      # names the version, set the token here too
+docker compose up -d      # pull (if needed) and start in the background
 docker compose logs -f    # follow logs
 docker compose down       # stop and remove
 ```
 
-This requires Docker Compose v2 (the `compose` CLI plugin). The server is then
-reachable at `http://localhost:8000/mcp`.
+The server is then reachable at `http://localhost:8000/mcp`.
+`YAHOO_FINANCE_MCP_VERSION` in `.env` names the image version and has no
+default, so nothing changes under you on a pull. To update, set the new
+version there, then `docker compose pull && docker compose up -d`. From a
+checkout, `docker compose up -d --build` in `containers/development/` builds
+and starts the server on port 8001. Their project names differ, so both can
+run side by side, each with a cache volume of its own. This requires Docker
+Compose 2.24 or newer.
 
 The port is published on **`127.0.0.1` only**, so the service is reachable from
 the host but not from the rest of the network. That is deliberate, since the
 server is unauthenticated unless `YF_MCP_BEARER_TOKEN` is set. To expose it,
-remove the `127.0.0.1:` prefix from the `ports:` entry in `compose.yaml`, set
-the token at the very least, and put a reverse proxy with authentication in
-front of it.
+remove the `127.0.0.1:` prefix from the `ports:` entry, set the token at the
+very least, and put a reverse proxy with authentication in front of it. Set
+`YAHOO_FINANCE_MCP_PORT` in `.env` if the host port is taken.
 
-The compose file caps the log Docker keeps of the container at 5 files of
-10 MB, the oldest dropped first (`logging:` in the service). Before, the log
-grew for as long as the container ran. To keep more, raise `max-size` or
-`max-file`. To keep the log elsewhere, replace the driver, for example with
-`journald`, and read it with `journalctl CONTAINER_NAME=benethos-yahoo-finance-mcp`.
+Both files run the container with a read-only root file system, no Linux
+capabilities and `no-new-privileges`, with a tmpfs for `/tmp` and for
+`yfinance`'s cache. They cap the log Docker keeps of the container at 5 files
+of 10 MB, the oldest dropped first (`x-logging`). To keep more, raise
+`max-size` or `max-file`. To keep the log elsewhere, replace the driver, for
+example with `journald`, and read it with
+`journalctl CONTAINER_NAME=benethos-yahoo-finance-mcp`.
 
-Secrets go in a `.env` next to `compose.yaml`, which Compose reads through
-`env_file` and git and the Docker build context both ignore. Copy
-`.env.example` to `.env` and set `YF_MCP_BEARER_TOKEN` there, not in
-`compose.yaml`, which is tracked. The file is optional, and without it the
-service runs on the values in `compose.yaml`. A name set under
-`environment:` in `compose.yaml` wins over the same name in `.env`. This
-needs Docker Compose 2.24 or newer. Only Compose reads the file. The server
-itself never loads it, so for a plain `docker run` pass `--env-file .env`, and
-for a local or Claude Desktop setup keep using the environment.
+Secrets go in the `.env` beside the compose file, which Compose reads through
+`env_file` and git and the Docker build context both ignore. Set
+`YF_MCP_BEARER_TOKEN` there, not in `compose.yaml`. Compose takes
+`YAHOO_FINANCE_MCP_VERSION` and `YAHOO_FINANCE_MCP_PORT` for itself and hands
+everything else to the server. A name set under `environment:` in
+`compose.yaml` wins over the same name in `.env`. Only Compose reads the file.
+The server itself never loads it, so for a plain `docker run` pass
+`--env-file .env`, and for a local or Claude Desktop setup keep using the
+environment.
+
+A setup from the compose file that used to sit at the repository root moves to
+`containers/production/`. Its project name is the same, so the cache volume
+stays.
 
 ### Manual (uv or venv)
 

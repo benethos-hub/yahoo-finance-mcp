@@ -67,8 +67,8 @@ services:
       - path: .env
         required: false
     # All configuration is via environment variables. The image already sets
-    # sensible defaults (streamable-HTTP on 0.0.0.0:8000, cache at /cache);
-    # override any of them here.
+    # sensible defaults (streamable-HTTP on 0.0.0.0:8000, cache at /cache).
+    # Override any of them here.
     environment:
       # YF_MCP_TRANSPORT: streamable-http
       # YF_MCP_HOST: "0.0.0.0"
@@ -99,7 +99,7 @@ services:
       # Override a single tool's cache TTL (seconds), e.g.:
       # YF_MCP_CACHE_TTL_QUOTE: "15"
     volumes:
-      # Used only when the cache is enabled; persists it across restarts.
+      # Used only when the cache is enabled, and keeps it across restarts.
       - cache:/cache
 
 volumes:

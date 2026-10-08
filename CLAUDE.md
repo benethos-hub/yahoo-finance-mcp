@@ -28,8 +28,8 @@ How to work in this repository. Read this before making changes. See
   `.\.venv\Scripts\python.exe -m pip install -e ".[dev]"`.
 - Run the server (stdio): `uv run benethos-yahoo-finance-mcp`, or
   `.\.venv\Scripts\python.exe -m benethos_yahoo_finance_mcp`. For HTTP
-  transports and Docker/Compose hosting, see the README (`--transport`,
-  `Dockerfile`, `compose.yaml`).
+  transports and Docker/Compose hosting, see the README (`--transport`) and
+  `containers/README.md`.
 
 ## Project layout
 
@@ -51,6 +51,10 @@ src/benethos_yahoo_finance_mcp/
   py.typed        # PEP 561 marker, without it the annotations reach nobody
 tests/            # mocked, offline unit tests (+ live smoke.py, not collected)
   yahoo/          #   one test file per yahoo module, FakeTicker in fakes.py
+containers/
+  images/yahoo-finance-mcp/Dockerfile   # build context: the repository root
+  production/     # compose.yaml + .env.example, the published image
+  development/    # compose.yaml, built from the checkout, port 8001
 .github/workflows/
   ci.yml          # lint, test matrix, fresh-install, lowest-versions, docker
   publish.yml     # PyPI + ghcr on a published GitHub release
@@ -172,7 +176,8 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    or `mcp` checks above for anything that sits under those. A security hole
    does not wait for this step: Dependabot's security updates read the whole
    lockfile, transitive packages included, and arrive on their own.
-   The same goes for the two image digests in the `Dockerfile`: look up the
+   The same goes for the two image digests in the `Dockerfile`
+   (`containers/images/yahoo-finance-mcp/`): look up the
    current digest of each tag in its registry and pin it. Dependabot proposes
    a newer tag, but not reliably a rebuild under the same one, and the Debian
    fixes in `python:3.14-slim` arrive as exactly that.
