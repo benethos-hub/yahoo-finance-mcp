@@ -53,7 +53,7 @@ tests/            # mocked, offline unit tests (+ live smoke.py, not collected)
   yahoo/          #   one test file per yahoo module, FakeTicker in fakes.py
 containers/
   images/yahoo-finance-mcp/Dockerfile   # build context: the repository root
-  production/     # compose.yaml + .env.example, the published image
+  production/     # compose.yaml + Caddyfile + .env.example, the published image
   development/    # compose.yaml, built from the checkout, port 8001
 .github/workflows/
   ci.yml          # lint, test matrix, fresh-install, lowest-versions, docker

@@ -263,7 +263,9 @@ always the one shown under [Quick start](#quick-start-uv--claude-desktop):
 ```
 
 **Over the network, streamable-HTTP.** The server runs once and clients connect
-to `http://<host>:8000/mcp`. Start it with `--transport streamable-http`, or use
+to `http://<host>:8000/mcp`, or to `https://<domain>/mcp` with a bearer token
+behind the Caddy profile of the production compose file. Start it with
+`--transport streamable-http`, or use
 the Docker image, which serves this transport by default. Browser-based and
 multi-user front ends need it — Open WebUI supports MCP natively over
 streamable-HTTP and over no other transport, because a shared web front end
@@ -638,8 +640,9 @@ example with `journald`, and read it with
 Secrets go in the `.env` beside the compose file, which Compose reads through
 `env_file` and git and the Docker build context both ignore. Set
 `YF_MCP_BEARER_TOKEN` there, not in `compose.yaml`. Compose takes
-`YAHOO_FINANCE_MCP_VERSION` and `YAHOO_FINANCE_MCP_PORT` for itself and hands
-everything else to the server. A name set under `environment:` in
+`YAHOO_FINANCE_MCP_VERSION`, `YAHOO_FINANCE_MCP_PORT` and `COMPOSE_PROFILES`
+for itself, hands `YAHOO_FINANCE_MCP_DOMAIN` and `YAHOO_FINANCE_MCP_TLS` to
+Caddy, and everything else to the server. A name set under `environment:` in
 `compose.yaml` wins over the same name in `.env`. Only Compose reads the file.
 The server itself never loads it, so for a plain `docker run` pass
 `--env-file .env`, and for a local or Claude Desktop setup keep using the
