@@ -22,6 +22,7 @@ __pycache__
 tests
 SPECS.md
 CLAUDE.md
+SECURITY.md
 containers
 .dockerignore
 
