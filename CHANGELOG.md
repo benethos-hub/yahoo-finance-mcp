@@ -27,6 +27,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   that cache. The README shows the same flags for `docker run`.
 - CI checks both compose files: valid, every port on the loopback address,
   read-only, development builds and production pulls the published image.
+- Locked dependency refresh of six packages, none of them direct:
+  `opentelemetry-api` 1.45.1 under `mcp`, `peewee` 4.5.3 and `platformdirs`
+  4.12.4 under `yfinance`, and `typer`, `iniconfig` and `tomli` for
+  development only. The tool schemas are byte-identical before and after,
+  stdio, streamable-http and sse answer alike, and the live smoke test
+  differed only in the live market prices.
+- The container image's base `python:3.14-slim` is pinned to its rebuild of
+  2026-10-06, for amd64 and arm64 alike. Python stays 3.14.8, the rebuild
+  brings the Debian packages underneath up to date.
 
 ## [0.7.1] - 2026-10-05
 
