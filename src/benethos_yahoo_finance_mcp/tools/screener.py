@@ -61,12 +61,14 @@ def screen(
       (Yahoo code, 'NMS', 'GER'), sector ('Technology'), industry (a key or
       name from get_sector)
 
-    Percentages are in percent, 3 means 3 %. region is where a stock is
-    listed, not where the company sits, so 'de' includes foreign companies
-    traded in Germany. Returns total (all matches) and one row per match with
-    price, valuation and dividend figures. A row's dividend_yield comes from
-    other data than the filter and can lie slightly outside its bounds. The
-    figures behind the other filters are in get_company_info.
+    Percentages are in percent, 3 means 3 %. A loss makes pe_ratio negative,
+    so pair lt with gt 0. region is where a stock is listed, not where the
+    company sits, so 'de' includes foreign companies traded in Germany, and a
+    company appears once per listing. Returns total (all matches) and one row
+    per match with price, valuation and dividend figures. A row's
+    dividend_yield comes from other data than the filter and can lie slightly
+    outside its bounds. The figures behind the other filters are in
+    get_company_info.
     """
     return yahoo.screen(
         tuple(
