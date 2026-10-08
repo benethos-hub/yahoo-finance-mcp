@@ -1,6 +1,7 @@
 # The server in operation: the published image from the GitHub container
 # registry, nothing built. It needs no clone of the repository, only this
-# folder: this file and an optional .env beside it (template .env.example).
+# folder: this file, an optional .env beside it (template .env.example) and,
+# for the profile https, the Caddyfile.
 # To try a change from a checkout instead: ../development/.
 #
 # Usage, from this folder:

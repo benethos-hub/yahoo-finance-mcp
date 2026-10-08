@@ -53,7 +53,7 @@ tests/            # mocked, offline unit tests (+ live smoke.py, not collected)
   yahoo/          #   one test file per yahoo module, FakeTicker in fakes.py
 containers/
   images/yahoo-finance-mcp/Dockerfile   # build context: the repository root
-  production/     # compose.yaml + .env.example, the published image
+  production/     # compose.yaml + Caddyfile + .env.example, the published image
   development/    # compose.yaml, built from the checkout, port 8001
 .github/workflows/
   ci.yml          # lint, test matrix, fresh-install, lowest-versions, docker
@@ -197,8 +197,8 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    pre-release leaves `latest` where it is.
 5. **Check what shipped, not the build.** The three ghcr tags (`X.Y.Z`, `X.Y`,
    `latest`) of `benethos-yahoo-finance-mcp` must carry the same
-   `org.opencontainers.image.revision` annotation, and during the 0.7 line
-   the old name `yahoo-finance-mcp` the same digest, the versions *inside* the image must be what the lockfile says
+   `org.opencontainers.image.revision` annotation, the versions *inside*
+   the image must be what the lockfile says
    (`docker run --rm --entrypoint python <image> -c "import
    importlib.metadata as m; print(m.version('mcp'))"`), and PyPI's simple
    index with a cache-buster must list the version — the JSON API reports the
