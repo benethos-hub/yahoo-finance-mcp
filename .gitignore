@@ -21,8 +21,9 @@ dist/
 htmlcov/
 coverage.xml
 
-# Local secrets. .env holds values such as YF_MCP_BEARER_TOKEN for Compose,
-# the example next to it is the tracked template.
+# Local secrets. An .env beside a compose file in containers/ holds values
+# such as YF_MCP_BEARER_TOKEN, the example next to it is the tracked template.
+# The patterns carry no slash, so they match in every folder.
 .env
 .env.*
 !.env.example

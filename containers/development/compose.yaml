@@ -1,0 +1,58 @@
+# For development: the server built from this checkout, the only way to run
+# an unreleased `main` in a container. To run the published image instead:
+# ../production/.
+#
+# Usage, from this folder:
+#   docker compose up -d --build    # build from the checkout and start
+#   docker compose logs -f          # follow logs
+#   docker compose down             # stop and remove
+#
+# An optional .env beside this file, not versioned, sets the host port
+# (YAHOO_FINANCE_MCP_PORT) and anything the server reads (YF_MCP_*). The
+# project name and the port differ from production on purpose, so both can
+# run side by side, each with a cache volume of its own.
+
+name: benethos-yahoo-finance-mcp-dev
+
+# The same cap as in production: at most 5 log files of 10 MB.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  benethos-yahoo-finance-mcp:
+    image: benethos-yahoo-finance-mcp:local
+    build:
+      context: ../..
+      dockerfile: containers/images/yahoo-finance-mcp/Dockerfile
+    logging: *logging
+    ports:
+      # Loopback only, as in production.
+      - "127.0.0.1:${YAHOO_FINANCE_MCP_PORT:-8001}:8000"
+    restart: unless-stopped
+    # The hardening of production, so a change that needs a writable file
+    # system or a capability shows up here first and not after a release.
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/appuser/.cache:uid=10001,gid=10001,mode=0700
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # The DNS-rebinding guard, as in production: the published loopback port
+      # and the service name for another container on the same network.
+      YF_MCP_ALLOWED_HOSTS: "localhost:*,127.0.0.1:*,[::1]:*,benethos-yahoo-finance-mcp:*"
+      YF_MCP_LOG_LEVEL: ${YF_MCP_LOG_LEVEL:-INFO}
+      YF_MCP_CACHE_DIR: /cache
+    volumes:
+      - cache:/cache
+
+volumes:
+  cache:

@@ -289,17 +289,20 @@ def test_transport_security_explicit_allow_list_wins_even_when_exposed():
     assert ts.allowed_origins == ["http://mcp:8000", "https://mcp:8000"]
 
 
-def test_compose_keeps_the_rebinding_guard_on():
+@pytest.mark.parametrize("folder", ["development", "production"])
+def test_compose_keeps_the_rebinding_guard_on(folder):
     """The container binds 0.0.0.0, which alone turns the guard off.
 
     A page whose domain points at 127.0.0.1 could then call every tool from a
-    browser on the host. Compose sets the allow-list, not as a comment.
+    browser on the host. Compose sets the allow-list, not as a comment, in
+    both folders.
     """
     from pathlib import Path
 
     from mcp.server.transport_security import TransportSecurityMiddleware
 
-    compose = (Path(__file__).parent.parent / "compose.yaml").read_text("utf-8")
+    path = Path(__file__).parent.parent / "containers" / folder / "compose.yaml"
+    compose = path.read_text("utf-8")
     [raw] = re.findall(r'^ +YF_MCP_ALLOWED_HOSTS: "([^"]+)"$', compose, re.M)
     ts = http_transport.transport_security_for("0.0.0.0", settings.split_csv(raw), [])
     assert ts.enable_dns_rebinding_protection is True

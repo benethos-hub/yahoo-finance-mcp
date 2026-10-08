@@ -58,7 +58,8 @@ VERSION_EXAMPLES = (
     # An exact image tag in backticks. `:0.4` names a minor line on purpose and
     # has only two components, so it is not matched.
     ("README.md", r"`:(\d+\.\d+\.\d+)`"),
-    ("compose.yaml", r"`:(\d+\.\d+\.\d+)`"),
+    # The version the production compose template starts with.
+    ("containers/production/.env.example", r"(?m)^YAHOO_FINANCE_MCP_VERSION=(\S+)$"),
     # The version people are asked to report in a bug.
     (".github/ISSUE_TEMPLATE/bug_report.yml", r'placeholder: "(\d+\.\d+\.\d+)"'),
 )
@@ -67,11 +68,8 @@ VERSION_EXAMPLES = (
 # one. It is right for it to stay put across a patch bump and wrong for it to
 # stay put across a minor one, so it is compared against the first two
 # components instead of the whole version. Missed by eye on the 0.5.0 bump,
-# where both of these still said `:0.4`.
-MINOR_LINE_EXAMPLES = (
-    ("README.md", r"`:(\d+\.\d+)`"),
-    ("compose.yaml", r"`:(\d+\.\d+)`"),
-)
+# where the README and the compose file of the day both still said `:0.4`.
+MINOR_LINE_EXAMPLES = (("README.md", r"`:(\d+\.\d+)`"),)
 
 
 # The lists above name the places known today, and a new example anywhere else,
@@ -84,6 +82,7 @@ PIN_SHAPES = (
     re.compile(r"benethos-yahoo-finance-mcp==(\d+\.\d+\.\d+)"),
     re.compile(r"yahoo-finance-mcp:(\d+\.\d+\.\d+)\b"),
     re.compile(r"`:(\d+\.\d+\.\d+)`"),
+    re.compile(r"YAHOO_FINANCE_MCP_VERSION=(\d+\.\d+\.\d+)"),
 )
 _TEXT_SUFFIXES = {".md", ".yml", ".yaml", ".toml", ".py", ".txt", ".example"}
 _SKIP_DIRS = {"build", "dist", "htmlcov", "node_modules", "__pycache__"}

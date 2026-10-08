@@ -1,0 +1,106 @@
+# The server in operation: the published image from the GitHub container
+# registry, nothing built. It needs no clone of the repository, only this
+# folder: this file and an optional .env beside it (template .env.example).
+# To try a change from a checkout instead: ../development/.
+#
+# Usage, from this folder:
+#   cp .env.example .env        # then set the version, and the token if any
+#   docker compose up -d        # pull (if needed) and start in the background
+#   docker compose logs -f      # follow logs
+#   docker compose down         # stop and remove
+#
+# To update, set YAHOO_FINANCE_MCP_VERSION in .env to the new version, then
+#   docker compose pull && docker compose up -d
+
+# Project name for all resources compose creates (network, volume). It is the
+# name the compose file at the repository root had, so the cache volume of a
+# setup from before stays where it was.
+name: benethos-yahoo-finance-mcp
+
+# Docker keeps what a container writes to stdout and stderr, and the server
+# writes a line per tool call to stderr, and every request at DEBUG. Without a
+# cap the log grows for as long as the container runs. At most 5 files of
+# 10 MB, the oldest dropped first.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  benethos-yahoo-finance-mcp:
+    # The version is required and has no default: `latest` would change what
+    # runs here on any pull, without anyone deciding it. A minor line (`X.Y`)
+    # follows its patch releases, an exact version (`X.Y.Z`) stays put.
+    image: ghcr.io/benethos-hub/yahoo-finance-mcp:${YAHOO_FINANCE_MCP_VERSION:?set YAHOO_FINANCE_MCP_VERSION in .env}
+    container_name: benethos-yahoo-finance-mcp
+    logging: *logging
+    ports:
+      # bind:host:container — published on the loopback interface only, because
+      # the server is unauthenticated by default and has no business on the
+      # LAN. Set YF_MCP_BEARER_TOKEN in .env to require a token per request.
+      # Drop the 127.0.0.1 prefix only behind a reverse proxy that handles
+      # auth. Set YAHOO_FINANCE_MCP_PORT in .env if 8000 is already taken.
+      - "127.0.0.1:${YAHOO_FINANCE_MCP_PORT:-8000}:8000"
+    restart: unless-stopped
+    # Nothing in the image is written after the build, so the root file system
+    # is read-only. What the server does write goes to three places: /tmp,
+    # yfinance's own cookie and time zone cache under the home directory, and
+    # the result cache on the volume below. Without the second tmpfs yfinance
+    # silently does without its cache and asks Yahoo again each time.
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/appuser/.cache:uid=10001,gid=10001,mode=0700
+    # The server runs as a non-root user on a port above 1024 and needs no
+    # Linux capability at all, so it gets none, and no process in it can gain
+    # privileges through a setuid binary either.
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    # Secrets, the bearer token above all, go in the .env beside this file
+    # rather than into it. Copy .env.example to .env to start. Compose reads
+    # the version and the port from it, and hands the rest to the server.
+    # `required: false` needs Docker Compose 2.24 or newer.
+    env_file:
+      - path: .env
+        required: false
+    # All configuration is via environment variables. The image already sets
+    # sensible defaults (streamable-HTTP on 0.0.0.0:8000, cache at /cache).
+    # Override any of them here.
+    environment:
+      # YF_MCP_TRANSPORT: streamable-http
+      # YF_MCP_HOST: "0.0.0.0"
+      # YF_MCP_PORT: "8000"
+      # YF_MCP_PATH: /mcp
+      # The DNS-rebinding guard. The server binds 0.0.0.0 inside the
+      # container, and an exposed bind without an allow-list accepts any Host
+      # header. A web page whose domain an attacker points at 127.0.0.1 could
+      # then call every tool from a browser on this machine, same-origin, no
+      # CORS involved. These are the names a client really uses: the published
+      # loopback port, and the service name for another container on the same
+      # network. Add a name here when you put a proxy in front, anything else
+      # gets HTTP 421.
+      YF_MCP_ALLOWED_HOSTS: "localhost:*,127.0.0.1:*,[::1]:*,benethos-yahoo-finance-mcp:*"
+      # A bearer token on every HTTP request is off by default: on a
+      # loopback-published port it guards against nothing, and anything that
+      # can reach the port can otherwise call every tool. Set
+      # YF_MCP_BEARER_TOKEN in .env, not here, so the secret stays out of git.
+      # A value set in this block would override the one in .env.
+      YF_MCP_LOG_LEVEL: INFO
+      # The log writes local time with its offset, and a container's local
+      # time is UTC unless TZ says otherwise, e.g.:
+      # TZ: Europe/Berlin
+      # The result cache is opt-in (off by default). Enable it and it persists
+      # to the /cache volume below:
+      # YF_MCP_CACHE: "1"
+      YF_MCP_CACHE_DIR: /cache
+      # Override a single tool's cache TTL (seconds), e.g.:
+      # YF_MCP_CACHE_TTL_QUOTE: "15"
+    volumes:
+      # Used only when the cache is enabled, and keeps it across restarts.
+      - cache:/cache
+
+volumes:
+  cache:
