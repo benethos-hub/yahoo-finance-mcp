@@ -67,9 +67,10 @@ version as the PyPI package. A release `v1.2.3` is tagged `1.2.3`, `1.2` and
 `latest`. A run started by hand from `main` is tagged `edge`.
 
 Up to 0.7.1 the image was named `ghcr.io/benethos-hub/yahoo-finance-mcp`.
-The 0.7 line is pushed under that name as well, the same image with the same
-digest, and 0.8.0 is the first release without it. Switch to the new name
-before then.
+Those releases, 0.4.0 to 0.7.1 with their minor-line tags, were copied to the
+new name with the same digest, so every release is there. The 0.7 line is
+pushed under the old name as well, and 0.8.0 is the first release without
+it. Switch to the new name before then.
 
 Built from the repository root:
 

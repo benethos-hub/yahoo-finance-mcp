@@ -498,10 +498,12 @@ Pin a version for anything you depend on — `:0.7.2` for an exact release, `:0.
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
 built from `main` on demand and is not a release at all.
 
-The image carries the name of the PyPI distribution from 0.7.2 on. Up to 0.7.1
-it was `ghcr.io/benethos-hub/yahoo-finance-mcp`, and the 0.7 line is pushed
-there as well, the same image with the same digest. 0.8.0 is the first release
-without the old name, so switch before then.
+The image carries the name of the PyPI distribution, and every release from
+0.4.0 on is available under it. Up to 0.7.1 it was published as
+`ghcr.io/benethos-hub/yahoo-finance-mcp`, and those releases were copied over
+with the same digest. The 0.7 line is still pushed under the old name as well,
+the same image again. 0.8.0 is the first release without it, so switch before
+then.
 
 The image hosts the server over the streamable-HTTP transport. The stdio
 transport is for local subprocess use and is not what you containerize.
