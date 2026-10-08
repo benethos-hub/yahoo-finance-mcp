@@ -31,6 +31,10 @@ def get_options(
     ``expiration`` (``YYYY-MM-DD``, one of the listed dates) the calls and puts
     for that date are returned, at most ``limit`` each, centred on the money.
     """
+    # Checked as start and end are everywhere else: a stray space or a date
+    # that is no date gets its own message, not "not available" and a list.
+    if expiration:
+        expiration = tickers.checked_date("expiration", expiration)
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load options for {symbol!r}"):
         expirations = list(ticker.options or ())

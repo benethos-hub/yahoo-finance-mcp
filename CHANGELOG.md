@@ -52,6 +52,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and without a limit at publish time. The package builds with 1.27.0 and
   with the newest release.
 
+### Fixed
+
+- `get_options` reads `expiration` like every other date: a stray space is
+  dropped, and a value that is no date (`2024-02-30`) gets "Invalid
+  expiration ... expected a date as YYYY-MM-DD" before Yahoo is asked. Until
+  now both answered "not available" with the list of dates.
+
 ## [0.7.1] - 2026-10-05
 
 A maintenance release for the container image and the PyPI page. No tool,
