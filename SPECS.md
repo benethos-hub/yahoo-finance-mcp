@@ -566,7 +566,7 @@ values).
 
 ## 11. Future work (not yet implemented)
 
-Nothing beyond the optional roadmap in §12. Serving an expired cache entry
+Nothing. The roadmap in §12 is done or dropped. Serving an expired cache entry
 while Yahoo rate-limits was considered and dropped: the cache is off by
 default, a quote from hours ago is worse than the rate-limit message, and
 every answer would need to carry its age.
@@ -635,9 +635,8 @@ tool already returns as `recommendation_trend`.
 These take no per-symbol `Ticker`. `Sector` / `Industry` browsing landed in
 Phase 4 (`get_sector` / `get_industry`), `Market` later as `get_market`, and
 multi-symbol quotes as `get_quotes` (Phase 5), the screener as `screen`
-(Phase 6). Still open: `Lookup` (richer search — overlaps the existing
-`search`, so likely an extension rather than a new tool) and bulk history
-(`download`). See the roadmap below for where each stands.
+(Phase 6). Bulk history (`download`) and `Lookup` were dropped, see the
+roadmap below.
 
 The sector/industry key set is sourced from yfinance's own constant
 (`yfinance.const.SECTOR_INDUSTY_MAPPING_LC`, imported defensively in
@@ -691,14 +690,13 @@ green).
 - **Phase 5 — done:** `get_quotes` — compact multi-symbol quotes in one call
   (per-symbol `not_found`), covering the §11 multi-symbol-quote item. Backed by
   per-symbol `fast_info` (yfinance's `Tickers` is only a convenience wrapper, not
-  true batching, and `yf.download` is reserved for a possible future bulk-history
-  tool, which needs hard payload caps).
+  true batching, and neither is `yf.download`, see below).
 - **Phase 6 — done:** `screen` (`yf.screen` / `EquityQuery`), see below.
 
-### Remaining roadmap (optional, not yet built)
+### Roadmap after the per-symbol tools
 
-All per-symbol `Ticker` methods that return real data are now exposed. What is
-left is a smaller, optional set. In rough priority / effort order:
+All per-symbol `Ticker` methods that return real data are exposed. These were
+the module-level candidates, each built or dropped:
 
 - **`get_market`** (`yf.Market`) — **done.** Eight fixed market keys. Probed
   live: only `US` serves a trading status, every other key raises upstream when
@@ -719,16 +717,18 @@ left is a smaller, optional set. In rough priority / effort order:
   XETRA), a company comes back once per listing, and Yahoo serves offsets up
   to about 10,000. Each hit carries over 80 fields, the row keeps 13 named
   like the aliases, plus `total`. 25 rows are about 8 KB.
-- **Bulk history** (`yf.download`) — deferred. Probed live and working, but it
-  returns a **MultiIndex** over columns (`('Close', 'AAPL')`) that
-  `dataframe_to_records` does not handle, the payload grows with symbols × rows,
-  and `download` does not raise on bad symbols (silent NaN columns). The model
-  can already loop over `get_history`, so this buys convenience, not capability.
-- **`Lookup`** (`yf.Lookup`) — deferred. Probed live: 25 rows carrying
-  `regularMarketPrice`, `industryName` and `rank`, so genuinely richer than
-  `search`. But it overlaps `search` almost entirely, and two near-duplicate
-  tools make the toolset harder for a model to navigate. If ever, extend
-  `search` rather than adding a tool.
+- **Bulk history** (`yf.download`) — **dropped.** It saves Yahoo no request:
+  yfinance fetches each symbol with its own `Ticker.history` call, only in
+  threads (`yfinance.multi._download_one`, checked in 1.7.0). What it adds is
+  a **MultiIndex** over columns (`('Close', 'AAPL')`) that
+  `dataframe_to_records` does not handle, a payload that grows with symbols ×
+  rows, and no error on a bad symbol (silent NaN columns). The model loops
+  over `get_history` with the same requests and a clear error per symbol.
+- **`Lookup`** (`yf.Lookup`) — **dropped.** Probed live: 25 rows carrying
+  `regularMarketPrice`, `industryName` and `rank`, so richer than `search`.
+  But it answers the same question, and a near-duplicate tool makes the
+  toolset harder for a model to navigate. A price is one `get_quotes` call
+  away, and filtering by industry is what `screen` does.
 
 A note on the ordering above: it is deliberately not "everything that is
 technically possible". With 23 tools already registered, every additional
