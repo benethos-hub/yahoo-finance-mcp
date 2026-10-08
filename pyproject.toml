@@ -43,7 +43,8 @@ dependencies = [
     # (dev/run/install) and pulls typer, rich and pygments with it. This package
     # defines its own entry point and never imports them. It lives in `dev`.
     "mcp>=2.0.0,<3",
-    "yfinance>=1.4.1",
+    # 1.6.0 is the first to know the screener field `dividendyield`.
+    "yfinance>=1.6.0",
     # Required by yfinance for HTML-table scraping (e.g. earnings dates).
     "lxml>=5.0",
 ]

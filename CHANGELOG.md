@@ -28,6 +28,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- yfinance 1.6.0 or later is required, up from 1.4.1. Earlier versions do
+  not know the screener field behind `dividend_yield`.
 - Every release from 0.4.0 on is available under the new image name
   `ghcr.io/benethos-hub/benethos-yahoo-finance-mcp`. The releases up to 0.7.1,
   published under `ghcr.io/benethos-hub/yahoo-finance-mcp`, were copied over

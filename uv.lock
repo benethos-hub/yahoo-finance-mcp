@@ -160,7 +160,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.1.1" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.1.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.19" },
-    { name = "yfinance", specifier = ">=1.4.1" },
+    { name = "yfinance", specifier = ">=1.6.0" },
 ]
 provides-extras = ["dev"]
 
