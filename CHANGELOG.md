@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-10-08
+
+A release for running the server in a container. No tool, schema or API
+changes, apart from one fix in `get_options`. Everything for containers moves
+to `containers/`, with a compose file for production and one for
+development, both on a read-only root file system. The image now carries the
+name of the PyPI distribution, `ghcr.io/benethos-hub/benethos-yahoo-finance-mcp`.
+The old name gets the rest of the 0.7 line as well, and 0.8.0 is the first
+release without it.
+
 ### Added
 
 - A security policy, `SECURITY.md`: how to report a vulnerability privately
@@ -1032,7 +1042,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.6.0...v0.6.1

@@ -79,7 +79,9 @@ A tool writes no line of its own, `register_tool` writes one per call.
    yfinance call inside
    `with tickers.upstream("Failed to load ... for {symbol!r}"):`, which routes
    failures through `wrap_upstream` so rate limits map to `RateLimitError`
-   and other errors keep context. Get the ticker with `tickers.get_ticker`,
+   and other errors keep context. An exception that means "no such data for
+   this symbol" goes in its `not_found=` and becomes a `SymbolNotFoundError`.
+   Get the ticker with `tickers.get_ticker`,
    called through the module so the tests' one patch reaches it. Raise
    `SymbolNotFoundError(symbol)` on empty results, and echo the symbol as
    `tickers.normalize(symbol)`. Decorate the function with

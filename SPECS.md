@@ -427,7 +427,11 @@ values).
   behind the operation's message, and a network error or anything unexpected
   is named by class only (§4 says why).
   The yahoo functions run their yfinance calls inside the
-  `tickers.upstream(message)` context manager, which does exactly that. The `Ticker` constructor is
+  `tickers.upstream(message)` context manager, which does exactly that. Its
+  `not_found=` names the exceptions that mean the symbol simply has no such
+  data, yfinance's `YFDataException` for the fund data of a stock say, and
+  those become a `SymbolNotFoundError` instead, a rate limit excepted. The
+  `Ticker` constructor is
   covered as well: an ISIN-shaped string Yahoo cannot resolve raises there
   and becomes a `SymbolNotFoundError`, and in `get_quotes` such a symbol is
   listed under `not_found` instead of failing the batch.
@@ -439,8 +443,10 @@ values).
   `start`/`end` as real dates written `YYYY-MM-DD`, with `end` after `start`.
   yfinance's `end` is exclusive, so the same day twice is no day at all, and
   the description says so. `get_shares` takes its dates through the same
-  check, `tickers.checked_range`. Each is checked only when it is used, so
-  `period` is not checked next to `start`.
+  check, `tickers.checked_range`, and `get_options` its `expiration` through
+  `tickers.checked_date` before it is looked for among the listed dates. Each
+  is checked only when it is used, so `period` is not checked next to
+  `start`.
   Valid arguments can still come back empty: Yahoo keeps 1m bars for 8 days,
   2m to 90m for 60 and the hourly bars for 730. No intraday rows is therefore
   a `ToolError` naming that reach and the symbol as the other possibility,
@@ -478,7 +484,10 @@ values).
   arrives, since 2.1.0 dropped exactly that while 246 tests stayed green.
 - CI (GitHub Actions): a `lint` job (ruff + mypy), a `test` matrix running
   `pytest` with coverage on Python 3.11-3.14, a `docker` job that builds the
-  image and smoke-tests that the container serves HTTP, and a `fresh-install`
+  image for amd64 and arm64, smoke-tests that the container serves HTTP and
+  passes its health check, and checks both compose files (valid, every port
+  on the loopback address, read-only root, development builds and production
+  pulls), and a `fresh-install`
   job. The first three install from `uv.lock` (`uv sync --frozen`) for
   reproducibility. `fresh-install` deliberately does **not**: it builds the
   wheel and installs it into a clean environment with no lockfile, then imports
