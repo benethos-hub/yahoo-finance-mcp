@@ -46,6 +46,7 @@ TOOL_ARGS: dict[str, dict[str, object]] = {
     "get_sector": {"key": "technology"},
     "get_industry": {"key": "semiconductors"},
     "get_market": {"key": "US"},
+    "screen": {"filters": [{"field": "region", "op": "eq", "value": "us"}]},
 }
 
 
@@ -101,6 +102,7 @@ LIMIT_AS_LIMIT = {
     "get_fund_data": {"symbol": "AAPL"},
     "get_sector": {"key": "technology"},
     "get_industry": {"key": "semiconductors"},
+    "screen": {"filters": [{"field": "region", "op": "eq", "value": "us"}]},
 }
 
 
@@ -169,3 +171,48 @@ def test_tool_error_message_reaches_the_caller(monkeypatch):
     message = str(excinfo.value)
     assert "No data found for symbol 'NOPE'" in message, message
     assert "'search' tool" in message, message
+
+
+def test_screen_forwards_filters_as_tuples(monkeypatch):
+    """The cache key needs hashable, ordered values, so lists become tuples."""
+    captured: dict[str, object] = {}
+
+    def spy(filters, **k):
+        captured["filters"] = filters
+        captured.update(k)
+        return {"total": 0, "count": 0, "offset": 0, "matches": []}
+
+    monkeypatch.setattr(yahoo, "screen", spy)
+    _call(
+        "screen",
+        {
+            "filters": [
+                {"field": "region", "op": "is-in", "value": ["de", "at"]},
+                {"field": "dividend_yield", "op": "gt", "value": 3},
+            ],
+            "sort_by": "dividend_yield",
+            "sort_desc": False,
+            "offset": 25,
+        },
+    )
+    assert captured["filters"] == (
+        ("region", "is-in", ("de", "at")),
+        ("dividend_yield", "gt", 3),
+    )
+    assert captured["sort_by"] == "dividend_yield"
+    assert captured["sort_desc"] is False
+    assert captured["offset"] == 25
+
+
+def test_a_bad_screen_filter_reaches_the_model_as_text(monkeypatch):
+    """The check's own message, before Yahoo is asked at all."""
+
+    def never(*a, **k):  # pragma: no cover - must not be reached
+        raise AssertionError("Yahoo was asked")
+
+    monkeypatch.setattr(yahoo.tickers.yf, "screen", never)
+    with pytest.raises(Exception) as excinfo:  # noqa: B017 - the type is the SDK's
+        _call("screen", {"filters": [{"field": "sector", "op": "gt", "value": 3}]})
+
+    message = str(excinfo.value)
+    assert "is a category, compare it with eq or is-in" in message, message

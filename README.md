@@ -166,6 +166,7 @@ run the tools without asking for confirmation each time.
 | `get_sector` | Browse a market sector by key: overview, top companies/ETFs/funds, industries. |
 | `get_industry` | Browse an industry by key: overview, parent sector, top/top-performing/top-growth companies. |
 | `get_market` | Trading status and headline index summary for a market (US, EUROPE, ASIA, …). |
+| `screen` | Find stocks by criteria (dividend yield, P/E, market cap, region, sector, …), ranked, with the total number of matches. |
 
 Most `get_*` tools take a Yahoo Finance **symbol** — either a ticker (`AAPL`,
 `SAP.DE`) or a plain ISIN. Use `search` to turn a company name into one. Three

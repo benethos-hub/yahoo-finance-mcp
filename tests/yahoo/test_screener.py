@@ -117,6 +117,14 @@ def test_category_values_are_matched_as_yahoo_spells_them(
     assert fake_screen[0]["query"]["operands"] == [field, sent]
 
 
+def test_every_industry_key_get_sector_knows_reaches_the_screener():
+    """yfinance's key list writes 'oil-gas-e&p' and 'software—application'."""
+    from yfinance.const import SECTOR_INDUSTY_MAPPING_LC
+
+    keys = {k for group in SECTOR_INDUSTY_MAPPING_LC.values() for k in group}
+    assert {screener._slug(k) for k in keys} == set(screener._CATEGORIES["industry"])
+
+
 def test_is_in_becomes_a_list_of_values(fake_screen):
     yahoo.screen((("region", "is-in", ["de", "AT", "ch"]),))
     query = fake_screen[0]["query"]
