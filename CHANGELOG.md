@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Two more release checks in the test suite. The changelog must open with
+  `[Unreleased]` and then the current version with its date, and the two
+  compare links at its foot must point at that version. Before, a version
+  bump with the changelog still open passed every test. And the installed
+  version must be the one in `pyproject.toml`, so a bump without `uv sync`
+  says exactly that instead of calling the documentation stale.
+
 ### Changed
 
 - Every release from 0.4.0 on is available under the new image name

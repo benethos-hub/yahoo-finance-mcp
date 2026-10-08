@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import os
 import re
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -52,6 +53,23 @@ def test_py_typed_marker_is_empty() -> None:
 # than generates: nothing is rewritten, the suite simply goes red until the
 # examples agree with the package.
 REPO = PACKAGE_DIR.parent.parent
+PYPROJECT = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))
+
+
+# Every check in this file compares against `__version__`, which is read from
+# the *installed* metadata, not from pyproject.toml. A bump of pyproject.toml
+# without `uv sync` leaves the previous version installed, and the checks
+# below then call the README up to date and pyproject's new version nowhere,
+# or the other way round. This names the actual cause.
+def test_installed_version_is_the_one_in_pyproject():
+    declared = PYPROJECT["project"]["version"]
+    installed = benethos_yahoo_finance_mcp.__version__
+    assert installed == declared, (
+        f"pyproject.toml says {declared}, the installed package says {installed}. "
+        "Run `uv sync --extra dev` before reading anything else this file reports."
+    )
+
+
 VERSION_EXAMPLES = (
     # An exact pin of the distribution, as the install section shows it.
     ("README.md", r"benethos-yahoo-finance-mcp==(\d+\.\d+\.\d+)"),
@@ -191,4 +209,43 @@ def test_documented_minor_line_examples_are_current(relative_path, pattern):
         f"{relative_path} still offers {stale} as the minor line to follow, but "
         f"the package is on {current}. That tag stops at the previous minor and "
         "never sees this release."
+    )
+
+
+# Step 3 of the release checklist: `[Unreleased]` closed as the new version
+# with its date, and the two compare links at the foot moved along. A bump with
+# the changelog still open passed every check above, and the release notes are
+# taken from exactly that section.
+CHANGELOG_SECTION = re.compile(r"^## \[([^\]]+)\](?: - (\d{4}-\d{2}-\d{2}))?$", re.M)
+CHANGELOG_LINK = re.compile(r"^\[([^\]]+)\]: (\S+)$", re.M)
+
+
+def test_changelog_closes_the_current_release():
+    current = benethos_yahoo_finance_mcp.__version__
+    text = (REPO / "CHANGELOG.md").read_text(encoding="utf-8")
+    sections = CHANGELOG_SECTION.findall(text)
+    names = [name for name, _ in sections]
+
+    assert names[:2] == ["Unreleased", current], (
+        f"CHANGELOG.md opens with {names[:2]}, expected ['Unreleased', "
+        f"'{current}']: close `[Unreleased]` as `## [{current}] - <date>` and "
+        "start a new empty one above it."
+    )
+    assert dict(sections)[current], f"`## [{current}]` in CHANGELOG.md has no date"
+
+    compare = PYPROJECT["project"]["urls"]["Repository"] + "/compare/"
+    previous = names[2]
+    links = dict(CHANGELOG_LINK.findall(text))
+    expected = {
+        "Unreleased": f"{compare}v{current}...HEAD",
+        current: f"{compare}v{previous}...v{current}",
+    }
+    wrong = {
+        name: links.get(name)
+        for name, url in expected.items()
+        if links.get(name) != url
+    }
+    assert not wrong, (
+        f"compare links at the foot of CHANGELOG.md are {wrong}, expected "
+        f"{ {name: expected[name] for name in wrong} }"
     )
