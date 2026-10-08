@@ -175,6 +175,30 @@ def test_upstream_rate_limit_becomes_rate_limit_error(monkeypatch, attr, call):
         call()
 
 
+class _NoSuchData(Exception):
+    pass
+
+
+def test_upstream_not_found_names_the_symbol():
+    with pytest.raises(SymbolNotFoundError, match="'SPY'"):
+        with tickers.upstream("Failed", not_found=(_NoSuchData,), symbol="SPY"):
+            raise _NoSuchData()
+
+
+def test_upstream_not_found_leaves_other_errors_alone():
+    with pytest.raises(ToolError, match="Failed: unexpected RuntimeError") as excinfo:
+        with tickers.upstream("Failed", not_found=(_NoSuchData,), symbol="SPY"):
+            raise RuntimeError("boom")
+    assert not isinstance(excinfo.value, SymbolNotFoundError)
+
+
+def test_upstream_not_found_never_hides_a_rate_limit():
+    """A rate limit is not a missing symbol, even when the class would match."""
+    with pytest.raises(RateLimitError):
+        with tickers.upstream("Failed", not_found=(Exception,), symbol="SPY"):
+            raise YFRateLimitError()
+
+
 def test_get_options_chain_upstream_error(monkeypatch):
     ticker = FakeTicker(options=("2024-01-19",))
 

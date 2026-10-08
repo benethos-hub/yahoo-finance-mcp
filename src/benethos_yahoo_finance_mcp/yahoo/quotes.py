@@ -10,7 +10,7 @@ from yfinance.exceptions import YFRateLimitError
 
 from .. import cache
 from ..errors import RateLimitError, SymbolNotFoundError, ToolError
-from ..formatting import dataframe_to_records
+from ..formatting import MAX_ROWS, dataframe_to_records
 from . import tickers
 
 # Fields surfaced from Ticker.fast_info for get_quote.
@@ -72,15 +72,25 @@ def get_quote(symbol: str) -> dict[str, Any]:
     with tickers.upstream(f"Failed to load quote for {symbol!r}"):
         fast = ticker.fast_info
 
-    quote = {
-        "symbol": tickers.normalize(symbol),
-        **tickers.fast_fields(
-            fast, _QUOTE_FAST_FIELDS, f"Failed to load quote for {symbol!r}"
-        ),
-    }
-    if quote["lastPrice"] is None:
+    quote = _quote_row(symbol, fast, _QUOTE_FAST_FIELDS)
+    if quote is None:
         raise SymbolNotFoundError(symbol)
     return quote
+
+
+def _quote_row(
+    symbol: str, fast: Any, fields: tuple[str, ...]
+) -> dict[str, Any] | None:
+    """The quote of ``symbol`` from its ``fast_info``, ``None`` without a price.
+
+    Shared by get_quote and get_quotes. Reaching ``fast_info`` stays with each
+    of them, since one fails the call there and the other counts a miss.
+    """
+    row = {
+        "symbol": tickers.normalize(symbol),
+        **tickers.fast_fields(fast, fields, f"Failed to load quote for {symbol!r}"),
+    }
+    return row if row["lastPrice"] is not None else None
 
 
 # Compact field subset for multi-symbol quotes (smaller per-symbol payload than
@@ -147,11 +157,8 @@ def get_quotes(symbols: list[str], *, limit: int = _MAX_QUOTES) -> dict[str, Any
             not_found.append(sym)
             continue
 
-        fields = tickers.fast_fields(
-            fast, _QUOTES_FAST_FIELDS, f"Failed to load quote for {sym!r}"
-        )
-        row = {"symbol": sym, **fields}
-        if row["lastPrice"] is None:
+        row = _quote_row(sym, fast, _QUOTES_FAST_FIELDS)
+        if row is None:
             not_found.append(sym)
         else:
             quotes.append(row)
@@ -216,7 +223,7 @@ def get_history(
     interval: str = "1d",
     start: str | None = None,
     end: str | None = None,
-    limit: int = 250,
+    limit: int = MAX_ROWS,
 ) -> dict[str, Any]:
     """Return historical OHLCV data for ``symbol``.
 

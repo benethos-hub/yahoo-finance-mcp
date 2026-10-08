@@ -25,7 +25,7 @@ from __future__ import annotations
 import hmac
 import ipaddress
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 
 from mcp.server.transport_security import TransportSecuritySettings
@@ -187,7 +187,7 @@ def http_app(
     transport: str,
     path: str,
     host: str,
-    transport_security: Any,
+    transport_security: TransportSecuritySettings,
     token: str | None,
 ) -> ASGIApp:
     """The ASGI app to serve, with the bearer guard in front when there is one.
