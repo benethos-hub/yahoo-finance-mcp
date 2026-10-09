@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The container image is built with uv 0.12.24 (was 0.12.23).
+- Locked dependency refresh: `pydantic` 2.14.0 and `pydantic-core` 2.50.0
+  under `mcp`. pydantic generates the tool schemas, and they are
+  byte-identical before and after. A tool's error text still reaches the
+  client over stdio, and a JSON `true` in a `screen` filter is still refused.
+
 ## [0.8.0] - 2026-10-08
 
 A stock screener and HTTPS for the container. `screen` finds stocks by
