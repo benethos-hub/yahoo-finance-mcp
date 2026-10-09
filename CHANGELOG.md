@@ -6,6 +6,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The container image is built with uv 0.12.24 (was 0.12.23).
+
 ## [0.8.0] - 2026-10-08
 
 A stock screener and HTTPS for the container. `screen` finds stocks by
