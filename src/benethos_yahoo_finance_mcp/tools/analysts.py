@@ -67,10 +67,10 @@ def get_upgrades_downgrades(
 
 def register(server: MCPServer) -> None:
     """Add this module's tools to ``server``, in listing order."""
-    for tool in (
-        get_recommendations,
-        get_earnings,
-        get_estimates,
-        get_upgrades_downgrades,
+    for tool, title in (
+        (get_recommendations, "Analyst recommendations"),
+        (get_earnings, "Earnings"),
+        (get_estimates, "Analyst estimates"),
+        (get_upgrades_downgrades, "Rating changes"),
     ):
-        register_tool(server, tool)
+        register_tool(server, tool, title)

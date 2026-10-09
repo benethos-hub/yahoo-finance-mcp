@@ -146,7 +146,9 @@ the tools. Replace the bracketed placeholders with concrete values.
 
 Every tool only reads, and each one says so to the client with the MCP
 annotations `readOnlyHint` and `openWorldHint`. A client that honours them may
-run the tools without asking for confirmation each time.
+run the tools without asking for confirmation each time. Each tool also has a
+short title, such as "Stock screener", that a client may show in place of its
+name.
 
 | Tool | Description |
 |------|-------------|

@@ -94,7 +94,9 @@ A tool writes no line of its own, `register_tool` writes one per call.
    a frame ranked from the top. Cap silently only where the tail or head is
    obviously what a caller wants, and otherwise report `truncated`.
 3. Expose it in the `tools/` module of the same name and add it to that
-   module's `register()`. `register_tool` gives it the shared
+   module's `register()` with a short title, which a client shows a person in
+   place of the name (a test wants one per tool, no two alike).
+   `register_tool` gives it the shared
    `readOnlyHint`/`openWorldHint` pair every tool carries (a test asserts it
    for all of them) and its log line. The **docstring becomes the
    tool description** Claude sees — write it for an LLM caller, and leave

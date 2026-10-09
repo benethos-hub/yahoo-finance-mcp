@@ -18,8 +18,9 @@ def get_company_info(symbol: Symbol) -> dict[str, Any]:
     """Get a company profile and key statistics for a Yahoo symbol.
 
     Returns name, sector/industry, location, employee count, and valuation
-    metrics (market cap, P/E, beta, 52-week range, dividend yield) plus a
-    business summary.
+    metrics (market cap, trailing and forward P/E, P/B, beta, 52-week range,
+    dividend yield) plus a business summary. For an ISIN, ``resolved_symbol``
+    names the ticker it stands for.
     """
     return yahoo.get_company_info(symbol)
 
@@ -114,12 +115,12 @@ def get_shares(
 
 def register(server: MCPServer) -> None:
     """Add this module's tools to ``server``, in listing order."""
-    for tool in (
-        get_company_info,
-        get_financials,
-        get_dividends,
-        get_news,
-        get_calendar,
-        get_shares,
+    for tool, title in (
+        (get_company_info, "Company profile"),
+        (get_financials, "Financial statements"),
+        (get_dividends, "Dividends and splits"),
+        (get_news, "News"),
+        (get_calendar, "Corporate calendar"),
+        (get_shares, "Shares outstanding"),
     ):
-        register_tool(server, tool)
+        register_tool(server, tool, title)

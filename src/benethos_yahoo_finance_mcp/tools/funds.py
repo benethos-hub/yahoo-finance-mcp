@@ -31,5 +31,4 @@ def get_fund_data(
 
 def register(server: MCPServer) -> None:
     """Add this module's tools to ``server``, in listing order."""
-    for tool in (get_fund_data,):
-        register_tool(server, tool)
+    register_tool(server, get_fund_data, "Fund profile")

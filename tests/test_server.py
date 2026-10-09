@@ -119,3 +119,10 @@ def test_every_tool_is_annotated_read_only_and_open_world():
             "readOnlyHint": True,
             "openWorldHint": True,
         }, tool.name
+
+
+def test_every_tool_has_a_title_of_its_own():
+    """A client shows the title to a person, two alike could not be told apart."""
+    titles = [tool.title for tool in asyncio.run(mcp.list_tools())]
+    assert all(titles), titles
+    assert len(set(titles)) == len(titles), titles

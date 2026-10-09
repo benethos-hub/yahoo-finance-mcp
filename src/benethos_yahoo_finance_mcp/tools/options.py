@@ -37,5 +37,4 @@ def get_options(
 
 def register(server: MCPServer) -> None:
     """Add this module's tools to ``server``, in listing order."""
-    for tool in (get_options,):
-        register_tool(server, tool)
+    register_tool(server, get_options, "Option chain")

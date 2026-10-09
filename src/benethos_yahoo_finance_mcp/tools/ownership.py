@@ -73,9 +73,9 @@ def get_sec_filings(
 
 def register(server: MCPServer) -> None:
     """Add this module's tools to ``server``, in listing order."""
-    for tool in (
-        get_holders,
-        get_insider_activity,
-        get_sec_filings,
+    for tool, title in (
+        (get_holders, "Holders"),
+        (get_insider_activity, "Insider activity"),
+        (get_sec_filings, "SEC filings"),
     ):
-        register_tool(server, tool)
+        register_tool(server, tool, title)

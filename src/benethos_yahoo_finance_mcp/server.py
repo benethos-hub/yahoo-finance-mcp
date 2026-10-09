@@ -57,7 +57,8 @@ Comparing `AAPL` with `SAP.DE`, or summing them, means mixing USD and EUR, and \
 nothing in the data will flag that.
 
 Results are capped, mostly in silence. Only `get_history`, `get_quotes` and \
-`get_options` report a `truncated` flag. Every other tool quietly returns at \
+`get_options` report a `truncated` flag, and `screen` reports the `total` \
+number of matches. Every other tool quietly returns at \
 most its top or most recent rows, so a short list is not evidence that the list \
 is short. Where a tool takes a `limit`, raise it rather than concluding there is \
 no more.
