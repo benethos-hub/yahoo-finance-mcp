@@ -6,7 +6,28 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Every tool has a short title, such as "Stock screener" for `screen` or
+  "Price history" for `get_history`, which a client may show a person in
+  place of the tool's name. The model still reads the name and description.
+
 ### Changed
+
+- `screen` says that preferred shares are listings too (on US exchanges
+  symbols like `JPM-PD`) and that their `pe_ratio` means nothing, since they
+  carry the common stock's EPS and market cap. Its pointer to the figures
+  behind the other filters was wrong: `get_company_info` adds only beta and
+  forward P/E to what the rows already show, so it now names `get_holders`
+  for the ownership shares and `get_financials` for the statements behind
+  margins, growth and debt as well.
+- Tool descriptions brought up to date. `search` no longer says an ISIN
+  needs it first, since every tool takes one directly, and names the sector
+  and industry it returns. `get_quotes` mentions its `truncated` flag,
+  `get_sector` that its industry keys also work as `screen`'s `industry`
+  filter, and `get_company_info` its forward P/E, P/B and the
+  `resolved_symbol` it adds for an ISIN. The server instructions count
+  `screen`'s `total` among the results that say they were cut.
 
 - The container image is built with uv 0.12.24 (was 0.12.23).
 - Locked dependency refresh: `pydantic` 2.14.0 and `pydantic-core` 2.50.0

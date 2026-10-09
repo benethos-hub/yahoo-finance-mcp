@@ -298,7 +298,10 @@ submodules.
 All tools are read-only, and each one carries the MCP annotations
 `readOnlyHint: true` and `openWorldHint: true` (one shared `ToolAnnotations`
 in `tools/_base.py`, set by `register_tool`). `destructiveHint` and `idempotentHint` are omitted because
-the spec defines them only for tools that are not read-only. `symbol` always
+the spec defines them only for tools that are not read-only. Each tool also
+has a short `title` (e.g. "Stock screener" for `screen`), which a client
+shows a person in place of the name. The model reads the name and the
+description, not the title. `symbol` always
 means a Yahoo ticker or an ISIN (see §6). The four exceptions are
 `get_sector` / `get_industry`, which take a sector/industry **key** (e.g.
 `technology`, `semiconductors`), `get_market`, which takes a market key
@@ -351,7 +354,8 @@ values).
   changes, top companies), and an option chain keeps the window around the
   money. A financial statement is a set of line items with no safe end to
   drop, so it is not cut at all. `get_history`, `get_quotes` and
-  `get_options` report a `truncated` flag, the rest cap silently, and the
+  `get_options` report a `truncated` flag, `screen` the `total` number of
+  matches with `offset` for the next page, the rest cap silently, and the
   server instructions say so.
 - Column labels that are midnight timestamps, the period ends of a
   statement, are keyed by their plain ISO date (`2025-09-30`), since every

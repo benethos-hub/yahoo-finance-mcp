@@ -67,11 +67,15 @@ def screen(
     Percentages are in percent, 3 means 3 %. A loss makes pe_ratio negative,
     so pair lt with gt 0. region is where a stock is listed, not where the
     company sits, so 'de' includes foreign companies traded in Germany, and a
-    company appears once per listing. Returns total (all matches) and one row
-    per match with price, valuation and dividend figures. A row's
+    company appears once per listing. Preferred shares are listings too (on
+    US exchanges symbols like JPM-PD), carrying the common stock's eps and
+    market cap, so their pe_ratio means nothing. Returns total (all matches)
+    and one row per match with price, valuation and dividend figures. A row's
     dividend_yield can be missing or differ markedly from the filter, which
-    holds for Yahoo's screener data, not for that column. The figures behind
-    the other filters are in get_company_info.
+    holds for Yahoo's screener data, not for that column. The other filters'
+    figures are not in the rows: get_company_info adds beta and forward P/E,
+    get_holders the ownership shares, get_financials the statements behind
+    margins, growth and debt.
     """
     return yahoo.screen(
         tuple(
@@ -87,4 +91,4 @@ def screen(
 
 def register(server: MCPServer) -> None:
     """Add this module's tools to ``server``, in listing order."""
-    register_tool(server, screen)
+    register_tool(server, screen, "Stock screener")

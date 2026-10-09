@@ -35,9 +35,10 @@ def search(
 ) -> list[dict[str, Any]]:
     """Search Yahoo Finance by company name, ticker symbol, or ISIN.
 
-    Use this first to resolve a name or ISIN into a Yahoo ``symbol`` that the
-    other tools accept. Returns up to ``limit`` matches (1-25), each with its
-    symbol, name, exchange, and instrument type.
+    Use this to turn a company name into a Yahoo ``symbol`` that the other
+    tools accept. They take an ISIN directly. Returns up to ``limit`` matches
+    (1-25), each with its symbol, name, exchange, instrument type, sector and
+    industry.
     """
     return yahoo.search(query, limit=limit)
 
@@ -61,7 +62,8 @@ def get_quotes(
     Use this to compare or fetch prices for multiple tickers at once. Each symbol
     is looked up individually and returns currency, last price, previous close,
     open, day high/low, and market cap. Symbols that return no data are listed
-    under ``not_found`` rather than failing the whole call.
+    under ``not_found`` rather than failing the whole call, and ``truncated``
+    is set when more than 50 were passed.
     """
     return yahoo.get_quotes(symbols)
 
@@ -94,10 +96,10 @@ def get_history(
 
 def register(server: MCPServer) -> None:
     """Add this module's tools to ``server``, in listing order."""
-    for tool in (
-        search,
-        get_quote,
-        get_quotes,
-        get_history,
+    for tool, title in (
+        (search, "Search instruments"),
+        (get_quote, "Quote"),
+        (get_quotes, "Quotes for several symbols"),
+        (get_history, "Price history"),
     ):
-        register_tool(server, tool)
+        register_tool(server, tool, title)

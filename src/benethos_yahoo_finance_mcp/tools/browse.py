@@ -36,7 +36,8 @@ def get_sector(
 
     Returns the sector overview (company count, market cap/weight, description),
     its top companies, ETFs, and mutual funds, and the constituent industries.
-    Each industry's ``key`` can be passed to ``get_industry`` to drill down.
+    Each industry's ``key`` can be passed to ``get_industry`` to drill down,
+    or to ``screen`` as its ``industry`` filter.
     This takes a sector key like ``technology`` or ``healthcare`` — not a ticker.
     """
     return yahoo.get_sector(key, limit=limit)
@@ -91,9 +92,9 @@ def get_market(
 
 def register(server: MCPServer) -> None:
     """Add this module's tools to ``server``, in listing order."""
-    for tool in (
-        get_sector,
-        get_industry,
-        get_market,
+    for tool, title in (
+        (get_sector, "Sector"),
+        (get_industry, "Industry"),
+        (get_market, "Market status"),
     ):
-        register_tool(server, tool)
+        register_tool(server, tool, title)

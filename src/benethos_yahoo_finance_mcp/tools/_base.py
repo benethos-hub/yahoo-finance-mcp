@@ -55,9 +55,13 @@ Symbol = Annotated[
 ]
 
 
-def register_tool(server: MCPServer, tool: Callable[..., Any]) -> None:
-    """Add ``tool`` to ``server`` with the shared hints and its log line."""
-    server.add_tool(_logged(tool), annotations=READ_ONLY)
+def register_tool(server: MCPServer, tool: Callable[..., Any], title: str) -> None:
+    """Add ``tool`` to ``server`` with its title, the shared hints and its log line.
+
+    The title is what a client shows a person in place of the name. It is
+    for display only, the model reads the name and the description.
+    """
+    server.add_tool(_logged(tool), title=title, annotations=READ_ONLY)
 
 
 def _logged(tool: Callable[..., Any]) -> Callable[..., Any]:
