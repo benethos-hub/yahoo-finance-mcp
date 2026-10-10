@@ -11,6 +11,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The README has a table of contents after the disclaimer. A test checks
   that every `#anchor` link in the README lands on a heading, with GitHub's
   anchor rules, so a renamed heading cannot leave a link that goes nowhere.
+- `assets/social-preview.png`, 1280×640, the image a shared link to the
+  repository shows: the icon, the name, what the server does and where it
+  is published, with "Not affiliated with Yahoo". `assets/render_icon.py`
+  renders it from `icon.svg` and a text template next to `icon.png`, so the
+  two cannot drift apart. GitHub takes it by hand under Settings, General,
+  Social preview.
 
 ## [0.8.3] - 2026-10-10
 
