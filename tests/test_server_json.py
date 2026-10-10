@@ -108,3 +108,33 @@ def test_the_png_icon_has_the_size_the_entry_states():
         assert data[:8] == b"\x89PNG\r\n\x1a\n"
         width, height = struct.unpack(">II", data[16:24])
         assert icon["sizes"] == [f"{width}x{height}"]
+
+
+# The image entry starts the container the way the production compose file
+# does: read-only, with the two tmpfs mounts the server writes to, no
+# capabilities and no privilege gain. The image's health check probes the
+# HTTP port, which a stdio container never opens, so it is switched off.
+COMPOSE = (REPO / "containers/production/compose.yaml").read_text(encoding="utf-8")
+
+
+def _runtime(name: str) -> list[str | None]:
+    return [
+        a.get("value") for a in _package("oci")["runtimeArguments"] if a["name"] == name
+    ]
+
+
+def test_the_image_entry_starts_the_container_hardened():
+    for flag in ("-i", "--rm", "--no-healthcheck", "--read-only"):
+        assert _runtime(flag) == [None], flag
+    assert _runtime("--cap-drop") == ["ALL"]
+    assert _runtime("--security-opt") == ["no-new-privileges:true"]
+
+
+def test_the_tmpfs_mounts_are_the_compose_files():
+    """A mount added to or dropped from the compose file belongs here too."""
+    mounts = _runtime("--tmpfs")
+    assert mounts == ["/tmp", "/home/appuser/.cache:uid=10001,gid=10001,mode=0700"]
+    compose_mounts = re.findall(r"^\s+tmpfs:\n((?:\s+- .+\n)+)", COMPOSE, re.MULTILINE)[
+        0
+    ]
+    assert [m.strip()[2:] for m in compose_mounts.splitlines()] == mounts

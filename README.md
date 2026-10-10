@@ -349,7 +349,10 @@ official [MCP Registry](https://registry.modelcontextprotocol.io) as
 `io.github.benethos-hub/benethos-yahoo-finance-mcp`, with the PyPI package and
 the container image ([entry](https://registry.modelcontextprotocol.io/v0/servers?search=benethos-yahoo-finance-mcp)).
 A client that installs from the registry starts it with `uvx`, or with
-`docker run -i --rm` and `--transport stdio`, and needs no settings. The MCP
+`docker run -i --rm` and `--transport stdio`, and needs no settings. From
+the next release on, the container entry also runs read-only, without
+capabilities and without the HTTP health check, as in the hardened
+`docker run` example under [Docker](#docker). The MCP
 list in VS Code's extension view (`@mcp`) is GitHub's own selection, and a
 listing in the registry does not put a server there.
 

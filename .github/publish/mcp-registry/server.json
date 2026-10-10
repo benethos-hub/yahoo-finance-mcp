@@ -39,7 +39,13 @@
       },
       "runtimeArguments": [
         { "type": "named", "name": "-i" },
-        { "type": "named", "name": "--rm" }
+        { "type": "named", "name": "--rm" },
+        { "type": "named", "name": "--no-healthcheck" },
+        { "type": "named", "name": "--read-only" },
+        { "type": "named", "name": "--tmpfs", "value": "/tmp" },
+        { "type": "named", "name": "--tmpfs", "value": "/home/appuser/.cache:uid=10001,gid=10001,mode=0700" },
+        { "type": "named", "name": "--cap-drop", "value": "ALL" },
+        { "type": "named", "name": "--security-opt", "value": "no-new-privileges:true" }
       ],
       "packageArguments": [
         { "type": "named", "name": "--transport", "value": "stdio" }

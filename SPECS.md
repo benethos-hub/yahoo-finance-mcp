@@ -601,7 +601,11 @@ values).
   An entry cannot be changed once taken, and `tests/test_server_json.py`
   holds its version, description and name to the package before it goes
   out. Its image entry starts the container with `--transport stdio`, which
-  a client launching it as a local process needs. The first entry went out
+  a client launching it as a local process needs, and as hardened as the
+  production compose file: `--read-only`, the same two tmpfs mounts,
+  `--cap-drop ALL` and `no-new-privileges`, plus `--no-healthcheck`, since
+  the image's check probes an HTTP port a stdio container never opens. A
+  test holds the mounts to the compose file. The first entry went out
   with 0.8.2, accepted at the first attempt. The MCP list in VS Code's
   extension view does not show it: that list comes from GitHub's own
   registry, a selection of 394 servers on 2026-10-10 that held none of the

@@ -23,6 +23,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   live since 0.8.2, and says that VS Code's MCP list is GitHub's own
   selection, which a listing in the registry does not reach.
 
+### Changed
+
+- The MCP Registry's container entry starts the image hardened, as the
+  production compose file does: `--read-only` with tmpfs mounts for `/tmp`
+  and `yfinance`'s cache in the home directory, `--cap-drop ALL`,
+  `no-new-privileges`, and `--no-healthcheck`, since the image's check
+  probes an HTTP port a stdio container never opens. Run over stdio with
+  these flags, the published 0.8.2 image listed its 23 tools and answered
+  a live quote without a warning. A test keeps the mounts in step with the
+  compose file.
+
 ## [0.8.2] - 2026-10-10
 
 Listed in the MCP Registry, and Python 3.15 supported. Each release from
