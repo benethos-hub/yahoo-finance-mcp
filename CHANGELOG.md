@@ -25,11 +25,11 @@ base exists. No tool, parameter or schema changes.
   two cannot drift apart. GitHub takes it by hand under Settings, General,
   Social preview.
 - A diagram of how a question gets answered, `assets/architecture.png`:
-  you ask Claude, Claude calls a tool, this server fetches from Yahoo
-  Finance via yfinance, and the answer goes back the same way. The README
-  shows it under "What it is for", SPECS §3 above the sketch of the same
-  path in the code. `assets/render_icon.py` draws it with the other two
-  images.
+  you ask an MCP client such as Claude, it calls a tool of this server,
+  the server fetches from Yahoo Finance via yfinance, and the answer goes
+  back the same way. The README shows it under "What it is for", SPECS §3
+  above the sketch of the same path in the code. `assets/render_icon.py`
+  draws it with the other two images.
 - The MCP Registry entry lists the Claude Desktop bundle as a third
   package, by the download URL of the release's versioned `.mcpb`. The
   registry requires its SHA-256, which exists only once the release has
