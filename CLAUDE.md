@@ -57,11 +57,11 @@ containers/
   development/    # compose.yaml, built from the checkout, port 8001
 .github/workflows/
   ci.yml          # lint, test matrix, fresh-install, lowest-versions, docker
-  publish.yml     # PyPI + ghcr + MCP Registry on a published GitHub release
+  publish.yml     # PyPI, ghcr, .mcpb bundle, MCP Registry on a published release
 .github/publish/   # one folder per place a release is listed, read by publish.yml
-  mcp-registry/server.json   # the MCP Registry entry
+  mcp-registry/   # server.json (the entry), fill_bundle_checksum.py (its bundle hash)
   mcpb/            # Claude Desktop bundle: manifest.json, server.py, build.py
-assets/           # icon.svg, icon.png and the script that renders the PNG
+assets/           # icon.svg and the PNGs render_icon.py draws: icon, social preview, architecture
 ```
 
 Keep the layers separate: **tools stay thin** and hand their arguments to the
@@ -214,8 +214,8 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    compare links.
 4. After the squash merge: annotated tag `vX.Y.Z`, push it, then
    `gh release create vX.Y.Z --verify-tag` with the changelog section as the
-   notes. Publishing the release is what triggers `publish.yml`. Both of
-   its jobs stop first when the tag is not `v` plus the version in
+   notes. Publishing the release is what triggers `publish.yml`. Each of
+   its four jobs stops first when the tag is not `v` plus the version in
    `pyproject.toml` (`.github/scripts/tag_matches_version.py`), and a
    pre-release leaves `latest` where it is.
 5. **Check what shipped, not the build.** The three ghcr tags (`X.Y.Z`, `X.Y`,

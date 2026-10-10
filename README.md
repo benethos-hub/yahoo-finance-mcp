@@ -54,6 +54,8 @@ and how a sector or a market is doing. You ask in plain language, the client
 picks the tools, and the answer rests on what Yahoo returns rather than on
 what the model remembers.
 
+<img src="https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/main/assets/architecture.png" alt="How a question gets answered: you ask an MCP client such as Claude, it calls a tool of this server, the server fetches from Yahoo Finance via yfinance, and the answer goes back the same way" width="100%">
+
 Typical uses:
 
 - **Quick lookups in a chat.** A quote, the 52-week range, the next earnings
@@ -360,7 +362,7 @@ on demand from
    }
    ```
 
-   Pin a version for stability with `benethos-yahoo-finance-mcp==0.8.3`. To
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.8.4`. To
    enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
@@ -382,7 +384,8 @@ on demand from
 **From the MCP Registry.** Every release from 0.8.2 on is listed in the
 official [MCP Registry](https://registry.modelcontextprotocol.io) as
 `io.github.benethos-hub/benethos-yahoo-finance-mcp`, with the PyPI package and
-the container image ([entry](https://registry.modelcontextprotocol.io/v0/servers?search=benethos-yahoo-finance-mcp)).
+the container image, and since 0.8.4 with the Claude Desktop bundle too
+([entry](https://registry.modelcontextprotocol.io/v0/servers?search=benethos-yahoo-finance-mcp)).
 A client that installs from the registry starts it with `uvx`, or with
 `docker run -i --rm` and `--transport stdio`, and needs no settings. Since
 0.8.3 the container entry also runs read-only, without capabilities and
@@ -557,7 +560,7 @@ docker run --rm -p 8000:8000 ghcr.io/benethos-hub/benethos-yahoo-finance-mcp:lat
 # Server is now reachable at http://localhost:8000/mcp
 ```
 
-Pin a version for anything you depend on — `:0.8.3` for an exact release, `:0.8`
+Pin a version for anything you depend on — `:0.8.4` for an exact release, `:0.8`
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
 built from `main` on demand and is not a release at all.
 
@@ -797,6 +800,9 @@ Leave it off (the default) if you:
 - use it only occasionally.
 
 ## Development
+
+How the code is laid out, module by module, is in
+[SPECS.md](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/SPECS.md#3-architecture).
 
 Install the dev extras, then run the test, lint, and type-check steps (the same
 ones CI runs).

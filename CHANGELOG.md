@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-10-10
+
+The Claude Desktop bundle is listed in the MCP Registry next to PyPI and the
+image, the README has a table of contents, and the repository a social
+preview image. The image stays on Python 3.14 until a `python:3.15-slim`
+base exists. No tool, parameter or schema changes.
+
 ### Added
 
 - The README has a table of contents after the disclaimer. A test checks
@@ -17,6 +24,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   renders it from `icon.svg` and a text template next to `icon.png`, so the
   two cannot drift apart. GitHub takes it by hand under Settings, General,
   Social preview.
+- A diagram of how a question gets answered, `assets/architecture.png`:
+  you ask an MCP client such as Claude, it calls a tool of this server,
+  the server fetches from Yahoo Finance via yfinance, and the answer goes
+  back the same way. The README shows it under "What it is for", SPECS §3
+  above the sketch of the same path in the code. `assets/render_icon.py`
+  draws it with the other two images.
 - The MCP Registry entry lists the Claude Desktop bundle as a third
   package, by the download URL of the release's versioned `.mcpb`. The
   registry requires its SHA-256, which exists only once the release has
@@ -30,6 +43,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   outlasts the retries falls back to publishing without the bundle, so the
   version stays listed with PyPI and the image, and the job fails to show
   it.
+
+### Changed
+
+- Locked dependency refresh of one package, not a direct one: `soupsieve`
+  3.0.1 under `yfinance`, a fix for a CSS selector `yfinance` does not use.
+  The live smoke test gave every section the same output size before and
+  after.
 
 ## [0.8.3] - 2026-10-10
 
@@ -1266,7 +1286,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.3...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.4...HEAD
+[0.8.4]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.0...v0.8.1
