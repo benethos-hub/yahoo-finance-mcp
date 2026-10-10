@@ -189,7 +189,8 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
 2. Bump `version` in `pyproject.toml`, then `uv lock` and `uv sync --extra dev`
    (the packaging tests read the *installed* metadata). Let
    `tests/test_packaging.py` name every stale version example instead of
-   hunting for them by eye.
+   hunting for them by eye, and `tests/test_server_json.py` the three
+   versions in `server.json`, the MCP Registry entry.
 3. Close `[Unreleased]` in `CHANGELOG.md` as `[X.Y.Z] - <date>` and add the
    compare links.
 4. After the squash merge: annotated tag `vX.Y.Z`, push it, then
@@ -205,4 +206,5 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    (`docker run --rm --entrypoint python <image> -c "import
    importlib.metadata as m; print(m.version('mcp'))"`), and PyPI's simple
    index with a cache-buster must list the version — the JSON API reports the
-   old one for minutes after an upload.
+   old one for minutes after an upload. The MCP Registry must list it too:
+   `https://registry.modelcontextprotocol.io/v0/servers?search=benethos-yahoo-finance-mcp`.

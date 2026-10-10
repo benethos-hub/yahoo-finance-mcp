@@ -69,6 +69,11 @@ COPY --from=builder /opt/venv /opt/venv
 USER appuser
 WORKDIR /home/appuser
 
+# The MCP Registry reads this label from the image config to accept the
+# image as belonging to the entry in server.json, and the two names must
+# match.
+LABEL io.modelcontextprotocol.server.name="io.github.benethos-hub/benethos-yahoo-finance-mcp"
+
 EXPOSE 8000
 
 # Persist the result cache across container restarts.

@@ -589,6 +589,19 @@ values).
   visitor, because that block is fed by an API with no anonymous access. That is
   not a misconfiguration and there is no setting for it, so the README badge row
   carries the image link instead.
+  A third job lists the release in the **MCP Registry**
+  (registry.modelcontextprotocol.io) as
+  `io.github.benethos-hub/benethos-yahoo-finance-mcp`, from `server.json` in
+  the repository root. It runs after the other two and skips a pre-release,
+  since the registry checks both packages when it takes the entry: the
+  README of that version on PyPI must carry an `mcp-name:` line and the image
+  config the `io.modelcontextprotocol.server.name` label, each naming the
+  entry. It logs in with the workflow's OIDC token, which the registry trusts
+  for the `io.github.benethos-hub/` namespace, so it stores no secret either.
+  An entry cannot be changed once taken, and `tests/test_server_json.py`
+  holds its version, description and name to the package before it goes
+  out. Its image entry starts the container with `--transport stdio`, which
+  a client launching it as a local process needs.
   One name is used throughout: the PyPI
   distribution, the import package (`benethos_yahoo_finance_mcp`, underscores
   because a module name cannot contain hyphens), the console script, and the
