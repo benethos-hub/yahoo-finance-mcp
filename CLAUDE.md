@@ -22,7 +22,7 @@ How to work in this repository. Read this before making changes. See
 
 ## Environment
 
-- Windows, PowerShell or Bash. Python 3.11-3.14 (developed on 3.14).
+- Windows, PowerShell or Bash. Python 3.11-3.15 (developed on 3.15).
 - Set up (recommended): `uv sync --extra dev` (creates `.venv`, installs the
   versions pinned in `uv.lock`). Without uv: `py -m venv .venv` then
   `.\.venv\Scripts\python.exe -m pip install -e ".[dev]"`.
@@ -117,7 +117,7 @@ Commands use uv (recommended); the venv interpreter forms
 - Lint + format: `uv run ruff check .` and `uv run ruff format .`
   (CI checks `ruff format --check`).
 - Types: `uv run mypy`.
-- Coverage (CI floor 80%, measured in `test (3.14)` only, the other
+- Coverage (CI floor 80%, measured in `test (3.15)` only, the other
   versions run without it):
   `uv run pytest --cov=benethos_yahoo_finance_mcp --cov-fail-under=80`.
 - Inspect what the client sends to Claude (no Desktop restart needed):

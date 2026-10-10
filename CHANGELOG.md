@@ -6,6 +6,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Python 3.15 is supported: CI tests on 3.11-3.15 and the package lists
+  3.15 among its classifiers. Every dependency installs from wheels on
+  3.15.0, the suite and mypy pass, and the server answers live over stdio.
+  The container image stays on Python 3.14.
+
+### Changed
+
+- CI measures coverage on Python 3.15, in its `test (3.15)` job with the
+  same 80% floor, instead of 3.14. The other versions run the suite
+  without it.
+
 ## [0.8.1] - 2026-10-10
 
 Clearer tool descriptions and a refreshed build. Every tool now has a short
