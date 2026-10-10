@@ -22,7 +22,7 @@ How to work in this repository. Read this before making changes. See
 
 ## Environment
 
-- Windows, PowerShell or Bash. Python 3.11-3.14 (developed on 3.14).
+- Windows, PowerShell or Bash. Python 3.11-3.15 (developed on 3.15).
 - Set up (recommended): `uv sync --extra dev` (creates `.venv`, installs the
   versions pinned in `uv.lock`). Without uv: `py -m venv .venv` then
   `.\.venv\Scripts\python.exe -m pip install -e ".[dev]"`.

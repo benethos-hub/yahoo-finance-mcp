@@ -48,7 +48,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -68,10 +68,10 @@ jobs:
       #
       # The coverage floor is measured on 3.14 alone. With branch coverage on,
       # the test step took 13-16 s on 3.14 and 16-22 s on 3.11-3.13 (two runs,
-      # 2026-10-09 and 10), so the fastest version measures and the others
-      # only test. The job names stay test (3.x), and test (3.14) being a
-      # required check is what makes the floor block a merge. Code that runs
-      # only on an older Python is not counted.
+      # 2026-10-09 and 10), so the fastest of those four measures and the
+      # others, 3.15 included, only test. The job names stay test (3.x), and
+      # test (3.14) being a required check is what makes the floor block a
+      # merge. Code that runs only on another Python is not counted.
       - name: Run tests
         if: matrix.python-version != '3.14'
         run: uv run pytest -q
