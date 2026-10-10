@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-10-10
+
+Clearer tool descriptions and a refreshed build. Every tool now has a short
+title for display, `screen` warns about preferred shares and points to the
+right tools for the figures its rows leave out, and several descriptions
+caught up with what the tools do today. The image is built with uv 0.13.0
+on a refreshed lockfile. No tool, parameter or schema changes beyond the
+descriptions and titles.
+
 ### Added
 
 - Every tool has a short title, such as "Stock screener" for `screen` or
@@ -34,6 +43,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   accepted unchanged.
 - CI measures coverage on Python 3.14 only, in its `test (3.14)` job with
   the same 80% floor. The jobs for 3.11-3.13 run the suite without it.
+- The test suite's repository-wide sweep for version pins names the stale
+  pins and their files right after a version bump. Before, it reported that
+  it had checked nothing, and the list stayed hidden.
 - Locked dependency refresh: `pydantic` 2.14.0 and `pydantic-core` 2.50.0
   under `mcp`. pydantic generates the tool schemas, and they are
   byte-identical before and after. A tool's error text still reaches the
@@ -1134,7 +1146,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.0...v0.7.1
