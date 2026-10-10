@@ -47,6 +47,7 @@ def test_any_other_tag_stops_the_release(tag):
         ("pypi-publish:", "uv build"),
         ("ghcr-publish:", "qemu"),
         ("mcp-registry-publish:", "mcp-publisher publish"),
+        ("mcpb-bundle:", "build.py"),
     ],
 )
 def test_each_job_checks_the_tag_before_it_builds(job, first_build_step):
@@ -64,6 +65,14 @@ def test_the_registry_entry_waits_for_both_packages():
     it takes the entry, so both have to be published first."""
     job = WORKFLOW.split("mcp-registry-publish:", 1)[1]
     assert "needs: [pypi-publish, ghcr-publish]" in job
+
+
+def test_the_bundle_is_attached_under_a_stable_name_too():
+    """The README links releases/latest/download/<name>, which only resolves
+    when every release carries a file of exactly that name."""
+    job = WORKFLOW.split("mcpb-bundle:", 1)[1].split("\n  mcp-registry-publish:", 1)[0]
+    upload = [line for line in job.splitlines() if "gh release upload" in line]
+    assert upload and "benethos-yahoo-finance-mcp.mcpb" in upload[0]
 
 
 def test_edge_is_built_from_main_only():

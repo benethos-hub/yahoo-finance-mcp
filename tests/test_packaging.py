@@ -83,6 +83,8 @@ VERSION_EXAMPLES = (
     # The MCP Registry entry, its own version and the PyPI package's. The
     # image tag in it is caught by the sweep below.
     (".github/publish/mcp-registry/server.json", r'"version": "(\d+\.\d+\.\d+)"'),
+    # The Claude Desktop bundle's manifest.
+    (".github/publish/mcpb/manifest.json", r'"version": "(\d+\.\d+\.\d+)"'),
 )
 
 # The minor-line tag, `:0.5`, which follows patch releases rather than naming
