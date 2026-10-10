@@ -752,7 +752,12 @@ the module-level candidates, each built or dropped:
   are in percent, `region` is the listing country (`de` returns Nvidia on
   XETRA), a company comes back once per listing, and Yahoo serves offsets up
   to about 10,000. Each hit carries over 80 fields, the row keeps 13 named
-  like the aliases, plus `total`. 25 rows are about 8 KB.
+  like the aliases, plus `total`. 25 rows are about 8 KB. Preferred shares
+  are listings of their own (`JPM-PC`, `BAC-PE` under `region us`) and
+  carry the common stock's `eps` and market cap, so their `pe_ratio` comes
+  out between about 1.6 and 6 (checked 2026-10-10). The description warns
+  about it rather than filtering them out, since Yahoo marks them by symbol
+  only and a filter would make `total` disagree with the rows.
 - **Bulk history** (`yf.download`) — **dropped.** It saves Yahoo no request:
   yfinance fetches each symbol with its own `Ticker.history` call, only in
   threads (`yfinance.multi._download_one`, checked in 1.7.0). What it adds is
