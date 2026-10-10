@@ -6,7 +6,7 @@
     "url": "https://github.com/benethos-hub/yahoo-finance-mcp",
     "source": "github"
   },
-  "version": "0.8.3",
+  "version": "0.8.4",
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/main/assets/icon.svg",
@@ -24,7 +24,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "benethos-yahoo-finance-mcp",
-      "version": "0.8.3",
+      "version": "0.8.4",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
@@ -32,7 +32,7 @@
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/benethos-hub/benethos-yahoo-finance-mcp:0.8.3",
+      "identifier": "ghcr.io/benethos-hub/benethos-yahoo-finance-mcp:0.8.4",
       "runtimeHint": "docker",
       "transport": {
         "type": "stdio"
@@ -53,7 +53,7 @@
     },
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/benethos-hub/yahoo-finance-mcp/releases/download/v0.8.3/benethos-yahoo-finance-mcp-0.8.3.mcpb",
+      "identifier": "https://github.com/benethos-hub/yahoo-finance-mcp/releases/download/v0.8.4/benethos-yahoo-finance-mcp-0.8.4.mcpb",
       "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "transport": {
         "type": "stdio"

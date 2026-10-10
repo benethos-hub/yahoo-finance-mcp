@@ -360,7 +360,7 @@ on demand from
    }
    ```
 
-   Pin a version for stability with `benethos-yahoo-finance-mcp==0.8.3`. To
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.8.4`. To
    enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
@@ -382,7 +382,8 @@ on demand from
 **From the MCP Registry.** Every release from 0.8.2 on is listed in the
 official [MCP Registry](https://registry.modelcontextprotocol.io) as
 `io.github.benethos-hub/benethos-yahoo-finance-mcp`, with the PyPI package and
-the container image ([entry](https://registry.modelcontextprotocol.io/v0/servers?search=benethos-yahoo-finance-mcp)).
+the container image, and since 0.8.4 with the Claude Desktop bundle too
+([entry](https://registry.modelcontextprotocol.io/v0/servers?search=benethos-yahoo-finance-mcp)).
 A client that installs from the registry starts it with `uvx`, or with
 `docker run -i --rm` and `--transport stdio`, and needs no settings. Since
 0.8.3 the container entry also runs read-only, without capabilities and
@@ -557,7 +558,7 @@ docker run --rm -p 8000:8000 ghcr.io/benethos-hub/benethos-yahoo-finance-mcp:lat
 # Server is now reachable at http://localhost:8000/mcp
 ```
 
-Pin a version for anything you depend on — `:0.8.3` for an exact release, `:0.8`
+Pin a version for anything you depend on — `:0.8.4` for an exact release, `:0.8`
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
 built from `main` on demand and is not a release at all.
 
