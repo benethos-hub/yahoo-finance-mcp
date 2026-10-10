@@ -109,11 +109,20 @@ def _icon(x: int, y: int, size: int) -> str:
     )
 
 
-def _box(x: int, y: int, w: int, h: int, title: str, *lines: str, kind: str) -> str:
+def _box(
+    x: int,
+    y: int,
+    w: int,
+    h: int,
+    title: str,
+    *lines: str,
+    kind: str,
+    logs: bool = False,
+) -> str:
     """One unit of the diagram: a module name and a line or two about it.
 
     main is a step on a call's path, side sits beside it, outside is not
-    this project's code.
+    this project's code. logs marks a unit that writes through logbook/.
     """
     stroke = {"main": "#2DD4BF", "side": "#64748B", "outside": "#64748B"}[kind]
     dash = ' stroke-dasharray="6 5"' if kind == "outside" else ""
@@ -129,6 +138,13 @@ def _box(x: int, y: int, w: int, h: int, title: str, *lines: str, kind: str) -> 
         parts.append(
             f'<text x="{x + 20}" y="{y + 58 + 22 * i}" font-size="16" '
             f'fill="#94A3B8">{line}</text>'
+        )
+    if logs:
+        parts.append(
+            f'<rect x="{x + w - 70}" y="{y + 14}" width="54" height="24" rx="12" '
+            'fill="#94A3B8" fill-opacity="0.15" stroke="#94A3B8" stroke-opacity="0.6"/>'
+            f'<text x="{x + w - 43}" y="{y + 31}" font-size="14" fill="#CBD5E1" '
+            'text-anchor="middle">logs</text>'
         )
     return "".join(parts)
 
@@ -177,8 +193,18 @@ def _architecture() -> str:
             "stdio.py, http.py",
             "Host allow-list, optional bearer token",
             kind="main",
+            logs=True,
         ),
-        _box(470, 220, 420, 80, "server.py", "MCPServer, instructions", kind="main"),
+        _box(
+            470,
+            220,
+            420,
+            80,
+            "server.py",
+            "MCPServer, instructions, refused arguments",
+            kind="main",
+            logs=True,
+        ),
         _box(
             470,
             350,
@@ -188,6 +214,7 @@ def _architecture() -> str:
             "parameters, descriptions, titles",
             "register_tool: read-only hints, a log line",
             kind="main",
+            logs=True,
         ),
         _box(
             470,
@@ -198,6 +225,7 @@ def _architecture() -> str:
             "every yfinance call, the error mapping",
             "ToolError, SymbolNotFoundError, RateLimitError",
             kind="main",
+            logs=True,
         ),
         _box(
             470,
@@ -226,20 +254,39 @@ def _architecture() -> str:
             "settings, log, cache,",
             "builds the server",
             kind="side",
+            logs=True,
         ),
         _box(
             40,
             360,
             320,
-            80,
+            122,
             "settings.py",
-            "every YF_MCP_* variable and flag",
+            "every YF_MCP_* variable and flag,",
+            "resolved once by cli.py, read by",
+            "server, transport and cache",
             kind="side",
         ),
-        _box(40, 480, 320, 80, "logbook/", "every log line, stderr only", kind="side"),
+        _box(
+            40,
+            512,
+            320,
+            100,
+            "logbook/",
+            "every log line, stderr only,",
+            "written by each unit marked logs",
+            kind="side",
+        ),
         _box(960, 440, 280, 80, "formatting.py", "pandas to compact JSON", kind="side"),
         _box(
-            960, 560, 280, 80, "cache.py", "opt-in SQLite, per-tool TTLs", kind="side"
+            960,
+            560,
+            280,
+            80,
+            "cache.py",
+            "opt-in SQLite, per-tool TTLs",
+            kind="side",
+            logs=True,
         ),
         _arrow("M360 115 H466", main),
         _label(415, 104, "stdio / HTTP", "middle"),
@@ -254,11 +301,11 @@ def _architecture() -> str:
         _arrow("M200 360 V324", side),
         _arrow("M890 530 H925 V480 H956", side),
         _arrow("M890 580 H925 V600 H956", side),
-        '<text x="40" y="620" font-size="15" fill="#94A3B8">'
+        '<text x="40" y="664" font-size="15" fill="#94A3B8">'
         "<tspan>Each unit imports only what the</tspan>"
         '<tspan x="40" dy="22">layer table in SPECS.md §3 allows,</tspan>'
         '<tspan x="40" dy="22">tests/test_layers.py checks it.</tspan></text>',
-        '<text x="40" y="700" font-size="15" fill="#94A3B8">'
+        '<text x="40" y="744" font-size="15" fill="#94A3B8">'
         "<tspan>stdout carries the MCP stream,</tspan>"
         '<tspan x="40" dy="22">so every log line goes to stderr.</tspan></text>',
     ]
