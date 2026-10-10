@@ -260,8 +260,10 @@ and that decides how you start the server.
 talks to it over stdin and stdout. This is the default transport and needs no
 network. Claude Desktop, Claude Code, Cursor, VS Code (Copilot agent mode), Zed,
 Windsurf, the JetBrains AI assistants, Cline, Roo Code, Continue and Goose all
-work this way. The configuration file differs per client, but the command is
-always the one shown under [Quick start](#quick-start-uv--claude-desktop):
+work this way. Claude Desktop also takes the server as an extension, a single
+file to open, see [Quick start](#quick-start-claude-desktop-extension). The
+configuration file differs per client, but the command is always the one shown
+under [Claude Desktop with uv](#claude-desktop-with-uv-manual-config):
 
 ```json
 { "command": "uvx", "args": ["benethos-yahoo-finance-mcp"] }
@@ -299,10 +301,29 @@ when the list of names is not.
 
 ## Installation
 
-### Quick start: uv + Claude Desktop
+### Quick start: Claude Desktop extension
 
-The simplest way to run the server — no clone, no manual virtual environment,
-no `git`. `uvx` fetches and runs it on demand from
+The simplest way for Claude Desktop. Nothing needs to be installed first, no
+uv, no Python and no configuration file: Claude Desktop brings what the
+extension needs.
+
+1. **Download**
+   [`benethos-yahoo-finance-mcp.mcpb`](https://github.com/benethos-hub/yahoo-finance-mcp/releases/latest/download/benethos-yahoo-finance-mcp.mcpb),
+   the extension of the newest release. Every release also carries it under
+   its version, on the [releases page](https://github.com/benethos-hub/yahoo-finance-mcp/releases).
+2. **Open it** with a double click, or drag it onto Claude Desktop → Settings
+   → Extensions. Claude Desktop shows the tools and asks to install.
+3. **Ask** something that needs market data, in a new chat. The first start
+   installs the dependencies and takes a few seconds, later starts are quick.
+
+If the server is also listed in `claude_desktop_config.json`, remove that
+entry, or every tool shows up twice. The extension is for Claude Desktop only.
+Other clients use the command below.
+
+### Claude Desktop with uv (manual config)
+
+No clone, no manual virtual environment, no `git`. `uvx` fetches and runs it
+on demand from
 [PyPI](https://pypi.org/project/benethos-yahoo-finance-mcp/) (published as
 `benethos-yahoo-finance-mcp`).
 
@@ -325,7 +346,7 @@ no `git`. `uvx` fetches and runs it on demand from
    }
    ```
 
-   Pin a version for stability with `benethos-yahoo-finance-mcp==0.8.2`. To
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.8.3`. To
    enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
@@ -349,10 +370,10 @@ official [MCP Registry](https://registry.modelcontextprotocol.io) as
 `io.github.benethos-hub/benethos-yahoo-finance-mcp`, with the PyPI package and
 the container image ([entry](https://registry.modelcontextprotocol.io/v0/servers?search=benethos-yahoo-finance-mcp)).
 A client that installs from the registry starts it with `uvx`, or with
-`docker run -i --rm` and `--transport stdio`, and needs no settings. From
-the next release on, the container entry also runs read-only, without
-capabilities and without the HTTP health check, as in the hardened
-`docker run` example under [Docker](#docker). The MCP
+`docker run -i --rm` and `--transport stdio`, and needs no settings. Since
+0.8.3 the container entry also runs read-only, without capabilities and
+without the HTTP health check, as in the hardened `docker run` example under
+[Docker](#docker). The MCP
 list in VS Code's extension view (`@mcp`) is GitHub's own selection, and a
 listing in the registry does not put a server there.
 
@@ -522,7 +543,7 @@ docker run --rm -p 8000:8000 ghcr.io/benethos-hub/benethos-yahoo-finance-mcp:lat
 # Server is now reachable at http://localhost:8000/mcp
 ```
 
-Pin a version for anything you depend on — `:0.8.2` for an exact release, `:0.8`
+Pin a version for anything you depend on — `:0.8.3` for an exact release, `:0.8`
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
 built from `main` on demand and is not a release at all.
 
