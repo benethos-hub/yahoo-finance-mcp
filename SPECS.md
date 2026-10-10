@@ -22,6 +22,10 @@ of any kind.
 
 ## 3. Architecture
 
+![Architecture: a tool call's path from the MCP client through transport, server, tools and yahoo to yfinance and Yahoo's endpoints, with cli, settings, logbook, formatting and cache beside it](assets/architecture.png)
+
+The same path as text (`assets/render_icon.py` draws the picture):
+
 ```
 MCP client (Claude)  --stdio / HTTP-->  transport/  -->  server.py (MCPServer)
                                                               |

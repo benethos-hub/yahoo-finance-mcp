@@ -61,7 +61,7 @@ containers/
 .github/publish/   # one folder per place a release is listed, read by publish.yml
   mcp-registry/   # server.json (the entry), fill_bundle_checksum.py (its bundle hash)
   mcpb/            # Claude Desktop bundle: manifest.json, server.py, build.py
-assets/           # icon.svg, icon.png, social-preview.png and the script that renders both PNGs
+assets/           # icon.svg and the PNGs render_icon.py draws: icon, social preview, architecture
 ```
 
 Keep the layers separate: **tools stay thin** and hand their arguments to the

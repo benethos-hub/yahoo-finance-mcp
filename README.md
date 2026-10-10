@@ -799,6 +799,13 @@ Leave it off (the default) if you:
 
 ## Development
 
+A tool call travels from the client through the transport, the server and the
+tool down to the yahoo layer, the only code that talks to `yfinance`.
+[SPECS.md](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/SPECS.md#3-architecture)
+describes each module and which may import which.
+
+<img src="https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/main/assets/architecture.png" alt="Architecture: MCP client, transport, server, tools and yahoo layers down to yfinance and Yahoo's endpoints, with cli, settings, logbook, formatting and cache beside them" width="100%">
+
 Install the dev extras, then run the test, lint, and type-check steps (the same
 ones CI runs).
 

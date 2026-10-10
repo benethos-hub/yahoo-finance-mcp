@@ -8,6 +8,8 @@
 - social-preview.png, 1280x640, the image GitHub shows when the repository
   link is shared. It is uploaded by hand under Settings > General > Social
   preview, there is no API for it.
+- architecture.png, the diagram in SPECS.md §3: how a call travels from the
+  client through the layers to Yahoo, and what sits beside that path.
 
 Run it after every change to the SVG or to the text below and commit the
 results together:
@@ -34,6 +36,8 @@ ICON_PNG = HERE / "icon.png"
 ICON_SIZE = 512
 PREVIEW_PNG = HERE / "social-preview.png"
 PREVIEW_WIDTH, PREVIEW_HEIGHT = 1280, 640
+ARCHITECTURE_PNG = HERE / "architecture.png"
+ARCHITECTURE_WIDTH, ARCHITECTURE_HEIGHT = 1280, 900
 
 # The preview's words. Unofficial is spelled out and nothing borrows Yahoo's
 # look: the icon and the colours are the project's own.
@@ -105,6 +109,169 @@ def _icon(x: int, y: int, size: int) -> str:
     )
 
 
+def _box(x: int, y: int, w: int, h: int, title: str, *lines: str, kind: str) -> str:
+    """One unit of the diagram: a module name and a line or two about it.
+
+    main is a step on a call's path, side sits beside it, outside is not
+    this project's code.
+    """
+    stroke = {"main": "#2DD4BF", "side": "#64748B", "outside": "#64748B"}[kind]
+    dash = ' stroke-dasharray="6 5"' if kind == "outside" else ""
+    fill = "#2DD4BF" if kind == "main" else "#1E293B"
+    opacity = "0.10" if kind == "main" else "1"
+    parts = [
+        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="12" fill="{fill}" '
+        f'fill-opacity="{opacity}" stroke="{stroke}" stroke-width="1.5"{dash}/>',
+        f'<text x="{x + 20}" y="{y + 32}" font-family="Consolas, Menlo, monospace" '
+        f'font-size="20" fill="#F8FAFC">{title}</text>',
+    ]
+    for i, line in enumerate(lines):
+        parts.append(
+            f'<text x="{x + 20}" y="{y + 58 + 22 * i}" font-size="16" '
+            f'fill="#94A3B8">{line}</text>'
+        )
+    return "".join(parts)
+
+
+def _arrow(path: str, colour: str) -> str:
+    marker = "ar-main" if colour == "#2DD4BF" else "ar-side"
+    return (
+        f'<path d="{path}" fill="none" stroke="{colour}" stroke-width="2" '
+        f'marker-end="url(#{marker})"/>'
+    )
+
+
+def _label(x: int, y: int, text: str, anchor: str = "start") -> str:
+    return (
+        f'<text x="{x}" y="{y}" font-size="15" fill="#CBD5E1" '
+        f'text-anchor="{anchor}">{text}</text>'
+    )
+
+
+def _architecture() -> str:
+    """SPECS.md §3 as a picture: the main column is a tool call's path."""
+    main, side = "#2DD4BF", "#64748B"
+    markers = "".join(
+        f'<marker id="{name}" viewBox="0 0 10 10" refX="9" refY="5" '
+        f'markerWidth="7" markerHeight="7" orient="auto-start-reverse">'
+        f'<path d="M0 0L10 5L0 10z" fill="{colour}"/></marker>'
+        for name, colour in (("ar-main", main), ("ar-side", side))
+    )
+    body = [
+        _box(
+            40,
+            60,
+            320,
+            110,
+            "MCP client",
+            "Claude Desktop, Claude Code,",
+            "Cursor, VS Code, n8n, ...",
+            kind="outside",
+        ),
+        _box(
+            470,
+            60,
+            420,
+            110,
+            "transport/",
+            "stdio.py, http.py",
+            "Host allow-list, optional bearer token",
+            kind="main",
+        ),
+        _box(470, 220, 420, 80, "server.py", "MCPServer, instructions", kind="main"),
+        _box(
+            470,
+            350,
+            420,
+            100,
+            "tools/&lt;subject&gt;.py",
+            "parameters, descriptions, titles",
+            "register_tool: read-only hints, a log line",
+            kind="main",
+        ),
+        _box(
+            470,
+            500,
+            420,
+            100,
+            "yahoo/&lt;subject&gt;.py",
+            "every yfinance call, the error mapping",
+            "ToolError, SymbolNotFoundError, RateLimitError",
+            kind="main",
+        ),
+        _box(
+            470,
+            650,
+            420,
+            70,
+            "yfinance",
+            "the library, not this project",
+            kind="outside",
+        ),
+        _box(
+            470,
+            770,
+            420,
+            70,
+            "query1/2.finance.yahoo.com",
+            "Yahoo's unofficial endpoints",
+            kind="outside",
+        ),
+        _box(
+            40,
+            220,
+            320,
+            100,
+            "cli.py",
+            "settings, log, cache,",
+            "builds the server",
+            kind="side",
+        ),
+        _box(
+            40,
+            360,
+            320,
+            80,
+            "settings.py",
+            "every YF_MCP_* variable and flag",
+            kind="side",
+        ),
+        _box(40, 480, 320, 80, "logbook/", "every log line, stderr only", kind="side"),
+        _box(960, 440, 280, 80, "formatting.py", "pandas to compact JSON", kind="side"),
+        _box(
+            960, 560, 280, 80, "cache.py", "opt-in SQLite, per-tool TTLs", kind="side"
+        ),
+        _arrow("M360 115 H466", main),
+        _label(415, 104, "stdio / HTTP", "middle"),
+        _arrow("M680 170 V216", main),
+        _arrow("M680 300 V346", main),
+        _arrow("M680 450 V496", main),
+        _arrow("M680 600 V646", main),
+        _arrow("M680 720 V766", main),
+        _label(694, 750, "HTTPS"),
+        _arrow("M360 260 H466", side),
+        _label(415, 250, "builds", "middle"),
+        _arrow("M200 360 V324", side),
+        _arrow("M890 530 H925 V480 H956", side),
+        _arrow("M890 580 H925 V600 H956", side),
+        '<text x="40" y="620" font-size="15" fill="#94A3B8">'
+        "<tspan>Each unit imports only what the</tspan>"
+        '<tspan x="40" dy="22">layer table in SPECS.md §3 allows,</tspan>'
+        '<tspan x="40" dy="22">tests/test_layers.py checks it.</tspan></text>',
+        '<text x="40" y="700" font-size="15" fill="#94A3B8">'
+        "<tspan>stdout carries the MCP stream,</tspan>"
+        '<tspan x="40" dy="22">so every log line goes to stderr.</tspan></text>',
+    ]
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{ARCHITECTURE_WIDTH}" '
+        f'height="{ARCHITECTURE_HEIGHT}" viewBox="0 0 {ARCHITECTURE_WIDTH} '
+        f'{ARCHITECTURE_HEIGHT}"><defs>{markers}</defs>'
+        f'<rect width="100%" height="100%" fill="#121A2A"/>'
+        '<g font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif">'
+        f"{''.join(body)}</g></svg>"
+    )
+
+
 def render(svg: str, width: int, height: int, target: Path) -> None:
     png = resvg_py.svg_to_bytes(svg_string=svg, width=width, height=height)
     target.write_bytes(png)
@@ -115,6 +282,7 @@ def main() -> None:
     render(ICON_SVG.read_text(encoding="utf-8"), ICON_SIZE, ICON_SIZE, ICON_PNG)
     preview = PREVIEW.format(icon=_icon(80, 200, 240), chips=_chips(380, 478))
     render(preview, PREVIEW_WIDTH, PREVIEW_HEIGHT, PREVIEW_PNG)
+    render(_architecture(), ARCHITECTURE_WIDTH, ARCHITECTURE_HEIGHT, ARCHITECTURE_PNG)
 
 
 if __name__ == "__main__":
