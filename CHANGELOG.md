@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-10-10
+
+Listed in the MCP Registry, and Python 3.15 supported. Each release from
+this one on is sent to the registry as
+`io.github.benethos-hub/benethos-yahoo-finance-mcp`, pointing at the PyPI
+package and the image. The project has an icon. The container image stays
+on Python 3.14 until a `python:3.15-slim` base exists. No tool, parameter
+or schema changes.
+
 ### Added
 
 - Python 3.15 is supported: CI tests on 3.11-3.15 and the package lists
@@ -40,6 +49,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - CI measures coverage on Python 3.15, in its `test (3.15)` job with the
   same 80% floor, instead of 3.14. The other versions run the suite
   without it.
+- Locked dependency refresh of one package, not a direct one: `soupsieve`
+  3.0 under `yfinance` (through `beautifulsoup4`). Its breaking changes
+  concern CSS selectors, which `yfinance` does not use, and the live smoke
+  test gave every section the same output size before and after.
 
 ### Fixed
 
@@ -1188,7 +1201,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.2...HEAD
+[0.8.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.1...v0.7.2
