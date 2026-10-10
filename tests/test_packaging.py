@@ -291,15 +291,43 @@ def test_classifiers_name_exactly_the_tested_pythons():
     )
 
 
+# Each condition with the `run:` line under it, so the operator is tied to the
+# step it guards: `==` belongs to the one with --cov, `!=` to the one without.
+_CONDITIONAL_STEP = re.compile(
+    r"if: matrix\.python-version ([!=]=) '(\d+\.\d+)'\n\s*run: (.+)"
+)
+
+
 def test_coverage_runs_on_the_newest_tested_python():
-    conditions = re.findall(r"if: matrix\.python-version [!=]= '(\d+\.\d+)'", CI)
-    assert len(conditions) == 2, (
-        f"expected the test job's two coverage conditions in ci.yml, found {conditions}"
+    steps = _CONDITIONAL_STEP.findall(CI)
+    assert len(steps) == 2, (
+        f"expected the test job's two conditional steps in ci.yml, found {steps}"
     )
     newest = _matrix_versions()[-1]
-    assert set(conditions) == {newest}, (
-        f"coverage is measured on {sorted(set(conditions))}, the newest tested "
-        f"Python is {newest}. Move both `if:` conditions in ci.yml along."
+    expected = {("==", newest, True), ("!=", newest, False)}
+    found = {(op, version, "--cov" in run) for op, version, run in steps}
+    assert found == expected, (
+        f"the test steps run as {sorted(found)} (operator, version, with --cov), "
+        f"expected {sorted(expected)}: coverage on the newest tested Python, "
+        f"{newest}, and the other versions without it."
+    )
+
+
+# The range the prose names, "Python 3.11-3.15", in the files a contributor
+# reads first, with a hyphen or the README's en dash. The changelog is history
+# and keeps the ranges of its day.
+_PROSE_RANGE = re.compile(r"Python(?::\*\*)? (\d+\.\d+)[-–](\d+\.\d+)")
+
+
+@pytest.mark.parametrize("relative_path", ["CLAUDE.md", "README.md", "SPECS.md"])
+def test_the_documented_python_range_is_the_matrix(relative_path):
+    text = (REPO / relative_path).read_text(encoding="utf-8")
+    ranges = set(_PROSE_RANGE.findall(text))
+    assert ranges, f"{relative_path} no longer names a Python range"
+    matrix = _matrix_versions()
+    assert ranges == {(matrix[0], matrix[-1])}, (
+        f"{relative_path} names Python {sorted(ranges)}, CI tests "
+        f"{matrix[0]}-{matrix[-1]}"
     )
 
 
