@@ -19,6 +19,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the oldest, and CLAUDE.md, README and SPECS must name the same range.
   Adding 3.15 meant editing each by hand, with nothing to say if one was
   left behind.
+- The project has an icon, `assets/icon.svg`, shown next to the README's
+  title. Its URL is absolute, since PyPI renders the README without the
+  repository around it, and the README link check now reads the `src` of an
+  `<img>` tag as well.
 
 ### Changed
 
