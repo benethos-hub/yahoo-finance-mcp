@@ -24,12 +24,12 @@ base exists. No tool, parameter or schema changes.
   renders it from `icon.svg` and a text template next to `icon.png`, so the
   two cannot drift apart. GitHub takes it by hand under Settings, General,
   Social preview.
-- An architecture diagram, `assets/architecture.png`: a tool call's path
-  from the client through transport, server, tools and yahoo to yfinance
-  and Yahoo's endpoints, with `cli.py`, `settings.py`, `logbook/`,
-  `formatting.py` and `cache.py` beside it. SPECS §3 shows it above the
-  text sketch, the README at the start of "Development".
-  `assets/render_icon.py` draws it with the other two images.
+- A diagram of how a question gets answered, `assets/architecture.png`:
+  you ask Claude, Claude calls a tool, this server fetches from Yahoo
+  Finance via yfinance, and the answer goes back the same way. The README
+  shows it under "What it is for", SPECS §3 above the sketch of the same
+  path in the code. `assets/render_icon.py` draws it with the other two
+  images.
 - The MCP Registry entry lists the Claude Desktop bundle as a third
   package, by the download URL of the release's versioned `.mcpb`. The
   registry requires its SHA-256, which exists only once the release has

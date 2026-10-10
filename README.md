@@ -54,6 +54,8 @@ and how a sector or a market is doing. You ask in plain language, the client
 picks the tools, and the answer rests on what Yahoo returns rather than on
 what the model remembers.
 
+<img src="https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/main/assets/architecture.png" alt="How a question gets answered: you ask an MCP client such as Claude, it calls a tool of this server, the server fetches from Yahoo Finance via yfinance, and the answer goes back the same way" width="100%">
+
 Typical uses:
 
 - **Quick lookups in a chat.** A quote, the 52-week range, the next earnings
@@ -799,12 +801,8 @@ Leave it off (the default) if you:
 
 ## Development
 
-A tool call travels from the client through the transport, the server and the
-tool down to the yahoo layer, the only code that talks to `yfinance`.
-[SPECS.md](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/SPECS.md#3-architecture)
-describes each module and which may import which.
-
-<img src="https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/main/assets/architecture.png" alt="Architecture: MCP client, transport, server, tools and yahoo layers down to yfinance and Yahoo's endpoints, with cli, settings, logbook, formatting and cache beside them" width="100%">
+How the code is laid out, module by module, is in
+[SPECS.md](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/SPECS.md#3-architecture).
 
 Install the dev extras, then run the test, lint, and type-check steps (the same
 ones CI runs).

@@ -8,8 +8,8 @@
 - social-preview.png, 1280x640, the image GitHub shows when the repository
   link is shared. It is uploaded by hand under Settings > General > Social
   preview, there is no API for it.
-- architecture.png, the diagram in SPECS.md §3: how a call travels from the
-  client through the layers to Yahoo, and what sits beside that path.
+- architecture.png, how a question travels from you through an MCP client
+  and this server to Yahoo and back, for the README and SPECS.md §3.
 
 Run it after every change to the SVG or to the text below and commit the
 results together:
@@ -37,7 +37,7 @@ ICON_SIZE = 512
 PREVIEW_PNG = HERE / "social-preview.png"
 PREVIEW_WIDTH, PREVIEW_HEIGHT = 1280, 640
 ARCHITECTURE_PNG = HERE / "architecture.png"
-ARCHITECTURE_WIDTH, ARCHITECTURE_HEIGHT = 1280, 900
+ARCHITECTURE_WIDTH, ARCHITECTURE_HEIGHT = 1280, 380
 
 # The preview's words. Unofficial is spelled out and nothing borrows Yahoo's
 # look: the icon and the colours are the project's own.
@@ -109,211 +109,91 @@ def _icon(x: int, y: int, size: int) -> str:
     )
 
 
-def _box(
-    x: int,
-    y: int,
-    w: int,
-    h: int,
-    title: str,
-    *lines: str,
-    kind: str,
-    logs: bool = False,
-) -> str:
-    """One unit of the diagram: a module name and a line or two about it.
+def _step(x: int, w: int, title: str, *lines: str, kind: str) -> str:
+    """One station on the way, a title and a line or two under it.
 
-    main is a step on a call's path, side sits beside it, outside is not
-    this project's code. logs marks a unit that writes through logbook/.
+    server is this project, outside is not its code, plain is the rest.
     """
-    stroke = {"main": "#2DD4BF", "side": "#64748B", "outside": "#64748B"}[kind]
-    dash = ' stroke-dasharray="6 5"' if kind == "outside" else ""
-    fill = "#2DD4BF" if kind == "main" else "#1E293B"
-    opacity = "0.10" if kind == "main" else "1"
+    y, h = 170, 150
+    stroke = {"server": "#2DD4BF", "outside": "#64748B", "plain": "#64748B"}[kind]
+    fill = "#2DD4BF" if kind == "server" else "#1E293B"
+    opacity = "0.12" if kind == "server" else "1"
+    dash = ' stroke-dasharray="7 6"' if kind == "outside" else ""
+    cx = x + w / 2
     parts = [
-        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="12" fill="{fill}" '
-        f'fill-opacity="{opacity}" stroke="{stroke}" stroke-width="1.5"{dash}/>',
-        f'<text x="{x + 20}" y="{y + 32}" font-family="Consolas, Menlo, monospace" '
-        f'font-size="20" fill="#F8FAFC">{title}</text>',
+        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="16" fill="{fill}" '
+        f'fill-opacity="{opacity}" stroke="{stroke}" stroke-width="2"{dash}/>',
+        f'<text x="{cx}" y="{y + 56}" font-size="26" font-weight="700" '
+        f'fill="#F8FAFC" text-anchor="middle">{title}</text>',
     ]
     for i, line in enumerate(lines):
+        mono = line.startswith("`")
+        family = ' font-family="Consolas, Menlo, monospace"' if mono else ""
         parts.append(
-            f'<text x="{x + 20}" y="{y + 58 + 22 * i}" font-size="16" '
-            f'fill="#94A3B8">{line}</text>'
-        )
-    if logs:
-        parts.append(
-            f'<rect x="{x + w - 70}" y="{y + 14}" width="54" height="24" rx="12" '
-            'fill="#94A3B8" fill-opacity="0.15" stroke="#94A3B8" stroke-opacity="0.6"/>'
-            f'<text x="{x + w - 43}" y="{y + 31}" font-size="14" fill="#CBD5E1" '
-            'text-anchor="middle">logs</text>'
+            f'<text x="{cx}" y="{y + 92 + 26 * i}" font-size="17" fill="#CBD5E1" '
+            f'text-anchor="middle"{family}>{line.strip("`")}</text>'
         )
     return "".join(parts)
 
 
-def _arrow(path: str, colour: str) -> str:
-    marker = "ar-main" if colour == "#2DD4BF" else "ar-side"
+def _hop(x1: int, x2: int, ask: str, reply: str) -> str:
+    """A request going right above, its reply coming back below."""
+    mid = (x1 + x2) / 2
     return (
-        f'<path d="{path}" fill="none" stroke="{colour}" stroke-width="2" '
-        f'marker-end="url(#{marker})"/>'
-    )
-
-
-def _label(x: int, y: int, text: str, anchor: str = "start") -> str:
-    return (
-        f'<text x="{x}" y="{y}" font-size="15" fill="#CBD5E1" '
-        f'text-anchor="{anchor}">{text}</text>'
+        f'<path d="M{x1 + 4} 222 H{x2 - 4}" stroke="#2DD4BF" stroke-width="2.5" '
+        'marker-end="url(#go)"/>'
+        f'<path d="M{x2 - 4} 268 H{x1 + 4}" stroke="#94A3B8" stroke-width="2.5" '
+        'marker-end="url(#back)"/>'
+        f'<text x="{mid}" y="210" font-size="15" fill="#5EEAD4" '
+        f'text-anchor="middle">{ask}</text>'
+        f'<text x="{mid}" y="292" font-size="15" fill="#CBD5E1" '
+        f'text-anchor="middle">{reply}</text>'
     )
 
 
 def _architecture() -> str:
-    """SPECS.md §3 as a picture: the main column is a tool call's path."""
-    main, side = "#2DD4BF", "#64748B"
+    """How a question gets answered, for a person rather than for the code.
+
+    The modules and which may import which stay in SPECS.md §3 as a table.
+    """
     markers = "".join(
         f'<marker id="{name}" viewBox="0 0 10 10" refX="9" refY="5" '
-        f'markerWidth="7" markerHeight="7" orient="auto-start-reverse">'
+        'markerWidth="7" markerHeight="7" orient="auto">'
         f'<path d="M0 0L10 5L0 10z" fill="{colour}"/></marker>'
-        for name, colour in (("ar-main", main), ("ar-side", side))
+        for name, colour in (("go", "#2DD4BF"), ("back", "#94A3B8"))
     )
     body = [
-        _box(
-            40,
-            60,
-            320,
-            110,
-            "MCP client",
-            "Claude Desktop, Claude Code,",
-            "Cursor, VS Code, n8n, ...",
-            kind="outside",
+        '<text x="640" y="80" font-size="30" font-weight="700" fill="#F8FAFC" '
+        'text-anchor="middle">How a question gets answered</text>',
+        '<text x="640" y="114" font-size="18" fill="#94A3B8" '
+        'text-anchor="middle">read-only, no Yahoo account, no API key</text>',
+        _step(40, 200, "You", "ask in plain", "language", kind="plain"),
+        _step(310, 230, "MCP client", "for example", "Claude", kind="plain"),
+        _step(
+            630,
+            300,
+            "This server",
+            "`benethos-yahoo-finance-mcp`",
+            "fetches, keeps it compact",
+            kind="server",
         ),
-        _box(
-            470,
-            60,
-            420,
-            110,
-            "transport/",
-            "stdio.py, http.py",
-            "Host allow-list, optional bearer token",
-            kind="main",
-            logs=True,
-        ),
-        _box(
-            470,
+        _step(
+            1020,
             220,
-            420,
-            80,
-            "server.py",
-            "MCPServer, instructions, refused arguments",
-            kind="main",
-            logs=True,
-        ),
-        _box(
-            470,
-            350,
-            420,
-            100,
-            "tools/&lt;subject&gt;.py",
-            "parameters, descriptions, titles",
-            "register_tool: read-only hints, a log line",
-            kind="main",
-            logs=True,
-        ),
-        _box(
-            470,
-            500,
-            420,
-            100,
-            "yahoo/&lt;subject&gt;.py",
-            "every yfinance call, the error mapping",
-            "ToolError, SymbolNotFoundError, RateLimitError",
-            kind="main",
-            logs=True,
-        ),
-        _box(
-            470,
-            650,
-            420,
-            70,
-            "yfinance",
-            "the library, not this project",
+            "Yahoo Finance",
+            "unofficial endpoints,",
+            "via yfinance",
             kind="outside",
         ),
-        _box(
-            470,
-            770,
-            420,
-            70,
-            "query1/2.finance.yahoo.com",
-            "Yahoo's unofficial endpoints",
-            kind="outside",
-        ),
-        _box(
-            40,
-            220,
-            320,
-            100,
-            "cli.py",
-            "settings, log, cache,",
-            "builds the server",
-            kind="side",
-            logs=True,
-        ),
-        _box(
-            40,
-            360,
-            320,
-            122,
-            "settings.py",
-            "every YF_MCP_* variable and flag,",
-            "resolved once by cli.py, read by",
-            "server, transport and cache",
-            kind="side",
-        ),
-        _box(
-            40,
-            512,
-            320,
-            100,
-            "logbook/",
-            "every log line, stderr only,",
-            "written by each unit marked logs",
-            kind="side",
-        ),
-        _box(960, 440, 280, 80, "formatting.py", "pandas to compact JSON", kind="side"),
-        _box(
-            960,
-            560,
-            280,
-            80,
-            "cache.py",
-            "opt-in SQLite, per-tool TTLs",
-            kind="side",
-            logs=True,
-        ),
-        _arrow("M360 115 H466", main),
-        _label(415, 104, "stdio / HTTP", "middle"),
-        _arrow("M680 170 V216", main),
-        _arrow("M680 300 V346", main),
-        _arrow("M680 450 V496", main),
-        _arrow("M680 600 V646", main),
-        _arrow("M680 720 V766", main),
-        _label(694, 750, "HTTPS"),
-        _arrow("M360 260 H466", side),
-        _label(415, 250, "builds", "middle"),
-        _arrow("M200 360 V324", side),
-        _arrow("M890 530 H925 V480 H956", side),
-        _arrow("M890 580 H925 V600 H956", side),
-        '<text x="40" y="664" font-size="15" fill="#94A3B8">'
-        "<tspan>Each unit imports only what the</tspan>"
-        '<tspan x="40" dy="22">layer table in SPECS.md §3 allows,</tspan>'
-        '<tspan x="40" dy="22">tests/test_layers.py checks it.</tspan></text>',
-        '<text x="40" y="744" font-size="15" fill="#94A3B8">'
-        "<tspan>stdout carries the MCP stream,</tspan>"
-        '<tspan x="40" dy="22">so every log line goes to stderr.</tspan></text>',
+        _hop(240, 310, "question", "answer"),
+        _hop(540, 630, "tool call", "JSON"),
+        _hop(930, 1020, "request", "data"),
     ]
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{ARCHITECTURE_WIDTH}" '
         f'height="{ARCHITECTURE_HEIGHT}" viewBox="0 0 {ARCHITECTURE_WIDTH} '
         f'{ARCHITECTURE_HEIGHT}"><defs>{markers}</defs>'
-        f'<rect width="100%" height="100%" fill="#121A2A"/>'
+        '<rect width="100%" height="100%" fill="#121A2A"/>'
         '<g font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif">'
         f"{''.join(body)}</g></svg>"
     )
