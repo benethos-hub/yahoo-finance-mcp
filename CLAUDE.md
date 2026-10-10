@@ -60,6 +60,7 @@ containers/
   publish.yml     # PyPI + ghcr + MCP Registry on a published GitHub release
 .github/publish/   # one folder per place a release is listed, read by publish.yml
   mcp-registry/server.json   # the MCP Registry entry
+  mcpb/            # Claude Desktop bundle: manifest.json, server.py, build.py
 assets/           # icon.svg, icon.png and the script that renders the PNG
 ```
 
@@ -98,7 +99,10 @@ A tool writes no line of its own, `register_tool` writes one per call.
    obviously what a caller wants, and otherwise report `truncated`.
 3. Expose it in the `tools/` module of the same name and add it to that
    module's `register()` with a short title, which a client shows a person in
-   place of the name (a test wants one per tool, no two alike).
+   place of the name (a test wants one per tool, no two alike). The bundle
+   manifest in `.github/publish/mcpb/` lists every tool with the first
+   sentence of its docstring, and `tests/test_mcpb.py` prints the list it
+   expects when a tool or a first sentence changed.
    `register_tool` gives it the shared
    `readOnlyHint`/`openWorldHint` pair every tool carries (a test asserts it
    for all of them) and its log line. The **docstring becomes the
@@ -194,7 +198,10 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    newest release of `modelcontextprotocol/registry` and, if it moved, take
    the version and the `mcp-publisher_linux_amd64.tar.gz` line of its
    checksums file. The registry refuses a publisher that is too old with
-   "invalid audience", in the last job of the release.
+   "invalid audience", in the last job of the release. `MCPB_VERSION`, the
+   bundle CLI the `mcpb-bundle` job runs through `npx`, is invisible to
+   Dependabot the same way: compare it with the newest release of
+   `modelcontextprotocol/mcpb`.
 2. Bump `version` in `pyproject.toml`, then `uv lock` and `uv sync --extra dev`
    (the packaging tests read the *installed* metadata). Let
    `tests/test_packaging.py` name every stale version example instead of

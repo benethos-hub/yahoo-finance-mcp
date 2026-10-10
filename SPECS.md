@@ -607,6 +607,25 @@ values).
   registry, a selection of 394 servers on 2026-10-10 that held none of the
   official registry's Yahoo Finance servers, so a listing does not reach it
   on its own.
+  A fourth job attaches a **Claude Desktop bundle** to the release,
+  `benethos-yahoo-finance-mcp-X.Y.Z.mcpb`, which installs with a double
+  click and no configuration file. The same file goes up a second time as
+  `benethos-yahoo-finance-mcp.mcpb`, so
+  `releases/latest/download/benethos-yahoo-finance-mcp.mcpb` always reaches
+  the newest full release. It is a `uv` bundle (manifest 0.4): it
+  carries `pyproject.toml`, `uv.lock` and the source, Claude Desktop starts
+  `uv run --frozen` in the unpacked directory, and the dependencies are the
+  locked ones, as in the image. `.github/publish/mcpb/build.py` stages it
+  with the standard library alone, the `mcpb` CLI validates and packs it.
+  The manifest is committed as it ships, and `tests/test_mcpb.py` holds its
+  version, metadata and tool list (each tool's first sentence) to the
+  package. It asks for no settings. Tested on 2026-10-10 in Claude Desktop
+  twice, on a machine with uv installed and in a fresh Windows Sandbox
+  without uv or Python: both ran, so Claude Desktop provides uv and Python
+  itself, as the bundle format's documentation says, and a user needs
+  nothing installed beforehand. The `mcpb` CLI 2.1.2 requires the
+  `mcp_config` with the `uv` command even for a `uv` bundle, although the
+  format calls it optional.
   One name is used throughout: the PyPI
   distribution, the import package (`benethos_yahoo_finance_mcp`, underscores
   because a module name cannot contain hyphens), the console script, and the

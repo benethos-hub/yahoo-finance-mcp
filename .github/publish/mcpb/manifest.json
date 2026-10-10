@@ -1,0 +1,147 @@
+{
+  "manifest_version": "0.4",
+  "name": "benethos-yahoo-finance-mcp",
+  "display_name": "Yahoo Finance (unofficial)",
+  "version": "0.8.2",
+  "description": "Unofficial read-only MCP server exposing Yahoo Finance data (via yfinance) over stdio or HTTP.",
+  "author": {
+    "name": "Benedikt Oswald"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/benethos-hub/yahoo-finance-mcp"
+  },
+  "homepage": "https://github.com/benethos-hub/yahoo-finance-mcp",
+  "documentation": "https://github.com/benethos-hub/yahoo-finance-mcp#readme",
+  "support": "https://github.com/benethos-hub/yahoo-finance-mcp/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "uv",
+    "entry_point": "server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "--frozen",
+        "server.py"
+      ]
+    }
+  },
+  "tools": [
+    {
+      "name": "search",
+      "description": "Search Yahoo Finance by company name, ticker symbol, or ISIN."
+    },
+    {
+      "name": "get_quote",
+      "description": "Get the current price and key intraday figures for a Yahoo symbol."
+    },
+    {
+      "name": "get_quotes",
+      "description": "Get compact current quotes for several Yahoo symbols in one call."
+    },
+    {
+      "name": "get_history",
+      "description": "Get historical OHLCV (open/high/low/close/volume) data for a symbol."
+    },
+    {
+      "name": "get_company_info",
+      "description": "Get a company profile and key statistics for a Yahoo symbol."
+    },
+    {
+      "name": "get_financials",
+      "description": "Get a financial statement for a Yahoo symbol."
+    },
+    {
+      "name": "get_dividends",
+      "description": "Get the dividend and stock-split history for a Yahoo symbol."
+    },
+    {
+      "name": "get_news",
+      "description": "Get recent news headlines for a Yahoo symbol (up to limit, 1-10)."
+    },
+    {
+      "name": "get_calendar",
+      "description": "Get upcoming corporate-calendar events for a Yahoo symbol."
+    },
+    {
+      "name": "get_shares",
+      "description": "Get the shares-outstanding history for a Yahoo symbol."
+    },
+    {
+      "name": "get_recommendations",
+      "description": "Get analyst recommendation trends and price targets for a Yahoo symbol."
+    },
+    {
+      "name": "get_earnings",
+      "description": "Get upcoming and historical earnings for a Yahoo symbol."
+    },
+    {
+      "name": "get_estimates",
+      "description": "Get forward analyst estimates for a Yahoo symbol."
+    },
+    {
+      "name": "get_upgrades_downgrades",
+      "description": "Get recent analyst rating changes (upgrades/downgrades) for a Yahoo symbol."
+    },
+    {
+      "name": "get_holders",
+      "description": "Get the ownership breakdown for a Yahoo symbol."
+    },
+    {
+      "name": "get_insider_activity",
+      "description": "Get insider trading activity for a Yahoo symbol."
+    },
+    {
+      "name": "get_sec_filings",
+      "description": "Get recent SEC filings for a Yahoo symbol."
+    },
+    {
+      "name": "get_options",
+      "description": "Get the option chain for a Yahoo symbol."
+    },
+    {
+      "name": "get_fund_data",
+      "description": "Get fund/ETF profile data for a Yahoo symbol."
+    },
+    {
+      "name": "get_sector",
+      "description": "Browse a market sector by its Yahoo key (not a ticker symbol)."
+    },
+    {
+      "name": "get_industry",
+      "description": "Browse an industry by its Yahoo key (not a ticker symbol)."
+    },
+    {
+      "name": "get_market",
+      "description": "Get the trading status and headline index summary for a market."
+    },
+    {
+      "name": "screen",
+      "description": "Find stocks by criteria, e.g. dividend payers in a region or cheap large caps."
+    }
+  ],
+  "keywords": [
+    "finance",
+    "stocks",
+    "market data",
+    "yfinance",
+    "read-only"
+  ],
+  "license": "MIT",
+  "privacy_policies": [
+    "https://legal.yahoo.com/us/en/yahoo/privacy/index.html"
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "linux",
+      "win32"
+    ],
+    "runtimes": {
+      "python": ">=3.11"
+    }
+  }
+}

@@ -8,6 +8,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- A Claude Desktop bundle, `benethos-yahoo-finance-mcp-X.Y.Z.mcpb`, is
+  attached to each release from the next one on, and once more as
+  `benethos-yahoo-finance-mcp.mcpb` for a download link that always
+  reaches the newest release. It installs with a double click, without
+  editing `claude_desktop_config.json`, shows the tools and the icon before
+  installing, and runs the locked dependencies through uv. Claude Desktop
+  provides uv and Python itself, nothing needs to be installed first.
+  `.github/publish/mcpb/` holds its manifest, entry point and build script,
+  and `tests/test_mcpb.py` keeps the manifest's version, metadata and tool
+  list in step with the package.
+
 - The README names the MCP Registry entry under "Other ways to install",
   live since 0.8.2, and says that VS Code's MCP list is GitHub's own
   selection, which a listing in the registry does not reach.

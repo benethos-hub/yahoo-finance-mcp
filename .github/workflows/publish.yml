@@ -6,9 +6,11 @@ name: Publish
 #     benethos-yahoo-finance-mcp, the name of the distribution
 #   * server.json to the MCP Registry, via the same OIDC token, once both of
 #     the above are out
+#   * the Claude Desktop bundle (.mcpb) as an asset of the release itself
 #
-# The first two jobs are independent, so a failure in one does not withhold
-# the other. The registry entry points at both and waits for them.
+# The PyPI, image and bundle jobs are independent, so a failure in one does
+# not withhold the others. The registry entry points at the first two and
+# waits for them.
 #
 # `workflow_dispatch` exercises the container half alone and tags the result
 # `edge`. PyPI is skipped there, because a version may only be uploaded once and
@@ -219,6 +221,50 @@ jobs:
           print("OK:", ", ".join(platforms))
           print("   ", annotations["org.opencontainers.image.description"])
           PY
+
+  mcpb-bundle:
+    name: Attach the Claude Desktop bundle
+    # The bundle goes onto the release it is built for, and a manual run has
+    # no release to attach it to.
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # upload the bundle as a release asset
+    env:
+      # Pinned as everything else here. Dependabot cannot see a package
+      # npx fetches, so the bump is a release step in CLAUDE.md.
+      MCPB_VERSION: 2.1.2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The write token is for the upload, nothing here pushes.
+          persist-credentials: false
+
+      - name: The release tag is the package version
+        run: python3 .github/scripts/tag_matches_version.py
+
+      - name: Stage the bundle
+        run: python3 .github/publish/mcpb/build.py "$RUNNER_TEMP/bundle"
+
+      - name: Validate and pack
+        run: |
+          set -euo pipefail
+          npx --yes "@anthropic-ai/mcpb@${MCPB_VERSION}" validate "$RUNNER_TEMP/bundle/manifest.json"
+          npx --yes "@anthropic-ai/mcpb@${MCPB_VERSION}" pack "$RUNNER_TEMP/bundle" \
+            "benethos-yahoo-finance-mcp-${GITHUB_REF_NAME#v}.mcpb"
+
+      # Twice: once under its version, and once without, which gives the
+      # README a link that always reaches the newest full release
+      # (releases/latest/download/benethos-yahoo-finance-mcp.mcpb).
+      - name: Attach it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          versioned="benethos-yahoo-finance-mcp-${GITHUB_REF_NAME#v}.mcpb"
+          cp "$versioned" benethos-yahoo-finance-mcp.mcpb
+          gh release upload "$GITHUB_REF_NAME" "$versioned" benethos-yahoo-finance-mcp.mcpb
 
   mcp-registry-publish:
     name: Publish to the MCP Registry
