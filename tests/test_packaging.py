@@ -251,3 +251,67 @@ def test_changelog_closes_the_current_release():
         f"compare links at the foot of CHANGELOG.md are {wrong}, expected "
         f"{ {name: expected[name] for name in wrong} }"
     )
+
+
+# The supported Pythons are written down in four places that nothing ties
+# together: the classifiers in pyproject.toml, its requires-python, the CI
+# matrix, and the matrix entry that measures coverage (plus the oldest Python
+# lowest-versions installs). Adding 3.15 meant editing each by hand, and one
+# left behind would have kept every check green. ci.yml is read with regular
+# expressions, which is enough for these few lines and needs no YAML parser.
+CI = (REPO / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+
+
+def _version_key(version: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in version.split("."))
+
+
+def _matrix_versions() -> list[str]:
+    match = re.search(r"^\s*python-version: \[([^\]]*)\]", CI, re.M)
+    assert match, "ci.yml no longer lists a python-version matrix"
+    versions = re.findall(r'"(\d+\.\d+)"', match.group(1))
+    assert versions, f"no versions found in {match.group(0).strip()!r}"
+    return sorted(versions, key=_version_key)
+
+
+def test_classifiers_name_exactly_the_tested_pythons():
+    prefix = "Programming Language :: Python :: "
+    classified = sorted(
+        (
+            c.removeprefix(prefix)
+            for c in PYPROJECT["project"]["classifiers"]
+            if re.fullmatch(re.escape(prefix) + r"\d+\.\d+", c)
+        ),
+        key=_version_key,
+    )
+    matrix = _matrix_versions()
+    assert classified == matrix, (
+        f"pyproject.toml classifies Python {classified}, CI tests {matrix}. "
+        "Add or drop the version in both places."
+    )
+
+
+def test_coverage_runs_on_the_newest_tested_python():
+    conditions = re.findall(r"if: matrix\.python-version [!=]= '(\d+\.\d+)'", CI)
+    assert len(conditions) == 2, (
+        f"expected the test job's two coverage conditions in ci.yml, found {conditions}"
+    )
+    newest = _matrix_versions()[-1]
+    assert set(conditions) == {newest}, (
+        f"coverage is measured on {sorted(set(conditions))}, the newest tested "
+        f"Python is {newest}. Move both `if:` conditions in ci.yml along."
+    )
+
+
+def test_the_oldest_tested_python_is_the_floor_everywhere():
+    oldest = _matrix_versions()[0]
+    requires = PYPROJECT["project"]["requires-python"]
+    assert requires == f">={oldest}", (
+        f"requires-python is {requires!r}, the oldest tested Python is {oldest}"
+    )
+    lowest = re.search(r"uv venv -p (\d+\.\d+) /tmp/lowest", CI)
+    assert lowest, "ci.yml no longer creates the lowest-versions venv with -p"
+    assert lowest.group(1) == oldest, (
+        f"lowest-versions installs on {lowest.group(1)}, the oldest tested "
+        f"Python is {oldest}"
+    )

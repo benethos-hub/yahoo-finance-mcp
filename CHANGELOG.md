@@ -12,6 +12,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   3.15 among its classifiers. Every dependency installs from wheels on
   3.15.0, the suite and mypy pass, and the server answers live over stdio.
   The container image stays on Python 3.14.
+- Three checks in the test suite tie the supported Pythons together: the
+  classifiers must name exactly the versions the CI matrix tests, coverage
+  must run on the newest of them, and `requires-python` and the
+  `lowest-versions` job must start at the oldest. Adding 3.15 meant editing
+  each by hand, with nothing to say if one was left behind.
 
 ### Changed
 
