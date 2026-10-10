@@ -497,11 +497,14 @@ values).
   `test_cli.py`, `test_logbook.py`, `test_server.py`,
   `test_tools_integration.py`, `test_transport.py`). Two guard the shape of
   the code: `test_layers.py` the import table, `test_logbook_catalog.py` that
-  every line is a logbook function. Two more guard what ships rather than
-  what runs: `test_packaging.py` on the PEP 561 marker and the version
-  examples, `test_readme.py` on link targets PyPI cannot resolve, on every
-  `#anchor` link landing on a heading and on the tool list matching the
-  registry.
+  every line is a logbook function. Five more guard what ships rather than
+  what runs: `test_packaging.py` on the PEP 561 marker, the version
+  examples and the supported Pythons, `test_readme.py` on link targets PyPI
+  cannot resolve, on every `#anchor` link landing on a heading and on the
+  tool list matching the registry, `test_server_json.py` on the MCP Registry
+  entry, `test_mcpb.py` on the Claude Desktop bundle, and
+  `test_publish_workflow.py` on the release workflow's guards and the order
+  of its jobs.
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo, and it is not part of
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
@@ -563,8 +566,8 @@ values).
   Minor and patch updates arrive grouped, one pull request per ecosystem and
   week, a major on its own, and `yfinance` and `mcp` always on their own,
   since each needs the checks CLAUDE.md describes.
-- A separate `publish` workflow runs when a GitHub release is published and does
-  two independent things. It builds the sdist + wheel (`uv build`) and uploads
+- A separate `publish` workflow runs when a GitHub release is published. Its
+  first two jobs are independent of each other. It builds the sdist + wheel (`uv build`) and uploads
   them to **PyPI via Trusted Publishing (OIDC)**, and it builds the container
   image for `linux/amd64` and `linux/arm64` and pushes it to **ghcr.io** as
   `ghcr.io/benethos-hub/benethos-yahoo-finance-mcp`, authenticating with the
@@ -578,7 +581,8 @@ values).
   or later should `publish.yml` name it again. Neither half stores a secret, and a failure
   in one does not withhold the other. Release tags become `X.Y.Z`, `X.Y` and `latest`, a
   pre-release its exact version only, so `latest` stays on the last full
-  release. Both jobs stop first when the tag is not `v` plus the version in
+  release. Every job of the workflow stops first when the tag is not `v`
+  plus the version in
   `pyproject.toml` (`.github/scripts/tag_matches_version.py`), since PyPI
   would refuse the upload while the image job pushed its tags with the old
   code. The workflow can also be started by hand, from `main` only, which
