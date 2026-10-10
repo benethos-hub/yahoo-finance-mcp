@@ -66,18 +66,19 @@ jobs:
       # tests/smoke.py is not collected (it has no test_* functions) and is
       # the only part that would hit the live Yahoo Finance endpoints.
       #
-      # The coverage floor is measured on 3.14 alone. With branch coverage on,
-      # the test step took 13-16 s on 3.14 and 16-22 s on 3.11-3.13 (two runs,
-      # 2026-10-09 and 10), so the fastest of those four measures and the
-      # others, 3.15 included, only test. The job names stay test (3.x), and
-      # test (3.14) being a required check is what makes the floor block a
-      # merge. Code that runs only on another Python is not counted.
+      # The coverage floor is measured on the newest Python alone, 3.15. With
+      # branch coverage on, the test step took 13-16 s on 3.14 and 16-22 s on
+      # 3.11-3.13 (two CI runs, 2026-10-09 and 10), and on 3.15 the suite
+      # took 12-13 s with and without coverage alike (two local runs). The
+      # others only test. The job names stay test (3.x), and test (3.15)
+      # being a required check is what makes the floor block a merge. Code
+      # that runs only on an older Python is not counted.
       - name: Run tests
-        if: matrix.python-version != '3.14'
+        if: matrix.python-version != '3.15'
         run: uv run pytest -q
 
       - name: Run tests with coverage
-        if: matrix.python-version == '3.14'
+        if: matrix.python-version == '3.15'
         run: uv run pytest -q --cov=benethos_yahoo_finance_mcp --cov-fail-under=80
 
   # Every other job installs from uv.lock, which pins the dependencies to a
