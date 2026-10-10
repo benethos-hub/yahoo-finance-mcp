@@ -205,9 +205,11 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
 2. Bump `version` in `pyproject.toml`, then `uv lock` and `uv sync --extra dev`
    (the packaging tests read the *installed* metadata). Let
    `tests/test_packaging.py` name every stale version example instead of
-   hunting for them by eye, and `tests/test_server_json.py` the three
-   versions in `.github/publish/mcp-registry/server.json`, the MCP Registry
-   entry.
+   hunting for them by eye, and `tests/test_server_json.py` the versions in
+   `.github/publish/mcp-registry/server.json`, the MCP Registry entry,
+   including the tag and file name in the bundle's download URL. Its
+   `fileSha256` stays the placeholder of zeros, the release workflow writes
+   the real hash.
 3. Close `[Unreleased]` in `CHANGELOG.md` as `[X.Y.Z] - <date>` and add the
    compare links.
 4. After the squash merge: annotated tag `vX.Y.Z`, push it, then

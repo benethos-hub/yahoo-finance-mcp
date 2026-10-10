@@ -605,7 +605,19 @@ values).
   production compose file: `--read-only`, the same two tmpfs mounts,
   `--cap-drop ALL` and `no-new-privileges`, plus `--no-healthcheck`, since
   the image's check probes an HTTP port a stdio container never opens. A
-  test holds the mounts to the compose file. The first entry went out
+  test holds the mounts to the compose file. The entry lists the Claude
+  Desktop bundle as a third package (`registryType: "mcpb"`), by the
+  download URL of this release's versioned asset, which is the only form the
+  registry takes for a GitHub-hosted bundle. Its required `fileSha256`
+  exists only once the release has built the bundle, so the committed entry
+  holds zeros and the registry job, which waits for the bundle job too,
+  downloads the attached file and writes its hash
+  (`.github/publish/mcp-registry/fill_bundle_checksum.py`, which refuses any
+  other file name and a hash already filled in). The registry takes an
+  entry whole or not at all, so should it still refuse the one with the
+  bundle after the retries, the job drops the bundle (`--drop`), publishes
+  the rest so the version is listed with PyPI and the image, and fails
+  anyway, which leaves the refusal in sight. The first entry went out
   with 0.8.2, accepted at the first attempt. The MCP list in VS Code's
   extension view does not show it: that list comes from GitHub's own
   registry, a selection of 394 servers on 2026-10-10 that held none of the

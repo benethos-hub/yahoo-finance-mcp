@@ -64,7 +64,22 @@ def test_the_registry_entry_waits_for_both_packages():
     """The registry checks the README on PyPI and the label in the image when
     it takes the entry, so both have to be published first."""
     job = WORKFLOW.split("mcp-registry-publish:", 1)[1]
-    assert "needs: [pypi-publish, ghcr-publish]" in job
+    assert "needs: [pypi-publish, ghcr-publish, mcpb-bundle]" in job
+
+
+def test_the_bundle_checksum_is_filled_in_before_publishing():
+    job = WORKFLOW.split("mcp-registry-publish:", 1)[1]
+    assert job.index("fill_bundle_checksum.py") < job.index("mcp-publisher publish")
+
+
+def test_a_refused_bundle_still_leaves_the_version_listed():
+    """The registry takes an entry whole or not at all. After the retries the
+    bundle is dropped and the rest published, and the job still fails."""
+    step = WORKFLOW.split("- name: Publish server.json", 1)[1]
+    retries = step.index("done")
+    dropped = step.index("--drop")
+    republished = step.index('./mcp-publisher publish "$entry"', dropped)
+    assert retries < dropped < republished < step.index("exit 1", republished)
 
 
 def test_the_bundle_is_attached_under_a_stable_name_too():

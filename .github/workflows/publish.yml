@@ -268,12 +268,13 @@ jobs:
 
   mcp-registry-publish:
     name: Publish to the MCP Registry
-    # The registry checks both packages when it takes the entry: the README of
-    # this version on PyPI must carry the mcp-name line, the image config the
-    # label. So it runs only once both are out, and a pre-release is not
+    # The registry checks every package when it takes the entry: the README
+    # of this version on PyPI must carry the mcp-name line, the image config
+    # the label, and the bundle must be downloadable and match its checksum.
+    # So it runs only once all three are out, and a pre-release is not
     # listed at all.
     if: github.event_name == 'release' && !github.event.release.prerelease
-    needs: [pypi-publish, ghcr-publish]
+    needs: [pypi-publish, ghcr-publish, mcpb-bundle]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -301,19 +302,40 @@ jobs:
           echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum -c -
           tar xzf mcp-publisher.tar.gz mcp-publisher
 
+      # The bundle's hash exists only now. The entry holds a placeholder,
+      # and the hash is taken from the very file the release carries.
+      - name: Fill in the bundle's checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          bundle="benethos-yahoo-finance-mcp-${GITHUB_REF_NAME#v}.mcpb"
+          gh release download "$GITHUB_REF_NAME" --pattern "$bundle" --dir "$RUNNER_TEMP"
+          python3 .github/publish/mcp-registry/fill_bundle_checksum.py \
+            .github/publish/mcp-registry/server.json "$RUNNER_TEMP/$bundle"
+
       - name: Log in with the workflow's OIDC token
         run: ./mcp-publisher login github-oidc
 
       # The registry reads the version from PyPI's JSON API, which can report
       # a fresh upload as missing for minutes. A refusal is retried for a
-      # while before the job gives up.
+      # while. The registry takes an entry whole or not at all, so a refusal
+      # that outlasts the retries falls back to the entry without the bundle,
+      # the newest of its packages: the version is listed at least with PyPI
+      # and the image, and the job still fails, so the refusal is looked at.
       - name: Publish server.json
         run: |
+          set -euo pipefail
+          entry=.github/publish/mcp-registry/server.json
           for attempt in 1 2 3 4 5 6; do
-            if ./mcp-publisher publish .github/publish/mcp-registry/server.json; then
+            if ./mcp-publisher publish "$entry"; then
               exit 0
             fi
             echo "attempt ${attempt} refused, trying again in 60 s"
             sleep 60
           done
+          echo "::warning::The registry refused the entry with the bundle, publishing it without"
+          python3 .github/publish/mcp-registry/fill_bundle_checksum.py --drop "$entry"
+          ./mcp-publisher publish "$entry"
+          echo "::error::Listed without the bundle. The refusals above say why."
           exit 1
