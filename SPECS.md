@@ -499,8 +499,9 @@ values).
   the code: `test_layers.py` the import table, `test_logbook_catalog.py` that
   every line is a logbook function. Two more guard what ships rather than
   what runs: `test_packaging.py` on the PEP 561 marker and the version
-  examples, `test_readme.py` on link targets PyPI cannot resolve and on the
-  tool list matching the registry.
+  examples, `test_readme.py` on link targets PyPI cannot resolve, on every
+  `#anchor` link landing on a heading and on the tool list matching the
+  registry.
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo, and it is not part of
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
