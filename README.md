@@ -344,6 +344,15 @@ no `git`. `uvx` fetches and runs it on demand from
 
 ### Other ways to install
 
+**From the MCP Registry.** Every release from 0.8.2 on is listed in the
+official [MCP Registry](https://registry.modelcontextprotocol.io) as
+`io.github.benethos-hub/benethos-yahoo-finance-mcp`, with the PyPI package and
+the container image ([entry](https://registry.modelcontextprotocol.io/v0/servers?search=benethos-yahoo-finance-mcp)).
+A client that installs from the registry starts it with `uvx`, or with
+`docker run -i --rm` and `--transport stdio`, and needs no settings. The MCP
+list in VS Code's extension view (`@mcp`) is GitHub's own selection, and a
+listing in the registry does not put a server there.
+
 **From PyPI with pip** (no uv, no clone). Install the published package into a
 virtual environment and run it as a module. The only platform difference is the
 venv interpreter path: Windows uses `.venv\Scripts\python.exe`, Linux/macOS use

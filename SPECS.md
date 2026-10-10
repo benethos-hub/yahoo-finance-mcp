@@ -601,7 +601,12 @@ values).
   An entry cannot be changed once taken, and `tests/test_server_json.py`
   holds its version, description and name to the package before it goes
   out. Its image entry starts the container with `--transport stdio`, which
-  a client launching it as a local process needs.
+  a client launching it as a local process needs. The first entry went out
+  with 0.8.2, accepted at the first attempt. The MCP list in VS Code's
+  extension view does not show it: that list comes from GitHub's own
+  registry, a selection of 394 servers on 2026-10-10 that held none of the
+  official registry's Yahoo Finance servers, so a listing does not reach it
+  on its own.
   One name is used throughout: the PyPI
   distribution, the import package (`benethos_yahoo_finance_mcp`, underscores
   because a module name cannot contain hyphens), the console script, and the

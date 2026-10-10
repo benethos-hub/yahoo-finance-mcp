@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- The README names the MCP Registry entry under "Other ways to install",
+  live since 0.8.2, and says that VS Code's MCP list is GitHub's own
+  selection, which a listing in the registry does not reach.
+
 ## [0.8.2] - 2026-10-10
 
 Listed in the MCP Registry, and Python 3.15 supported. Each release from
