@@ -31,6 +31,20 @@ Yahoo's unofficial endpoints.
 > - For **commercial use**, review Yahoo's Terms of Service and consider a
 >   properly licensed market-data provider instead of the unofficial endpoints.
 
+**Contents**
+
+- [What it is for](#what-it-is-for) · [Example prompts](#example-prompts)
+- [Tools](#tools) · [Symbol resolution](#symbol-resolution)
+- [Compatible clients](#compatible-clients) · [Requirements](#requirements)
+- [Installation](#installation)
+  - [Quick start: Claude Desktop extension](#quick-start-claude-desktop-extension)
+  - [Claude Desktop with uv (manual config)](#claude-desktop-with-uv-manual-config)
+  - [Other ways to install](#other-ways-to-install)
+- [Running as a standalone server](#running-as-a-standalone-server):
+  [Docker](#docker), [Docker Compose](#docker-compose),
+  [Manual (uv or venv)](#manual-uv-or-venv)
+- [Caching](#caching) · [Development](#development) · [Trademarks](#trademarks)
+
 ## What it is for
 
 The server lets an MCP client such as Claude Desktop answer questions about

@@ -73,6 +73,53 @@ def test_link_check_ignores_code_blocks() -> None:
     assert _link_targets(sample) == ["https://example.com"]
 
 
+# The table of contents and the cross-references jump to headings by their
+# anchor, which GitHub derives from the heading text. Rename a heading and the
+# link still renders, it just lands nowhere, on GitHub and on PyPI alike.
+_HEADING = re.compile(r"^#{1,6} (.+)$", re.MULTILINE)
+
+
+def _anchor(heading: str) -> str:
+    """GitHub's anchor for a heading: lower case, punctuation dropped, spaces
+    to hyphens. HTML in the heading, like the icon in the title, is not text."""
+    text = re.sub(r"<[^>]+>", "", heading).strip().lower()
+    return re.sub(r"[^\w\- ]", "", text).replace(" ", "-")
+
+
+def _anchors(markdown: str) -> set[str]:
+    anchors: set[str] = set()
+    for heading in _HEADING.findall(_FENCE.sub("", markdown)):
+        anchor = _anchor(heading)
+        # A repeated heading gets -1, -2 and so on.
+        suffix, unique = 0, anchor
+        while unique in anchors:
+            suffix += 1
+            unique = f"{anchor}-{suffix}"
+        anchors.add(unique)
+    return anchors
+
+
+def test_every_fragment_link_lands_on_a_heading() -> None:
+    text = README.read_text(encoding="utf-8")
+    fragments = {t[1:] for t in _link_targets(text) if t.startswith("#")}
+    assert fragments, "the README has no fragment links, so this checked nothing"
+    missing = sorted(fragments - _anchors(text))
+    assert not missing, (
+        f"links to {missing} land on no heading. A heading was renamed or the "
+        "link was mistyped."
+    )
+
+
+def test_anchor_follows_githubs_rules() -> None:
+    assert _anchor("Quick start: Claude Desktop extension") == (
+        "quick-start-claude-desktop-extension"
+    )
+    assert _anchor("Manual (uv or venv)") == "manual-uv-or-venv"
+    assert _anchor("Claude Desktop with uv (manual config)") == (
+        "claude-desktop-with-uv-manual-config"
+    )
+
+
 # Adding a tool and forgetting its README row is the realistic version of this
 # mistake: the tool works, every test passes, and the only symptom is that
 # nobody reading the documentation knows it exists. The reverse, a row for a

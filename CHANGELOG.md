@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- The README has a table of contents after the disclaimer. A test checks
+  that every `#anchor` link in the README lands on a heading, with GitHub's
+  anchor rules, so a renamed heading cannot leave a link that goes nowhere.
+
 ## [0.8.3] - 2026-10-10
 
 Installs as a Claude Desktop extension. Each release now carries a `.mcpb`
