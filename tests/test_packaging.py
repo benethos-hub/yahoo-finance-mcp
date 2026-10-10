@@ -137,9 +137,11 @@ def test_no_stale_version_pin_anywhere_in_the_repository():
             for version in shape.findall(text):
                 found.setdefault(version, set()).add(path.relative_to(REPO).as_posix())
 
-    # The README's own pins must be among the hits, or the walk missed files.
-    assert current in found and "README.md" in found[current], (
-        f"the sweep did not see README.md's pins of {current}, so it checked nothing"
+    # The README's own pins must be among the hits, or the walk missed files. Any
+    # version will do: right after a bump they are all stale, and the list
+    # below is what says where.
+    assert any("README.md" in paths for paths in found.values()), (
+        "the sweep did not see README.md's pins, so it checked nothing"
     )
     stale = {
         version: sorted(paths) for version, paths in found.items() if version != current
