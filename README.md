@@ -1,4 +1,4 @@
-# Unofficial Yahoo Finance MCP Server
+# <img src="https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/main/assets/icon.svg" alt="" width="40" height="40"> Unofficial Yahoo Finance MCP Server
 
 [![CI](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml)
 [![PyPI benethos-yahoo-finance-mcp](https://img.shields.io/pypi/v/benethos-yahoo-finance-mcp?label=PyPI%20benethos-yahoo-finance-mcp)](https://pypi.org/project/benethos-yahoo-finance-mcp/)
