@@ -25,7 +25,6 @@ CLAUDE.md
 SECURITY.md
 containers
 assets
-server.json
 .dockerignore
 
 # Build and tool output. Nothing here is copied into the image, but a stale

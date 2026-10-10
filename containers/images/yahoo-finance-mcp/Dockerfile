@@ -70,8 +70,8 @@ USER appuser
 WORKDIR /home/appuser
 
 # The MCP Registry reads this label from the image config to accept the
-# image as belonging to the entry in server.json, and the two names must
-# match.
+# image as belonging to the entry in
+# .github/publish/mcp-registry/server.json, and the two names must match.
 LABEL io.modelcontextprotocol.server.name="io.github.benethos-hub/benethos-yahoo-finance-mcp"
 
 EXPOSE 8000

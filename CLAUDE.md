@@ -57,7 +57,10 @@ containers/
   development/    # compose.yaml, built from the checkout, port 8001
 .github/workflows/
   ci.yml          # lint, test matrix, fresh-install, lowest-versions, docker
-  publish.yml     # PyPI + ghcr on a published GitHub release
+  publish.yml     # PyPI + ghcr + MCP Registry on a published GitHub release
+.github/publish/   # one folder per place a release is listed, read by publish.yml
+  mcp-registry/server.json   # the MCP Registry entry
+assets/           # icon.svg, icon.png and the script that renders the PNG
 ```
 
 Keep the layers separate: **tools stay thin** and hand their arguments to the
@@ -190,7 +193,8 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    (the packaging tests read the *installed* metadata). Let
    `tests/test_packaging.py` name every stale version example instead of
    hunting for them by eye, and `tests/test_server_json.py` the three
-   versions in `server.json`, the MCP Registry entry.
+   versions in `.github/publish/mcp-registry/server.json`, the MCP Registry
+   entry.
 3. Close `[Unreleased]` in `CHANGELOG.md` as `[X.Y.Z] - <date>` and add the
    compare links.
 4. After the squash merge: annotated tag `vX.Y.Z`, push it, then

@@ -19,7 +19,9 @@ from pathlib import Path
 import benethos_yahoo_finance_mcp
 
 REPO = Path(__file__).resolve().parent.parent
-SERVER = json.loads((REPO / "server.json").read_text(encoding="utf-8"))
+SERVER = json.loads(
+    (REPO / ".github/publish/mcp-registry/server.json").read_text(encoding="utf-8")
+)
 PROJECT = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))[
     "project"
 ]
