@@ -512,7 +512,8 @@ values).
   which travels through `mcp.call_tool` and asserts a `ToolError`'s message
   arrives, since 2.1.0 dropped exactly that while 246 tests stayed green.
 - CI (GitHub Actions): a `lint` job (ruff + mypy), a `test` matrix running
-  `pytest` with coverage on Python 3.11-3.14, a `docker` job that builds the
+  `pytest` on Python 3.11-3.14, where only 3.14, the fastest of the four
+  with branch coverage, measures coverage and enforces the floor, a `docker` job that builds the
   image for amd64 and arm64, smoke-tests that the container serves HTTP and
   passes its health check, and checks both compose files, production with
   its profile `https` (valid, every port on the loopback address except
