@@ -264,7 +264,7 @@ jobs:
       - name: Publish server.json
         run: |
           for attempt in 1 2 3 4 5 6; do
-            if ./mcp-publisher publish; then
+            if ./mcp-publisher publish .github/publish/mcp-registry/server.json; then
               exit 0
             fi
             echo "attempt ${attempt} refused, trying again in 60 s"

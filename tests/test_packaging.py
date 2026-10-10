@@ -80,6 +80,9 @@ VERSION_EXAMPLES = (
     ("containers/production/.env.example", r"(?m)^YAHOO_FINANCE_MCP_VERSION=(\S+)$"),
     # The version people are asked to report in a bug.
     (".github/ISSUE_TEMPLATE/bug_report.yml", r'placeholder: "(\d+\.\d+\.\d+)"'),
+    # The MCP Registry entry, its own version and the PyPI package's. The
+    # image tag in it is caught by the sweep below.
+    (".github/publish/mcp-registry/server.json", r'"version": "(\d+\.\d+\.\d+)"'),
 )
 
 # The minor-line tag, `:0.5`, which follows patch releases rather than naming
@@ -102,7 +105,7 @@ PIN_SHAPES = (
     re.compile(r"`:(\d+\.\d+\.\d+)`"),
     re.compile(r"YAHOO_FINANCE_MCP_VERSION=(\d+\.\d+\.\d+)"),
 )
-_TEXT_SUFFIXES = {".md", ".yml", ".yaml", ".toml", ".py", ".txt", ".example"}
+_TEXT_SUFFIXES = {".md", ".yml", ".yaml", ".toml", ".py", ".txt", ".example", ".json"}
 _SKIP_DIRS = {"build", "dist", "htmlcov", "node_modules", "__pycache__"}
 _HISTORY = {"CHANGELOG.md"}
 

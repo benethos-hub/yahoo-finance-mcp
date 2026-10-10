@@ -27,8 +27,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   assets/render_icon.py`.
 - A release is listed in the MCP Registry as
   `io.github.benethos-hub/benethos-yahoo-finance-mcp`, with the PyPI
-  package and the image. `server.json` in the repository root is the entry,
-  and a third job in the publish workflow sends it once both packages are
+  package and the image. `.github/publish/mcp-registry/server.json` is the
+  entry, and a third job in the publish workflow sends it once both packages are
   out, logged in with the workflow's OIDC token. The README carries the
   `mcp-name:` line and the image the `io.modelcontextprotocol.server.name`
   label the registry checks ownership by, and `tests/test_server_json.py`

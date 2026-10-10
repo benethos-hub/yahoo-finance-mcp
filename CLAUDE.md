@@ -57,7 +57,10 @@ containers/
   development/    # compose.yaml, built from the checkout, port 8001
 .github/workflows/
   ci.yml          # lint, test matrix, fresh-install, lowest-versions, docker
-  publish.yml     # PyPI + ghcr on a published GitHub release
+  publish.yml     # PyPI + ghcr + MCP Registry on a published GitHub release
+.github/publish/   # one folder per place a release is listed, read by publish.yml
+  mcp-registry/server.json   # the MCP Registry entry
+assets/           # icon.svg, icon.png and the script that renders the PNG
 ```
 
 Keep the layers separate: **tools stay thin** and hand their arguments to the
@@ -186,11 +189,18 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    current digest of each tag in its registry and pin it. Dependabot proposes
    a newer tag, but not reliably a rebuild under the same one, and the Debian
    fixes in `python:3.14-slim` arrive as exactly that.
+   And `mcp-publisher` in `publish.yml`, which Dependabot cannot see at all,
+   since the job downloads it: compare `MCP_PUBLISHER_VERSION` with the
+   newest release of `modelcontextprotocol/registry` and, if it moved, take
+   the version and the `mcp-publisher_linux_amd64.tar.gz` line of its
+   checksums file. The registry refuses a publisher that is too old with
+   "invalid audience", in the last job of the release.
 2. Bump `version` in `pyproject.toml`, then `uv lock` and `uv sync --extra dev`
    (the packaging tests read the *installed* metadata). Let
    `tests/test_packaging.py` name every stale version example instead of
    hunting for them by eye, and `tests/test_server_json.py` the three
-   versions in `server.json`, the MCP Registry entry.
+   versions in `.github/publish/mcp-registry/server.json`, the MCP Registry
+   entry.
 3. Close `[Unreleased]` in `CHANGELOG.md` as `[X.Y.Z] - <date>` and add the
    compare links.
 4. After the squash merge: annotated tag `vX.Y.Z`, push it, then

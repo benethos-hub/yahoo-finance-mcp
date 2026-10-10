@@ -591,9 +591,9 @@ values).
   carries the image link instead.
   A third job lists the release in the **MCP Registry**
   (registry.modelcontextprotocol.io) as
-  `io.github.benethos-hub/benethos-yahoo-finance-mcp`, from `server.json` in
-  the repository root. It runs after the other two and skips a pre-release,
-  since the registry checks both packages when it takes the entry: the
+  `io.github.benethos-hub/benethos-yahoo-finance-mcp`, from
+  `.github/publish/mcp-registry/server.json`. It runs after the other two
+  and skips a pre-release, since the registry checks both packages when it takes the entry: the
   README of that version on PyPI must carry an `mcp-name:` line and the image
   config the `io.modelcontextprotocol.server.name` label, each naming the
   entry. It logs in with the workflow's OIDC token, which the registry trusts
