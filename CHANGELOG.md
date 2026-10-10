@@ -28,7 +28,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   filter, and `get_company_info` its forward P/E, P/B and the
   `resolved_symbol` it adds for an ISIN. The server instructions count
   `screen`'s `total` among the results that say they were cut.
-
 - The container image is built with uv 0.13.0 (was 0.12.23). None of its
   breaking changes reach the build: the image's own Python 3.14 is used
   with downloads off, the build backend is hatchling, and the lockfile is
@@ -39,6 +38,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   under `mcp`. pydantic generates the tool schemas, and they are
   byte-identical before and after. A tool's error text still reaches the
   client over stdio, and a JSON `true` in a `screen` filter is still refused.
+  A second refresh brings `pycparser` 3.11 (under `mcp` and `yfinance`
+  through `cffi`) and, for development only, `ruff` 0.17.0, which finds
+  nothing new.
 
 ## [0.8.0] - 2026-10-08
 
