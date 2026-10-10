@@ -28,32 +28,7 @@
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
-      },
-      "environmentVariables": [
-        {
-          "name": "YF_MCP_CACHE",
-          "description": "Cache results on disk with per-tool lifetimes, off by default.",
-          "format": "boolean",
-          "default": "false"
-        },
-        {
-          "name": "YF_MCP_CACHE_DIR",
-          "description": "Directory for the cache. Without it the operating system's user cache directory is used.",
-          "format": "filepath"
-        },
-        {
-          "name": "YF_MCP_CACHE_MAX_ENTRIES",
-          "description": "Most results the cache keeps before it drops the oldest.",
-          "format": "number",
-          "default": "10000"
-        },
-        {
-          "name": "YF_MCP_LOG_LEVEL",
-          "description": "Detail of the log the server writes to stderr.",
-          "default": "INFO",
-          "choices": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-        }
-      ]
+      }
     },
     {
       "registryType": "oci",

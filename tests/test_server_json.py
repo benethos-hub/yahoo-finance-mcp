@@ -16,10 +16,7 @@ import struct
 import tomllib
 from pathlib import Path
 
-import pytest
-
 import benethos_yahoo_finance_mcp
-from benethos_yahoo_finance_mcp import settings
 
 REPO = Path(__file__).resolve().parent.parent
 SERVER = json.loads(
@@ -111,54 +108,3 @@ def test_the_png_icon_has_the_size_the_entry_states():
         assert data[:8] == b"\x89PNG\r\n\x1a\n"
         width, height = struct.unpack(">II", data[16:24])
         assert icon["sizes"] == [f"{width}x{height}"]
-
-
-# The options a client offers at install time. Each one must be a variable
-# the server reads, its default must be what the server does without it, and
-# every value the entry lets a person pick must be one the server takes. A
-# renamed variable or a changed default would otherwise stay advertised in
-# an entry that can no longer be corrected.
-OPTIONS = _package("pypi").get("environmentVariables", [])
-SETTINGS_SOURCE = Path(settings.__file__).read_text(encoding="utf-8")
-
-
-def test_the_entry_offers_options():
-    assert OPTIONS, "the PyPI package lists no environment variables"
-
-
-@pytest.mark.parametrize("option", OPTIONS, ids=lambda o: o["name"])
-def test_each_option_is_a_variable_the_server_reads(option):
-    assert f'"{option["name"]}"' in SETTINGS_SOURCE
-    assert not option.get("isRequired", False), "the server runs without any"
-
-
-@pytest.mark.parametrize(
-    "option", [o for o in OPTIONS if "default" in o], ids=lambda o: o["name"]
-)
-def test_each_default_is_what_the_server_does_without_it(option):
-    unset = settings.load_settings(environ={})
-    as_default = settings.load_settings(environ={option["name"]: option["default"]})
-    assert not as_default.ignored, f"{option['default']!r} is refused"
-    assert as_default == unset
-
-
-@pytest.mark.parametrize(
-    "option", [o for o in OPTIONS if "choices" in o], ids=lambda o: o["name"]
-)
-def test_each_choice_is_taken(option):
-    for choice in option["choices"]:
-        resolved = settings.load_settings(environ={option["name"]: choice})
-        assert not resolved.ignored, f"{option['name']}={choice!r} is refused"
-
-
-def test_the_log_level_choices_are_the_servers():
-    (level,) = [o for o in OPTIONS if o["name"] == "YF_MCP_LOG_LEVEL"]
-    assert tuple(level["choices"]) == settings.LOG_LEVELS
-
-
-def test_a_boolean_option_is_switched_by_true():
-    """A client renders a boolean as a switch and passes true or false."""
-    cache = settings.load_settings(
-        environ={"YF_MCP_CACHE": "true", "YF_MCP_CACHE_DIR": "unused"}
-    )
-    assert cache.cache_enabled

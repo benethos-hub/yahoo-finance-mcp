@@ -43,10 +43,6 @@ or schema changes.
   label the registry checks ownership by, and `tests/test_server_json.py`
   keeps the entry's versions, description and name in step with the
   package. The image entry starts the container with `--transport stdio`.
-  The PyPI entry offers four optional settings a client can show at
-  install time, `YF_MCP_CACHE`, `YF_MCP_CACHE_DIR`,
-  `YF_MCP_CACHE_MAX_ENTRIES` and `YF_MCP_LOG_LEVEL`, each with the default
-  the server already uses, and a test holds them to the settings code.
 
 ### Changed
 
