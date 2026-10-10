@@ -601,7 +601,13 @@ values).
   An entry cannot be changed once taken, and `tests/test_server_json.py`
   holds its version, description and name to the package before it goes
   out. Its image entry starts the container with `--transport stdio`, which
-  a client launching it as a local process needs.
+  a client launching it as a local process needs. The PyPI entry offers the
+  settings that matter over stdio as optional environment variables
+  (`YF_MCP_CACHE`, `YF_MCP_CACHE_DIR`, `YF_MCP_CACHE_MAX_ENTRIES`,
+  `YF_MCP_LOG_LEVEL`), each with the server's own default, and the test
+  holds names, defaults and choices to `settings.py`. The image entry
+  offers none, since the registry's documentation leaves open whether a
+  client passes them into the container as `-e`.
   One name is used throughout: the PyPI
   distribution, the import package (`benethos_yahoo_finance_mcp`, underscores
   because a module name cannot contain hyphens), the console script, and the
