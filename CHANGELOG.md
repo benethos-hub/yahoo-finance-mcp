@@ -26,6 +26,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   same 80% floor, instead of 3.14. The other versions run the suite
   without it.
 
+### Fixed
+
+- The PyPI job of the publish workflow asks for `contents: read` next to
+  `id-token: write`. A job's permissions replace the workflow's, so it had
+  no read access to the repository and its checkout worked only because the
+  repository is public.
+
 ## [0.8.1] - 2026-10-10
 
 Clearer tool descriptions and a refreshed build. Every tool now has a short
