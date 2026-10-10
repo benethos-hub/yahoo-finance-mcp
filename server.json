@@ -1,0 +1,49 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.benethos-hub/benethos-yahoo-finance-mcp",
+  "description": "Unofficial read-only MCP server exposing Yahoo Finance data (via yfinance) over stdio or HTTP.",
+  "repository": {
+    "url": "https://github.com/benethos-hub/yahoo-finance-mcp",
+    "source": "github"
+  },
+  "version": "0.8.1",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/main/assets/icon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": ["any"]
+    },
+    {
+      "src": "https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/main/assets/icon.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "benethos-yahoo-finance-mcp",
+      "version": "0.8.1",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/benethos-hub/benethos-yahoo-finance-mcp:0.8.1",
+      "runtimeHint": "docker",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeArguments": [
+        { "type": "named", "name": "-i" },
+        { "type": "named", "name": "--rm" }
+      ],
+      "packageArguments": [
+        { "type": "named", "name": "--transport", "value": "stdio" }
+      ]
+    }
+  ]
+}

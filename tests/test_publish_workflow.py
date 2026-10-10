@@ -42,7 +42,12 @@ def test_any_other_tag_stops_the_release(tag):
 
 
 @pytest.mark.parametrize(
-    "job,first_build_step", [("pypi-publish:", "uv build"), ("ghcr-publish:", "qemu")]
+    "job,first_build_step",
+    [
+        ("pypi-publish:", "uv build"),
+        ("ghcr-publish:", "qemu"),
+        ("mcp-registry-publish:", "mcp-publisher publish"),
+    ],
 )
 def test_each_job_checks_the_tag_before_it_builds(job, first_build_step):
     body = WORKFLOW.split(job, 1)[1].split("\n  ghcr-publish:", 1)[0]
@@ -52,6 +57,13 @@ def test_each_job_checks_the_tag_before_it_builds(job, first_build_step):
 def test_a_pre_release_leaves_latest_alone():
     [latest] = [line for line in WORKFLOW.splitlines() if "value=latest" in line]
     assert "!github.event.release.prerelease" in latest
+
+
+def test_the_registry_entry_waits_for_both_packages():
+    """The registry checks the README on PyPI and the label in the image when
+    it takes the entry, so both have to be published first."""
+    job = WORKFLOW.split("mcp-registry-publish:", 1)[1]
+    assert "needs: [pypi-publish, ghcr-publish]" in job
 
 
 def test_edge_is_built_from_main_only():

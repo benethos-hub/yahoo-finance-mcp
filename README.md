@@ -7,6 +7,9 @@
 [![Coverage](https://img.shields.io/badge/coverage-97%25-brightgreen)](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/LICENSE)
 
+<!-- The MCP Registry looks for this line in the README on PyPI to accept the package as the one in server.json. -->
+<!-- mcp-name: io.github.benethos-hub/benethos-yahoo-finance-mcp -->
+
 An [MCP](https://modelcontextprotocol.io) server that exposes Yahoo Finance
 data to MCP clients (such as Claude Desktop). It runs over **stdio** (default,
 for local clients) or an **HTTP** transport (for standalone / containerized
