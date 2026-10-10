@@ -29,7 +29,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `resolved_symbol` it adds for an ISIN. The server instructions count
   `screen`'s `total` among the results that say they were cut.
 
-- The container image is built with uv 0.12.24 (was 0.12.23).
+- The container image is built with uv 0.13.0 (was 0.12.23). None of its
+  breaking changes reach the build: the image's own Python 3.14 is used
+  with downloads off, the build backend is hatchling, and the lockfile is
+  accepted unchanged.
 - Locked dependency refresh: `pydantic` 2.14.0 and `pydantic-core` 2.50.0
   under `mcp`. pydantic generates the tool schemas, and they are
   byte-identical before and after. A tool's error text still reaches the
