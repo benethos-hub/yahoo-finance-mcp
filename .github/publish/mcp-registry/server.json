@@ -50,6 +50,14 @@
       "packageArguments": [
         { "type": "named", "name": "--transport", "value": "stdio" }
       ]
+    },
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/benethos-hub/yahoo-finance-mcp/releases/download/v0.8.3/benethos-yahoo-finance-mcp-0.8.3.mcpb",
+      "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "transport": {
+        "type": "stdio"
+      }
     }
   ]
 }

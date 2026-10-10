@@ -17,6 +17,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   renders it from `icon.svg` and a text template next to `icon.png`, so the
   two cannot drift apart. GitHub takes it by hand under Settings, General,
   Social preview.
+- The MCP Registry entry lists the Claude Desktop bundle as a third
+  package, by the download URL of the release's versioned `.mcpb`. The
+  registry requires its SHA-256, which exists only once the release has
+  built the bundle: the committed entry holds zeros, and the registry job,
+  which now waits for the bundle job as well, downloads the attached file
+  and writes the hash before publishing
+  (`.github/publish/mcp-registry/fill_bundle_checksum.py`). Tests hold the
+  URL to the package version and to the name the workflow uploads, and
+  check that the script writes the hash only for that file and only once.
+  Since the registry takes an entry whole or not at all, a refusal that
+  outlasts the retries falls back to publishing without the bundle, so the
+  version stays listed with PyPI and the image, and the job fails to show
+  it.
 
 ## [0.8.3] - 2026-10-10
 
