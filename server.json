@@ -12,6 +12,11 @@
       "src": "https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/main/assets/icon.svg",
       "mimeType": "image/svg+xml",
       "sizes": ["any"]
+    },
+    {
+      "src": "https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/main/assets/icon.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
     }
   ],
   "packages": [

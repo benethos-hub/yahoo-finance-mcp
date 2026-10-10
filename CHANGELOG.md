@@ -22,7 +22,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The project has an icon, `assets/icon.svg`, shown next to the README's
   title. Its URL is absolute, since PyPI renders the README without the
   repository around it, and the README link check now reads the `src` of an
-  `<img>` tag as well.
+  `<img>` tag as well. `assets/icon.png`, 512×512, is the fallback for
+  clients that show no SVG, rendered from it by `uv run
+  assets/render_icon.py`.
 - A release is listed in the MCP Registry as
   `io.github.benethos-hub/benethos-yahoo-finance-mcp`, with the PyPI
   package and the image. `server.json` in the repository root is the entry,

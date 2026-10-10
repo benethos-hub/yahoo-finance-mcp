@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import re
+import struct
 import tomllib
 from pathlib import Path
 
@@ -91,3 +92,17 @@ def test_the_icon_is_a_file_of_this_repository():
     for icon in SERVER["icons"]:
         assert icon["src"].startswith(prefix)
         assert (REPO / icon["src"].removeprefix(prefix)).is_file()
+
+
+def test_the_png_icon_has_the_size_the_entry_states():
+    """assets/render_icon.py writes the PNG, and a change of its SIZE without
+    the entry, or the other way round, would advertise a size that is not
+    there. A PNG states its width and height at bytes 16 to 24."""
+    prefix = "https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/main/"
+    for icon in SERVER["icons"]:
+        if icon["mimeType"] != "image/png":
+            continue
+        data = (REPO / icon["src"].removeprefix(prefix)).read_bytes()
+        assert data[:8] == b"\x89PNG\r\n\x1a\n"
+        width, height = struct.unpack(">II", data[16:24])
+        assert icon["sizes"] == [f"{width}x{height}"]
