@@ -2,7 +2,7 @@
   "manifest_version": "0.4",
   "name": "benethos-yahoo-finance-mcp",
   "display_name": "Yahoo Finance (unofficial)",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "Unofficial read-only MCP server exposing Yahoo Finance data (via yfinance) over stdio or HTTP.",
   "author": {
     "name": "Benedikt Oswald"

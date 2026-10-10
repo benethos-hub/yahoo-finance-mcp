@@ -6,10 +6,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-10-10
+
+Installs as a Claude Desktop extension. Each release now carries a `.mcpb`
+bundle that Claude Desktop opens with a double click, without uv, Python or
+a configuration file, and the README starts with it. The MCP Registry's
+container entry starts the image hardened. The image stays on Python 3.14
+until a `python:3.15-slim` base exists. No tool, parameter or schema
+changes.
+
 ### Added
 
 - A Claude Desktop bundle, `benethos-yahoo-finance-mcp-X.Y.Z.mcpb`, is
-  attached to each release from the next one on, and once more as
+  attached to each release from this one on, and once more as
   `benethos-yahoo-finance-mcp.mcpb` for a download link that always
   reaches the newest release. It installs with a double click, without
   editing `claude_desktop_config.json`, shows the tools and the icon before
@@ -18,13 +27,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `.github/publish/mcpb/` holds its manifest, entry point and build script,
   and `tests/test_mcpb.py` keeps the manifest's version, metadata and tool
   list in step with the package.
-
 - The README names the MCP Registry entry under "Other ways to install",
   live since 0.8.2, and says that VS Code's MCP list is GitHub's own
   selection, which a listing in the registry does not reach.
 
 ### Changed
 
+- The README's installation opens with the Claude Desktop extension: the
+  download link, open it, ask. The `uvx` route follows as "Claude Desktop
+  with uv (manual config)", and "Compatible clients" names the extension
+  as Claude Desktop's own way in.
 - The MCP Registry's container entry starts the image hardened, as the
   production compose file does: `--read-only` with tmpfs mounts for `/tmp`
   and `yfinance`'s cache in the home directory, `--cap-drop ALL`,
@@ -1229,7 +1241,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.2...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.3...HEAD
+[0.8.3]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.7.2...v0.8.0
