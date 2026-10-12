@@ -33,17 +33,24 @@ Yahoo's unofficial endpoints.
 
 **Contents**
 
-- [What it is for](#what-it-is-for) · [Example prompts](#example-prompts)
-- [Tools](#tools) · [Symbol resolution](#symbol-resolution)
-- [Compatible clients](#compatible-clients) · [Requirements](#requirements)
+- [What it is for](#what-it-is-for)
+  - [Example prompts](#example-prompts)
+- [Tools](#tools)
+- [Symbol resolution](#symbol-resolution)
+- [Compatible clients](#compatible-clients)
+- [Requirements](#requirements)
 - [Installation](#installation)
   - [Quick start: Claude Desktop extension](#quick-start-claude-desktop-extension)
   - [Claude Desktop with uv (manual config)](#claude-desktop-with-uv-manual-config)
   - [Other ways to install](#other-ways-to-install)
-- [Running as a standalone server](#running-as-a-standalone-server):
-  [Docker](#docker), [Docker Compose](#docker-compose),
-  [Manual (uv or venv)](#manual-uv-or-venv)
-- [Caching](#caching) · [Development](#development) · [Trademarks](#trademarks)
+- [Running as a standalone server](#running-as-a-standalone-server)
+  - [Docker](#docker)
+  - [Docker Compose](#docker-compose)
+  - [Manual (uv or venv)](#manual-uv-or-venv)
+- [Caching](#caching)
+  - [When to enable it](#when-to-enable-it)
+- [Development](#development)
+- [Trademarks](#trademarks)
 
 ## What it is for
 
