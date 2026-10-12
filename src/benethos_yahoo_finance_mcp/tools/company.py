@@ -19,7 +19,7 @@ def get_company_info(symbol: Symbol) -> dict[str, Any]:
 
     Returns name, sector/industry, location, employee count, and valuation
     metrics (market cap, trailing and forward P/E, P/B, beta, 52-week range,
-    dividend yield) plus a business summary. For an ISIN, ``resolved_symbol``
+    dividend yield) plus a business summary. For an ISIN, `resolved_symbol`
     names the ticker it stands for.
     """
     return yahoo.get_company_info(symbol)
@@ -62,7 +62,7 @@ def get_news(
         Field(description="Maximum number of headlines to return.", ge=1, le=10),
     ] = 10,
 ) -> dict[str, Any]:
-    """Get recent news headlines for a Yahoo symbol (up to ``limit``, 1-10).
+    """Get recent news headlines for a Yahoo symbol (up to `limit`, 1-10).
 
     Each article includes title, summary, publisher, publish time, and URL.
     """
@@ -107,7 +107,7 @@ def get_shares(
     """Get the shares-outstanding history for a Yahoo symbol.
 
     Each point is a date and the reported shares outstanding. Only the most
-    recent ``limit`` points are returned. Without ``start`` the series covers
+    recent `limit` points are returned. Without `start` the series covers
     the last 18 months, so pass one for anything older.
     """
     return yahoo.get_shares(symbol, start=start, end=end, limit=limit)

@@ -63,7 +63,7 @@ def get_sec_filings(
 ) -> dict[str, Any]:
     """Get recent SEC filings for a Yahoo symbol.
 
-    Each entry has the filing date, type (e.g. ``10-K``, ``10-Q``, ``8-K``),
+    Each entry has the filing date, type (e.g. `10-K`, `10-Q`, `8-K`),
     title, the Yahoo EDGAR URL, and exhibit links. Only issuers registered with
     the U.S. SEC file there, so a non-US symbol has none, and neither do ETFs,
     funds or crypto. An empty result says nothing about the symbol.

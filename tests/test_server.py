@@ -6,7 +6,7 @@ import asyncio
 import subprocess
 import sys
 
-from benethos_yahoo_finance_mcp.server import build_server
+from benethos_yahoo_finance_mcp.server import _without_titles, build_server
 
 mcp = build_server()
 
@@ -126,3 +126,45 @@ def test_every_tool_has_a_title_of_its_own():
     titles = [tool.title for tool in asyncio.run(mcp.list_tools())]
     assert all(titles), titles
     assert len(set(titles)) == len(titles), titles
+
+
+def _titles_in(schema: object) -> list[str]:
+    """Every ``title`` key a schema carries, property names left out."""
+    if isinstance(schema, list):
+        return [t for item in schema for t in _titles_in(item)]
+    if not isinstance(schema, dict):
+        return []
+    found = []
+    for key, value in schema.items():
+        if key == "title":
+            found.append(str(value))
+        elif key in ("properties", "$defs"):
+            found.extend(t for sub in value.values() for t in _titles_in(sub))
+        else:
+            found.extend(_titles_in(value))
+    return found
+
+
+def test_the_schemas_carry_no_titles():
+    """pydantic names every model and field, and no client reads those names."""
+    for tool in asyncio.run(mcp.list_tools()):
+        assert _titles_in(tool.input_schema) == [], tool.name
+        assert _titles_in(tool.output_schema) == [], tool.name
+
+
+def test_a_parameter_called_title_would_survive():
+    """Only the key is dropped, a property of that name is a property."""
+    schema = {
+        "title": "xArguments",
+        "properties": {"title": {"title": "Title", "type": "string"}},
+        "$defs": {"title": {"title": "T", "type": "object"}},
+    }
+    assert _without_titles(schema) == {
+        "properties": {"title": {"type": "string"}},
+        "$defs": {"title": {"type": "object"}},
+    }
+
+
+def test_the_server_names_its_website():
+    """The initialize handshake points a client at the repository."""
+    assert mcp.website_url == "https://github.com/benethos-hub/yahoo-finance-mcp"

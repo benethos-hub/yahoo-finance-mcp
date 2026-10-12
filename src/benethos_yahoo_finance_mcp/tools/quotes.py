@@ -35,8 +35,8 @@ def search(
 ) -> list[dict[str, Any]]:
     """Search Yahoo Finance by company name, ticker symbol, or ISIN.
 
-    Use this to turn a company name into a Yahoo ``symbol`` that the other
-    tools accept. They take an ISIN directly. Returns up to ``limit`` matches
+    Use this to turn a company name into a Yahoo `symbol` that the other
+    tools accept. They take an ISIN directly. Returns up to `limit` matches
     (1-25), each with its symbol, name, exchange, instrument type, sector and
     industry.
     """
@@ -62,7 +62,7 @@ def get_quotes(
     Use this to compare or fetch prices for multiple tickers at once. Each symbol
     is looked up individually and returns currency, last price, previous close,
     open, day high/low, and market cap. Symbols that return no data are listed
-    under ``not_found`` rather than failing the whole call, and ``truncated``
+    under `not_found` rather than failing the whole call, and `truncated`
     is set when more than 50 were passed.
     """
     return yahoo.get_quotes(symbols)
@@ -86,8 +86,8 @@ def get_history(
 ) -> dict[str, Any]:
     """Get historical OHLCV (open/high/low/close/volume) data for a symbol.
 
-    Query a look-back ``period`` or an explicit ``start``/``end`` range. Results
-    are capped at the most recent 250 rows, with ``truncated`` set when cut.
+    Query a look-back `period` or an explicit `start`/`end` range. Results
+    are capped at the most recent 250 rows, with `truncated` set when cut.
     """
     return yahoo.get_history(
         symbol, period=period, interval=interval, start=start, end=end

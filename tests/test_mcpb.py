@@ -34,7 +34,7 @@ def _first_sentence(text: str) -> str:
     Claude Desktop shows these lines before installing, so one sentence each.
     An abbreviation like "e.g." does not end the sentence.
     """
-    line = " ".join(text.split()).replace("``", "")
+    line = " ".join(text.split()).replace("`", "")
     head = re.split(r"(?<!e\.g)(?<!i\.e)\. ", line)[0]
     return head.rstrip(".") + "."
 

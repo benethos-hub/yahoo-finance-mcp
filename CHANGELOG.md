@@ -8,6 +8,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- A tool result's text block is the compact JSON, not the SDK's dump indented
+  by two spaces, which was two fifths larger for a 250-row history. The
+  structured copy stays as it was. Tool descriptions mark names with single
+  backticks instead of the RST double ones.
+- The tool listing goes out without pydantic's `title` keys on every argument
+  model and field, a tenth of its bytes that no client read.
+- The server names the repository as its `websiteUrl` in the initialize
+  handshake.
 - The README's table of contents follows one rule: a line per section,
   its subsections indented under it. Before, a subsection sat next to its
   section, in a nested list or after a colon, depending on where it was.

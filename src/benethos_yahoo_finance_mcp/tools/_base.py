@@ -11,8 +11,9 @@ from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Annotated, Any
 
-from mcp.types import ToolAnnotations
+from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from pydantic import Field
+from pydantic_core import to_json
 
 from .. import logbook, yahoo
 from ..errors import RateLimitError
@@ -65,7 +66,7 @@ def register_tool(server: MCPServer, tool: Callable[..., Any], title: str) -> No
 
 
 def _logged(tool: Callable[..., Any]) -> Callable[..., Any]:
-    """The tool, writing its one log line per call.
+    """The tool, writing its one log line per call and packing its result.
 
     ``wraps`` carries the name, the docstring and the signature over, so the
     schema a client sees is the tool's own. The SDK passes arguments by name,
@@ -86,6 +87,28 @@ def _logged(tool: Callable[..., Any]) -> Callable[..., Any]:
                 logbook.calls.ended(name, arguments, exc, time.perf_counter() - started)
                 raise
             logbook.calls.read(name, arguments, result, time.perf_counter() - started)
-        return result
+        return _packed(result)
 
     return logged
+
+
+def _packed(result: Any) -> CallToolResult:
+    """The result as the client receives it: compact text, structured copy.
+
+    Handed a plain value, the SDK serializes it twice, as ``structuredContent``
+    and as a text block indented by two spaces. The text is what Claude Desktop
+    hands the model, and the indentation made it two fifths larger than the
+    same JSON compact (measured on a 250-row history). So the text is written
+    here, without indentation and with non-ASCII characters as they are, and
+    the SDK only validates the structured copy against the tool's output
+    schema before sending both.
+
+    A tool returning a list (``search``) is published with the schema
+    ``{"result": [...]}``, since the SDK wraps anything but an object, and the
+    structured copy has to match that schema.
+    """
+    structured = {"result": result} if isinstance(result, list) else result
+    text = to_json(result, fallback=str).decode()
+    return CallToolResult(
+        content=[TextContent(type="text", text=text)], structured_content=structured
+    )
