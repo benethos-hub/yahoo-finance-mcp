@@ -342,12 +342,21 @@ returns symbols.
 
 Every tool parameter carries a human-readable description and constraints via
 `Annotated[..., Field(description=..., ge=..., le=...)]` so the client receives
-a precise input schema (including enumerations like valid `period`/`interval`
-values).
+a precise input schema. Closed sets such as the valid `interval` or
+`statement` values are listed in the parameter's description, not as a schema
+`enum`, and a value outside the set is refused by the tool with a message that
+names the set. The listing goes out without the `title` keys pydantic puts on
+every argument model and field (`_Server.list_tools` strips them), since a
+client shows the tool's own title and the model reads descriptions.
 
 ## 8. Output format
 
-- Default output is **compact JSON** (JSON-safe dicts/lists).
+- Default output is **compact JSON** (JSON-safe dicts/lists). A result
+  travels twice, as `structuredContent` and as one text block holding the
+  same JSON without indentation (`tools/_base.py`, `_packed`). Left to the
+  SDK the text block is indented by two spaces, two fifths more bytes for
+  what Claude Desktop hands the model. The `search` list is wrapped as
+  `{"result": [...]}` in the structured copy, as its output schema says.
 - `formatting.to_jsonable` normalizes `NaN`/`inf` -> `null`, `Timestamp`/
   `datetime` -> ISO-8601 string, numpy scalars -> native, and recurses through
   containers.

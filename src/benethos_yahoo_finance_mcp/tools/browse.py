@@ -36,9 +36,9 @@ def get_sector(
 
     Returns the sector overview (company count, market cap/weight, description),
     its top companies, ETFs, and mutual funds, and the constituent industries.
-    Each industry's ``key`` can be passed to ``get_industry`` to drill down,
-    or to ``screen`` as its ``industry`` filter.
-    This takes a sector key like ``technology`` or ``healthcare`` — not a ticker.
+    Each industry's `key` can be passed to `get_industry` to drill down,
+    or to `screen` as its `industry` filter.
+    This takes a sector key like `technology` or `healthcare` — not a ticker.
     """
     return yahoo.get_sector(key, limit=limit)
 
@@ -61,8 +61,8 @@ def get_industry(
 
     Returns the industry overview, its parent sector, top companies, and the
     top-performing and top-growth companies. Discover valid industry keys from
-    the ``industries`` list returned by ``get_sector``. This takes an industry
-    key like ``semiconductors`` — not a ticker symbol.
+    the `industries` list returned by `get_sector`. This takes an industry
+    key like `semiconductors` — not a ticker symbol.
     """
     return yahoo.get_industry(key, limit=limit)
 
@@ -82,8 +82,8 @@ def get_market(
 
     Answers questions like whether the market is open, when it opens or closes
     next, and how the major indices are doing. Takes a market key such as
-    ``US`` or ``EUROPE`` — not a ticker symbol. ``status`` (open/closed plus the
-    next open and close times) is only available for ``US`` and is ``null`` for
+    `US` or `EUROPE` — not a ticker symbol. `status` (open/closed plus the
+    next open and close times) is only available for `US` and is `null` for
     every other key, which is an upstream limitation rather than an error. The
     index summary, with price, previous close and change, works for all keys.
     """

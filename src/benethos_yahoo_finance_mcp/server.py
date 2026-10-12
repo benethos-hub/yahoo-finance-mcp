@@ -11,6 +11,7 @@ from typing import Any
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError as SDKToolError
+from mcp.types import Tool
 from pydantic import ValidationError
 
 from . import __version__, logbook
@@ -68,10 +69,26 @@ Data is delayed and may be incomplete. This is not investment advice.
 
 
 class _Server(MCPServer):
-    """The SDK's server, noting arguments a tool's schema refused.
+    """The SDK's server, with leaner schemas and a note on refused arguments.
 
     Validation runs before the tool, so its own line never sees such a call.
     """
+
+    async def list_tools(self) -> list[Tool]:
+        """The tools, their schemas without pydantic's ``title`` keys.
+
+        pydantic names every argument model and every field in its schema
+        (``get_quoteArguments``, ``Symbol``), one title per parameter, one
+        per model. A client shows a tool by its own title and the model reads
+        descriptions, so the keys were a seventh of every listing that nothing
+        reads.
+        """
+        tools = await super().list_tools()
+        for tool in tools:
+            tool.input_schema = _without_titles(tool.input_schema)
+            if tool.output_schema is not None:
+                tool.output_schema = _without_titles(tool.output_schema)
+        return tools
 
     async def call_tool(
         self, name: str, arguments: dict[str, Any], *args: Any, **kwargs: Any
@@ -90,13 +107,36 @@ class _Server(MCPServer):
             raise
 
 
+def _without_titles(schema: Any) -> Any:
+    """``schema`` with every ``title`` key dropped, property names untouched.
+
+    The values under ``properties`` and ``$defs`` are keyed by name, and a
+    parameter may be called ``title``, so those two levels are walked by
+    value only.
+    """
+    if isinstance(schema, list):
+        return [_without_titles(item) for item in schema]
+    if not isinstance(schema, dict):
+        return schema
+    stripped: dict[str, Any] = {}
+    for key, value in schema.items():
+        if key == "title":
+            continue
+        if key in ("properties", "$defs") and isinstance(value, dict):
+            stripped[key] = {name: _without_titles(sub) for name, sub in value.items()}
+        else:
+            stripped[key] = _without_titles(value)
+    return stripped
+
+
 def build_server() -> MCPServer:
     """A server with every tool registered, ready to be handed to a transport.
 
     ``name`` is the programmatic identifier reported in the MCP initialize
     handshake and is kept identical to the PyPI distribution name, so the
     server a client lists is traceable to the package it came from. ``title``
-    is what a client shows to a person.
+    is what a client shows to a person, ``website_url`` where it can read
+    more.
     """
     # The constructor installs a RichHandler on the root logger if it has
     # none, see logbook.output.untouched_root.
@@ -106,6 +146,7 @@ def build_server() -> MCPServer:
             title="Unofficial Yahoo Finance MCP Server",
             version=__version__,
             instructions=_INSTRUCTIONS,
+            website_url="https://github.com/benethos-hub/yahoo-finance-mcp",
         )
     register_tools(server)
     return server

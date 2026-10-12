@@ -25,10 +25,10 @@ def get_options(
 ) -> dict[str, Any]:
     """Get the option chain for a Yahoo symbol.
 
-    Call without ``expiration`` to list available expiration dates. Call with
-    an ``expiration`` (``YYYY-MM-DD`` from that list) to get the calls and puts
+    Call without `expiration` to list available expiration dates. Call with
+    an `expiration` (`YYYY-MM-DD` from that list) to get the calls and puts
     for that date, up to 60 strikes each centred on the current price, with
-    ``truncated`` set when a wider chain was cut. Yahoo carries chains for
+    `truncated` set when a wider chain was cut. Yahoo carries chains for
     US-listed instruments only, so a non-US symbol has none and that says
     nothing about the symbol.
     """

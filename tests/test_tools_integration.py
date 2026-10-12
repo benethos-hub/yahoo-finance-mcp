@@ -85,6 +85,14 @@ def test_tool_invokes_client_and_result_serializes(monkeypatch, tool, args):
     assert not result.is_error, f"{tool} reported an error result"
     # The structured result is what a client consumes, so it must serialize.
     json.dumps(result.structured_content)
+    # The SDK wraps a list, the structured copy has to match the schema it
+    # published for the tool.
+    structured = {"result": payload} if tool == "search" else payload
+    assert result.structured_content == structured, tool
+    # The text block is the same JSON compact, not the SDK's indented dump.
+    (block,) = result.content
+    assert block.type == "text", tool
+    assert block.text == json.dumps(payload, separators=(",", ":")), tool
 
 
 # Every tool with a ``limit`` parameter, forwarded under the same name. The
