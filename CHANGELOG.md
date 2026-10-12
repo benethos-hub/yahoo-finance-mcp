@@ -8,6 +8,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The README's table of contents follows one rule: a line per section,
+  its subsections indented under it. Before, a subsection sat next to its
+  section, in a nested list or after a colon, depending on where it was.
+  "When to enable it" under Caching had no line and has one now. A test
+  holds the list to the headings, so the next new heading cannot be missed.
 - Lock refresh, patch releases only: `pydantic` 2.14.1 and
   `pydantic-core` 2.50.1 under `mcp`, `numpy` 2.5.4 and `soupsieve` 3.0.2
   under `yfinance`, and `platformdirs` 4.13.0. `soupsieve` 3.0.2 needs

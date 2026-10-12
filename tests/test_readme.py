@@ -110,6 +110,47 @@ def test_every_fragment_link_lands_on_a_heading() -> None:
     )
 
 
+# The contents list follows one rule: a line per section, its subsections
+# indented under it, in the order of the text. A new heading without its line
+# is easy to miss, the list still looks complete.
+_SECTION = re.compile(r"^(##|###) (.+)$", re.MULTILINE)
+_ENTRY = re.compile(r"^( *)- \[[^\]]+\]\(#([^)]+)\)$", re.MULTILINE)
+
+
+def _sections(markdown: str) -> list[tuple[int, str]]:
+    """Every section and subsection as (depth, anchor), in order."""
+    return [
+        (len(hashes) - 2, _anchor(text))
+        for hashes, text in _SECTION.findall(_FENCE.sub("", markdown))
+    ]
+
+
+def _contents(markdown: str) -> list[tuple[int, str]]:
+    """The contents list as (depth, anchor), two spaces of indent a level."""
+    block = markdown.split("**Contents**", 1)[1].split("\n## ", 1)[0]
+    return [(len(indent) // 2, anchor) for indent, anchor in _ENTRY.findall(block)]
+
+
+def test_contents_lists_every_section_in_order() -> None:
+    text = README.read_text(encoding="utf-8")
+    sections, contents = _sections(text), _contents(text)
+    assert sections, "the README has no sections, so this checked nothing"
+    assert contents == sections, (
+        "the contents list does not match the headings. Every ## gets a line, "
+        "every ### an indented line under its section, in the order of the "
+        f"text.\nmissing: {[s for s in sections if s not in contents]}"
+        f"\nextra: {[c for c in contents if c not in sections]}"
+    )
+
+
+def test_contents_check_would_catch_a_missing_subsection() -> None:
+    sample = (
+        "**Contents**\n\n- [A](#a)\n\n## A\n\n### B\n\n```\n## not a heading\n```\n"
+    )
+    assert _sections(sample) == [(0, "a"), (1, "b")]
+    assert _contents(sample) == [(0, "a")]
+
+
 def test_anchor_follows_githubs_rules() -> None:
     assert _anchor("Quick start: Claude Desktop extension") == (
         "quick-start-claude-desktop-extension"
