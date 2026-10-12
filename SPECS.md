@@ -513,8 +513,9 @@ client shows the tool's own title and the model reads descriptions.
   every line is a logbook function. Five more guard what ships rather than
   what runs: `test_packaging.py` on the PEP 561 marker, the version
   examples and the supported Pythons, `test_readme.py` on link targets PyPI
-  cannot resolve, on every `#anchor` link landing on a heading and on the
-  tool list matching the registry, `test_server_json.py` on the MCP Registry
+  cannot resolve, on every `#anchor` link landing on a heading, on the table
+  of contents naming every section in order and on the tool list matching
+  the registry, `test_server_json.py` on the MCP Registry
   entry, `test_mcpb.py` on the Claude Desktop bundle, and
   `test_publish_workflow.py` on the release workflow's guards and the order
   of its jobs.
