@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Lock refresh, patch releases only: `pydantic` 2.14.1 and
+  `pydantic-core` 2.50.1 under `mcp`, `numpy` 2.5.4 and `soupsieve` 3.0.2
+  under `yfinance`, and `platformdirs` 4.13.0. `soupsieve` 3.0.2 needs
+  Python 3.11.5 or newer, so the lockfile keeps 2.10 for 3.11.0 to 3.11.4.
+  The tool schemas are byte-identical before and after, and a live smoke
+  run returns data in every section, as it did before the refresh.
+
 ## [0.8.4] - 2026-10-10
 
 The Claude Desktop bundle is listed in the MCP Registry next to PyPI and the
