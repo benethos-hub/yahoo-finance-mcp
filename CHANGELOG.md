@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-10-12
+
+Tool results reach the model as compact JSON, and the tool listing is
+a tenth smaller. The answers carry the same data, no tool, parameter or
+error changes. The image catches up with a lock refresh, and the README's
+table of contents follows one rule.
+
 ### Changed
 
 - A tool result's text block is the compact JSON, not the SDK's dump indented
@@ -1308,7 +1315,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.4...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.5...HEAD
+[0.8.5]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.1...v0.8.2
