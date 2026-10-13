@@ -139,9 +139,9 @@ jobs:
   # without the lockfile. A bound that no longer holds fails here instead of on
   # the machine of someone whose resolver happens to pick it.
   #
-  # An early warning, not a merge gate: it is deliberately not a required
-  # check on main. A red run means a lower bound in pyproject.toml needs
-  # raising. The suite mocks yfinance, so green here says the code runs
+  # A required check on main like every other job. A red run means a lower
+  # bound in pyproject.toml needs raising, in the same pull request. The
+  # suite mocks yfinance, so green here says the code runs
   # against those versions, not that Yahoo answers them the same way.
   lowest-versions:
     runs-on: ubuntu-latest

@@ -176,10 +176,11 @@ and it now asserts the message text as well.
 ## Git / commits
 
 - Commit only when the user asks. Use clear, descriptive messages.
-- Every CI job must pass before a merge, except `lowest-versions`. That one
-  installs the oldest versions `pyproject.toml` allows and is an early warning,
-  not a gate. When it goes red, raise the lower bound it names, it is not a
-  reason to hold a pull request.
+- Every CI job must pass before a merge, and the branch protection of main
+  requires each of them, `brand / Brand assets` and `lowest-versions` included.
+  A new job is added to the required checks once it has run. `lowest-versions`
+  installs the oldest versions `pyproject.toml` allows. When it goes red, raise
+  the lower bound it names in the same pull request.
 - Do not commit `.venv/`, `__pycache__/`, or `*.egg-info/` (already gitignored).
 
 ## Releasing
