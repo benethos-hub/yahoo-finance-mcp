@@ -546,9 +546,14 @@ client shows the tool's own title and the model reads descriptions.
   on a fresh install and failed at import while every other job stayed green.
   A `lowest-versions` job checks the other end of those ranges: it installs
   every direct dependency at its lower bound (`--resolution lowest-direct`)
-  on Python 3.11, again without the lockfile, and runs the suite. It is an
-  early warning and not a required check on `main`. A red run means a lower
-  bound in `pyproject.toml` needs raising.
+  on Python 3.11, again without the lockfile, and runs the suite. Like every
+  other job it is a required check on `main`, so a red run blocks the merge
+  until the lower bound in `pyproject.toml` it names is raised.
+- A `brand` job calls the benethos-hub organisation's reusable check
+  (`benethos-hub/.github`, followed at `main`): `assets/brand/icon.svg` and
+  the 512×512 `icon.png` and 1280×640 `social-preview.png` exported from it
+  must be present and not older than the SVG. It is a required check on
+  `main` too.
 - Every action in both workflows is pinned to a full commit SHA, with the
   version it stands for in a trailing comment, and the two base images in the
   `Dockerfile` (`containers/images/yahoo-finance-mcp/`) by digest next to
