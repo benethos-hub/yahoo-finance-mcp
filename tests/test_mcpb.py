@@ -110,10 +110,10 @@ def test_the_staged_bundle_holds_what_uv_needs(tmp_path):
     assert (package / "py.typed").is_file()
     assert not list(target.rglob("__pycache__"))
     assert (target / MANIFEST["icon"]).read_bytes() == (
-        REPO / "assets" / "icon.png"
+        REPO / "assets" / "brand" / "icon.png"
     ).read_bytes()
 
 
 def test_the_icon_is_the_size_claude_desktop_recommends():
-    data = (REPO / "assets" / "icon.png").read_bytes()
+    data = (REPO / "assets" / "brand" / "icon.png").read_bytes()
     assert struct.unpack(">II", data[16:24]) == (512, 512)

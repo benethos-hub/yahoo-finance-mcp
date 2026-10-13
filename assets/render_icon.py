@@ -2,17 +2,26 @@
 # requires-python = ">=3.11"
 # dependencies = ["resvg-py==0.5.0"]
 # ///
-"""Render the PNGs in this folder from icon.svg.
+"""Render the PNGs from brand/icon.svg.
 
-- icon.png, 512x512, the fallback for clients that show no SVG.
-- social-preview.png, 1280x640, the image GitHub shows when the repository
-  link is shared. It is uploaded by hand under Settings > General > Social
-  preview, there is no API for it.
+The brand assets follow the rules of the benethos-hub organisation (its
+.github repository): brand/icon.svg is the source, and both PNGs next to it
+are exported from it.
+
+- brand/icon.png, 512x512, the fallback for clients that show no SVG.
+- brand/social-preview.png, 1280x640, the image GitHub shows when the
+  repository link is shared. It is uploaded by hand under Settings > General
+  > Social preview, there is no API for it.
 - architecture.png, how a question travels from you through an MCP client
   and this server to Yahoo and back, for the README and SPECS.md §3.
 
+icon.svg, icon.png and social-preview.png directly in this folder are the
+copies from before the brand folder. The MCP Registry entries up to 0.8.5
+point at them, so they stay, and this script no longer writes them.
+
 Run it after every change to the SVG or to the text below and commit the
-results together:
+results together, the organisation's brand check fails when a PNG is older
+than the SVG:
 
     uv run assets/render_icon.py
 
@@ -31,10 +40,11 @@ from pathlib import Path
 import resvg_py
 
 HERE = Path(__file__).resolve().parent
-ICON_SVG = HERE / "icon.svg"
-ICON_PNG = HERE / "icon.png"
+BRAND = HERE / "brand"
+ICON_SVG = BRAND / "icon.svg"
+ICON_PNG = BRAND / "icon.png"
 ICON_SIZE = 512
-PREVIEW_PNG = HERE / "social-preview.png"
+PREVIEW_PNG = BRAND / "social-preview.png"
 PREVIEW_WIDTH, PREVIEW_HEIGHT = 1280, 640
 ARCHITECTURE_PNG = HERE / "architecture.png"
 ARCHITECTURE_WIDTH, ARCHITECTURE_HEIGHT = 1280, 380
