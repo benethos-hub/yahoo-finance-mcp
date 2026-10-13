@@ -14,8 +14,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and writes both PNGs next to it, byte for byte the images from before. The
   README, the MCP Registry entry and the Claude Desktop bundle take the icon
   from the brand folder. CI runs the organisation's brand check as the job
-  `brand`. The icon files directly in `assets/` stay, because the published
-  registry entries up to 0.8.5 point at them.
+  `brand`. `assets/icon.svg` and `assets/icon.png` stay, because the
+  published registry entries up to 0.8.5 point at them. The old
+  `assets/social-preview.png` is gone, nothing pointed at it.
 - `brand / Brand assets` and `lowest-versions` are required checks on `main`
   now, so every CI job has to pass before a merge. A red `lowest-versions`
   run is fixed in the same pull request by raising the lower bound it names.

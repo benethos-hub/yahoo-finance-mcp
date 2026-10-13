@@ -15,9 +15,9 @@ are exported from it.
 - architecture.png, how a question travels from you through an MCP client
   and this server to Yahoo and back, for the README and SPECS.md §3.
 
-icon.svg, icon.png and social-preview.png directly in this folder are the
-copies from before the brand folder. The MCP Registry entries up to 0.8.5
-point at them, so they stay, and this script no longer writes them.
+icon.svg and icon.png directly in this folder are the copies from before the
+brand folder. The MCP Registry entries up to 0.8.5 point at them, so they
+stay, and this script no longer writes them.
 
 Run it after every change to the SVG or to the text below and commit the
 results together, the organisation's brand check fails when a PNG is older
