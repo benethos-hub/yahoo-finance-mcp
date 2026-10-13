@@ -56,13 +56,21 @@ containers/
   production/     # compose.yaml + Caddyfile + .env.example, the published image
   development/    # compose.yaml, built from the checkout, port 8001
 .github/workflows/
-  ci.yml          # lint, test matrix, fresh-install, lowest-versions, docker
+  ci.yml          # brand (the organisation's check), lint, test matrix, fresh-install, lowest-versions, docker
   publish.yml     # PyPI, ghcr, .mcpb bundle, MCP Registry on a published release
 .github/publish/   # one folder per place a release is listed, read by publish.yml
   mcp-registry/   # server.json (the entry), fill_bundle_checksum.py (its bundle hash)
   mcpb/            # Claude Desktop bundle: manifest.json, server.py, build.py
-assets/           # icon.svg and the PNGs render_icon.py draws: icon, social preview, architecture
+assets/           # render_icon.py, the architecture diagram it draws, old icon copies
+  brand/          # icon.svg, and icon.png (512x512) and social-preview.png (1280x640) exported from it
 ```
+
+The brand folder follows the rules of the benethos-hub organisation, kept in
+its `.github` repository. `assets/render_icon.py` writes both PNGs there, and
+the `brand` job in CI fails when one is missing, has the wrong size or is older
+than the SVG. The icon files directly in `assets/` are the copies from before
+the brand folder. The MCP Registry entries up to 0.8.5 point at them on main,
+so they stay until those entries no longer matter.
 
 Keep the layers separate: **tools stay thin** and hand their arguments to the
 yahoo function of the same name. Put any new yfinance call in `yahoo/`, never

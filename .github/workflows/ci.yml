@@ -12,6 +12,14 @@ permissions:
   contents: read
 
 jobs:
+  # The organisation's brand check: assets/brand/icon.svg, and a 512x512
+  # icon.png and a 1280x640 social-preview.png exported from it, neither older
+  # than the SVG. The rules and the workflow live in benethos-hub/.github, and
+  # it follows main there on purpose, so a rule changed there applies here on
+  # the next run. assets/render_icon.py writes both PNGs.
+  brand:
+    uses: benethos-hub/.github/.github/workflows/brand.yml@main
+
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 10

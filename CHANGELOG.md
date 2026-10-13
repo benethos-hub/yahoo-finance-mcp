@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The brand assets follow the rules of the benethos-hub organisation:
+  `assets/brand/icon.svg`, and exported from it a 512×512 `icon.png` and a
+  1280×640 `social-preview.png`. `assets/render_icon.py` reads the SVG there
+  and writes both PNGs next to it, byte for byte the images from before. The
+  README, the MCP Registry entry and the Claude Desktop bundle take the icon
+  from the brand folder. CI runs the organisation's brand check as the job
+  `brand`. The icon files directly in `assets/` stay, because the published
+  registry entries up to 0.8.5 point at them.
+
 ## [0.8.5] - 2026-10-12
 
 Tool results reach the model as compact JSON, and the tool listing is
