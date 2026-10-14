@@ -20,6 +20,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `brand / Brand assets` and `lowest-versions` are required checks on `main`
   now, so every CI job has to pass before a merge. A red `lowest-versions`
   run is fixed in the same pull request by raising the lower bound it names.
+- Lock refresh: `starlette` 1.8.0 and `truststore` 0.10.5 under `mcp`,
+  `soupsieve` 3.0.3 under `yfinance`, and `ast-serialize` 0.13.0 under
+  `mypy`, which is a development tool only.
+- The image builds with uv 0.13.1.
+- The container image runs on Python 3.15, the version the project is
+  developed on, now that a `python:3.15-slim` base exists. Every compiled
+  runtime dependency ships wheels for 3.15 on amd64 and arm64, so nothing
+  is built from source in the image.
 
 ## [0.8.5] - 2026-10-12
 

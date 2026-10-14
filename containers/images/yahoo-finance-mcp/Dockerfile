@@ -1,8 +1,8 @@
 # Both base images are pinned by digest as well as tag. A tag is a pointer the
 # publisher can move, and the digest is the content itself, so a rebuild of the
 # same commit gets the same bytes. The tag stays for the reader and for
-# Dependabot, which proposes a newer tag of the same precision: `3.14-slim`
-# moves on to `3.15-slim`, and uv, pinned to its patch, to each patch release.
+# Dependabot, which proposes a newer tag of the same precision: `3.15-slim`
+# moves on to `3.16-slim`, and uv, pinned to its patch, to each patch release.
 # A rebuild under an unchanged tag is not reliably proposed, so a release
 # refreshes both digests (CLAUDE.md, Releasing).
 #
@@ -15,10 +15,10 @@
 # cover, and nothing here needs more than the frontend built into BuildKit.
 
 # ---- uv: only the source of the binary, a stage so Dependabot sees it ----
-FROM ghcr.io/astral-sh/uv:0.13.0@sha256:cdc6093146eb3ff6a40107b38f008b789e050e77ad87865e381d9917da55a168 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.1@sha256:4a1f3666816dafadd20ceb71eac9a7d56d7ef30279f7d64048519ab901ada336 AS uv
 
 # ---- builder: install locked deps + package into /opt/venv via uv ----
-FROM python:3.14-slim@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170 AS builder
+FROM python:3.15-slim@sha256:ea4f1f290e071bf7d28199cfb3e09f5dbad31b50e9c32fd58f2f2d7be915f3ae AS builder
 
 # Bring in the uv binary.
 COPY --from=uv /uv /usr/local/bin/uv
@@ -41,7 +41,7 @@ COPY src ./src
 RUN uv sync --frozen --no-dev --no-editable
 
 # ---- runtime: minimal image that just runs the server ----
-FROM python:3.14-slim@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170 AS runtime
+FROM python:3.15-slim@sha256:ea4f1f290e071bf7d28199cfb3e09f5dbad31b50e9c32fd58f2f2d7be915f3ae AS runtime
 
 # All runtime configuration is via environment variables, so the container
 # needs no CMD args and stays fully configurable with `docker run -e ...`.
