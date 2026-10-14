@@ -201,7 +201,7 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    (`containers/images/yahoo-finance-mcp/`): look up the
    current digest of each tag in its registry and pin it. Dependabot proposes
    a newer tag, but not reliably a rebuild under the same one, and the Debian
-   fixes in `python:3.14-slim` arrive as exactly that.
+   fixes in the `python:3.X-slim` base arrive as exactly that.
    And `mcp-publisher` in `publish.yml`, which Dependabot cannot see at all,
    since the job downloads it: compare `MCP_PUBLISHER_VERSION` with the
    newest release of `modelcontextprotocol/registry` and, if it moved, take
