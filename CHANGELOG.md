@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.6] - 2026-10-14
+
+The container image runs on Python 3.15, the version the project is
+developed and tested on. A lock refresh and uv 0.13.1 come with it, and
+the icon moves into a brand folder by the rules of the organisation. No
+tool, parameter or schema changes.
+
 ### Changed
 
 - The brand assets follow the rules of the benethos-hub organisation:
@@ -1338,7 +1345,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.5...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.6...HEAD
+[0.8.6]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.5...v0.8.6
 [0.8.5]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.2...v0.8.3
