@@ -23,6 +23,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Lock refresh: `starlette` 1.8.0 and `truststore` 0.10.5 under `mcp`,
   `soupsieve` 3.0.3 under `yfinance`, and `ast-serialize` 0.13.0 under
   `mypy`, which is a development tool only.
+- The image builds with uv 0.13.1.
 
 ## [0.8.5] - 2026-10-12
 
