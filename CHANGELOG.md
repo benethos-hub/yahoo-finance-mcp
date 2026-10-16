@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Lock refresh: `platformdirs` 4.13.3 under `yfinance`, and for development
+  only `ruff` 0.17.1 and `pluggy` 1.7.0 under `pytest`. ruff finds nothing
+  new, and a live smoke run returns data in every section.
+
 ## [0.8.6] - 2026-10-14
 
 The container image runs on Python 3.15, the version the project is
