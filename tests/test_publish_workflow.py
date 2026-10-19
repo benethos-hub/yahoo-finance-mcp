@@ -73,6 +73,15 @@ def test_the_ci_gate_is_the_organisations_and_may_read_the_runs():
     assert "audit: true" in gate
 
 
+def test_the_ci_gate_is_skipped_on_a_manual_run_outside_main():
+    """A branch has no CI run on main, so the gate would wait five minutes
+    and fail. Skipping it skips every job that needs it."""
+    gate = _jobs()["ci-passed"]
+    assert gate.startswith(
+        "    if: github.event_name == 'release' || github.ref == 'refs/heads/main'\n"
+    )
+
+
 # PyPI: the upload on a release, the trial on a manual run.
 
 

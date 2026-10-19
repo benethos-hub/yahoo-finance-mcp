@@ -63,7 +63,10 @@ permissions:
 
 jobs:
   # Waits up to 30 minutes for a CI run of ci.yml on main still in progress.
+  # On a manual run outside main it is skipped, together with everything that
+  # needs it, instead of waiting five minutes and failing.
   ci-passed:
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
     uses: benethos-hub/.github/.github/workflows/python-release-ci-passed.yml@main
     permissions:
       actions: read # list the CI runs of this commit
