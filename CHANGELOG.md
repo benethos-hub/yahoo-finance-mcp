@@ -40,7 +40,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   as for a commit that never went through a pull request into `main`. The
   PyPI upload, the image, the bundle and the registry entry all wait for it.
   A version on PyPI cannot be replaced, and until now only the release
-  procedure made sure the tagged commit had been tested.
+  procedure made sure the tagged commit had been tested. The gate is the
+  organisation's reusable `python-release-ci-passed` workflow, which also
+  audits `uv.lock` once more, for a vulnerability that became known between
+  the merge and the release.
 
 ### Security
 

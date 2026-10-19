@@ -230,10 +230,12 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
 4. After the squash merge: annotated tag `vX.Y.Z`, push it, then
    `gh release create vX.Y.Z --verify-tag` with the changelog section as the
    notes. Publishing the release is what triggers `publish.yml`. Its first
-   job, `ci-passed` (`.github/scripts/ci_passed.py`), waits for the CI run
-   the merge commit's push to main started and lets nothing be built unless
-   that run succeeded, so a tag on a commit that never reached main, or on
-   one whose CI is red, publishes nothing. Each of the four jobs after it
+   job, `ci-passed` (the organisation's `python-release-ci-passed`
+   workflow), waits for the CI run the merge commit's push to main started
+   and lets nothing be built unless that run succeeded, so a tag on a commit
+   that never reached main, or on one whose CI is red, publishes nothing. It
+   also audits `uv.lock` once more, and a waiver in `ignore-vulns` belongs
+   there as well as in `ci.yml`. Each of the four jobs after it
    stops first when the tag is not `v` plus the version in `pyproject.toml`
    (`.github/scripts/tag_matches_version.py`), and a pre-release leaves
    `latest` where it is.
