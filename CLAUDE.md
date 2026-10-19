@@ -56,10 +56,10 @@ containers/
   production/     # compose.yaml + Caddyfile + .env.example, the published image
   development/    # compose.yaml, built from the checkout, port 8001
 .github/workflows/
-  ci.yml          # brand, lint, test, lowest-versions, audit (the organisation's workflows), fresh-install, docker
-  publish.yml     # PyPI, ghcr, .mcpb bundle, MCP Registry on a published release
+  ci.yml          # brand, lint, test, lowest-versions, audit, coverage-badge (the organisation's workflows), fresh-install, docker
+  publish.yml     # PyPI, ghcr, .mcpb bundle, MCP Registry on a published release, through the organisation's actions
 .github/publish/   # one folder per place a release is listed, read by publish.yml
-  mcp-registry/   # server.json (the entry), fill_bundle_checksum.py (its bundle hash)
+  mcp-registry/   # server.json (the entry, its bundle hash filled in at release)
   mcpb/            # Claude Desktop bundle: manifest.json, server.py, build.py
 assets/           # render_icon.py, the architecture diagram it draws, old icon copies
   brand/          # icon.svg, and icon.png (512x512) and social-preview.png (1280x640) exported from it
@@ -182,6 +182,9 @@ and it now asserts the message text as well.
   reusable workflows of benethos-hub/.github at main, so their checks are
   named `<job> / <name>`, for example `test / Python 3.15`. Renaming such a
   job renames its checks, and the required ones have to follow.
+  `coverage-badge` is the exception: it runs on a push to main only, to
+  publish the coverage badge on the `badges` branch, so it is never a
+  required check.
 - `lowest-versions` installs the oldest versions `pyproject.toml` allows,
   runs the tests and audits those versions. When it goes red, raise the lower
   bound it names in the same pull request. `audit` checks every version in
@@ -208,15 +211,8 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    current digest of each tag in its registry and pin it. Dependabot proposes
    a newer tag, but not reliably a rebuild under the same one, and the Debian
    fixes in the `python:3.X-slim` base arrive as exactly that.
-   And `mcp-publisher` in `publish.yml`, which Dependabot cannot see at all,
-   since the job downloads it: compare `MCP_PUBLISHER_VERSION` with the
-   newest release of `modelcontextprotocol/registry` and, if it moved, take
-   the version and the `mcp-publisher_linux_amd64.tar.gz` line of its
-   checksums file. The registry refuses a publisher that is too old with
-   "invalid audience", in the last job of the release. `MCPB_VERSION`, the
-   bundle CLI the `mcpb-bundle` job runs through `npx`, is invisible to
-   Dependabot the same way: compare it with the newest release of
-   `modelcontextprotocol/mcpb`.
+   `mcp-publisher` and the bundle packer are pinned in the organisation's
+   publishing actions and kept current there, not here.
 2. Bump `version` in `pyproject.toml`, then `uv lock` and `uv sync --extra dev`
    (the packaging tests read the *installed* metadata). Let
    `tests/test_packaging.py` name every stale version example instead of
@@ -235,10 +231,13 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    and lets nothing be built unless that run succeeded, so a tag on a commit
    that never reached main, or on one whose CI is red, publishes nothing. It
    also audits `uv.lock` once more, and a waiver in `ignore-vulns` belongs
-   there as well as in `ci.yml`. Each of the four jobs after it
-   stops first when the tag is not `v` plus the version in `pyproject.toml`
-   (`.github/scripts/tag_matches_version.py`), and a pre-release leaves
-   `latest` where it is.
+   there as well as in `ci.yml`. The uploads after it go through the
+   organisation's `publish/` actions, and each stops first when the tag is
+   not `v` plus the version in its own file: the wheel, `pyproject.toml`,
+   `manifest.json` or `server.json`. A pre-release leaves `latest` where it
+   is and is not listed in the registry. Before a release, a manual run of
+   `publish.yml` on main is the trial: `pypi-trial` builds and checks
+   without uploading, and the image goes out as `edge`.
 5. **Check what shipped, not the build.** The three ghcr tags (`X.Y.Z`, `X.Y`,
    `latest`) of `benethos-yahoo-finance-mcp` must carry the same
    `org.opencontainers.image.revision` annotation, the versions *inside*

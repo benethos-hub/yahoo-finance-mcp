@@ -846,7 +846,8 @@ With the venv interpreter directly (replace `.venv/bin/python` with
 The unit tests mock `yfinance` and run fully offline. `tests/smoke.py` performs
 an ad-hoc check against live Yahoo Finance and is not part of the unit suite.
 CI also runs across Python 3.11–3.15 and enforces an 80% coverage floor,
-measured on 3.15. Two
+measured on 3.15, and the coverage badge above shows what that run measured
+on `main`. Two
 more jobs install without the lockfile: `fresh-install` with the newest
 versions `pyproject.toml` allows, `lowest-versions` with the oldest. Every
 version in `uv.lock` and every lowest version is checked for known

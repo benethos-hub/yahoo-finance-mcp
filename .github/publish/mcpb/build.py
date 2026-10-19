@@ -5,7 +5,11 @@ source, and Claude Desktop installs the dependencies itself on first start.
 This script only copies, so it needs nothing beyond the standard library and
 runs the same in CI and locally:
 
-    python .github/publish/mcpb/build.py <staging dir>
+    uv run --no-project .github/publish/mcpb/build.py <staging dir>
+
+In a release, the organisation's publish/mcpb action validates and packs the
+staged tree and attaches the bundle. Locally, the mcpb CLI packs it:
+
     npx @anthropic-ai/mcpb pack <staging dir> <file>.mcpb
 
 The manifest is committed as it ships. tests/test_mcpb.py holds its version,
