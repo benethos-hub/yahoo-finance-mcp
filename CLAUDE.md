@@ -56,7 +56,7 @@ containers/
   production/     # compose.yaml + Caddyfile + .env.example, the published image
   development/    # compose.yaml, built from the checkout, port 8001
 .github/workflows/
-  ci.yml          # brand (the organisation's check), lint, test matrix, fresh-install, lowest-versions, docker
+  ci.yml          # brand, lint, test, lowest-versions, audit (the organisation's workflows), fresh-install, docker
   publish.yml     # PyPI, ghcr, .mcpb bundle, MCP Registry on a published release
 .github/publish/   # one folder per place a release is listed, read by publish.yml
   mcp-registry/   # server.json (the entry), fill_bundle_checksum.py (its bundle hash)
@@ -132,7 +132,7 @@ Commands use uv (recommended); the venv interpreter forms
 - Lint + format: `uv run ruff check .` and `uv run ruff format .`
   (CI checks `ruff format --check`).
 - Types: `uv run mypy`.
-- Coverage (CI floor 80%, measured in `test (3.15)` only, the other
+- Coverage (CI floor 80%, measured in `test / Python 3.15` only, the other
   versions run without it):
   `uv run pytest --cov=benethos_yahoo_finance_mcp --cov-fail-under=80`.
 - Inspect what the client sends to Claude (no Desktop restart needed):
@@ -177,10 +177,16 @@ and it now asserts the message text as well.
 
 - Commit only when the user asks. Use clear, descriptive messages.
 - Every CI job must pass before a merge, and the branch protection of main
-  requires each of them, `brand / Brand assets` and `lowest-versions` included.
-  A new job is added to the required checks once it has run. `lowest-versions`
-  installs the oldest versions `pyproject.toml` allows. When it goes red, raise
-  the lower bound it names in the same pull request.
+  requires each of them. A new job is added to the required checks once it
+  has run. `brand`, `lint`, `test`, `lowest-versions` and `audit` call the
+  reusable workflows of benethos-hub/.github at main, so their checks are
+  named `<job> / <name>`, for example `test / Python 3.15`. Renaming such a
+  job renames its checks, and the required ones have to follow.
+- `lowest-versions` installs the oldest versions `pyproject.toml` allows,
+  runs the tests and audits those versions. When it goes red, raise the lower
+  bound it names in the same pull request. `audit` checks every version in
+  `uv.lock` against PyPI and OSV. A vulnerability without a fix yet is waived
+  by its ID with `ignore-vulns`, in both jobs alike.
 - Do not commit `.venv/`, `__pycache__/`, or `*.egg-info/` (already gitignored).
 
 ## Releasing

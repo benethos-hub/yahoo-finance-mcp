@@ -546,14 +546,20 @@ client shows the tool's own title and the model reads descriptions.
   on a fresh install and failed at import while every other job stayed green.
   A `lowest-versions` job checks the other end of those ranges: it installs
   every direct dependency at its lower bound (`--resolution lowest-direct`)
-  on Python 3.11, again without the lockfile, and runs the suite. Like every
-  other job it is a required check on `main`, so a red run blocks the merge
-  until the lower bound in `pyproject.toml` it names is raised.
-- A `brand` job calls the benethos-hub organisation's reusable check
-  (`benethos-hub/.github`, followed at `main`): `assets/brand/icon.svg` and
-  the 512×512 `icon.png` and 1280×640 `social-preview.png` exported from it
-  must be present and not older than the SVG. It is a required check on
-  `main` too.
+  on Python 3.11, again without the lockfile, runs the suite and audits
+  those versions for known vulnerabilities. An `audit` job checks every
+  version in `uv.lock`, for every platform and Python version, against PyPI
+  and OSV, since GitHub's dependency graph does not read `uv.lock`. Like
+  every other job both are required checks on `main`, so a red run blocks
+  the merge until the lower bound in `pyproject.toml` it names is raised or
+  the locked version is fixed.
+- `brand`, `lint`, `test`, `lowest-versions` and `audit` call the reusable
+  workflows of the benethos-hub organisation (`benethos-hub/.github`,
+  followed at `main`), shared by its Python projects. `brand` checks that
+  `assets/brand/icon.svg` and the 512×512 `icon.png` and 1280×640
+  `social-preview.png` exported from it are present and not older than the
+  SVG. Their checks are named `<job> / <name>`, such as `test / Python 3.15`.
+  `fresh-install` and `docker` are this project's own.
 - Every action in both workflows is pinned to a full commit SHA, with the
   version it stands for in a trailing comment, and the two base images in the
   `Dockerfile` (`containers/images/yahoo-finance-mcp/`) by digest next to

@@ -12,82 +12,45 @@ permissions:
   contents: read
 
 jobs:
-  # The organisation's brand check: assets/brand/icon.svg, and a 512x512
-  # icon.png and a 1280x640 social-preview.png exported from it, neither older
-  # than the SVG. The rules and the workflow live in benethos-hub/.github, and
-  # it follows main there on purpose, so a rule changed there applies here on
-  # the next run. assets/render_icon.py writes both PNGs.
+  # brand, lint, test, lowest-versions and audit are the organisation's
+  # reusable workflows in benethos-hub/.github, the same for every Python
+  # project there. Each one explains itself in its file. They are followed at
+  # main on purpose, so a rule changed there applies here on the next run,
+  # and Dependabot in that repository keeps the actions they pin current.
+  # What stays here is what only this project has: fresh-install and docker.
+
+  # assets/brand/icon.svg, and a 512x512 icon.png and a 1280x640
+  # social-preview.png exported from it, neither older than the SVG.
+  # assets/render_icon.py writes both PNGs.
   brand:
     uses: benethos-hub/.github/.github/workflows/brand.yml@main
 
+  # uv.lock in step with pyproject.toml, ruff, the formatting and mypy.
   lint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    uses: benethos-hub/.github/.github/workflows/python-lint.yml@main
+    with:
+      sync-args: --extra dev
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
-        with:
-          enable-cache: true
-
-      - name: Install dependencies (locked)
-        run: uv sync --extra dev --frozen
-
-      # Every job installs with --frozen, so all of CI runs against uv.lock. A
-      # pyproject.toml that has drifted away from it would therefore never be
-      # exercised, and the mismatch would surface on the first install that
-      # resolves fresh.
-      - name: Lockfile is in step with pyproject.toml
-        run: uv lock --check
-
-      - name: Ruff (lint)
-        run: uv run ruff check .
-
-      - name: Ruff (format check)
-        run: uv run ruff format --check .
-
-      - name: Mypy (type check)
-        run: uv run mypy
-
+  # pytest on every supported Python against uv.lock, and on the newest alone
+  # the coverage with its floor of 80 %, so test / Python 3.15 being a
+  # required check is what makes the floor block a merge. The unit tests mock
+  # yfinance and run offline. tests/smoke.py is not collected, it is the only
+  # part that would reach Yahoo.
+  #
+  # The versions are named here although the workflow has the same defaults.
+  # Which Pythons this project supports is its own decision, and
+  # tests/test_packaging.py ties these lines to the classifiers,
+  # requires-python and the documentation. A default changed in the
+  # organisation's repository would otherwise move the tests away from them
+  # without a word.
   test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
-        with:
-          enable-cache: true
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies (locked)
-        run: uv sync --extra dev --frozen
-
-      # The unit tests mock yfinance, so this runs fully offline.
-      # tests/smoke.py is not collected (it has no test_* functions) and is
-      # the only part that would hit the live Yahoo Finance endpoints.
-      #
-      # The coverage floor is measured on the newest Python alone, 3.15. With
-      # branch coverage on, the test step took 13-16 s on 3.14 and 16-22 s on
-      # 3.11-3.13 (two CI runs, 2026-10-09 and 10), and on 3.15 the suite
-      # took 12-13 s with and without coverage alike (two local runs). The
-      # others only test. The job names stay test (3.x), and test (3.15)
-      # being a required check is what makes the floor block a merge. Code
-      # that runs only on an older Python is not counted.
-      - name: Run tests
-        if: matrix.python-version != '3.15'
-        run: uv run pytest -q
-
-      - name: Run tests with coverage
-        if: matrix.python-version == '3.15'
-        run: uv run pytest -q --cov=benethos_yahoo_finance_mcp --cov-fail-under=80
+    uses: benethos-hub/.github/.github/workflows/python-tests.yml@main
+    with:
+      python-versions: '["3.11", "3.12", "3.13", "3.14", "3.15"]'
+      coverage-python: "3.15"
+      sync-args: --extra dev
+      cov: benethos_yahoo_finance_mcp
+      timeout-minutes: 10
 
   # Every other job installs from uv.lock, which pins the dependencies to a
   # known-good set. That is what we want for reproducibility, but it hides a
@@ -135,38 +98,29 @@ jobs:
 
   # The other half of what fresh-install checks. That job resolves the newest
   # versions pyproject.toml allows, this one the oldest: every direct
-  # dependency at its declared lower bound, on the oldest supported Python,
-  # without the lockfile. A bound that no longer holds fails here instead of on
-  # the machine of someone whose resolver happens to pick it.
-  #
-  # A required check on main like every other job. A red run means a lower
-  # bound in pyproject.toml needs raising, in the same pull request. The
-  # suite mocks yfinance, so green here says the code runs
-  # against those versions, not that Yahoo answers them the same way.
+  # dependency at its declared lower bound, on the oldest supported Python
+  # (named here for the same reason as in test), without the lockfile, and
+  # the tests against them. pytest at the floor the dev extra
+  # declares, the suite needs no other plugin. The audit checks those versions
+  # for known vulnerabilities as well. A red run means a lower bound in
+  # pyproject.toml needs raising, in the same pull request. The suite mocks
+  # yfinance, so green here says the code runs against those versions, not
+  # that Yahoo answers them the same way.
   lowest-versions:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    uses: benethos-hub/.github/.github/workflows/python-lowest-versions.yml@main
+    with:
+      python-version: "3.11"
+      requirements: pytest>=9.1.1
+      audit: true
+      timeout-minutes: 10
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
-
-      - name: Install the lowest allowed direct dependencies (no lockfile)
-        run: |
-          set -euo pipefail
-          uv venv -p 3.11 /tmp/lowest
-          # pytest at the floor the dev extra declares. The suite needs no
-          # other plugin, and coverage is the test job's business.
-          uv pip install --python /tmp/lowest/bin/python \
-            --resolution lowest-direct -e . "pytest>=9.1.1"
-          echo "--- resolved dependency versions ---"
-          uv pip list --python /tmp/lowest/bin/python
-
-      - name: Run the tests against them
-        run: |
-          set -euo pipefail
-          /tmp/lowest/bin/python -m pytest -q -p no:cacheprovider
+  # Every version pinned in uv.lock, for every platform and Python version,
+  # checked against PyPI and OSV for known vulnerabilities. GitHub's
+  # dependency graph does not read uv.lock, so nothing else covers the
+  # packages that land in the image. A vulnerability without a fix yet is
+  # waived with ignore-vulns, here and in lowest-versions alike.
+  audit:
+    uses: benethos-hub/.github/.github/workflows/python-dependency-audit.yml@main
 
   docker:
     runs-on: ubuntu-latest
