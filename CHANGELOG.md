@@ -8,9 +8,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Lock refresh: `platformdirs` 4.13.3 under `yfinance`, and for development
-  only `ruff` 0.17.1 and `pluggy` 1.7.0 under `pytest`. ruff finds nothing
-  new, and a live smoke run returns data in every section.
+- Lock refresh: `platformdirs` 4.13.5 and `certifi` 2026.10.18 under
+  `yfinance`, `starlette` 1.9.0 and `httpx2` 2.14.0 with `httpcore2` 2.14.0
+  under `mcp`, and for development only `ruff` 0.17.1, `pluggy` 1.7.0 under
+  `pytest` and `ast-serialize` 0.13.1 under `mypy`. ruff finds nothing new,
+  and a live smoke run returns the same sections as before the refresh.
+  Starlette's case-insensitive host matching changes nothing here, the
+  server's own Host allow-list already compares lower case.
 
 ## [0.8.6] - 2026-10-14
 
