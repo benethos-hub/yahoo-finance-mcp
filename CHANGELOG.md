@@ -44,6 +44,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   organisation's reusable `python-release-ci-passed` workflow, which also
   audits `uv.lock` once more, for a vulnerability that became known between
   the merge and the release.
+- The coverage badge in the README is measured instead of written by hand.
+  The `test / Python 3.15` run writes the percentage, and a new
+  `coverage-badge` job publishes it as `coverage.json` on a `badges` branch
+  on every push to `main`. It is not a required check, since a pull request
+  does not run it. The badges at the top of the README follow the
+  organisation's layout in three rows: status (CI, coverage, licence,
+  Python versions), where to get it (PyPI, container image), and the
+  sponsor links. The licence badge now reads the `LICENSE` file.
 
 ### Security
 

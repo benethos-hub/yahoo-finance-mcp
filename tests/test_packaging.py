@@ -324,6 +324,17 @@ def test_coverage_runs_on_the_newest_tested_python():
     assert _job_input("python-tests.yml", "cov") == "benethos_yahoo_finance_mcp"
 
 
+def test_the_coverage_badge_is_written_and_published_from_main_only():
+    """The README shows the badge from the badges branch. A pull request must
+    not publish it, so it never waits on a check a pull request lacks."""
+    assert _job_input("python-tests.yml", "badge") == "true"
+    job = CI.split("\n  coverage-badge:\n", 1)[1].split("\n\n", 1)[0]
+    assert "if: github.event_name == 'push'" in job
+    assert "needs: test" in job
+    assert "contents: write" in job
+    assert "workflows/coverage-badge.yml@main" in job
+
+
 # The range the prose names, "Python 3.11-3.15", in the files a contributor
 # reads first, with a hyphen or the README's en dash. The changelog is history
 # and keeps the ranges of its day.
