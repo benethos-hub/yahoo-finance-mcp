@@ -19,6 +19,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   2026-10-16, new for amd64 and arm64 alike, with the Debian fixes since
   0.8.6. Python stays at 3.15.0.
 
+### Security
+
+- The lowest allowed versions no longer carry known vulnerabilities: `mcp`
+  starts at 2.2.0 instead of 2.0.0, for the runtime and for `mcp[cli]` in
+  `dev`, and `lxml` at 6.1.0 instead of 5.0. In `mcp` before 2.2.0 a
+  stateful Streamable HTTP server never reclaimed its sessions, so a client
+  could exhaust its memory (GHSA-84m7-p3x7-pcfv), and this server offers
+  that transport. `lxml` before 6.1.0 lets `iterparse()` and
+  `ETCompatXMLParser()` read local files from untrusted XML
+  (GHSA-vfmq-68hx-4jfw). This server only hands it Yahoo's HTML through
+  yfinance, so the lxml raise is a precaution. The container image and
+  every fresh install already had fixed versions, 2.3.0 and 6.1.3. Found by
+  a vulnerability audit of the lowest versions, and the tests pass against
+  them.
+
 ## [0.8.6] - 2026-10-14
 
 The container image runs on Python 3.15, the version the project is
