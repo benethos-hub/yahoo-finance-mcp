@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.7] - 2026-10-19
+
+The lowest allowed versions of `mcp` and `lxml` rise past known
+vulnerabilities, and the lockfile and the image base are refreshed. CI and
+the release run through the shared workflows and actions of the
+benethos-hub organisation, a release publishes nothing until its commit
+has passed CI on `main`, and the README shows the measured coverage. No
+tool, parameter or schema changes.
+
 ### Changed
 
 - Lock refresh: `platformdirs` 4.13.5 and `certifi` 2026.10.18 under
@@ -1427,7 +1436,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.6...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.7...HEAD
+[0.8.7]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.6...v0.8.7
 [0.8.6]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.5...v0.8.6
 [0.8.5]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.3...v0.8.4
