@@ -12,6 +12,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   than leaving it implied, and the comments say why `yfinance` and `mcp`
   each come alone and that the Dockerfile pins two images, python and uv.
   The grouping itself is unchanged.
+- A manual run of the publish workflow on a branch other than `main` skips
+  the CI gate and every job after it, instead of waiting five minutes for a
+  CI run on `main` that does not exist and failing.
 
 ## [0.8.7] - 2026-10-19
 
