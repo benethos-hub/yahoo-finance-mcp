@@ -18,6 +18,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The container image pins the rebuild of `python:3.15-slim` from
   2026-10-16, new for amd64 and arm64 alike, with the Debian fixes since
   0.8.6. Python stays at 3.15.0.
+- CI runs `lint`, `test` and `lowest-versions` through the reusable
+  workflows the benethos-hub organisation keeps in `benethos-hub/.github`
+  for its Python projects, as `brand` already did. The steps are the same
+  as before. Two things are new: `lowest-versions` also audits the versions
+  it tested, and a new `audit` job checks every version in `uv.lock`, for
+  every platform and Python version, against PyPI and OSV. GitHub's
+  dependency graph does not read `uv.lock`, so nothing covered those
+  packages before except Dependabot's alerts. The checks are now named
+  `lint / lint`, `test / Python 3.11` to `test / Python 3.15`,
+  `lowest-versions / Python 3.11` and `audit / Dependency audit`, and the
+  required checks on `main` follow. `fresh-install` and `docker` stay this
+  project's own. `ci.yml` still names the tested Pythons, the one that
+  measures coverage and the oldest one itself, rather than relying on the
+  workflows' defaults, and `tests/test_packaging.py` keeps tying them to the
+  classifiers, `requires-python` and the documentation.
 
 ### Security
 

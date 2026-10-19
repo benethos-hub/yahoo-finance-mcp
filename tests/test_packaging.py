@@ -262,8 +262,11 @@ def test_changelog_closes_the_current_release():
 # together: the classifiers in pyproject.toml, its requires-python, the CI
 # matrix, and the matrix entry that measures coverage (plus the oldest Python
 # lowest-versions installs). Adding 3.15 meant editing each by hand, and one
-# left behind would have kept every check green. ci.yml is read with regular
-# expressions, which is enough for these few lines and needs no YAML parser.
+# left behind would have kept every check green. The test and lowest-versions
+# jobs call the organisation's reusable workflows, whose defaults could move
+# on their own, so ci.yml passes the versions explicitly and these tests read
+# them there. ci.yml is read with regular expressions, which is enough for
+# these few lines and needs no YAML parser.
 CI = (REPO / ".github/workflows/ci.yml").read_text(encoding="utf-8")
 
 
@@ -272,11 +275,26 @@ def _version_key(version: str) -> tuple[int, ...]:
 
 
 def _matrix_versions() -> list[str]:
-    match = re.search(r"^\s*python-version: \[([^\]]*)\]", CI, re.M)
-    assert match, "ci.yml no longer lists a python-version matrix"
+    match = re.search(r"^\s*python-versions: '\[([^\]]*)\]'", CI, re.M)
+    assert match, "ci.yml no longer passes python-versions to the test job"
     versions = re.findall(r'"(\d+\.\d+)"', match.group(1))
     assert versions, f"no versions found in {match.group(0).strip()!r}"
     return sorted(versions, key=_version_key)
+
+
+def _job_input(job_workflow: str, name: str) -> str:
+    """The value ci.yml passes as ``name`` to the job calling ``job_workflow``."""
+    block = re.search(
+        r"uses: benethos-hub/\.github/\.github/workflows/"
+        rf"{re.escape(job_workflow)}@\S+\n((?:[ \t]+.*\n)+)",
+        CI,
+    )
+    assert block, f"ci.yml no longer calls {job_workflow}"
+    value = re.search(
+        rf"^\s+{re.escape(name)}: \"?([^\"\n]+)\"?$", block.group(1), re.M
+    )
+    assert value, f"ci.yml passes no {name} to {job_workflow}"
+    return value.group(1)
 
 
 def test_classifiers_name_exactly_the_tested_pythons():
@@ -296,26 +314,14 @@ def test_classifiers_name_exactly_the_tested_pythons():
     )
 
 
-# Each condition with the `run:` line under it, so the operator is tied to the
-# step it guards: `==` belongs to the one with --cov, `!=` to the one without.
-_CONDITIONAL_STEP = re.compile(
-    r"if: matrix\.python-version ([!=]=) '(\d+\.\d+)'\n\s*run: (.+)"
-)
-
-
 def test_coverage_runs_on_the_newest_tested_python():
-    steps = _CONDITIONAL_STEP.findall(CI)
-    assert len(steps) == 2, (
-        f"expected the test job's two conditional steps in ci.yml, found {steps}"
-    )
     newest = _matrix_versions()[-1]
-    expected = {("==", newest, True), ("!=", newest, False)}
-    found = {(op, version, "--cov" in run) for op, version, run in steps}
-    assert found == expected, (
-        f"the test steps run as {sorted(found)} (operator, version, with --cov), "
-        f"expected {sorted(expected)}: coverage on the newest tested Python, "
-        f"{newest}, and the other versions without it."
+    coverage = _job_input("python-tests.yml", "coverage-python")
+    assert coverage == newest, (
+        f"the test job measures coverage on Python {coverage}, the newest tested "
+        f"Python is {newest}"
     )
+    assert _job_input("python-tests.yml", "cov") == "benethos_yahoo_finance_mcp"
 
 
 # The range the prose names, "Python 3.11-3.15", in the files a contributor
@@ -342,9 +348,7 @@ def test_the_oldest_tested_python_is_the_floor_everywhere():
     assert requires == f">={oldest}", (
         f"requires-python is {requires!r}, the oldest tested Python is {oldest}"
     )
-    lowest = re.search(r"uv venv -p (\d+\.\d+) /tmp/lowest", CI)
-    assert lowest, "ci.yml no longer creates the lowest-versions venv with -p"
-    assert lowest.group(1) == oldest, (
-        f"lowest-versions installs on {lowest.group(1)}, the oldest tested "
-        f"Python is {oldest}"
+    lowest = _job_input("python-lowest-versions.yml", "python-version")
+    assert lowest == oldest, (
+        f"lowest-versions installs on {lowest}, the oldest tested Python is {oldest}"
     )
