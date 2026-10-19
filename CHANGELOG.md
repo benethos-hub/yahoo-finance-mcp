@@ -15,6 +15,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A manual run of the publish workflow on a branch other than `main` skips
   the CI gate and every job after it, instead of waiting five minutes for a
   CI run on `main` that does not exist and failing.
+- The container image is built with uv 0.13.2 (was 0.13.1).
 
 ## [0.8.7] - 2026-10-19
 
