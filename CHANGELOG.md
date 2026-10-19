@@ -15,6 +15,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and a live smoke run returns the same sections as before the refresh.
   Starlette's case-insensitive host matching changes nothing here, the
   server's own Host allow-list already compares lower case.
+- The container image pins the rebuild of `python:3.15-slim` from
+  2026-10-16, new for amd64 and arm64 alike, with the Debian fixes since
+  0.8.6. Python stays at 3.15.0.
 
 ## [0.8.6] - 2026-10-14
 
