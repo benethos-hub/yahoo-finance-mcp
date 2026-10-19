@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.7] - 2026-10-19
+
+The lowest allowed versions of `mcp` and `lxml` rise past known
+vulnerabilities, and the lockfile and the image base are refreshed. CI and
+the release run through the shared workflows and actions of the
+benethos-hub organisation, a release publishes nothing until its commit
+has passed CI on `main`, and the README shows the measured coverage. No
+tool, parameter or schema changes.
+
 ### Changed
 
 - Lock refresh: `platformdirs` 4.13.5 and `certifi` 2026.10.18 under
@@ -14,7 +23,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `pytest` and `ast-serialize` 0.13.1 under `mypy`. ruff finds nothing new,
   and a live smoke run returns the same sections as before the refresh.
   Starlette's case-insensitive host matching changes nothing here, the
-  server's own Host allow-list already compares lower case.
+  server's own Host allow-list already compares lower case. The release
+  refresh adds `websockets` 17.3 under `yfinance`, which this server does
+  not use for streaming, and a live smoke run returns the same sections
+  before and after it.
 - The container image pins the rebuild of `python:3.15-slim` from
   2026-10-16, new for amd64 and arm64 alike, with the Debian fixes since
   0.8.6. Python stays at 3.15.0.
@@ -1424,7 +1436,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.6...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.7...HEAD
+[0.8.7]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.6...v0.8.7
 [0.8.6]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.5...v0.8.6
 [0.8.5]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.3...v0.8.4
