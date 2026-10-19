@@ -44,6 +44,31 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   organisation's reusable `python-release-ci-passed` workflow, which also
   audits `uv.lock` once more, for a vulnerability that became known between
   the merge and the release.
+- The coverage badge in the README is measured instead of written by hand.
+  The `test / Python 3.15` run writes the percentage, and a new
+  `coverage-badge` job publishes it as `coverage.json` on a `badges` branch
+  on every push to `main`. It is not a required check, since a pull request
+  does not run it. The badges at the top of the README follow the
+  organisation's layout in three rows: status (CI, coverage, licence,
+  Python versions), where to get it (PyPI, container image), and the
+  sponsor links. The licence badge now reads the `LICENSE` file.
+- The release uploads go through the organisation's publishing actions:
+  `publish/pypi`, `publish/ghcr`, `publish/mcpb` and `publish/mcp-registry`.
+  What a release publishes stays the same, under the same names and tags.
+  The workflow file and the PyPI environment keep their names, so the
+  Trusted Publisher on PyPI needs no change. Each action checks that the
+  release tag is the version in its own file, the wheel, `pyproject.toml`,
+  `manifest.json` or `server.json`, where one script used to check
+  `pyproject.toml` for every job. The bundle is now also compared byte for
+  byte with the staged tree after packing. A manual run of `publish.yml`
+  gains a PyPI trial, `pypi-trial`, which builds and checks the package and
+  asks PyPI whether it would take it, without uploading and without
+  credentials. The image release reuses the layers the CI's arm64 build
+  cached. `.github/scripts/tag_matches_version.py` and
+  `.github/publish/mcp-registry/fill_bundle_checksum.py` are gone, and so
+  are the pinned versions of `mcp-publisher` and the bundle packer, which
+  the organisation now keeps for all its projects. The registry job is now
+  named `mcp-registry`.
 
 ### Security
 

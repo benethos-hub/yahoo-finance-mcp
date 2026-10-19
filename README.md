@@ -1,11 +1,15 @@
 # <img src="https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/main/assets/brand/icon.svg" alt="" width="40" height="40"> Unofficial Yahoo Finance MCP Server
 
 [![CI](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml)
-[![PyPI benethos-yahoo-finance-mcp](https://img.shields.io/pypi/v/benethos-yahoo-finance-mcp?label=PyPI%20benethos-yahoo-finance-mcp)](https://pypi.org/project/benethos-yahoo-finance-mcp/)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/benethos-hub/yahoo-finance-mcp/badges/coverage.json&logo=githubactions&logoColor=white)](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/benethos-hub/yahoo-finance-mcp?logo=opensourceinitiative&logoColor=white)](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/LICENSE)
+[![Python](https://img.shields.io/pypi/pyversions/benethos-yahoo-finance-mcp?logo=python&logoColor=white)](https://pypi.org/project/benethos-yahoo-finance-mcp/)
+
+[![PyPI benethos-yahoo-finance-mcp](https://img.shields.io/pypi/v/benethos-yahoo-finance-mcp?label=PyPI%20benethos-yahoo-finance-mcp&logo=pypi&logoColor=white)](https://pypi.org/project/benethos-yahoo-finance-mcp/)
 [![Container benethos-yahoo-finance-mcp](https://img.shields.io/badge/ghcr.io-benethos--yahoo--finance--mcp-2496ED?logo=docker&logoColor=white)](https://github.com/benethos-hub/yahoo-finance-mcp/pkgs/container/benethos-yahoo-finance-mcp)
-[![Python](https://img.shields.io/pypi/pyversions/benethos-yahoo-finance-mcp)](https://pypi.org/project/benethos-yahoo-finance-mcp/)
-[![Coverage](https://img.shields.io/badge/coverage-97%25-brightgreen)](https://github.com/benethos-hub/yahoo-finance-mcp/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/LICENSE)
+
+[![Sponsor](https://raw.githubusercontent.com/benethos-hub/.github/main/profile/badges/sponsor.svg)](https://github.com/sponsors/BeneODev)
+[![PayPal](https://raw.githubusercontent.com/benethos-hub/.github/main/profile/badges/paypal.svg)](https://paypal.me/BeneODev)
 
 <!-- The MCP Registry looks for this line in the README on PyPI to accept the package as the one in server.json. -->
 <!-- mcp-name: io.github.benethos-hub/benethos-yahoo-finance-mcp -->
@@ -842,7 +846,8 @@ With the venv interpreter directly (replace `.venv/bin/python` with
 The unit tests mock `yfinance` and run fully offline. `tests/smoke.py` performs
 an ad-hoc check against live Yahoo Finance and is not part of the unit suite.
 CI also runs across Python 3.11–3.15 and enforces an 80% coverage floor,
-measured on 3.15. Two
+measured on 3.15, and the coverage badge above shows what that run measured
+on `main`. Two
 more jobs install without the lockfile: `fresh-install` with the newest
 versions `pyproject.toml` allows, `lowest-versions` with the oldest. Every
 version in `uv.lock` and every lowest version is checked for known

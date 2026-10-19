@@ -517,8 +517,9 @@ client shows the tool's own title and the model reads descriptions.
   of contents naming every section in order and on the tool list matching
   the registry, `test_server_json.py` on the MCP Registry
   entry, `test_mcpb.py` on the Claude Desktop bundle, and
-  `test_publish_workflow.py` on the release workflow's guards and the order
-  of its jobs.
+  `test_publish_workflow.py` on the release workflow's wiring: which job
+  calls which of the organisation's actions, with what, on which event and
+  after what.
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo, and it is not part of
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
@@ -559,9 +560,14 @@ client shows the tool's own title and the model reads descriptions.
   `assets/brand/icon.svg` and the 512×512 `icon.png` and 1280×640
   `social-preview.png` exported from it are present and not older than the
   SVG. Their checks are named `<job> / <name>`, such as `test / Python 3.15`.
-  `fresh-install` and `docker` are this project's own.
-- Every action in both workflows is pinned to a full commit SHA, with the
-  version it stands for in a trailing comment, and the two base images in the
+  `fresh-install` and `docker` are this project's own. A `coverage-badge`
+  job, the organisation's as well, runs on a push to `main` only and
+  commits the coverage `test / Python 3.15` measured as `coverage.json` to
+  the `badges` branch, which the README's coverage badge reads. It is no
+  required check, since a pull request does not run it.
+- Every third-party action in both workflows is pinned to a full commit
+  SHA, with the version it stands for in a trailing comment, and the two
+  base images in the
   `Dockerfile` (`containers/images/yahoo-finance-mcp/`) by digest next to
   their tag. A tag is a pointer its owner can
   move, and the publish workflow holds the credentials that push to PyPI and
@@ -571,7 +577,9 @@ client shows the tool's own title and the model reads descriptions.
   else runs, so `docker compose pull` should bring its security fixes the
   day they ship rather than with the next release here, and Caddy keeps its
   configuration compatible within a major version. Nothing is built from
-  it, so no credentials depend on it.
+  it, so no credentials depend on it. The organisation's workflows and
+  actions in `benethos-hub/.github` are the other exception, followed at
+  `main`, and they pin the actions they use themselves.
 - Dependabot covers GitHub Actions, the two images in the `Dockerfile` and,
   since 0.5.1, the Python dependencies in `uv.lock`. It reads `FROM` lines
   only, so the uv image is a stage of its own rather than a `COPY --from=`
@@ -591,8 +599,13 @@ client shows the tool's own title and the model reads descriptions.
   Minor and patch updates arrive grouped, one pull request per ecosystem and
   week, a major on its own, and `yfinance` and `mcp` always on their own,
   since each needs the checks CLAUDE.md describes.
-- A separate `publish` workflow runs when a GitHub release is published. Its
-  first two jobs are independent of each other. It builds the sdist + wheel (`uv build`) and uploads
+- A separate `publish` workflow runs when a GitHub release is published.
+  Every upload in it goes through an action of the organisation
+  (`benethos-hub/.github`, `actions/publish/`), while the jobs stay here,
+  since PyPI and the MCP Registry trust the workflow of the job that
+  uploads. Its first job, `ci-passed`, lets nothing be built until the CI
+  run of the release commit on `main` has passed, and audits `uv.lock` once
+  more. The upload jobs after it are independent of each other. It builds the sdist + wheel (`uv build`) and uploads
   them to **PyPI via Trusted Publishing (OIDC)**, and it builds the container
   image for `linux/amd64` and `linux/arm64` and pushes it to **ghcr.io** as
   `ghcr.io/benethos-hub/benethos-yahoo-finance-mcp`, authenticating with the
@@ -602,17 +615,19 @@ client shows the tool's own title and the model reads descriptions.
   Those releases were copied to the new name once, digest for digest, so the
   new name holds every release from 0.4.0 on. The 0.7 line was pushed
   under the old image name as well, the same index with the same digest,
-  and 0.8.0 dropped it. `tests/test_packaging.py` refuses a version of 0.8.0
-  or later should `publish.yml` name it again. Neither half stores a secret, and a failure
+  and 0.8.0 dropped it. Neither half stores a secret, and a failure
   in one does not withhold the other. Release tags become `X.Y.Z`, `X.Y` and `latest`, a
   pre-release its exact version only, so `latest` stays on the last full
-  release. Every job of the workflow stops first when the tag is not `v`
-  plus the version in
-  `pyproject.toml` (`.github/scripts/tag_matches_version.py`), since PyPI
-  would refuse the upload while the image job pushed its tags with the old
-  code. The workflow can also be started by hand, from `main` only, which
-  pushes the image as `edge` and skips PyPI, because a version may only be
-  uploaded there once. Note that a
+  release. Every upload stops first when the tag is not `v` plus the
+  version in its own file, the wheel, `pyproject.toml`, `manifest.json` or
+  `server.json`, since PyPI would refuse the upload while the image job
+  pushed its tags with the old code. The workflow can also be started by
+  hand, which is the trial before a release: it pushes the image as `edge`,
+  from `main` only, and `pypi-trial` builds and checks the package and asks
+  PyPI whether it would take it, without uploading and without the
+  credentials of the upload job, because a version may only be uploaded
+  there once. The image release reuses the layers the arm64 build in CI
+  cached. Note that a
   ghcr package is private when first created and has to be made public by an
   organisation owner, which is also gated by an organisation-level setting. A
   public package is still absent from the repository sidebar for a logged-out
@@ -622,8 +637,8 @@ client shows the tool's own title and the model reads descriptions.
   A third job lists the release in the **MCP Registry**
   (registry.modelcontextprotocol.io) as
   `io.github.benethos-hub/benethos-yahoo-finance-mcp`, from
-  `.github/publish/mcp-registry/server.json`. It runs after the other two
-  and skips a pre-release, since the registry checks both packages when it takes the entry: the
+  `.github/publish/mcp-registry/server.json`. It runs after the three
+  package jobs and skips a pre-release, since the registry checks every package when it takes the entry: the
   README of that version on PyPI must carry an `mcp-name:` line and the image
   config the `io.modelcontextprotocol.server.name` label, each naming the
   entry. It logs in with the workflow's OIDC token, which the registry trusts
@@ -641,11 +656,11 @@ client shows the tool's own title and the model reads descriptions.
   registry takes for a GitHub-hosted bundle. Its required `fileSha256`
   exists only once the release has built the bundle, so the committed entry
   holds zeros and the registry job, which waits for the bundle job too,
-  downloads the attached file and writes its hash
-  (`.github/publish/mcp-registry/fill_bundle_checksum.py`, which refuses any
-  other file name and a hash already filled in). The registry takes an
+  downloads the attached file and writes its hash (the organisation's
+  `publish/mcp-registry` action, which refuses another file name, another
+  release and a hash already filled in). The registry takes an
   entry whole or not at all, so should it still refuse the one with the
-  bundle after the retries, the job drops the bundle (`--drop`), publishes
+  bundle after the retries, the action drops the bundle, publishes
   the rest so the version is listed with PyPI and the image, and fails
   anyway, which leaves the refusal in sight. The first entry went out
   with 0.8.2, accepted at the first attempt. The MCP list in VS Code's
@@ -662,7 +677,9 @@ client shows the tool's own title and the model reads descriptions.
   carries `pyproject.toml`, `uv.lock` and the source, Claude Desktop starts
   `uv run --frozen` in the unpacked directory, and the dependencies are the
   locked ones, as in the image. `.github/publish/mcpb/build.py` stages it
-  with the standard library alone, the `mcpb` CLI validates and packs it.
+  with the standard library alone, and the organisation's `publish/mcpb`
+  action validates and packs it with the locked `mcpb` CLI and compares the
+  packed file byte for byte with the staged tree.
   The manifest is committed as it ships, and `tests/test_mcpb.py` holds its
   version, metadata and tool list (each tool's first sentence) to the
   package. It asks for no settings. Tested on 2026-10-10 in Claude Desktop

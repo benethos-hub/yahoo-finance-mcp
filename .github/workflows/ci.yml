@@ -12,12 +12,13 @@ permissions:
   contents: read
 
 jobs:
-  # brand, lint, test, lowest-versions and audit are the organisation's
-  # reusable workflows in benethos-hub/.github, the same for every Python
-  # project there. Each one explains itself in its file. They are followed at
-  # main on purpose, so a rule changed there applies here on the next run,
-  # and Dependabot in that repository keeps the actions they pin current.
-  # What stays here is what only this project has: fresh-install and docker.
+  # brand, lint, test, lowest-versions, audit and coverage-badge are the
+  # organisation's reusable workflows in benethos-hub/.github, the same for
+  # every Python project there. Each one explains itself in its file. They are
+  # followed at main on purpose, so a rule changed there applies here on the
+  # next run, and Dependabot in that repository keeps the actions they pin
+  # current. What stays here is what only this project has: fresh-install and
+  # docker.
 
   # assets/brand/icon.svg, and a 512x512 icon.png and a 1280x640
   # social-preview.png exported from it, neither older than the SVG.
@@ -43,6 +44,9 @@ jobs:
   # requires-python and the documentation. A default changed in the
   # organisation's repository would otherwise move the tests away from them
   # without a word.
+  #
+  # badge: true has the coverage run write the measured percentage as a
+  # badge, which coverage-badge below publishes.
   test:
     uses: benethos-hub/.github/.github/workflows/python-tests.yml@main
     with:
@@ -50,7 +54,18 @@ jobs:
       coverage-python: "3.15"
       sync-args: --extra dev
       cov: benethos_yahoo_finance_mcp
+      badge: true
       timeout-minutes: 10
+
+  # The coverage badge in the README, as coverage.json on the badges branch.
+  # It runs on a push to main only, so the badge shows main's coverage, and a
+  # pull request never runs it. That is why it is no required check.
+  coverage-badge:
+    if: github.event_name == 'push'
+    needs: test
+    uses: benethos-hub/.github/.github/workflows/coverage-badge.yml@main
+    permissions:
+      contents: write # push coverage.json to the badges branch
 
   # Every other job installs from uv.lock, which pins the dependencies to a
   # known-good set. That is what we want for reproducibility, but it hides a

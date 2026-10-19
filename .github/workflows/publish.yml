@@ -4,34 +4,38 @@ name: Publish
 #   * sdist + wheel to PyPI, via Trusted Publishing (OIDC, no stored token)
 #   * the container image to ghcr.io, via the automatic GITHUB_TOKEN, as
 #     benethos-yahoo-finance-mcp, the name of the distribution
-#   * server.json to the MCP Registry, via the same OIDC token, once both of
-#     the above are out
 #   * the Claude Desktop bundle (.mcpb) as an asset of the release itself
+#   * server.json to the MCP Registry, via the same OIDC token, once the
+#     three above are out
+#
+# Each upload is done by an action of the organisation in
+# benethos-hub/.github (actions/publish), followed at main like the CI
+# workflows. The jobs stay here because PyPI and the MCP Registry trust the
+# workflow of the job that uploads. Every action first checks that the
+# release tag is the version in its file: the wheel, pyproject.toml,
+# manifest.json and server.json. A tag v0.7.0 on a commit that still said
+# 0.6.1 once made PyPI refuse the upload while the image went out as 0.7.0.
 #
 # The PyPI, image and bundle jobs are independent, so a failure in one does
-# not withhold the others. The registry entry points at the first two and
-# waits for them.
-#
-# `workflow_dispatch` exercises the container half alone and tags the result
-# `edge`. PyPI is skipped there, because a version may only be uploaded once and
-# a manual run carries no release tag to derive one from. A manual run builds
-# from main only: `edge` is documented as main's state, and a run started on
-# another branch would have pushed that branch under the same name.
+# not withhold the others. The registry entry points at all three and waits
+# for them.
 #
 # Nothing is built before ci-passed has found a green CI run of the push to
 # main for this very commit, waiting for it if it is still running. A version
 # on PyPI cannot be replaced, and that run is the full CI with every required
 # check, so it is not run again here. A commit that never reached main has no
-# such run and stops the release. The gate is the organisation's reusable
-# python-release-ci-passed workflow, and with audit it also checks uv.lock
+# such run and stops the release. With audit, the gate also checks uv.lock
 # against PyPI and OSV once more, for a vulnerability that became known
 # between the merge and the release. Waive one in ignore-vulns there and in
 # ci.yml alike.
 #
-# Every job then checks that the release tag is the package version. The two
-# are written in different places, and a tag v0.7.0 on a commit that still
-# says 0.6.1 made PyPI refuse the upload while the image job pushed 0.7.0,
-# 0.7 and latest with the old code.
+# A manual run (workflow_dispatch) is the trial. pypi-trial builds and checks
+# the package and asks PyPI whether it would take it, without uploading. A
+# warning that the version is on PyPI already is expected before the version
+# is raised. ghcr-publish pushes the image as `edge`, from main only: `edge`
+# is documented as main's state, and a run started on another branch would
+# push that branch under the same name. The bundle and the registry entry
+# belong to a release and are skipped.
 #
 # One-time setup on PyPI (project owner): add a "pending publisher" for the
 # project `benethos-yahoo-finance-mcp` with:
@@ -69,7 +73,8 @@ jobs:
 
   pypi-publish:
     name: Build and publish to PyPI
-    # A manual run has no version to publish, and PyPI rejects a re-upload.
+    # A version may be uploaded once only, so never by hand. The trial is
+    # pypi-trial.
     if: github.event_name == 'release'
     needs: ci-passed
     runs-on: ubuntu-latest
@@ -85,35 +90,31 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: The release tag is the package version
-        run: python3 .github/scripts/tag_matches_version.py
+      # The PEP 561 marker decides whether a type checker looks at this
+      # package at all once it is installed. Losing it from the wheel would
+      # break downstream type checking without failing a test, an import or
+      # the build.
+      - uses: benethos-hub/.github/actions/publish/pypi@main
+        with:
+          wheel-contains: benethos_yahoo_finance_mcp/py.typed
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+  # The PyPI half of a manual run, without the environment and without an
+  # OIDC token, since nothing is uploaded.
+  pypi-trial:
+    name: Build and check for PyPI (trial)
+    if: github.event_name == 'workflow_dispatch'
+    needs: ci-passed
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Build sdist and wheel
-        run: uv build
-
-      # A file that exists in the repository is not a file that ships. The
-      # PEP 561 marker decides whether a type checker looks at this package at
-      # all once it is installed, and losing it from the wheel would break
-      # downstream type checking without failing a test, an import or the
-      # build. Once a version is on PyPI it cannot be replaced, so the check
-      # belongs here, in front of the upload.
-      - name: Check the wheel ships the py.typed marker
-        run: |
-          set -euo pipefail
-          wheel=$(ls dist/*.whl)
-          if ! unzip -l "${wheel}" | grep -q "benethos_yahoo_finance_mcp/py.typed"; then
-            echo "::error::${wheel} does not contain benethos_yahoo_finance_mcp/py.typed."
-            echo "::error::Without the marker every annotation in this package is ignored by type checkers."
-            unzip -l "${wheel}"
-            exit 1
-          fi
-          echo "py.typed is present in ${wheel}"
-
-      - name: Publish to PyPI (Trusted Publishing)
-        run: uv publish --trusted-publishing always
+      - uses: benethos-hub/.github/actions/publish/pypi@main
+        with:
+          dry-run: true
+          wheel-contains: benethos_yahoo_finance_mcp/py.typed
 
   ghcr-publish:
     name: Build and publish the image
@@ -128,120 +129,18 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: The release tag is the package version
-        if: github.event_name == 'release'
-        run: python3 .github/scripts/tag_matches_version.py
-
-      # arm64 is emulated on the amd64 runner. Nothing is compiled from source
-      # here (pandas and numpy ship aarch64 wheels), so the cost stays modest.
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-
-      - name: Log in to ghcr.io
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      # The image carries the distribution's name. Up to 0.7.1 it was named
+      # after the repository, yahoo-finance-mcp, which gets nothing since
+      # 0.8.0. arm64 is emulated on the amd64 runner. Nothing is compiled
+      # from source here (pandas and numpy ship aarch64 wheels), so the cost
+      # stays modest. The arm64 build of the docker job in ci.yml writes its
+      # layers to the cache scope buildkit, and the release reads them from
+      # there.
+      - uses: benethos-hub/.github/actions/publish/ghcr@main
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Derives the tags from the release tag (v0.4.0 -> 0.4.0, 0.4, latest)
-      # and emits the OCI labels, among them org.opencontainers.image.source,
-      # which is what links the package to this repository on GitHub. A
-      # pre-release gets its exact version only: latest stays on the last
-      # full release, and the action writes no minor tag for a pre-release.
-      - name: Derive image tags, labels and annotations
-        id: meta
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
-        env:
-          # Annotate the index (the manifest list) as well as the individual
-          # manifests. The default is manifests only, and for a multi-arch image
-          # the GitHub package page reads the index — which is why 0.4.0 showed
-          # "No description provided" while carrying the description in its image
-          # config all along.
-          DOCKER_METADATA_ANNOTATIONS_LEVELS: index,manifest
-        # The image carries the distribution's name. Up to 0.7.1 it was named
-        # after the repository, yahoo-finance-mcp, and the 0.7 line was pushed
-        # there as well, from the same build and with the same digest. From
-        # 0.8.0 on the old name gets nothing, and tests/test_packaging.py goes
-        # red should it come back into this list.
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/benethos-yahoo-finance-mcp
-          flavor: latest=false
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ github.event_name == 'release' && !github.event.release.prerelease }}
-            type=raw,value=edge,enable=${{ github.event_name == 'workflow_dispatch' }}
-
-      - name: Build and push
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          file: containers/images/yahoo-finance-mcp/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          annotations: ${{ steps.meta.outputs.annotations }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # Read the published index back instead of trusting that the annotations
-      # above arrived. Setting them and assuming is exactly what produced a
-      # package page reading "No description provided" while the image carried
-      # the description in its configuration all along, and by the time anyone
-      # looks at that page the release has already happened.
-      #
-      # Every tag is read, not only the first: each must be the very same
-      # index, byte for byte, or one tag would serve another build.
-      - name: The published index carries what the package page reads
-        env:
-          TAGS: ${{ steps.meta.outputs.tags }}
-        run: |
-          set -euo pipefail
-          ref=$(printf '%s\n' "$TAGS" | head -1)
-          echo "inspecting ${ref}"
-          docker buildx imagetools inspect "$ref" --raw > /tmp/index.json
-          printf '%s\n' "$TAGS" | while read -r tag; do
-            [ -n "$tag" ] || continue
-            docker buildx imagetools inspect "$tag" --raw > /tmp/other.json
-            if ! cmp -s /tmp/index.json /tmp/other.json; then
-              echo "::error::${tag} is not the same index as ${ref}"
-              exit 1
-            fi
-            echo "same index: ${tag}"
-          done
-          python3 - <<'PY'
-          import json
-
-          index = json.load(open("/tmp/index.json"))
-          annotations = index.get("annotations") or {}
-          # The unknown/unknown entries are the provenance attestations, one per
-          # real platform. They are expected and are not architectures.
-          platforms = sorted(
-              f"{m['platform']['os']}/{m['platform']['architecture']}"
-              for m in index.get("manifests", [])
-              if m.get("platform", {}).get("architecture") != "unknown"
-          )
-          missing = [
-              key
-              for key in (
-                  "org.opencontainers.image.description",
-                  "org.opencontainers.image.source",
-                  "org.opencontainers.image.version",
-              )
-              if not annotations.get(key)
-          ]
-          assert not missing, f"the index carries no {missing}, so the package page shows nothing"
-          assert "linux/amd64" in platforms, f"amd64 is missing, the index holds {platforms}"
-          assert "linux/arm64" in platforms, f"arm64 is missing, the index holds {platforms}"
-          print("OK:", ", ".join(platforms))
-          print("   ", annotations["org.opencontainers.image.description"])
-          PY
+          image: benethos-yahoo-finance-mcp
+          dockerfile: containers/images/yahoo-finance-mcp/Dockerfile
+          cache-scope: buildkit
 
   mcpb-bundle:
     name: Attach the Claude Desktop bundle
@@ -253,42 +152,27 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write # upload the bundle as a release asset
-    env:
-      # Pinned as everything else here. Dependabot cannot see a package
-      # npx fetches, so the bump is a release step in CLAUDE.md.
-      MCPB_VERSION: 2.1.2
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # The write token is for the upload, nothing here pushes.
           persist-credentials: false
 
-      - name: The release tag is the package version
-        run: python3 .github/scripts/tag_matches_version.py
+      - name: Install uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
 
       - name: Stage the bundle
-        run: python3 .github/publish/mcpb/build.py "$RUNNER_TEMP/bundle"
+        run: uv run --no-project .github/publish/mcpb/build.py "$RUNNER_TEMP/bundle"
 
-      - name: Validate and pack
-        run: |
-          set -euo pipefail
-          npx --yes "@anthropic-ai/mcpb@${MCPB_VERSION}" validate "$RUNNER_TEMP/bundle/manifest.json"
-          npx --yes "@anthropic-ai/mcpb@${MCPB_VERSION}" pack "$RUNNER_TEMP/bundle" \
-            "benethos-yahoo-finance-mcp-${GITHUB_REF_NAME#v}.mcpb"
-
-      # Twice: once under its version, and once without, which gives the
-      # README a link that always reaches the newest full release
+      # Attached twice, under its version and without, which gives the README
+      # a link that always reaches the newest full release
       # (releases/latest/download/benethos-yahoo-finance-mcp.mcpb).
-      - name: Attach it to the release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          versioned="benethos-yahoo-finance-mcp-${GITHUB_REF_NAME#v}.mcpb"
-          cp "$versioned" benethos-yahoo-finance-mcp.mcpb
-          gh release upload "$GITHUB_REF_NAME" "$versioned" benethos-yahoo-finance-mcp.mcpb
+      - uses: benethos-hub/.github/actions/publish/mcpb@main
+        with:
+          staged: ${{ runner.temp }}/bundle
+          name: benethos-yahoo-finance-mcp
 
-  mcp-registry-publish:
+  mcp-registry:
     name: Publish to the MCP Registry
     # The registry checks every package when it takes the entry: the README
     # of this version on PyPI must carry the mcp-name line, the image config
@@ -302,62 +186,7 @@ jobs:
     permissions:
       contents: read
       id-token: write # the registry grants io.github.benethos-hub/* to this token
-    env:
-      # Pinned with its checksum, as everything else this workflow runs.
-      # Dependabot cannot see a download, so the bump is by hand: take the
-      # line for mcp-publisher_linux_amd64.tar.gz from the release's
-      # checksums file. The registry refuses a publisher that is too old with
-      # "invalid audience", and that error is the cue.
-      MCP_PUBLISHER_VERSION: v1.8.1
-      MCP_PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: The release tag is the package version
-        run: python3 .github/scripts/tag_matches_version.py
-
-      - name: Install mcp-publisher
-        run: |
-          set -euo pipefail
-          curl -fsSL -o mcp-publisher.tar.gz \
-            "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
-          echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum -c -
-          tar xzf mcp-publisher.tar.gz mcp-publisher
-
-      # The bundle's hash exists only now. The entry holds a placeholder,
-      # and the hash is taken from the very file the release carries.
-      - name: Fill in the bundle's checksum
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          bundle="benethos-yahoo-finance-mcp-${GITHUB_REF_NAME#v}.mcpb"
-          gh release download "$GITHUB_REF_NAME" --pattern "$bundle" --dir "$RUNNER_TEMP"
-          python3 .github/publish/mcp-registry/fill_bundle_checksum.py \
-            .github/publish/mcp-registry/server.json "$RUNNER_TEMP/$bundle"
-
-      - name: Log in with the workflow's OIDC token
-        run: ./mcp-publisher login github-oidc
-
-      # The registry reads the version from PyPI's JSON API, which can report
-      # a fresh upload as missing for minutes. A refusal is retried for a
-      # while. The registry takes an entry whole or not at all, so a refusal
-      # that outlasts the retries falls back to the entry without the bundle,
-      # the newest of its packages: the version is listed at least with PyPI
-      # and the image, and the job still fails, so the refusal is looked at.
-      - name: Publish server.json
-        run: |
-          set -euo pipefail
-          entry=.github/publish/mcp-registry/server.json
-          for attempt in 1 2 3 4 5 6; do
-            if ./mcp-publisher publish "$entry"; then
-              exit 0
-            fi
-            echo "attempt ${attempt} refused, trying again in 60 s"
-            sleep 60
-          done
-          echo "::warning::The registry refused the entry with the bundle, publishing it without"
-          python3 .github/publish/mcp-registry/fill_bundle_checksum.py --drop "$entry"
-          ./mcp-publisher publish "$entry"
-          echo "::error::Listed without the bundle. The refusals above say why."
-          exit 1
+      - uses: benethos-hub/.github/actions/publish/mcp-registry@main

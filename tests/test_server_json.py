@@ -10,15 +10,11 @@ together before the release workflow sends the entry.
 
 from __future__ import annotations
 
-import hashlib
-import importlib.util
 import json
 import re
 import struct
 import tomllib
 from pathlib import Path
-
-import pytest
 
 import benethos_yahoo_finance_mcp
 
@@ -150,17 +146,9 @@ def test_the_tmpfs_mounts_are_the_compose_files():
 # The bundle is a release asset, and the registry accepts only the GitHub
 # pattern /owner/repo/releases/download/<tag>/<file> for it, so the entry
 # names the file of this very release. Its hash exists only once the release
-# has built it: the committed entry holds zeros, and the publish workflow
-# writes the real one with fill_bundle_checksum.py.
-FILL = REPO / ".github" / "publish" / "mcp-registry" / "fill_bundle_checksum.py"
-
-
-def _fill_script():
-    spec = importlib.util.spec_from_file_location("fill_bundle_checksum", FILL)
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+# has built it: the committed entry holds zeros, and the organisation's
+# mcp-registry action writes the real one before publishing.
+PLACEHOLDER = "0" * 64
 
 
 def test_the_bundle_entry_is_this_releases_asset():
@@ -173,44 +161,12 @@ def test_the_bundle_entry_is_this_releases_asset():
 
 def test_the_bundle_entry_holds_the_placeholder():
     """A real hash in the committed file would be the previous release's."""
-    assert _package("mcpb")["fileSha256"] == _fill_script().PLACEHOLDER
+    assert _package("mcpb")["fileSha256"] == PLACEHOLDER
 
 
 def test_the_bundle_file_name_is_the_one_the_workflow_uploads():
+    """The mcpb action attaches <name>-<version>.mcpb, the file the entry
+    names."""
     workflow = (REPO / ".github" / "workflows" / "publish.yml").read_text("utf-8")
-    assert 'versioned="benethos-yahoo-finance-mcp-${GITHUB_REF_NAME#v}.mcpb"' in (
-        workflow
-    )
-
-
-def test_the_checksum_is_written_for_the_named_file_only(tmp_path):
-    current = benethos_yahoo_finance_mcp.__version__
-    entry = tmp_path / "server.json"
-    entry.write_text(json.dumps(SERVER), encoding="utf-8")
-    bundle = tmp_path / f"benethos-yahoo-finance-mcp-{current}.mcpb"
-    bundle.write_bytes(b"bundle bytes")
-
-    digest = _fill_script().fill(entry, bundle)
-
-    written = json.loads(entry.read_text(encoding="utf-8"))
-    (package,) = [p for p in written["packages"] if p["registryType"] == "mcpb"]
-    assert (
-        package["fileSha256"] == digest == hashlib.sha256(b"bundle bytes").hexdigest()
-    )
-    with pytest.raises(SystemExit, match="placeholder"):
-        _fill_script().fill(entry, bundle)
-    other = tmp_path / "benethos-yahoo-finance-mcp-0.0.1.mcpb"
-    other.write_bytes(b"x")
-    entry.write_text(json.dumps(SERVER), encoding="utf-8")
-    with pytest.raises(SystemExit, match="not the file"):
-        _fill_script().fill(entry, other)
-
-
-def test_dropping_the_bundle_keeps_pypi_and_the_image(tmp_path):
-    entry = tmp_path / "server.json"
-    entry.write_text(json.dumps(SERVER), encoding="utf-8")
-    _fill_script().drop(entry)
-    kept = json.loads(entry.read_text(encoding="utf-8"))
-    assert [p["registryType"] for p in kept["packages"]] == ["pypi", "oci"]
-    with pytest.raises(SystemExit, match="no bundle"):
-        _fill_script().drop(entry)
+    job = workflow.split("\n  mcpb-bundle:\n", 1)[1].split("\n  mcp-registry:\n", 1)[0]
+    assert re.search(r"^\s+name: benethos-yahoo-finance-mcp$", job, re.M)
