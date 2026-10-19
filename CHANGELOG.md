@@ -33,6 +33,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   measures coverage and the oldest one itself, rather than relying on the
   workflows' defaults, and `tests/test_packaging.py` keeps tying them to the
   classifiers, `requires-python` and the documentation.
+- A release publishes nothing until the CI run of its commit on `main` has
+  passed. The new first job of `publish.yml`, `ci-passed`, finds the run the
+  push to `main` started for exactly that commit, waits for it while it is
+  still going, and stops the release when it failed or when there is none,
+  as for a commit that never went through a pull request into `main`. The
+  PyPI upload, the image, the bundle and the registry entry all wait for it.
+  A version on PyPI cannot be replaced, and until now only the release
+  procedure made sure the tagged commit had been tested.
 
 ### Security
 

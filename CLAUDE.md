@@ -229,10 +229,14 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    compare links.
 4. After the squash merge: annotated tag `vX.Y.Z`, push it, then
    `gh release create vX.Y.Z --verify-tag` with the changelog section as the
-   notes. Publishing the release is what triggers `publish.yml`. Each of
-   its four jobs stops first when the tag is not `v` plus the version in
-   `pyproject.toml` (`.github/scripts/tag_matches_version.py`), and a
-   pre-release leaves `latest` where it is.
+   notes. Publishing the release is what triggers `publish.yml`. Its first
+   job, `ci-passed` (`.github/scripts/ci_passed.py`), waits for the CI run
+   the merge commit's push to main started and lets nothing be built unless
+   that run succeeded, so a tag on a commit that never reached main, or on
+   one whose CI is red, publishes nothing. Each of the four jobs after it
+   stops first when the tag is not `v` plus the version in `pyproject.toml`
+   (`.github/scripts/tag_matches_version.py`), and a pre-release leaves
+   `latest` where it is.
 5. **Check what shipped, not the build.** The three ghcr tags (`X.Y.Z`, `X.Y`,
    `latest`) of `benethos-yahoo-finance-mcp` must carry the same
    `org.opencontainers.image.revision` annotation, the versions *inside*

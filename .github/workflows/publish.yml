@@ -18,7 +18,13 @@ name: Publish
 # from main only: `edge` is documented as main's state, and a run started on
 # another branch would have pushed that branch under the same name.
 #
-# Both jobs first check that the release tag is the package version. The two
+# Nothing is built before ci-passed has found a green CI run of the push to
+# main for this very commit (.github/scripts/ci_passed.py), waiting for it if
+# it is still running. A version on PyPI cannot be replaced, and that run is
+# the full CI with every required check, so it is not run again here. A
+# commit that never reached main has no such run and stops the release.
+#
+# Every job then checks that the release tag is the package version. The two
 # are written in different places, and a tag v0.7.0 on a commit that still
 # says 0.6.1 made PyPI refuse the upload while the image job pushed 0.7.0,
 # 0.7 and latest with the old code.
@@ -48,10 +54,29 @@ permissions:
   contents: read
 
 jobs:
+  ci-passed:
+    name: CI passed on main
+    runs-on: ubuntu-latest
+    # The script waits up to 30 minutes for a CI run still in progress.
+    timeout-minutes: 35
+    permissions:
+      actions: read # list the CI runs of this commit
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: The commit has a green CI run on main
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/ci_passed.py
+
   pypi-publish:
     name: Build and publish to PyPI
     # A manual run has no version to publish, and PyPI rejects a re-upload.
     if: github.event_name == 'release'
+    needs: ci-passed
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -99,6 +124,7 @@ jobs:
     name: Build and publish the image
     # A release, or a manual run on main. See the header.
     if: github.event_name == 'release' || github.ref == 'refs/heads/main'
+    needs: ci-passed
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -227,6 +253,7 @@ jobs:
     # The bundle goes onto the release it is built for, and a manual run has
     # no release to attach it to.
     if: github.event_name == 'release'
+    needs: ci-passed
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
