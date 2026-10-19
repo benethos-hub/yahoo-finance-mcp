@@ -1,104 +1,22 @@
-"""The release workflow's guards, read from the workflow and run where they can be.
+"""The release workflow's wiring, read from the workflow.
 
-A mistake here shows only on a published release, when the image and the PyPI
-upload already disagree, so the guards are held to what they promise.
+The uploads themselves are the organisation's actions in benethos-hub/.github,
+tested there. What stays here is which job calls which action, with what, on
+which event and after what. A mistake here shows only on a published release,
+when a version on PyPI can no longer be replaced.
 """
 
 from __future__ import annotations
 
 import re
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
 
-import benethos_yahoo_finance_mcp
-
 ROOT = Path(__file__).resolve().parent.parent
-SCRIPT = ROOT / ".github" / "scripts" / "tag_matches_version.py"
 WORKFLOW = (ROOT / ".github" / "workflows" / "publish.yml").read_text("utf-8")
-
-
-def _check(tag: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [sys.executable, str(SCRIPT)],
-        env={"GITHUB_REF_NAME": tag, "PYPROJECT": str(ROOT / "pyproject.toml")},
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-
-def test_a_tag_that_is_the_package_version_passes():
-    result = _check(f"v{benethos_yahoo_finance_mcp.__version__}")
-    assert result.returncode == 0, result.stdout
-
-
-@pytest.mark.parametrize("tag", ["v99.0.0", "v0.0.1", "main", ""])
-def test_any_other_tag_stops_the_release(tag):
-    result = _check(tag)
-    assert result.returncode == 1
-    assert result.stdout.startswith("::error::Release tag")
-
-
-@pytest.mark.parametrize(
-    "job,first_build_step",
-    [
-        ("pypi-publish:", "uv build"),
-        ("ghcr-publish:", "qemu"),
-        ("mcp-registry-publish:", "mcp-publisher publish"),
-        ("mcpb-bundle:", "build.py"),
-    ],
-)
-def test_each_job_checks_the_tag_before_it_builds(job, first_build_step):
-    body = WORKFLOW.split(job, 1)[1].split("\n  ghcr-publish:", 1)[0]
-    assert body.index("tag_matches_version.py") < body.index(first_build_step)
-
-
-def test_a_pre_release_leaves_latest_alone():
-    [latest] = [line for line in WORKFLOW.splitlines() if "value=latest" in line]
-    assert "!github.event.release.prerelease" in latest
-
-
-def test_the_registry_entry_waits_for_both_packages():
-    """The registry checks the README on PyPI and the label in the image when
-    it takes the entry, so both have to be published first."""
-    job = WORKFLOW.split("mcp-registry-publish:", 1)[1]
-    assert "needs: [pypi-publish, ghcr-publish, mcpb-bundle]" in job
-
-
-def test_the_bundle_checksum_is_filled_in_before_publishing():
-    job = WORKFLOW.split("mcp-registry-publish:", 1)[1]
-    assert job.index("fill_bundle_checksum.py") < job.index("mcp-publisher publish")
-
-
-def test_a_refused_bundle_still_leaves_the_version_listed():
-    """The registry takes an entry whole or not at all. After the retries the
-    bundle is dropped and the rest published, and the job still fails."""
-    step = WORKFLOW.split("- name: Publish server.json", 1)[1]
-    retries = step.index("done")
-    dropped = step.index("--drop")
-    republished = step.index('./mcp-publisher publish "$entry"', dropped)
-    assert retries < dropped < republished < step.index("exit 1", republished)
-
-
-def test_the_bundle_is_attached_under_a_stable_name_too():
-    """The README links releases/latest/download/<name>, which only resolves
-    when every release carries a file of exactly that name."""
-    job = WORKFLOW.split("mcpb-bundle:", 1)[1].split("\n  mcp-registry-publish:", 1)[0]
-    upload = [line for line in job.splitlines() if "gh release upload" in line]
-    assert upload and "benethos-yahoo-finance-mcp.mcpb" in upload[0]
-
-
-def test_edge_is_built_from_main_only():
-    job = WORKFLOW.split("ghcr-publish:", 1)[1]
-    assert (
-        "if: github.event_name == 'release' || github.ref == 'refs/heads/main'" in job
-    )
-
-
-# The gate in front of every upload: the release commit's CI run on main.
+CI = (ROOT / ".github" / "workflows" / "ci.yml").read_text("utf-8")
+ACTIONS = "benethos-hub/.github/actions/publish/"
 
 
 def _jobs() -> dict[str, str]:
@@ -108,9 +26,39 @@ def _jobs() -> dict[str, str]:
     return dict(zip(parts[1::2], parts[2::2], strict=True))
 
 
-@pytest.mark.parametrize("job", ["pypi-publish", "ghcr-publish", "mcpb-bundle"])
+def test_the_jobs_are_the_gate_the_uploads_and_the_registry():
+    assert list(_jobs()) == [
+        "ci-passed",
+        "pypi-publish",
+        "pypi-trial",
+        "ghcr-publish",
+        "mcpb-bundle",
+        "mcp-registry",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("job", "action"),
+    [
+        ("pypi-publish", "pypi"),
+        ("pypi-trial", "pypi"),
+        ("ghcr-publish", "ghcr"),
+        ("mcpb-bundle", "mcpb"),
+        ("mcp-registry", "mcp-registry"),
+    ],
+)
+def test_each_job_uploads_through_the_organisations_action(job, action):
+    assert f"uses: {ACTIONS}{action}@main" in _jobs()[job]
+
+
+# The gate in front of every upload: the release commit's CI run on main.
+
+
+@pytest.mark.parametrize(
+    "job", ["pypi-publish", "pypi-trial", "ghcr-publish", "mcpb-bundle"]
+)
 def test_nothing_is_built_before_the_ci_gate(job):
-    """The registry job needs these three, so it waits for the gate as well."""
+    """The registry job needs the uploads, so it waits for the gate as well."""
     assert "needs: ci-passed" in _jobs()[job]
 
 
@@ -123,3 +71,74 @@ def test_the_ci_gate_is_the_organisations_and_may_read_the_runs():
     )
     assert "actions: read" in gate
     assert "audit: true" in gate
+
+
+# PyPI: the upload on a release, the trial on a manual run.
+
+
+def test_pypi_uploads_on_a_release_only_from_the_trusted_environment():
+    """PyPI's Trusted Publisher trusts exactly the workflow file publish.yml
+    and this environment. Renaming either means changing the publisher."""
+    job = _jobs()["pypi-publish"]
+    assert "if: github.event_name == 'release'\n" in job
+    assert "name: pypi-benethos-yahoo-finance-mcp" in job
+    assert "id-token: write" in job
+    assert "dry-run" not in job
+
+
+def test_the_pypi_trial_runs_by_hand_without_credentials():
+    job = _jobs()["pypi-trial"]
+    assert "if: github.event_name == 'workflow_dispatch'\n" in job
+    assert "dry-run: true" in job
+    assert "environment:" not in job
+    assert "id-token" not in job
+
+
+@pytest.mark.parametrize("job", ["pypi-publish", "pypi-trial"])
+def test_the_wheel_must_carry_the_typing_marker(job):
+    """Without py.typed every annotation of the package is ignored by type
+    checkers, and nothing else would notice."""
+    assert "wheel-contains: benethos_yahoo_finance_mcp/py.typed" in _jobs()[job]
+
+
+# The image, the bundle and the registry entry.
+
+
+def test_edge_is_built_from_main_only():
+    job = _jobs()["ghcr-publish"]
+    assert (
+        "if: github.event_name == 'release' || github.ref == 'refs/heads/main'" in job
+    )
+
+
+def test_the_release_image_reuses_the_layers_of_the_ci_build():
+    """The arm64 build in ci.yml names no cache scope, so buildx writes to
+    buildkit, and the release reads from there."""
+    job = _jobs()["ghcr-publish"]
+    assert "image: benethos-yahoo-finance-mcp\n" in job
+    assert "dockerfile: containers/images/yahoo-finance-mcp/Dockerfile" in job
+    assert "cache-scope: buildkit" in job
+    cache = re.findall(r"^\s+cache-(?:from|to): (.*)$", CI, re.M)
+    assert cache == ["type=gha", "type=gha,mode=max"]
+
+
+def test_the_bundle_is_staged_where_the_action_takes_it():
+    job = _jobs()["mcpb-bundle"]
+    assert "if: github.event_name == 'release'\n" in job
+    assert (
+        'uv run --no-project .github/publish/mcpb/build.py "$RUNNER_TEMP/bundle"'
+        in (job)
+    )
+    assert "staged: ${{ runner.temp }}/bundle" in job
+
+
+def test_the_registry_entry_waits_for_every_package():
+    """The registry checks the README on PyPI, the label in the image and the
+    bundle's checksum when it takes the entry, so all three come first, and a
+    pre-release is not listed."""
+    job = _jobs()["mcp-registry"]
+    assert "needs: [pypi-publish, ghcr-publish, mcpb-bundle]" in job
+    assert (
+        "if: github.event_name == 'release' && !github.event.release.prerelease" in job
+    )
+    assert "id-token: write" in job
