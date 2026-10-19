@@ -18,9 +18,13 @@ updates:
     open-pull-requests-limit: 5
     groups:
       minor-and-patch:
+        patterns: ["*"]
         update-types: ["minor", "patch"]
-        # These two always come alone, whatever the size of the bump: the
-        # gates mock both, so each needs its own checks (CLAUDE.md, Verifying).
+        # Always alone, whatever the size of the bump: the suite mocks
+        # yfinance completely and never travels through the SDK, so neither
+        # change is seen by it. Each needs its own checks, the smoke run
+        # before and after for yfinance and a call through the SDK for mcp
+        # (CLAUDE.md, Verifying).
         exclude-patterns: ["yfinance", "mcp"]
 
   # The actions the workflows use, each pinned to a full commit SHA with the
@@ -42,12 +46,14 @@ updates:
     open-pull-requests-limit: 5
     groups:
       minor-and-patch:
+        patterns: ["*"]
         update-types: ["minor", "patch"]
 
-  # The base image in the Dockerfile. It was pinned to python:3.12-slim long
-  # after 3.14 was out, and nothing said so: the image built, the container ran
-  # and every gate stayed green on a base two releases behind. A stale base is
-  # not a build failure, it is unpatched packages in something people pull.
+  # The images of the Dockerfile, python and uv, pinned by digest beside their
+  # tag. The base was pinned to python:3.12-slim long after 3.14 was out, and
+  # nothing said so: the image built, the container ran and every gate stayed
+  # green on a base two releases behind. A stale base is not a build failure,
+  # it is unpatched packages in something people pull.
   - package-ecosystem: "docker"
     directory: "/containers/images/yahoo-finance-mcp"
     schedule:
@@ -55,4 +61,5 @@ updates:
     open-pull-requests-limit: 5
     groups:
       minor-and-patch:
+        patterns: ["*"]
         update-types: ["minor", "patch"]

@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Dependabot: every group names its packages with `patterns: ["*"]` rather
+  than leaving it implied, and the comments say why `yfinance` and `mcp`
+  each come alone and that the Dockerfile pins two images, python and uv.
+  The grouping itself is unchanged.
+
 ## [0.8.7] - 2026-10-19
 
 The lowest allowed versions of `mcp` and `lxml` rise past known
