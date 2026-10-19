@@ -6,12 +6,10 @@ upload already disagree, so the guards are held to what they promise.
 
 from __future__ import annotations
 
-import importlib.util
 import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -20,13 +18,6 @@ import benethos_yahoo_finance_mcp
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / ".github" / "scripts" / "tag_matches_version.py"
 WORKFLOW = (ROOT / ".github" / "workflows" / "publish.yml").read_text("utf-8")
-
-_spec = importlib.util.spec_from_file_location(
-    "ci_passed", ROOT / ".github" / "scripts" / "ci_passed.py"
-)
-assert _spec and _spec.loader
-ci_passed = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(ci_passed)
 
 
 def _check(tag: str) -> subprocess.CompletedProcess[str]:
@@ -123,82 +114,12 @@ def test_nothing_is_built_before_the_ci_gate(job):
     assert "needs: ci-passed" in _jobs()[job]
 
 
-def test_the_ci_gate_may_read_the_runs():
+def test_the_ci_gate_is_the_organisations_and_may_read_the_runs():
+    """A reusable workflow gets no more rights than its calling job grants."""
     gate = _jobs()["ci-passed"]
+    assert (
+        "uses: benethos-hub/.github/.github/workflows/python-release-ci-passed.yml@"
+        in gate
+    )
     assert "actions: read" in gate
-    assert "python3 .github/scripts/ci_passed.py" in gate
-
-
-def _run(status: str, conclusion: str | None = None, created: str = "1") -> dict:
-    return {
-        "status": status,
-        "conclusion": conclusion,
-        "created_at": f"2026-10-19T10:0{created}:00Z",
-        "html_url": f"https://example.invalid/run/{created}",
-    }
-
-
-def _gate(
-    answers: list[list[dict]], **kwargs: Any
-) -> tuple[int, list[str], list[float]]:
-    """Run the gate against canned API answers, the last one repeating."""
-    urls: list[str] = []
-    slept: list[float] = []
-
-    def fetch(url: str) -> dict:
-        urls.append(url)
-        return {"workflow_runs": answers[min(len(urls), len(answers)) - 1]}
-
-    code = ci_passed.check(
-        "benethos-hub/yahoo-finance-mcp",
-        "abc1234def",
-        fetch=fetch,
-        sleep=slept.append,
-        **kwargs,
-    )
-    return code, urls, slept
-
-
-def test_a_green_run_on_main_lets_the_release_through():
-    code, urls, slept = _gate([[_run("completed", "success")]])
-    assert code == 0 and slept == []
-    assert "head_sha=abc1234def" in urls[0]
-    assert "event=push" in urls[0] and "branch=main" in urls[0]
-    assert "/workflows/ci.yml/runs" in urls[0]
-
-
-@pytest.mark.parametrize("conclusion", ["failure", "cancelled", "timed_out"])
-def test_a_run_that_did_not_succeed_stops_the_release(conclusion, capsys):
-    code, _, _ = _gate([[_run("completed", conclusion)]])
-    assert code == 1
-    assert capsys.readouterr().out.startswith("::error::CI on main ended")
-
-
-def test_a_run_in_progress_is_waited_for():
-    code, urls, slept = _gate(
-        [[_run("queued")], [_run("in_progress")], [_run("completed", "success")]],
-        interval=30,
-    )
-    assert code == 0 and len(urls) == 3 and slept == [30, 30]
-
-
-def test_a_run_that_never_finishes_stops_the_release_after_the_wait(capsys):
-    code, urls, _ = _gate([[_run("in_progress")]], wait_seconds=90, interval=30)
-    assert code == 1 and len(urls) == 4
-    assert "is still in_progress after 90 s" in capsys.readouterr().out
-
-
-def test_a_commit_without_a_run_on_main_stops_soon(capsys):
-    """A commit that never went into main gets no run, so the gate does not
-    sit out the whole wait for one."""
-    code, urls, _ = _gate([[]], wait_seconds=1800, interval=30, appear_seconds=60)
-    assert code == 1 and len(urls) == 3
-    assert "::error::No CI run on main" in capsys.readouterr().out
-
-
-def test_the_newest_run_of_the_commit_decides():
-    old_red = _run("completed", "failure", created="1")
-    new_green = _run("completed", "success", created="2")
-    older_green = new_green | {"created_at": "2026-10-19T09:00:00Z"}
-    assert _gate([[old_red, new_green]])[0] == 0
-    assert _gate([[older_green, old_red]])[0] == 1
+    assert "audit: true" in gate

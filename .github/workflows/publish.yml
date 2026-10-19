@@ -19,10 +19,14 @@ name: Publish
 # another branch would have pushed that branch under the same name.
 #
 # Nothing is built before ci-passed has found a green CI run of the push to
-# main for this very commit (.github/scripts/ci_passed.py), waiting for it if
-# it is still running. A version on PyPI cannot be replaced, and that run is
-# the full CI with every required check, so it is not run again here. A
-# commit that never reached main has no such run and stops the release.
+# main for this very commit, waiting for it if it is still running. A version
+# on PyPI cannot be replaced, and that run is the full CI with every required
+# check, so it is not run again here. A commit that never reached main has no
+# such run and stops the release. The gate is the organisation's reusable
+# python-release-ci-passed workflow, and with audit it also checks uv.lock
+# against PyPI and OSV once more, for a vulnerability that became known
+# between the merge and the release. Waive one in ignore-vulns there and in
+# ci.yml alike.
 #
 # Every job then checks that the release tag is the package version. The two
 # are written in different places, and a tag v0.7.0 on a commit that still
@@ -54,23 +58,14 @@ permissions:
   contents: read
 
 jobs:
+  # Waits up to 30 minutes for a CI run of ci.yml on main still in progress.
   ci-passed:
-    name: CI passed on main
-    runs-on: ubuntu-latest
-    # The script waits up to 30 minutes for a CI run still in progress.
-    timeout-minutes: 35
+    uses: benethos-hub/.github/.github/workflows/python-release-ci-passed.yml@main
     permissions:
       actions: read # list the CI runs of this commit
       contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          sparse-checkout: .github/scripts
-
-      - name: The commit has a green CI run on main
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: python3 .github/scripts/ci_passed.py
+    with:
+      audit: true
 
   pypi-publish:
     name: Build and publish to PyPI
