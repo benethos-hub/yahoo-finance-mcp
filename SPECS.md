@@ -156,6 +156,15 @@ submodules.
     text of yfinance's own exceptions only. A network error is named by
     class, since its text can carry the URL with Yahoo's crumb, and anything
     else by class as well.
+  - **Python warnings** go to stderr as Python prints them, outside the
+    line format, with one exception: `configure` drops `DeprecationWarning`s
+    raised in yfinance's own modules. yfinance switches them on for itself
+    at import, and since pandas 3.1.0 deprecated `inplace`, which yfinance
+    uses throughout (ranaroussi/yfinance#3009), a tool call printed up to
+    14 of them, on every call. A deprecation of yfinance's API is raised in
+    the calling module and still shows. The filter has to come after
+    yfinance's own, which `cli` ensures by importing yfinance through
+    `server`.
 - **CLI flags:** `--version`, `--transport`, `--host` (default 127.0.0.1), `--port`
   (default 8000, 1-65535, checked once an HTTP transport binds it), `--path`
   (default `/mcp`, `/sse` for sse), `--allowed-hosts`, `--allowed-origins`,
@@ -731,6 +740,12 @@ does not go looking for another ticker.
   `get_history`, and `get_company_info` already cover crypto. All
   equity-specific methods (analysts, holders, earnings, financials, calendar)
   are empty, so the equity-only tools answer crypto with that error.
+- **News:** `get_news` has been empty for every symbol since October 2026,
+  when Yahoo began answering 404 on its route (yfinance issue #3004).
+  `Search(<symbol>).news`, kept to the articles whose `relatedTickers` name
+  the symbol, serves US equities, ETFs, indices, crypto, FX and futures, and
+  nothing for SAP.DE, ALV.DE, NESN.SW or 7203.T (probed 2026-10-22). A
+  query by company name tags the wrong listings and was not taken.
 - **Excluded — upstream empty for all probed symbols:** `sustainability` (ESG),
   `capital_gains`.
 - **Out of scope (non-goals, §2):** `live`/`WebSocket` (streaming), and the SDK's
