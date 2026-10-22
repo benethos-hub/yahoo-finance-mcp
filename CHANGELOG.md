@@ -10,9 +10,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 `get_news` returns articles again, now from Yahoo's search when the
 symbol's own news is empty, and says which with a new field `source`.
-certifi moves past a known vulnerability, and the lockfile and the image
-base are refreshed, the image now on Python 3.15.1. No tool, parameter
-or input schema changes.
+The log stays free of the deprecation warnings pandas 3.1 raises in
+yfinance's code. certifi moves past a known vulnerability, and the
+lockfile and the image base are refreshed, the image now on Python
+3.15.1. No tool, parameter or input schema changes.
 
 ### Changed
 
@@ -21,8 +22,8 @@ or input schema changes.
   3.0.4, `pycparser` 3.12, and for development only `coverage` 7.17.0,
   which no longer needs `tomli`. A live smoke run returns data in the
   same 28 sections before and after. pandas 3.1.0 deprecates the
-  `inplace` keyword, which yfinance still uses, so its warnings appear on
-  stderr. They change no result.
+  `inplace` keyword, which yfinance still uses. The warnings change no
+  result, and the server keeps them off stderr (see Fixed).
 - The container image pins the rebuild of `python:3.15-slim` from
   2026-10-21, new for amd64 and arm64 alike, with Python 3.15.1 (was
   3.15.0).

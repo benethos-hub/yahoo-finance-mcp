@@ -156,6 +156,15 @@ submodules.
     text of yfinance's own exceptions only. A network error is named by
     class, since its text can carry the URL with Yahoo's crumb, and anything
     else by class as well.
+  - **Python warnings** go to stderr as Python prints them, outside the
+    line format, with one exception: `configure` drops `DeprecationWarning`s
+    raised in yfinance's own modules. yfinance switches them on for itself
+    at import, and since pandas 3.1.0 deprecated `inplace`, which yfinance
+    uses throughout (ranaroussi/yfinance#3009), a tool call printed up to
+    14 of them, on every call. A deprecation of yfinance's API is raised in
+    the calling module and still shows. The filter has to come after
+    yfinance's own, which `cli` ensures by importing yfinance through
+    `server`.
 - **CLI flags:** `--version`, `--transport`, `--host` (default 127.0.0.1), `--port`
   (default 8000, 1-65535, checked once an HTTP transport binds it), `--path`
   (default `/mcp`, `/sse` for sse), `--allowed-hosts`, `--allowed-origins`,
