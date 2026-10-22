@@ -14,6 +14,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A release takes every newer version on offer, image tags and actions
   included, rather than waiting for Dependabot to propose them
   (CLAUDE.md, Releasing).
+- For development only: `ruff` 0.17.2 (was 0.17.1), bug fixes in rules this
+  project does not trip. It reaches nobody who installs the package.
 
 ## [0.8.8] - 2026-10-22
 
