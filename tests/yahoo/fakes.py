@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pandas as pd
 
 
@@ -73,3 +75,16 @@ class FakeTicker:
         if isinstance(fd, Exception):
             raise fd
         return fd
+
+
+class FakeSearch:
+    """Stand-in for the ``yf.Search`` class: called like it, answers with
+    ``news`` and no quotes, and keeps the arguments of every call."""
+
+    def __init__(self, news=()):
+        self.news = list(news)
+        self.calls = []
+
+    def __call__(self, query, **kwargs):
+        self.calls.append((query, kwargs))
+        return SimpleNamespace(news=self.news, quotes=[])

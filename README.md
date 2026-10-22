@@ -189,7 +189,7 @@ name.
 | `get_company_info` | Company profile and key statistics (sector, market cap, P/E, …). |
 | `get_financials` | Income statement, balance sheet, or cash flow (annual/quarterly/ttm). |
 | `get_dividends` | Dividend and stock-split history. |
-| `get_news` | Recent news headlines (title, summary, publisher, URL), up to the 10 Yahoo serves. |
+| `get_news` | Recent news headlines (title, summary, publisher, URL), up to the 10 Yahoo serves, from Yahoo's search when the symbol's own news is empty. |
 | `get_recommendations` | Analyst recommendation trend and price targets. |
 | `get_options` | Option expiration dates and the calls/puts chain for a date, centred on the money. |
 | `get_earnings` | Upcoming and historical earnings (EPS estimate/actual, surprise). |

@@ -121,10 +121,104 @@ def test_get_news_parses_nested_content(patch_ticker):
     patch_ticker(FakeTicker(news=news))
     out = yahoo.get_news("aapl", limit=5)
     assert out["count"] == 1
+    assert out["source"] == "ticker"
     article = out["articles"][0]
     assert article["title"] == "Headline"
     assert article["publisher"] == "Yahoo"
     assert article["url"] == "https://example.com"
+
+
+def _searched(title, *related, stamp=1792681243):
+    return {
+        "uuid": title,
+        "title": title,
+        "publisher": "Investing.com",
+        "link": f"https://finance.yahoo.com/{title}",
+        "providerPublishTime": stamp,
+        "type": "STORY",
+        "relatedTickers": list(related),
+    }
+
+
+def test_get_news_does_not_search_when_the_ticker_has_articles(
+    patch_ticker, patch_search
+):
+    patch_ticker(FakeTicker(news=[{"content": {"title": "Headline"}}]))
+    yahoo.get_news("aapl")
+    assert patch_search.calls == []
+
+
+def test_get_news_falls_back_to_the_articles_the_search_tags_with_the_symbol(
+    patch_ticker, patch_search
+):
+    """The search matches text, so only Yahoo's own tagging decides."""
+    patch_ticker(FakeTicker(news=[]))
+    patch_search.news = [
+        _searched("about-apple", "AAPL", "2317.TW"),
+        _searched("about-oracle", "ORCL"),
+        _searched("untagged"),
+    ]
+    out = yahoo.get_news("aapl")
+    assert out["source"] == "search"
+    assert out["count"] == 1
+    assert out["articles"] == [
+        {
+            "title": "about-apple",
+            "summary": None,
+            "publisher": "Investing.com",
+            "published": "2026-10-22T15:00:43Z",
+            "url": "https://finance.yahoo.com/about-apple",
+        }
+    ]
+    [(query, kwargs)] = patch_search.calls
+    assert query == "AAPL"
+    assert kwargs == {"max_results": 0, "news_count": 20, "lists_count": 0}
+
+
+def test_get_news_searches_the_symbol_an_isin_resolves_to(patch_ticker, patch_search):
+    patch_ticker(FakeTicker(news=[], ticker="AAPL"))
+    patch_search.news = [_searched("about-apple", "AAPL")]
+    out = yahoo.get_news("us0378331005")
+    assert out["symbol"] == "US0378331005"
+    assert out["count"] == 1
+    assert patch_search.calls[0][0] == "AAPL"
+
+
+def test_get_news_fallback_keeps_to_the_limit(patch_ticker, patch_search):
+    patch_ticker(FakeTicker(news=[]))
+    patch_search.news = [_searched(f"a{i}", "AAPL") for i in range(15)]
+    out = yahoo.get_news("aapl", limit=4)
+    assert [a["title"] for a in out["articles"]] == ["a0", "a1", "a2", "a3"]
+
+
+def test_get_news_without_articles_anywhere_counts_none(patch_ticker):
+    patch_ticker(FakeTicker(news=[]))
+    out = yahoo.get_news("sap.de")
+    assert out == {"symbol": "SAP.DE", "count": 0, "source": "search", "articles": []}
+
+
+def test_get_news_articles_have_one_shape_whatever_the_source(
+    patch_ticker, patch_search
+):
+    patch_ticker(FakeTicker(news=[{"content": {"title": "Headline"}}]))
+    from_ticker = yahoo.get_news("aapl")["articles"][0]
+    patch_ticker(FakeTicker(news=[]))
+    patch_search.news = [_searched("about-apple", "AAPL", stamp=None)]
+    from_search = yahoo.get_news("aapl")["articles"][0]
+    assert from_search["published"] is None
+    assert list(from_search) == list(from_ticker)
+
+
+def test_get_news_fallback_rate_limit_becomes_rate_limit_error(
+    patch_ticker, monkeypatch
+):
+    def throttled(*a, **k):
+        raise YFRateLimitError()
+
+    patch_ticker(FakeTicker(news=[]))
+    monkeypatch.setattr(tickers.yf, "Search", throttled)
+    with pytest.raises(RateLimitError):
+        yahoo.get_news("aapl")
 
 
 def test_get_news_asks_yahoo_for_the_requested_count(patch_ticker):

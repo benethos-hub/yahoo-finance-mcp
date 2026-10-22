@@ -3,7 +3,10 @@ news and corporate calendar."""
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
+
+import yfinance as yf
 
 from .. import cache
 from ..errors import SymbolNotFoundError, ToolError
@@ -177,34 +180,88 @@ def get_dividends(symbol: str, *, limit: int = MAX_ROWS) -> dict[str, Any]:
 # for. Probed 2026-09-25 with get_news(count=30) for AAPL: ten came back.
 _MAX_NEWS = 10
 
+# How many articles the fallback asks the search for. It serves 30 when asked,
+# and the ones that do not name the symbol are dropped afterwards.
+_SEARCH_NEWS = 20
+
 
 @cache.cached("news")
 def get_news(symbol: str, *, limit: int = _MAX_NEWS) -> dict[str, Any]:
-    """Return recent news headlines for ``symbol``."""
+    """Return recent news headlines for ``symbol``.
+
+    The articles come from the ticker's own news when Yahoo serves any, and
+    otherwise from Yahoo's search, keeping those tagged with the symbol.
+    ``source`` says which. Since October 2026 Yahoo answers 404 on the route
+    behind ``Ticker.get_news`` (yfinance issue #3004), and yfinance turns
+    that into an empty list, so the search is what delivers for now. It finds
+    nothing for most symbols outside the US, and its articles carry no
+    summary.
+    """
     limit = max(1, min(int(limit), _MAX_NEWS))
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load news for {symbol!r}"):
         raw = ticker.get_news(count=limit) or []
+    articles = [_ticker_article(item) for item in raw[:limit]]
+    source = "ticker"
 
-    articles: list[dict[str, Any]] = []
-    for item in raw[:limit]:
-        # yfinance nests the article under "content"; fall back to the item.
-        content = item.get("content", item) if isinstance(item, dict) else {}
-        provider = content.get("provider") or {}
-        canonical = content.get("canonicalUrl") or content.get("clickThroughUrl") or {}
-        articles.append(
-            {
-                "title": content.get("title"),
-                "summary": content.get("summary") or content.get("description"),
-                "publisher": provider.get("displayName"),
-                "published": content.get("pubDate") or content.get("displayTime"),
-                "url": canonical.get("url"),
-            }
-        )
+    if not articles:
+        # The search matches text, so a query of AAPL also returns articles
+        # about other companies. relatedTickers is Yahoo's own tagging, and
+        # for an ISIN the ticker knows the symbol it was resolved to.
+        resolved = tickers.normalize(ticker.ticker)
+        with tickers.upstream(f"Failed to load news for {symbol!r}"):
+            found = yf.Search(
+                resolved, max_results=0, news_count=_SEARCH_NEWS, lists_count=0
+            ).news
+        tagged = [
+            item
+            for item in found or []
+            if resolved in (item.get("relatedTickers") or [])
+        ]
+        articles = [_searched_article(item) for item in tagged[:limit]]
+        source = "search"
+
     return {
         "symbol": tickers.normalize(symbol),
         "count": len(articles),
+        "source": source,
         "articles": articles,
+    }
+
+
+def _ticker_article(item: Any) -> dict[str, Any]:
+    """One article of ``Ticker.get_news`` in the tool's shape."""
+    # yfinance nests the article under "content"; fall back to the item.
+    content = item.get("content", item) if isinstance(item, dict) else {}
+    provider = content.get("provider") or {}
+    canonical = content.get("canonicalUrl") or content.get("clickThroughUrl") or {}
+    return {
+        "title": content.get("title"),
+        "summary": content.get("summary") or content.get("description"),
+        "publisher": provider.get("displayName"),
+        "published": content.get("pubDate") or content.get("displayTime"),
+        "url": canonical.get("url"),
+    }
+
+
+def _searched_article(item: dict[str, Any]) -> dict[str, Any]:
+    """One article of ``Search.news`` in the same shape as ``_ticker_article``.
+
+    The search gives the publish time in Unix seconds, written here the way
+    the ticker's news writes its ``pubDate``.
+    """
+    stamp = item.get("providerPublishTime")
+    published = (
+        datetime.fromtimestamp(stamp, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        if isinstance(stamp, int | float)
+        else None
+    )
+    return {
+        "title": item.get("title"),
+        "summary": None,
+        "publisher": item.get("publisher"),
+        "published": published,
+        "url": item.get("link"),
     }
 
 
