@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The container image is built with uv 0.13.5 (was 0.13.2), and CI and the
+  release use `astral-sh/setup-uv` 10.3.2 (was 10.3.0). Neither release
+  changes how this project is built or what the image holds.
+- A release takes every newer version on offer, image tags and actions
+  included, rather than waiting for Dependabot to propose them
+  (CLAUDE.md, Releasing).
+
 ## [0.8.8] - 2026-10-22
 
 `get_news` returns articles again, now from Yahoo's search when the

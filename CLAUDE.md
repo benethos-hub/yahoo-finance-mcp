@@ -206,11 +206,15 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    or `mcp` checks above for anything that sits under those. A security hole
    does not wait for this step: Dependabot's security updates read the whole
    lockfile, transitive packages included, and arrive on their own.
-   The same goes for the two image digests in the `Dockerfile`
-   (`containers/images/yahoo-finance-mcp/`): look up the
-   current digest of each tag in its registry and pin it. Dependabot proposes
-   a newer tag, but not reliably a rebuild under the same one, and the Debian
-   fixes in the `python:3.X-slim` base arrive as exactly that.
+   The same goes for everything else pinned here, and a release does not
+   wait for Dependabot to propose any of it. The two images in the
+   `Dockerfile` (`containers/images/yahoo-finance-mcp/`) move to the newest
+   tag (a new uv release, say) and to the current digest of that tag, since
+   a rebuild under the same tag, which is how the Debian fixes in the
+   `python:3.X-slim` base arrive, gets no proposal at all. Every action
+   pinned in `.github/workflows/` moves to its newest release, by its SHA.
+   Read the release notes of each, build the image for a Dockerfile change,
+   and list every bump in the release PR.
    `mcp-publisher` and the bundle packer are pinned in the organisation's
    publishing actions and kept current there, not here.
 2. Bump `version` in `pyproject.toml`, then `uv lock` and `uv sync --extra dev`
