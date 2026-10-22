@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import subprocess
+import sys
+import warnings
 
 import pytest
 
@@ -227,6 +230,51 @@ def test_yfinance_stays_out_of_the_log():
     output.configure("DEBUG")
     assert logging.getLogger("yfinance").level == logging.CRITICAL
     assert not logging.getLogger("yfinance.base").isEnabledFor(logging.ERROR)
+
+
+def _shown_after_configure(module: str, category: type[Warning]) -> bool:
+    """Whether a warning raised in ``module`` still reaches stderr.
+
+    The filters are this process's own, yfinance's "default" for itself
+    included, with "always" behind them for everything nobody named.
+    """
+    with warnings.catch_warnings(record=True) as seen:
+        warnings.simplefilter("always", append=True)
+        output.configure("INFO")
+        warnings.warn_explicit(
+            "deprecated", category, "x.py", 1, module=module, registry={}
+        )
+    return bool(seen)
+
+
+@pytest.mark.parametrize("module", ["yfinance", "yfinance.utils", "yfinance.scrapers"])
+def test_deprecations_raised_in_yfinance_stay_off_stderr(module):
+    """pandas 3.1 warns on every yfinance use of inplace, on every call."""
+    assert not _shown_after_configure(module, DeprecationWarning)
+
+
+@pytest.mark.parametrize(
+    ("module", "category"),
+    [
+        ("benethos_yahoo_finance_mcp.yahoo.quotes", DeprecationWarning),
+        ("yfinance_lookalike", DeprecationWarning),
+        ("yfinance.utils", RuntimeWarning),
+    ],
+)
+def test_other_warnings_still_reach_stderr(module, category):
+    """A deprecation of yfinance's own API is raised in the caller's module."""
+    assert _shown_after_configure(module, category)
+
+
+def test_yfinance_is_imported_before_the_warning_filter_goes_in():
+    """yfinance puts its own filter in front at import, where it would win."""
+    code = (
+        "import sys, benethos_yahoo_finance_mcp.cli\nprint('yfinance' in sys.modules)"
+    )
+    out = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True
+    )
+    assert out.stdout.strip() == "True"
 
 
 def test_debug_lowers_this_server_and_the_request_log_only():
