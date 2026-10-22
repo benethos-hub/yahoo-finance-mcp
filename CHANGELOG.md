@@ -27,6 +27,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   most symbols outside the US there are none. A new field `source` says
   which of the two answered (`ticker` or `search`).
 
+### Security
+
+- certifi 2026.10.19 in `uv.lock` and the image (was 2026.10.18), for
+  PYSEC-2026-4320: emSign root certificates whose intermediate CAs had
+  their private keys compromised.
+
 ## [0.8.7] - 2026-10-19
 
 The lowest allowed versions of `mcp` and `lxml` rise past known
