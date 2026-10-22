@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import sys
+import warnings
 from collections.abc import Iterator
 from contextlib import contextmanager
 
@@ -46,6 +47,17 @@ QUIET = (
 # through the tool's own line and, for the unexpected kind, with a traceback.
 SILENT = ("yfinance",)
 
+# Deprecation warnings raised in yfinance's code, kept off stderr. yfinance
+# switches them on for itself at import ("default" for module ^yfinance),
+# and since pandas 3.1.0 deprecated `inplace`, which yfinance uses in 29
+# places (ranaroussi/yfinance#3009), that meant up to 14 three-line warnings
+# per tool call, repeated on every call, about code nobody here can change.
+# Matched by the module a warning is raised in, so a deprecation yfinance
+# raises about this server's own use of it still shows. Installed after the
+# import of yfinance, which ``cli`` brings in through ``server``, or that
+# filter would stand in front of this one.
+QUIET_WARNINGS = r"yfinance(\.|$)"
+
 
 class _Handler(logging.StreamHandler):
     """The stderr handler, a class of its own so it is found again."""
@@ -59,7 +71,8 @@ def configure(level: str) -> None:
 
     ``level`` applies to this package and to uvicorn's request log. The root
     logger stays at WARNING, so every other library says only what went
-    wrong. A second call only changes the level. When the root logger already
+    wrong, and yfinance's deprecation warnings are dropped (QUIET_WARNINGS).
+    A second call only changes the level. When the root logger already
     has handlers of someone else's, as under a test runner, they are kept and
     none is added, the way ``logging.basicConfig`` behaves.
     """
@@ -78,6 +91,9 @@ def configure(level: str) -> None:
         logging.getLogger(name).setLevel(logging.WARNING)
     for name in SILENT:
         logging.getLogger(name).setLevel(logging.CRITICAL)
+    warnings.filterwarnings(
+        "ignore", category=DeprecationWarning, module=QUIET_WARNINGS
+    )
     access.configure(level)
 
 

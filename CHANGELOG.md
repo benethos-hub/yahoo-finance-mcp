@@ -26,6 +26,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   that Yahoo's search tags with the symbol. They have no summary, and for
   most symbols outside the US there are none. A new field `source` says
   which of the two answered (`ticker` or `search`).
+- The server's stderr no longer fills with pandas deprecation warnings
+  from yfinance's code. pandas 3.1.0 deprecates `inplace`, which yfinance
+  still uses (ranaroussi/yfinance#3009), and yfinance switches its
+  deprecation warnings on, so a call printed up to 14 of them, three
+  lines each, on every call. The server now drops deprecation warnings
+  raised in yfinance's modules. Its own, and every other kind, still
+  show. Used as a library, the package changes no warning filter.
 
 ### Security
 
