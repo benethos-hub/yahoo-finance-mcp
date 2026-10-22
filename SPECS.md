@@ -731,6 +731,12 @@ does not go looking for another ticker.
   `get_history`, and `get_company_info` already cover crypto. All
   equity-specific methods (analysts, holders, earnings, financials, calendar)
   are empty, so the equity-only tools answer crypto with that error.
+- **News:** `get_news` has been empty for every symbol since October 2026,
+  when Yahoo began answering 404 on its route (yfinance issue #3004).
+  `Search(<symbol>).news`, kept to the articles whose `relatedTickers` name
+  the symbol, serves US equities, ETFs, indices, crypto, FX and futures, and
+  nothing for SAP.DE, ALV.DE, NESN.SW or 7203.T (probed 2026-10-22). A
+  query by company name tags the wrong listings and was not taken.
 - **Excluded — upstream empty for all probed symbols:** `sustainability` (ESG),
   `capital_gains`.
 - **Out of scope (non-goals, §2):** `live`/`WebSocket` (streaming), and the SDK's

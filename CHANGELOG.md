@@ -6,8 +6,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.8] - 2026-10-22
+
+`get_news` returns articles again, now from Yahoo's search when the
+symbol's own news is empty, and says which with a new field `source`.
+certifi moves past a known vulnerability, and the lockfile and the image
+base are refreshed, the image now on Python 3.15.1. No tool, parameter
+or input schema changes.
+
 ### Changed
 
+- Lock refresh: `pandas` 3.1.0 with `python-dateutil` 3.0.0 under
+  `yfinance`, `httpx2` and `httpcore2` 2.16.0 under `mcp`, `soupsieve`
+  3.0.4, `pycparser` 3.12, and for development only `coverage` 7.17.0,
+  which no longer needs `tomli`. A live smoke run returns data in the
+  same 28 sections before and after. pandas 3.1.0 deprecates the
+  `inplace` keyword, which yfinance still uses, so its warnings appear on
+  stderr. They change no result.
+- The container image pins the rebuild of `python:3.15-slim` from
+  2026-10-21, new for amd64 and arm64 alike, with Python 3.15.1 (was
+  3.15.0).
 - Dependabot: every group names its packages with `patterns: ["*"]` rather
   than leaving it implied, and the comments say why `yfinance` and `mcp`
   each come alone and that the Dockerfile pins two images, python and uv.
@@ -1470,7 +1488,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.7...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.8...HEAD
+[0.8.8]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.7...v0.8.8
 [0.8.7]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.6...v0.8.7
 [0.8.6]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.5...v0.8.6
 [0.8.5]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.4...v0.8.5
