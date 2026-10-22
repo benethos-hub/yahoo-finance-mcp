@@ -17,6 +17,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   CI run on `main` that does not exist and failing.
 - The container image is built with uv 0.13.2 (was 0.13.1).
 
+### Fixed
+
+- `get_news` returns articles again. Since October 2026 Yahoo answers 404
+  on the route behind yfinance's `Ticker.get_news`, which yfinance turns into
+  an empty list (ranaroussi/yfinance#3004), so every call came back with
+  `count: 0`. When the ticker has no articles, the tool now takes those
+  that Yahoo's search tags with the symbol. They have no summary, and for
+  most symbols outside the US there are none. A new field `source` says
+  which of the two answered (`ticker` or `search`).
+
 ## [0.8.7] - 2026-10-19
 
 The lowest allowed versions of `mcp` and `lxml` rise past known
