@@ -23,6 +23,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   uses. All 23 tools answer over stdio and HTTP as before, and the Host
   allow-list still refuses a foreign host. An index installation
   resolves these versions already.
+- The Dockerfile pins the current index of `python:3.15-slim`. Only its
+  riscv64 image was rebuilt, the amd64 and arm64 images this project
+  builds on are byte for byte the same, so the image does not change.
 
 ## [0.8.8] - 2026-10-22
 
