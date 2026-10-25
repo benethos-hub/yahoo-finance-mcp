@@ -235,11 +235,16 @@ def test_yfinance_stays_out_of_the_log():
 def _shown_after_configure(module: str, category: type[Warning]) -> bool:
     """Whether a warning raised in ``module`` still reaches stderr.
 
-    The filters are this process's own, yfinance's "default" for itself
-    included, with "always" behind them for everything nobody named.
+    The filters are set up the way a server process has them: "always" for
+    everything nobody named, yfinance's "default" for itself in front, as its
+    import puts it, and then ``configure``. Whatever the test run itself was
+    started with, ``-W error::DeprecationWarning`` say, is left out.
     """
     with warnings.catch_warnings(record=True) as seen:
-        warnings.simplefilter("always", append=True)
+        warnings.simplefilter("always")
+        warnings.filterwarnings(
+            "default", category=DeprecationWarning, module="^yfinance"
+        )
         output.configure("INFO")
         warnings.warn_explicit(
             "deprecated", category, "x.py", 1, module=module, registry={}

@@ -16,6 +16,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (CLAUDE.md, Releasing).
 - For development only: `ruff` 0.17.2 (was 0.17.1), bug fixes in rules this
   project does not trip. It reaches nobody who installs the package.
+- Lock refresh for the image: `certifi` 2026.10.23 under `yfinance`, and
+  under `mcp` `starlette` 1.10.0 and `sse-starlette` 3.5.1, the HTTP
+  transport. starlette's behaviour changes (multidict equality, a
+  deprecated form parser class) touch nothing this server or the SDK
+  uses. All 23 tools answer over stdio and HTTP as before, and the Host
+  allow-list still refuses a foreign host. An index installation
+  resolves these versions already.
+- The Dockerfile pins the current index of `python:3.15-slim`. Only its
+  riscv64 image was rebuilt, the amd64 and arm64 images this project
+  builds on are byte for byte the same, so the image does not change.
 
 ## [0.8.8] - 2026-10-22
 
