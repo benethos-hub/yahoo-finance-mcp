@@ -46,6 +46,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The `docker run` examples in the README publish the port on
   `127.0.0.1` only, as the compose files do. They published it on every
   interface without a token, which the security notes advise against.
+- For library use: `cache.configure` raises `ValueError` for a
+  `Settings` with the cache enabled and no `cache_dir`, where it fell
+  back to the default directory itself. `settings.load_settings` always
+  fills it in, so the command line is not affected.
 
 ### Fixed
 

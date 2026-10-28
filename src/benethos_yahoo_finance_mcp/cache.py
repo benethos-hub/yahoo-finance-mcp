@@ -213,19 +213,25 @@ def configure(settings: Settings) -> None:
     """Enable or disable the cache and apply the TTLs, as ``settings`` says.
 
     Called once at startup. Safe to call again (e.g. in tests); it closes any
-    existing cache first.
+    existing cache first. An enabled cache needs ``settings.cache_dir``, which
+    ``settings.load_settings`` resolves. A ``Settings`` built by hand without
+    it raises ``ValueError``, and nothing changes.
     """
     global _enabled, _ttls, _cache
+    directory = settings.cache_dir
+    if settings.cache_enabled and directory is None:
+        raise ValueError(
+            "cache_enabled without cache_dir: load_settings resolves the directory"
+        )
     with _lock:
         _ttls = {**settings_mod.DEFAULT_TTLS, **settings.cache_ttls}
         if _cache is not None:
             _cache.close()
             _cache = None
         _enabled = settings.cache_enabled
-        if not _enabled:
+        if not _enabled or directory is None:
             logbook.cache.disabled()
             return
-        directory: Path = settings.cache_dir or settings_mod.default_cache_dir()
         # The cache is an optimisation, and a file it cannot use, damaged or
         # held by another process, must not stop the server. It runs without.
         store: ResultCache | None = None

@@ -426,6 +426,13 @@ def test_cached_decorator_does_not_cache_exceptions(enabled_cache):
     assert calls["n"] == 2  # error path re-runs every time
 
 
+def test_an_enabled_cache_without_a_directory_is_refused():
+    """load_settings resolves the directory, and it is the one place that does."""
+    with pytest.raises(ValueError, match="cache_dir"):
+        cache.configure(Settings(cache_enabled=True))
+    assert not cache._enabled
+
+
 def test_ttl_override_zero_disables_category(tmp_path):
     ttls = {**DEFAULT_TTLS, "quote": 0}
     cache.configure(Settings(cache_enabled=True, cache_dir=tmp_path, cache_ttls=ttls))
