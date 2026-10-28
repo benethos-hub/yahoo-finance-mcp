@@ -174,7 +174,7 @@ def get_dividends(symbol: str, *, limit: int = MAX_ROWS) -> dict[str, Any]:
 
 # Yahoo serves at most this many articles per symbol, whatever count is asked
 # for. Probed 2026-09-25 with get_news(count=30) for AAPL: ten came back.
-_MAX_NEWS = 10
+NEWS_MAX = 10
 
 # How many articles the fallback asks the search for. It serves 30 when asked,
 # and the ones that do not name the symbol are dropped afterwards.
@@ -182,7 +182,7 @@ _SEARCH_NEWS = 20
 
 
 @cache.cached("news")
-def get_news(symbol: str, *, limit: int = _MAX_NEWS) -> dict[str, Any]:
+def get_news(symbol: str, *, limit: int = NEWS_MAX) -> dict[str, Any]:
     """Return recent news headlines for ``symbol``.
 
     The articles come from the ticker's own news when Yahoo serves any, and
@@ -193,7 +193,7 @@ def get_news(symbol: str, *, limit: int = _MAX_NEWS) -> dict[str, Any]:
     nothing for most symbols outside the US, and its articles carry no
     summary.
     """
-    limit = max(1, min(int(limit), _MAX_NEWS))
+    limit = max(1, min(int(limit), NEWS_MAX))
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load news for {symbol!r}"):
         raw = ticker.get_news(count=limit) or []

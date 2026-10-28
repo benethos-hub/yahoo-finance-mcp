@@ -59,7 +59,11 @@ def get_news(
     symbol: Symbol,
     limit: Annotated[
         int,
-        Field(description="Maximum number of headlines to return.", ge=1, le=10),
+        Field(
+            description="Maximum number of headlines to return.",
+            ge=1,
+            le=yahoo.NEWS_MAX,
+        ),
     ] = 10,
 ) -> dict[str, Any]:
     """Get recent news headlines for a Yahoo symbol (up to `limit`, 1-10).

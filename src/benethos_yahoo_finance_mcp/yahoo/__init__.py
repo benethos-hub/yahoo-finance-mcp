@@ -24,6 +24,7 @@ from .browse import (
     get_sector,
 )
 from .company import (
+    NEWS_MAX,
     get_calendar,
     get_company_info,
     get_dividends,
@@ -49,6 +50,7 @@ __all__ = [
     "INDUSTRY_KEYS",
     "INTERVALS",
     "MARKET_KEYS",
+    "NEWS_MAX",
     "PERIODS",
     "SCREEN_ALIASES",
     "SCREEN_OPERATORS",

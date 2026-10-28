@@ -173,6 +173,7 @@ def test_a_parameter_called_title_would_survive():
 # A docstring cannot take the number from the constant, so this ties them.
 BOUNDS = [
     ("search", "limit", "(1-{})", yahoo.SEARCH_MAX),
+    ("get_news", "limit", "1-{})", yahoo.NEWS_MAX),
 ]
 
 
