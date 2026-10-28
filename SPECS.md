@@ -61,10 +61,11 @@ screener), so
 
 ### Layers
 
-Each top-level module or package may import only what its row names.
+Each top-level module or package imports exactly what its row names.
 `tests/test_layers.py` reads every import from the source and checks it
-against this table, and it checks that this table and its own copy agree, so
-a new module needs a row in both.
+against this table, both ways, and it checks that this table and its own
+copy agree, so a new module needs a row in both and a new or dropped import
+changes its row.
 
 <!-- layers:start -->
 | Unit | May import |
@@ -73,13 +74,13 @@ a new module needs a row in both.
 | `errors` | — |
 | `settings` | — |
 | `logbook` | — |
-| `formatting` | `errors` |
-| `cache` | `__init__.py`, `errors`, `settings`, `logbook` |
+| `formatting` | — |
+| `cache` | `__init__.py`, `settings`, `logbook` |
 | `yahoo` | `errors`, `logbook`, `cache`, `formatting` |
 | `tools` | `errors`, `logbook`, `yahoo` |
-| `server` | `__init__.py`, `tools`, `settings`, `logbook` |
-| `transport` | `server`, `errors`, `settings`, `logbook` |
-| `cli` | everything except `__main__` |
+| `server` | `__init__.py`, `tools`, `logbook` |
+| `transport` | `settings`, `logbook` |
+| `cli` | `__init__.py`, `settings`, `logbook`, `cache`, `server`, `transport` |
 | `__main__` | `cli` |
 <!-- layers:end -->
 

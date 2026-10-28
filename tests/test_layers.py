@@ -27,31 +27,23 @@ import benethos_yahoo_finance_mcp
 PACKAGE = Path(benethos_yahoo_finance_mcp.__file__).resolve().parent
 ROOT = "__init__"
 
-# unit -> the units it may import. Order is bottom to top.
+# unit -> the units it imports, exactly. Order is bottom to top. A new edge
+# goes in here and in SPECS §3 in the same change, an edge no longer used
+# comes out, so the table describes the code rather than a ceiling over it.
 LAYERS: dict[str, set[str]] = {
     ROOT: set(),  # the version, nothing else
     "errors": set(),
     "settings": set(),
     "logbook": set(),
-    "formatting": {"errors"},
-    "cache": {ROOT, "errors", "settings", "logbook"},
+    "formatting": set(),
+    "cache": {ROOT, "settings", "logbook"},
     "yahoo": {"errors", "logbook", "cache", "formatting"},
     # Never formatting: a tool returns what yahoo built.
     "tools": {"errors", "logbook", "yahoo"},
-    "server": {ROOT, "tools", "settings", "logbook"},
-    "transport": {"server", "errors", "settings", "logbook"},
-    "cli": {
-        ROOT,
-        "errors",
-        "settings",
-        "logbook",
-        "formatting",
-        "cache",
-        "yahoo",
-        "tools",
-        "server",
-        "transport",
-    },
+    "server": {ROOT, "tools", "logbook"},
+    # The server comes in as the SDK's type, never as this package's module.
+    "transport": {"settings", "logbook"},
+    "cli": {ROOT, "settings", "logbook", "cache", "server", "transport"},
     "__main__": {"cli"},
 }
 
@@ -118,8 +110,6 @@ def _specs_table() -> dict[str, set[str]]:
             continue
         unit = cells[0].strip("`").removesuffix(".py")
         names = {n.removesuffix(".py") for n in re.findall(r"`([^`]+)`", cells[1])}
-        if cells[1].startswith("everything except"):
-            names = set(LAYERS) - names - {unit}
         table[unit] = names
     return table
 
@@ -147,6 +137,14 @@ def test_imports_follow_the_layers(path):
         if file == path and other not in LAYERS[unit]
     ]
     assert not wrong, wrong
+
+
+def test_every_edge_in_the_table_is_used():
+    """The table describes the imports, so an edge nobody uses comes out."""
+    used: dict[str, set[str]] = {unit: set() for unit in LAYERS}
+    for _, unit, other, _ in _edges():
+        used[unit].add(other)
+    assert used == LAYERS
 
 
 @pytest.mark.parametrize("path", _sources(), ids=lambda p: "/".join(p.parts[-2:]))
