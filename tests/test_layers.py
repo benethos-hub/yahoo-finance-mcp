@@ -189,15 +189,30 @@ def test_only_settings_reads_the_environment():
     assert readers == {"settings.py", "logbook/formats.py"}
 
 
-def test_only_the_yahoo_package_imports_yfinance():
+# Each library this package builds on, and the units that import it. A second
+# home for a library is a decision, not an accident, so it needs a line here.
+LIBRARY_HOMES = {
+    "yfinance": {"yahoo"},
+    "pandas": {"formatting"},
+    "sqlite3": {"cache"},
+    "uvicorn": {"transport"},
+    "starlette": {"transport"},
+    "pydantic": {"server", "tools"},
+    # cli names the SDK's server type for the checker only.
+    "mcp": {"errors", "server", "tools", "transport", "cli"},
+}
+
+
+@pytest.mark.parametrize("library", sorted(LIBRARY_HOMES))
+def test_a_library_is_imported_only_in_its_home(library):
+    homes = set()
     for path in _sources():
-        if _unit(path.relative_to(PACKAGE).parts) == "yahoo":
-            continue
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             names = []
             if isinstance(node, ast.Import):
                 names = [a.name for a in node.names]
             elif isinstance(node, ast.ImportFrom) and not node.level:
                 names = [node.module or ""]
-            assert not any(n.split(".")[0] == "yfinance" for n in names), path.name
+            if any(n.split(".")[0] == library for n in names):
+                homes.add(_unit(path.relative_to(PACKAGE).parts))
+    assert homes == LIBRARY_HOMES[library]
