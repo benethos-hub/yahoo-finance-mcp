@@ -42,7 +42,12 @@ def screen(
     ] = "market_cap",
     sort_desc: Annotated[bool, Field(description="Largest first.")] = True,
     limit: Annotated[
-        int, Field(description="Maximum number of matches to return.", ge=1, le=100)
+        int,
+        Field(
+            description="Maximum number of matches to return.",
+            ge=1,
+            le=yahoo.SCREEN_MAX,
+        ),
     ] = 25,
     offset: Annotated[
         int, Field(description="Matches to skip, for the next page.", ge=0, le=9900)

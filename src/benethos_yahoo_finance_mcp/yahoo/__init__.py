@@ -50,7 +50,7 @@ from .quotes import (
     get_quotes,
     search,
 )
-from .screener import SCREEN_ALIASES, SCREEN_OPERATORS, screen
+from .screener import SCREEN_ALIASES, SCREEN_MAX, SCREEN_OPERATORS, screen
 
 __all__ = [
     "EARNINGS_MAX",
@@ -61,6 +61,7 @@ __all__ = [
     "NEWS_MAX",
     "PERIODS",
     "SCREEN_ALIASES",
+    "SCREEN_MAX",
     "SCREEN_OPERATORS",
     "SEARCH_MAX",
     "SECTOR_KEYS",
