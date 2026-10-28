@@ -541,3 +541,26 @@ def test_cache_write_failure_still_returns_the_result(enabled_cache, monkeypatch
         return {"symbol": symbol}
 
     assert fetch("AAPL") == {"symbol": "AAPL"}
+
+
+# --- categories -------------------------------------------------------------
+
+
+def test_every_cached_category_has_a_default_ttl_and_a_row_in_specs():
+    """A category without a TTL is cached for 0 seconds, which is never."""
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    yahoo_dir = root / "src" / "benethos_yahoo_finance_mcp" / "yahoo"
+    used = {
+        name
+        for path in yahoo_dir.glob("*.py")
+        for name in re.findall(
+            r'cache\.cached\(\s*"([a-z_]+)"', path.read_text(encoding="utf-8")
+        )
+    }
+    assert used == set(DEFAULT_TTLS)
+    specs = (root / "SPECS.md").read_text(encoding="utf-8")
+    table = specs.split("## 8a.", 1)[1].split("\n- **Opt-in", 1)[0]
+    assert set(re.findall(r"^  \| `([a-z_]+)` \|", table, re.MULTILINE)) == used
