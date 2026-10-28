@@ -25,13 +25,14 @@ import time
 from collections.abc import Callable, Mapping
 from functools import wraps
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 from . import __version__, logbook
 from . import settings as settings_mod
 from .settings import Settings
 
-F = TypeVar("F", bound=Callable[..., Any])
+P = ParamSpec("P")
+R = TypeVar("R")
 
 # Seconds SQLite waits for another process's lock, see ResultCache.__init__.
 LOCK_TIMEOUT = 0.5
@@ -291,7 +292,7 @@ def has_content(result: Any) -> bool:
 
 def cached(
     category: str, *, worth_keeping: Callable[[Any], bool] = has_content
-) -> Callable[[F], F]:
+) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Decorate a client function to cache its successful results under ``category``.
 
     ``worth_keeping`` decides whether a result is stored. The default,
@@ -310,9 +311,9 @@ def cached(
     as if caching were off, and a warning says why.
     """
 
-    def decorator(fn: F) -> F:
+    def decorator(fn: Callable[P, R]) -> Callable[P, R]:
         @wraps(fn)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             ttl = _ttls.get(category, 0)
             if not _enabled or _cache is None or ttl <= 0:
                 return fn(*args, **kwargs)
@@ -334,6 +335,6 @@ def cached(
                     logbook.cache.write_failed(exc)
             return result
 
-        return wrapper  # type: ignore[return-value]
+        return wrapper
 
     return decorator
