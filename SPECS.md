@@ -209,10 +209,12 @@ submodules.
   an exposed bind accepts any `Host` unless `--allowed-hosts` /
   `--allowed-origins` narrow it (mismatches get HTTP 421). Either list is
   derived from the other when only one is given. stdio has no HTTP
-  surface and is handed no transport options at all. Both compose files set
-  `YF_MCP_ALLOWED_HOSTS` to the loopback names and their service name, because
-  the image binds `0.0.0.0` and the guard would otherwise be off while the
-  port sits on the host's loopback, reachable by a rebound browser page.
+  surface and is handed no transport options at all. The image sets
+  `YF_MCP_ALLOWED_HOSTS` to the loopback names and the compose service name,
+  and both compose files set it again, because the image binds `0.0.0.0` and
+  the guard would otherwise be off while the port sits on the host's
+  loopback, reachable by a rebound browser page. A proxy's name or any other
+  address the container is reached by has to be added, or it gets 421.
   Production appends `YAHOO_FINANCE_MCP_DOMAIN` when it is set, the name
   clients use through Caddy (see Deployment), which would otherwise get 421.
   `tests/test_cli.py` holds it to that.

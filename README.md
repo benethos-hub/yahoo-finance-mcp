@@ -555,10 +555,11 @@ line is plain text.
 > it down again, set `--allowed-hosts` (e.g. `benethos-yahoo-finance-mcp:8000`) — clients
 > whose `Host` is not on the list then get **HTTP 421**. `--allowed-origins`
 > works on its own as well, and either list is derived from the other when
-> only one is given. Both compose files in `containers/` set the list for you:
-> `localhost:*,127.0.0.1:*,[::1]:*,benethos-yahoo-finance-mcp:*`. Without it a
-> web page whose domain an attacker points at 127.0.0.1 could call every tool
-> from a browser on the host. Add the name a proxy in front uses.
+> only one is given. The image and both compose files in `containers/` set the
+> list for you: `localhost:*,127.0.0.1:*,[::1]:*,benethos-yahoo-finance-mcp:*`.
+> Without it a web page whose domain an attacker points at 127.0.0.1 could call
+> every tool from a browser on the host. Add the name a proxy in front uses, or
+> any other address the container is reached by, or it gets HTTP 421.
 
 ### Docker
 
