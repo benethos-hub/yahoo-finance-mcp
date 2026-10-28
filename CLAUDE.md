@@ -97,6 +97,8 @@ line is a function in `logbook/lifecycle.py`, `calls.py`, `cache.py` or
 `tests/test_logbook_catalog.py`, and it never carries a search query, the
 token, a URL's query string, Yahoo's data or an error's text (see SPECS §4).
 A tool writes no line of its own, `register_tool` writes one per call.
+`logbook/formats.py` reads `NO_COLOR` from the environment itself, the one
+exception to `settings.py` being the only module that does.
 
 ## How to add or change a tool
 

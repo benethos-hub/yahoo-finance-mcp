@@ -169,6 +169,16 @@ def test_only_the_command_line_entry_imports_cli():
     assert importers <= {"__main__"}
 
 
+def test_only_settings_reads_the_environment():
+    """And logbook/formats, for NO_COLOR, a terminal convention."""
+    readers = {
+        path.relative_to(PACKAGE).as_posix()
+        for path in _sources()
+        if re.search(r"\b(os\.environ|getenv)\b", path.read_text(encoding="utf-8"))
+    }
+    assert readers == {"settings.py", "logbook/formats.py"}
+
+
 def test_only_the_yahoo_package_imports_yfinance():
     for path in _sources():
         if _unit(path.relative_to(PACKAGE).parts) == "yahoo":
