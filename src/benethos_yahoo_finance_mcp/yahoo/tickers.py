@@ -13,14 +13,12 @@ import re
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import date
-from typing import Any
 
 import yfinance as yf
 from yfinance.exceptions import YFException, YFRateLimitError
 
 from .. import logbook
 from ..errors import RateLimitError, SymbolNotFoundError, ToolError
-from ..formatting import to_jsonable
 
 # What a Yahoo symbol or an ISIN can look like once upper-cased: letters,
 # digits and the marks . - ^ = & Yahoo uses, as in ^GSPC, EURUSD=X, BRK-B
@@ -167,33 +165,3 @@ def get_ticker(symbol: str) -> yf.Ticker:
         raise SymbolNotFoundError(key) from exc
     except Exception as exc:  # noqa: BLE001
         raise wrap_upstream(exc, f"Failed to resolve {key!r}") from exc
-
-
-def fast_fields(fast: Any, fields: tuple[str, ...], message: str) -> dict[str, Any]:
-    """Read ``fields`` from a ``fast_info``, JSON-safe, ``None`` where missing.
-
-    Some fields raise instead of returning nothing when Yahoo lacks them, and
-    one missing field must not cost the rest. A rate limit is the exception,
-    since every further field would hit it too.
-
-    So is Yahoo out of reach. Every field then came back ``None`` and the
-    quote read as an unknown symbol. Measured with an unreachable proxy: an
-    unknown symbol raises ``KeyError`` for some fields, an unreachable Yahoo
-    a ``ConnectionError``, which is an ``OSError``. When no field came and
-    one of them failed that way, the error says so, under ``message``.
-    """
-    out: dict[str, Any] = {}
-    network: OSError | None = None
-    for field in fields:
-        try:
-            value = fast.get(field)
-        except YFRateLimitError as exc:
-            raise RateLimitError() from exc
-        except OSError as exc:
-            network, value = exc, None
-        except Exception:  # noqa: BLE001 - some fields raise when unavailable
-            value = None
-        out[field] = to_jsonable(value)
-    if network is not None and all(value is None for value in out.values()):
-        raise wrap_upstream(network, message) from network
-    return out

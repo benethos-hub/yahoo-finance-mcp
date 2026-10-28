@@ -10,7 +10,7 @@ from yfinance.exceptions import YFRateLimitError
 
 from .. import cache
 from ..errors import RateLimitError, SymbolNotFoundError, ToolError
-from ..formatting import MAX_ROWS, dataframe_to_records
+from ..formatting import MAX_ROWS, dataframe_to_records, to_jsonable
 from . import tickers
 
 # Fields surfaced from Ticker.fast_info for get_quote.
@@ -91,9 +91,39 @@ def _quote_row(
     """
     row = {
         "symbol": tickers.normalize(symbol),
-        **tickers.fast_fields(fast, fields, f"Failed to load quote for {symbol!r}"),
+        **fast_fields(fast, fields, f"Failed to load quote for {symbol!r}"),
     }
     return row if row["lastPrice"] is not None else None
+
+
+def fast_fields(fast: Any, fields: tuple[str, ...], message: str) -> dict[str, Any]:
+    """Read ``fields`` from a ``fast_info``, JSON-safe, ``None`` where missing.
+
+    Some fields raise instead of returning nothing when Yahoo lacks them, and
+    one missing field must not cost the rest. A rate limit is the exception,
+    since every further field would hit it too.
+
+    So is Yahoo out of reach. Every field then came back ``None`` and the
+    quote read as an unknown symbol. Measured with an unreachable proxy: an
+    unknown symbol raises ``KeyError`` for some fields, an unreachable Yahoo
+    a ``ConnectionError``, which is an ``OSError``. When no field came and
+    one of them failed that way, the error says so, under ``message``.
+    """
+    out: dict[str, Any] = {}
+    network: OSError | None = None
+    for field in fields:
+        try:
+            value = fast.get(field)
+        except YFRateLimitError as exc:
+            raise RateLimitError() from exc
+        except OSError as exc:
+            network, value = exc, None
+        except Exception:  # noqa: BLE001 - some fields raise when unavailable
+            value = None
+        out[field] = to_jsonable(value)
+    if network is not None and all(value is None for value in out.values()):
+        raise tickers.wrap_upstream(network, message) from network
+    return out
 
 
 # Compact field subset for multi-symbol quotes (smaller per-symbol payload than
