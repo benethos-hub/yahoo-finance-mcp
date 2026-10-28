@@ -248,13 +248,16 @@ submodules.
   at the very least with `YF_MCP_BEARER_TOKEN` set.
   Production brings that proxy along under the compose profile `https`
   (`COMPOSE_PROFILES=https` in `.env`): Caddy, configured by the `Caddyfile`
-  beside the compose file, on ports 80 and 443 of every address, TCP and,
-  for HTTP/3, UDP. It forwards to the server by service name over the
+  beside the compose file, on port 443 of every address, TCP and, for
+  HTTP/3, UDP. Port 80 is not published and Caddy redirects nothing, so a
+  client set up with `http://` fails at once instead of sending its token in
+  the clear first. It forwards to the server by service name over the
   compose network, so the server's port stays on 127.0.0.1. The domain comes
   from `YAHOO_FINANCE_MCP_DOMAIN`, the certificate from one of three
-  snippets picked by `YAHOO_FINANCE_MCP_TLS`: `acme` (default, a public CA),
-  `internal` (Caddy's own CA) or `files` (`secrets/tls/cert.pem` and
-  `key.pem`, ignored by git). A request without an `Authorization` header
+  snippets picked by `YAHOO_FINANCE_MCP_TLS`: `internal` (default, Caddy's
+  own CA, for a private network), `files` (`secrets/tls/cert.pem` and
+  `key.pem`, ignored by git) or `acme` (a public CA, which needs the host
+  reachable from the internet). A request without an `Authorization` header
   gets 401 from Caddy and never reaches the server, which checks the token
   of every other, and the token is required with the profile. The server
   trusts no forwarded header, so its log names Caddy's address for a
@@ -556,7 +559,7 @@ client shows the tool's own title and the model reads descriptions.
   image for amd64 and arm64, smoke-tests that the container serves HTTP and
   passes its health check, and checks both compose files, production with
   its profile `https` (valid, every port on the loopback address except
-  Caddy's 80 and 443, read-only root, development builds and production
+  Caddy's 443, read-only root, development builds and production
   pulls), and a `fresh-install`
   job. The first three install from `uv.lock` (`uv sync --frozen`) for
   reproducibility. `fresh-install` deliberately does **not**: it builds the

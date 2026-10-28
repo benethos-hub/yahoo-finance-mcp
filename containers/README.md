@@ -47,35 +47,41 @@ The server is then at `http://localhost:8000/mcp`. To update, set
 
 ## With HTTPS
 
-For clients on other machines, [Caddy](https://caddyserver.com/) stands in
-front of the server. It answers on ports 80 and 443 of every address, takes
+For clients on the local network, [Caddy](https://caddyserver.com/) stands in
+front of the server. It answers on port 443 of every address, takes
 care of the certificate and forwards to the server over the compose network.
 The server's own port stays on `127.0.0.1`. In `.env`:
 
 ```sh
 COMPOSE_PROFILES=https
-YAHOO_FINANCE_MCP_DOMAIN=mcp.example.com
-YAHOO_FINANCE_MCP_TLS=acme
+YAHOO_FINANCE_MCP_DOMAIN=finance.lan
+YAHOO_FINANCE_MCP_TLS=internal
 YF_MCP_BEARER_TOKEN=<long and random>
 ```
 
-Then `docker compose up -d`, and clients use `https://mcp.example.com/mcp`
-with `Authorization: Bearer <token>`. Port 80 redirects to HTTPS.
+Then `docker compose up -d`, and clients use `https://finance.lan/mcp`
+with `Authorization: Bearer <token>`. Port 80 stays closed, so a client set up
+with `http://` fails at once instead of sending its token in the clear.
 
 | `YAHOO_FINANCE_MCP_TLS` | Certificate | Needs |
 |---|---|---|
-| `acme` (default) | from Let's Encrypt or ZeroSSL, renewed by Caddy | the domain in public DNS pointing at this host, ports 80 and 443 reachable from the internet |
-| `internal` | from Caddy's own CA, for a private network | clients that trust its root: `docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt .` |
+| `internal` (default) | from Caddy's own CA, for a private network | the domain resolving to this host on the clients (DNS or a hosts file), and clients that trust its root: `docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt .` |
 | `files` | your own | `secrets/tls/cert.pem` and `secrets/tls/key.pem` in this folder, ignored by git |
+| `acme` | from Let's Encrypt or ZeroSSL, renewed by Caddy | the domain in public DNS pointing at this host, port 443 reachable from the internet |
+
+If 443 is taken on the host, `YAHOO_FINANCE_MCP_HTTPS_PORT=8443` in `.env`
+moves Caddy there, and clients use `https://finance.lan:8443/mcp`. With
+`internal` and `files` that is all. With `acme` the public CA still connects
+to 443, so the router has to forward it to the port you chose.
 
 The token is required with the profile, since the server is then reachable
 from wherever this host is. Caddy answers a request without an
 `Authorization` header with 401 itself, and the server checks the token of
 every other. The domain is appended to `YF_MCP_ALLOWED_HOSTS` on its own,
-without it the server would answer 421. Certificates and the ACME account
+alone and with any port. Without it the server would answer 421. Certificates and the ACME account
 live in the volumes `caddy-data` and `caddy-config`, so a restart does not
 ask the CA again. Caddy runs read-only like the server, without
-capabilities except the one to bind ports 80 and 443. The image is
+capabilities except the one to bind port 443. The image is
 `caddy:2`, the major line, so `docker compose pull` brings Caddy's fixes
 with the next start.
 

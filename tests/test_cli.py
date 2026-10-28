@@ -292,9 +292,9 @@ def test_transport_security_explicit_allow_list_wins_even_when_exposed():
 def _compose_guard(folder: str, env: dict[str, str]):
     """The rebinding guard ``folder``'s compose file sets up, under ``env``.
 
-    The allow-list is read from the file and its ``${NAME:+,${NAME}}``
-    suffixes resolved the way compose does: the value after a comma when set
-    and not empty, nothing otherwise.
+    The allow-list is read from the file and its ``${NAME:+...}`` suffixes
+    resolved the way compose does: what follows ``:+``, with ``${NAME}`` in it
+    filled in, when NAME is set and not empty, nothing otherwise.
     """
     from pathlib import Path
 
@@ -304,8 +304,8 @@ def _compose_guard(folder: str, env: dict[str, str]):
     compose = path.read_text("utf-8")
     [raw] = re.findall(r'^ +YF_MCP_ALLOWED_HOSTS: "([^"]+)"$', compose, re.M)
     raw = re.sub(
-        r"\$\{(\w+):\+,\$\{\1\}\}",
-        lambda m: f",{env[m[1]]}" if env.get(m[1]) else "",
+        r"\$\{(\w+):\+((?:[^${}]|\$\{\1\})*)\}",
+        lambda m: m[2].replace(f"${{{m[1]}}}", env[m[1]]) if env.get(m[1]) else "",
         raw,
     )
     assert "$" not in raw, f"compose interpolates more than this test: {raw}"
@@ -372,6 +372,8 @@ def test_compose_lets_the_https_domain_through():
     """Caddy keeps the client's Host, so without the domain every call gets 421."""
     guard = _compose_guard("production", {"YAHOO_FINANCE_MCP_DOMAIN": "mcp.test"})
     assert _refused(guard, "mcp.test", "https://mcp.test") is None
+    # YAHOO_FINANCE_MCP_HTTPS_PORT moved Caddy, and the client's Host says so.
+    assert _refused(guard, "mcp.test:8443", "https://mcp.test:8443") is None
     assert _refused(guard, "localhost:8000") is None
     assert _refused(guard, "attacker.example") == 421
     assert _refused(_compose_guard("production", {}), "mcp.test") == 421

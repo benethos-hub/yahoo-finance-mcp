@@ -76,7 +76,12 @@ services:
     environment:
       # YF_MCP_TRANSPORT: streamable-http
       # YF_MCP_HOST: "0.0.0.0"
-      # YF_MCP_PORT: "8000"
+      # The port inside the container stays put, since the mapping above and
+      # Caddy's reverse_proxy both name it. Set in .env it would win over the
+      # image and leave both talking to nothing, while the health check, which
+      # reads it too, still says healthy. The port on the host is
+      # YAHOO_FINANCE_MCP_PORT.
+      YF_MCP_PORT: "8000"
       # YF_MCP_PATH: /mcp
       # The DNS-rebinding guard. The server binds 0.0.0.0 inside the
       # container, and an exposed bind without an allow-list accepts any Host
@@ -85,9 +90,10 @@ services:
       # CORS involved. These are the names a client really uses: the published
       # loopback port, and the service name for another container on the same
       # network. YAHOO_FINANCE_MCP_DOMAIN is appended when set, the name
-      # clients use through Caddy. Add a name here when you put another proxy
+      # clients use through Caddy, alone and with any port, since Caddy hands
+      # on the client's Host and that carries the port when it is not 443. Add a name here when you put another proxy
       # in front, anything else gets HTTP 421.
-      YF_MCP_ALLOWED_HOSTS: "localhost:*,127.0.0.1:*,[::1]:*,benethos-yahoo-finance-mcp:*${YAHOO_FINANCE_MCP_DOMAIN:+,${YAHOO_FINANCE_MCP_DOMAIN}}"
+      YF_MCP_ALLOWED_HOSTS: "localhost:*,127.0.0.1:*,[::1]:*,benethos-yahoo-finance-mcp:*${YAHOO_FINANCE_MCP_DOMAIN:+,${YAHOO_FINANCE_MCP_DOMAIN},${YAHOO_FINANCE_MCP_DOMAIN}:*}"
       # A bearer token on every HTTP request is off by default: on a
       # loopback-published port it guards against nothing, and anything that
       # can reach the port can otherwise call every tool. Set
@@ -108,8 +114,8 @@ services:
       - cache:/cache
 
   # HTTPS for clients on other machines, off unless the profile `https` is
-  # active (COMPOSE_PROFILES=https in .env). Caddy takes ports 80 and 443 on
-  # every address, gets a certificate and forwards to the server over the
+  # active (COMPOSE_PROFILES=https in .env). Caddy takes port 443 on every
+  # address, gets a certificate and forwards to the server over the
   # compose network, so the server's own port stays on 127.0.0.1. The
   # Caddyfile beside this file says how. With the profile on, set
   # YF_MCP_BEARER_TOKEN: the server is then reachable from everywhere.
@@ -133,11 +139,12 @@ services:
         exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
     logging: *logging
     ports:
-      # 80 for the ACME challenge and the redirect to HTTPS, 443 over TCP for
-      # HTTP/1.1 and HTTP/2, over UDP for HTTP/3.
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+      # 443 over TCP for HTTP/1.1 and HTTP/2, over UDP for HTTP/3. No port
+      # 80: it would only redirect, and a client set up with http:// would
+      # send its token in the clear first. A public CA reaches Caddy on 443.
+      # YAHOO_FINANCE_MCP_HTTPS_PORT moves it on the host when 443 is taken.
+      - "${YAHOO_FINANCE_MCP_HTTPS_PORT:-443}:443"
+      - "${YAHOO_FINANCE_MCP_HTTPS_PORT:-443}:443/udp"
     depends_on:
       benethos-yahoo-finance-mcp:
         condition: service_healthy
@@ -147,7 +154,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp
-    # Binding 80 and 443 is the one privilege Caddy needs.
+    # Binding 443 is the one privilege Caddy needs.
     cap_drop:
       - ALL
     cap_add:
@@ -156,7 +163,7 @@ services:
       - no-new-privileges:true
     environment:
       YAHOO_FINANCE_MCP_DOMAIN: ${YAHOO_FINANCE_MCP_DOMAIN:-}
-      YAHOO_FINANCE_MCP_TLS: ${YAHOO_FINANCE_MCP_TLS:-acme}
+      YAHOO_FINANCE_MCP_TLS: ${YAHOO_FINANCE_MCP_TLS:-internal}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       # Only read with YAHOO_FINANCE_MCP_TLS=files: cert.pem and key.pem.

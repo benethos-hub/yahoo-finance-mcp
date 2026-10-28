@@ -49,6 +49,9 @@ services:
       # The DNS-rebinding guard, as in production: the published loopback port
       # and the service name for another container on the same network.
       YF_MCP_ALLOWED_HOSTS: "localhost:*,127.0.0.1:*,[::1]:*,benethos-yahoo-finance-mcp:*"
+      # The port inside the container, as in production: the mapping above
+      # names it. The port on the host is YAHOO_FINANCE_MCP_PORT.
+      YF_MCP_PORT: "8000"
       YF_MCP_LOG_LEVEL: ${YF_MCP_LOG_LEVEL:-INFO}
       YF_MCP_CACHE_DIR: /cache
     volumes:

@@ -50,6 +50,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `Settings` with the cache enabled and no `cache_dir`, where it fell
   back to the default directory itself. `settings.load_settings` always
   fills it in, so the command line is not affected.
+- The HTTPS profile of the production compose file takes its certificate
+  from Caddy's own CA by default (`YAHOO_FINANCE_MCP_TLS=internal`), as
+  `.env.example`, `compose.yaml` and the `Caddyfile` now say alike. It was
+  `acme`, which needs the name in public DNS and the host reachable from
+  the internet, and on a local network only kept asking Let's Encrypt in
+  vain. A setup that relies on `acme` without naming it in `.env` sets
+  `YAHOO_FINANCE_MCP_TLS=acme` now.
+- Caddy in the HTTPS profile answers on port 443 only. Port 80 is no
+  longer published and nothing redirects to HTTPS, so a client set up
+  with `http://` fails at once instead of sending its bearer token in the
+  clear before following the redirect. A public CA reaches Caddy on 443.
+- `YAHOO_FINANCE_MCP_HTTPS_PORT` in `.env` moves Caddy to another port on
+  the host when 443 is taken, and the domain goes into the allow-list with
+  any port too, so `https://finance.lan:8443/mcp` is not answered with 421.
+  With `acme` the router still has to forward 443 from outside.
 
 ### Fixed
 
@@ -79,6 +94,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `http://localhost:8000?x=1`, stops the start like one with a path. It
   was passed on as written, and since the SDK compares `Origin` exactly,
   every browser request got 403.
+- Both compose files fix the port inside the container at 8000. A
+  `YF_MCP_PORT` in `.env` moved the server away from the port that the
+  mapping and Caddy forward to, so nothing reached it, while the health
+  check still said healthy. The port on the host stays
+  `YAHOO_FINANCE_MCP_PORT`.
 
 ## [0.8.8] - 2026-10-22
 
