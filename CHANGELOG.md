@@ -61,6 +61,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   longer published and nothing redirects to HTTPS, so a client set up
   with `http://` fails at once instead of sending its bearer token in the
   clear before following the redirect. A public CA reaches Caddy on 443.
+- `YAHOO_FINANCE_MCP_HTTPS_PORT` in `.env` moves Caddy to another port on
+  the host when 443 is taken, and the domain goes into the allow-list with
+  any port too, so `https://finance.lan:8443/mcp` is not answered with 421.
+  With `acme` the router still has to forward 443 from outside.
 
 ### Fixed
 

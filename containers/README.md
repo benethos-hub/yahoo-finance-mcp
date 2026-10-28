@@ -69,11 +69,16 @@ with `http://` fails at once instead of sending its token in the clear.
 | `files` | your own | `secrets/tls/cert.pem` and `secrets/tls/key.pem` in this folder, ignored by git |
 | `acme` | from Let's Encrypt or ZeroSSL, renewed by Caddy | the domain in public DNS pointing at this host, port 443 reachable from the internet |
 
+If 443 is taken on the host, `YAHOO_FINANCE_MCP_HTTPS_PORT=8443` in `.env`
+moves Caddy there, and clients use `https://finance.lan:8443/mcp`. With
+`internal` and `files` that is all. With `acme` the public CA still connects
+to 443, so the router has to forward it to the port you chose.
+
 The token is required with the profile, since the server is then reachable
 from wherever this host is. Caddy answers a request without an
 `Authorization` header with 401 itself, and the server checks the token of
 every other. The domain is appended to `YF_MCP_ALLOWED_HOSTS` on its own,
-without it the server would answer 421. Certificates and the ACME account
+alone and with any port. Without it the server would answer 421. Certificates and the ACME account
 live in the volumes `caddy-data` and `caddy-config`, so a restart does not
 ask the CA again. Caddy runs read-only like the server, without
 capabilities except the one to bind port 443. The image is
