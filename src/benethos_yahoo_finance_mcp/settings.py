@@ -117,7 +117,8 @@ def load_settings(
     ``flags`` maps a setting to the value given on the command line, with
     ``None`` (or a missing key) for a flag that was not given. ``cache_ttl``
     takes the raw ``<NAME>=<SECONDS>`` items. Raises :class:`SettingsError`
-    for a flag value that cannot be used. An unusable environment value falls
+    for a flag value that cannot be used, and for a port outside 1 to 65535
+    under an HTTP transport, from either source. An unusable environment value falls
     back to the default and is recorded in :attr:`Settings.ignored`, because a
     variable set somewhere out of sight should not stop the server.
     """
@@ -177,7 +178,7 @@ def load_settings(
         ttls[name] = from_env(f"YF_MCP_CACHE_TTL_{name.upper()}", _seconds, ttls[name])
     ttls.update(parse_ttl_items(given("cache_ttl") or ()))
 
-    return Settings(
+    settings = Settings(
         transport=transport,
         host=(given("host") or env.get("YF_MCP_HOST") or "").strip() or "127.0.0.1",
         port=port,
@@ -196,6 +197,16 @@ def load_settings(
         bearer_token=token_from(env),
         ignored=tuple(ignored),
     )
+    # The port is the one environment value that does not fall back: a
+    # server that silently moved to 8000 would listen on the wrong port. Only
+    # an HTTP transport binds it, so stdio does not trip over a stray value.
+    if settings.transport != "stdio" and not 1 <= settings.port <= 65535:
+        raise SettingsError(f"--port must be between 1 and 65535, got {settings.port}")
+    # Starlette asserts on a route path without a leading slash, which ended
+    # the server with an AssertionError after its start line.
+    if settings.path is not None and not settings.path.startswith("/"):
+        raise SettingsError(f"--path must start with '/', got {settings.path!r}")
+    return settings
 
 
 def _choice(allowed: tuple[str, ...], normalize: Any) -> Any:

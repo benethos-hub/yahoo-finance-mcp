@@ -133,19 +133,9 @@ def parse_settings(argv: list[str] | None = None) -> Settings:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
-        settings = load_settings(vars(args))
+        return load_settings(vars(args))
     except SettingsError as exc:
         parser.error(str(exc))
-    # Checked here rather than by argparse, because YF_MCP_PORT arrives from
-    # the environment and argparse never sees it. Only an HTTP transport binds
-    # the port, so stdio does not trip over a stray value.
-    if settings.transport != "stdio" and not 1 <= settings.port <= 65535:
-        parser.error(f"--port must be between 1 and 65535, got {settings.port}")
-    # Starlette asserts on a route path without a leading slash, which ended
-    # the server with an AssertionError after its start line.
-    if settings.path is not None and not settings.path.startswith("/"):
-        parser.error(f"--path must start with '/', got {settings.path!r}")
-    return settings
 
 
 def main(argv: list[str] | None = None) -> None:
