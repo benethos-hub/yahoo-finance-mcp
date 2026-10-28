@@ -164,6 +164,18 @@ def test_packages_are_entered_through_their_init(path):
         assert set(names) <= exported, f"{where} takes {set(names) - exported}"
 
 
+def test_no_unit_reaches_into_yahoo_through_an_attribute():
+    """``yahoo.tickers.X`` is invisible to the import check above but just as
+    tied to the submodule's name."""
+    reaching = [
+        path.relative_to(PACKAGE).as_posix()
+        for path in _sources()
+        if _unit(path.relative_to(PACKAGE).parts) != "yahoo"
+        and "yahoo.tickers." in path.read_text(encoding="utf-8")
+    ]
+    assert not reaching
+
+
 def test_only_the_command_line_entry_imports_cli():
     importers = {unit for _, unit, other, _ in _edges() if other == "cli"}
     assert importers <= {"__main__"}

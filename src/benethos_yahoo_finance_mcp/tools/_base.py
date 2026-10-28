@@ -51,7 +51,7 @@ Symbol = Annotated[
             "A Yahoo ticker or an ISIN, e.g. 'AAPL', 'SAP.DE' or "
             "'US0378331005'. For a company name, use 'search' first."
         ),
-        max_length=yahoo.tickers.SYMBOL_MAX,
+        max_length=yahoo.SYMBOL_MAX,
     ),
 ]
 

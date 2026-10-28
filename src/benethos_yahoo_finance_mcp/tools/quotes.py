@@ -54,7 +54,7 @@ def get_quote(symbol: Symbol) -> dict[str, Any]:
 
 def get_quotes(
     symbols: Annotated[
-        list[Annotated[str, Field(max_length=yahoo.tickers.SYMBOL_MAX)]],
+        list[Annotated[str, Field(max_length=yahoo.SYMBOL_MAX)]],
         Field(
             description="Yahoo tickers or ISINs, e.g. ['AAPL', 'MSFT', "
             f"'SAP.DE']. Not company names. Up to {yahoo.QUOTES_MAX}, extras are "
