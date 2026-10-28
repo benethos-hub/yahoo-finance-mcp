@@ -6,6 +6,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-28
+
+A minor release, because the container image now keeps its HTTP port's
+DNS-rebinding guard on by itself: it sets the `Host` allow-list, so a
+server behind a proxy whose host name is not on it answers HTTP 421 until
+that name is added to `YF_MCP_ALLOWED_HOSTS` (see Changed). The `:0.8`
+image tag stays on 0.8.8. The HTTPS profile of the production compose
+file now takes its certificate from Caddy's own CA unless `.env` names
+another source, answers on port 443 only, without a redirect from port 80,
+and can move to another port on the host. The image also picks up two
+security fixes, curl_cffi 0.17.0 with brotli 1.2.1 and Python 3.15.2. A
+review of the whole code base fixes seven small bugs, among them a line
+another library wrote to the log that a caller could use to forge a second
+one. No tool, parameter or input schema changes.
+
 ### Changed
 
 - The container image is built with uv 0.13.6 (was 0.13.2), and CI and the
@@ -1583,7 +1598,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.8...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.8...v0.9.0
 [0.8.8]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.7...v0.8.8
 [0.8.7]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.6...v0.8.7
 [0.8.6]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.5...v0.8.6
