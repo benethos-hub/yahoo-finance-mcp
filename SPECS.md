@@ -518,11 +518,13 @@ client shows the tool's own title and the model reads descriptions.
 
 - Unit tests mock `yfinance` and run **offline**, covering the yahoo
   functions and error normalization (`tests/yahoo/`, one file per yahoo
-  module), formatting, the cache, settings, CLI/transport selection, the log
-  lines, tool registration/schema, and end-to-end tool invocation via
-  `mcp.call_tool` (`test_formatting.py`, `test_cache.py`, `test_settings.py`,
-  `test_cli.py`, `test_logbook.py`, `test_server.py`,
-  `test_tools_integration.py`, `test_transport.py`). Two guard the shape of
+  module, `test_tickers.py` included, plus the cross-module
+  `test_empty_answers.py`), formatting, the cache, settings, CLI/transport
+  selection, the log lines and how they look, tool registration/schema, and
+  end-to-end tool invocation via `mcp.call_tool` (`test_formatting.py`,
+  `test_cache.py`, `test_settings.py`, `test_cli.py`, `test_logbook.py`,
+  `test_logbook_formats.py`, `test_server.py`, `test_tools_integration.py`,
+  `test_transport.py`). Two guard the shape of
   the code: `test_layers.py` the import table, `test_logbook_catalog.py` that
   every line is a logbook function. Five more guard what ships rather than
   what runs: `test_packaging.py` on the PEP 561 marker, the version
