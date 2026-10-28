@@ -14,15 +14,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A release takes every newer version on offer, image tags and actions
   included, rather than waiting for Dependabot to propose them
   (CLAUDE.md, Releasing).
-- For development only: `ruff` 0.17.2 (was 0.17.1), bug fixes in rules this
-  project does not trip. It reaches nobody who installs the package.
+- For development only: `ruff` 0.17.3 (was 0.17.1), bug fixes in rules this
+  project does not trip, and `pytest` 9.2.0 (was 9.1.1), whose keyword-only
+  `parametrize` arguments the tests already use. Neither reaches anybody
+  who installs the package.
 - Lock refresh for the image: `certifi` 2026.10.23 under `yfinance`, and
-  under `mcp` `starlette` 1.10.0 and `sse-starlette` 3.5.1, the HTTP
+  under `mcp` `starlette` 1.10.0 and `sse-starlette` 3.6.0, the HTTP
   transport. starlette's behaviour changes (multidict equality, a
   deprecated form parser class) touch nothing this server or the SDK
-  uses. All 23 tools answer over stdio and HTTP as before, and the Host
-  allow-list still refuses a foreign host. An index installation
-  resolves these versions already.
+  uses, and sse-starlette now closes a stream whose client went away and
+  no longer streams on HEAD. All 23 tools answer over stdio and HTTP as
+  before, and the Host allow-list still refuses a foreign host. An index
+  installation resolves these versions already.
+- Security, for the image: `curl_cffi` 0.17.0 (was 0.16.3), the HTTP
+  client under `yfinance`. Its bundled libcurl now carries brotli 1.2.1,
+  which fixes an out-of-bounds write in the decoder (GHSA-9v8h-qqgm-4m35)
+  that a dependency audit cannot see, since the library is compiled in.
+  The live smoke test returns the same sections and fields before and
+  after. Also `platformdirs` 4.13.7 and `tzdata` 2026.6.
 - The Dockerfile pins the current index of `python:3.15-slim`. Only its
   riscv64 image was rebuilt, the amd64 and arm64 images this project
   builds on are byte for byte the same, so the image does not change.
