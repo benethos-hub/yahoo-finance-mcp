@@ -41,7 +41,10 @@ cp .env.example .env && chmod 600 .env      # then edit it
 docker compose up -d
 ```
 
-The server is then at `http://localhost:8000/mcp`. To update, set
+The server is then at `http://localhost:8000/mcp`, or on the port
+`YAHOO_FINANCE_MCP_PORT` in `.env` names. The port inside the container
+stays 8000, the compose file fixes it, as it fixes `YF_MCP_ALLOWED_HOSTS` and
+`YF_MCP_CACHE_DIR`, and `.env.example` says so. To update, set
 `YAHOO_FINANCE_MCP_VERSION` in `.env` to the new version, then
 `docker compose pull && docker compose up -d`.
 
@@ -77,13 +80,13 @@ to 443, so the router has to forward it to the port you chose.
 The token is required with the profile, since the server is then reachable
 from wherever this host is. Caddy answers a request without an
 `Authorization` header with 401 itself, and the server checks the token of
-every other. The domain is appended to `YF_MCP_ALLOWED_HOSTS` on its own,
-alone and with any port. Without it the server would answer 421. Certificates and the ACME account
-live in the volumes `caddy-data` and `caddy-config`, so a restart does not
-ask the CA again. Caddy runs read-only like the server, without
-capabilities except the one to bind port 443. The image is
-`caddy:2`, the major line, so `docker compose pull` brings Caddy's fixes
-with the next start.
+every other. The domain goes into `YF_MCP_ALLOWED_HOSTS` on its own, alone
+and with any port, since Caddy hands on the client's `Host` and the server
+would otherwise answer 421. Certificates and the ACME account live in the
+volumes `caddy-data` and `caddy-config`, so a restart does not ask the CA
+again. Caddy runs read-only like the server, without capabilities except the
+one to bind port 443. The image is `caddy:2`, the major line, so
+`docker compose pull` brings Caddy's fixes with the next start.
 
 ## For development
 
@@ -100,7 +103,7 @@ not versioned, is optional:
 |---|---|---|
 | `YAHOO_FINANCE_MCP_PORT` | `8001` | the port on the host, on `127.0.0.1` |
 | `YF_MCP_LOG_LEVEL` | `INFO` | the server's log level |
-| `YF_MCP_*` | | anything else from the README's configuration table, the bearer token included |
+| `YF_MCP_*` | | anything else from the README's configuration table, the bearer token included, except `YF_MCP_PORT`, `YF_MCP_ALLOWED_HOSTS` and `YF_MCP_CACHE_DIR`, which the compose file fixes |
 
 ## The image
 
