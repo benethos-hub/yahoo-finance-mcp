@@ -264,9 +264,12 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    organisation's `publish/` actions, and each stops first when the tag is
    not `v` plus the version in its own file: the wheel, `pyproject.toml`,
    `manifest.json` or `server.json`. A pre-release leaves `latest` where it
-   is and is not listed in the registry. Before a release, a manual run of
-   `publish.yml` on main is the trial: `pypi-trial` builds and checks
-   without uploading, and the image goes out as `edge`.
+   is and is not listed in the registry. A manual run of `publish.yml` on
+   main is a trial, and it is not part of a release: start it only when the
+   maintainer asks for one, permission for the release does not cover it.
+   `pypi-trial` builds and checks without uploading, and the image goes out
+   as `edge`. The release PR's checks, main's CI on the merge commit and
+   the `ci-passed` gate already stand between a tag and a broken upload.
 5. **Check what shipped, not the build.** The three ghcr tags (`X.Y.Z`, `X.Y`,
    `latest`) of `benethos-yahoo-finance-mcp` must carry the same
    `org.opencontainers.image.revision` annotation, the versions *inside*
