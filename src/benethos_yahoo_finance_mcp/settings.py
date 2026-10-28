@@ -268,7 +268,8 @@ def origins_from(value: str | None) -> tuple[str, ...]:
     An origin without a scheme left the derived host list empty while the
     guard stayed on, so every client got HTTP 421, and one with a final slash
     never matched, so every browser got 403. A final slash is dropped, and an
-    origin without scheme or host stops the start: ignoring the whole list
+    origin without scheme or host, or with anything beyond them (a path, a
+    query, a fragment, a user name), stops the start: ignoring the whole list
     would switch the guard off for an exposed bind, which is worse. It comes
     from ``--allowed-origins`` or ``YF_MCP_ALLOWED_ORIGINS``, and the message
     names both.
@@ -277,7 +278,7 @@ def origins_from(value: str | None) -> tuple[str, ...]:
     for item in split_csv(value):
         origin = item.rstrip("/")
         parts = urlsplit(origin)
-        if not parts.scheme or not parts.netloc or parts.path:
+        if origin != f"{parts.scheme}://{parts.netloc}" or "@" in parts.netloc:
             raise SettingsError(
                 f"invalid allowed origin {item!r} in --allowed-origins or "
                 "YF_MCP_ALLOWED_ORIGINS, expected scheme://host[:port] such as "

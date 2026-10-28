@@ -68,6 +68,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   rows for a range with a `start`, the message names the range first and
   an unknown symbol second. The range may lie after the last data point
   of a symbol that exists.
+- An allowed origin with a query, a fragment or a user name, such as
+  `http://localhost:8000?x=1`, stops the start like one with a path. It
+  was passed on as written, and since the SDK compares `Origin` exactly,
+  every browser request got 403.
 
 ## [0.8.8] - 2026-10-22
 
