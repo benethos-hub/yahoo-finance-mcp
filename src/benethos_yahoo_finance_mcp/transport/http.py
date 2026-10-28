@@ -38,14 +38,6 @@ if TYPE_CHECKING:  # pragma: no cover - imported for typing only
 
     from ..settings import Settings
 
-__all__ = [
-    "bearer_middleware",
-    "http_app",
-    "run_http",
-    "serve",
-    "transport_security_for",
-]
-
 
 def _is_loopback(host: str) -> bool:
     """Whether binding ``host`` keeps the server on this machine.
