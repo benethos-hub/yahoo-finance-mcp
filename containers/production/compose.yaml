@@ -156,7 +156,7 @@ services:
       - no-new-privileges:true
     environment:
       YAHOO_FINANCE_MCP_DOMAIN: ${YAHOO_FINANCE_MCP_DOMAIN:-}
-      YAHOO_FINANCE_MCP_TLS: ${YAHOO_FINANCE_MCP_TLS:-acme}
+      YAHOO_FINANCE_MCP_TLS: ${YAHOO_FINANCE_MCP_TLS:-internal}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       # Only read with YAHOO_FINANCE_MCP_TLS=files: cert.pem and key.pem.

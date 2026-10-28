@@ -47,26 +47,26 @@ The server is then at `http://localhost:8000/mcp`. To update, set
 
 ## With HTTPS
 
-For clients on other machines, [Caddy](https://caddyserver.com/) stands in
+For clients on the local network, [Caddy](https://caddyserver.com/) stands in
 front of the server. It answers on ports 80 and 443 of every address, takes
 care of the certificate and forwards to the server over the compose network.
 The server's own port stays on `127.0.0.1`. In `.env`:
 
 ```sh
 COMPOSE_PROFILES=https
-YAHOO_FINANCE_MCP_DOMAIN=mcp.example.com
-YAHOO_FINANCE_MCP_TLS=acme
+YAHOO_FINANCE_MCP_DOMAIN=finance.lan
+YAHOO_FINANCE_MCP_TLS=internal
 YF_MCP_BEARER_TOKEN=<long and random>
 ```
 
-Then `docker compose up -d`, and clients use `https://mcp.example.com/mcp`
+Then `docker compose up -d`, and clients use `https://finance.lan/mcp`
 with `Authorization: Bearer <token>`. Port 80 redirects to HTTPS.
 
 | `YAHOO_FINANCE_MCP_TLS` | Certificate | Needs |
 |---|---|---|
-| `acme` (default) | from Let's Encrypt or ZeroSSL, renewed by Caddy | the domain in public DNS pointing at this host, ports 80 and 443 reachable from the internet |
-| `internal` | from Caddy's own CA, for a private network | clients that trust its root: `docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt .` |
+| `internal` (default) | from Caddy's own CA, for a private network | the domain resolving to this host on the clients (DNS or a hosts file), and clients that trust its root: `docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt .` |
 | `files` | your own | `secrets/tls/cert.pem` and `secrets/tls/key.pem` in this folder, ignored by git |
+| `acme` | from Let's Encrypt or ZeroSSL, renewed by Caddy | the domain in public DNS pointing at this host, ports 80 and 443 reachable from the internet |
 
 The token is required with the profile, since the server is then reachable
 from wherever this host is. Caddy answers a request without an

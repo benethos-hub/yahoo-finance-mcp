@@ -50,6 +50,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `Settings` with the cache enabled and no `cache_dir`, where it fell
   back to the default directory itself. `settings.load_settings` always
   fills it in, so the command line is not affected.
+- The HTTPS profile of the production compose file takes its certificate
+  from Caddy's own CA by default (`YAHOO_FINANCE_MCP_TLS=internal`), as
+  `.env.example`, `compose.yaml` and the `Caddyfile` now say alike. It was
+  `acme`, which needs the name in public DNS and the host reachable from
+  the internet, and on a local network only kept asking Let's Encrypt in
+  vain. A setup that relies on `acme` without naming it in `.env` sets
+  `YAHOO_FINANCE_MCP_TLS=acme` now.
 
 ### Fixed
 

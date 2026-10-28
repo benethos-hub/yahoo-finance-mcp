@@ -693,8 +693,9 @@ very least, and put a reverse proxy with authentication in front of it. Set
 For clients on other machines, the production folder brings such a proxy
 along. With `COMPOSE_PROFILES=https`, `YAHOO_FINANCE_MCP_DOMAIN` and
 `YF_MCP_BEARER_TOKEN` in `.env`, Caddy starts in front of the server on
-ports 80 and 443, gets a certificate for the domain from Let's Encrypt, from
-its own CA or from files you provide (`YAHOO_FINANCE_MCP_TLS`), and turns
+ports 80 and 443, gets a certificate for the domain from its own CA (the
+default), from files you provide or from Let's Encrypt
+(`YAHOO_FINANCE_MCP_TLS`), and turns
 away a request without an `Authorization` header before it reaches the
 server. The server's port stays on `127.0.0.1`. The
 [containers README](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/containers/README.md#with-https)

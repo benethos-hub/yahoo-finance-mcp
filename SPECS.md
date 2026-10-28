@@ -252,9 +252,10 @@ submodules.
   for HTTP/3, UDP. It forwards to the server by service name over the
   compose network, so the server's port stays on 127.0.0.1. The domain comes
   from `YAHOO_FINANCE_MCP_DOMAIN`, the certificate from one of three
-  snippets picked by `YAHOO_FINANCE_MCP_TLS`: `acme` (default, a public CA),
-  `internal` (Caddy's own CA) or `files` (`secrets/tls/cert.pem` and
-  `key.pem`, ignored by git). A request without an `Authorization` header
+  snippets picked by `YAHOO_FINANCE_MCP_TLS`: `internal` (default, Caddy's
+  own CA, for a private network), `files` (`secrets/tls/cert.pem` and
+  `key.pem`, ignored by git) or `acme` (a public CA, which needs the host
+  reachable from the internet). A request without an `Authorization` header
   gets 401 from Caddy and never reaches the server, which checks the token
   of every other, and the token is required with the profile. The server
   trusts no forwarded header, so its log names Caddy's address for a
