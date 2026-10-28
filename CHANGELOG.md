@@ -43,6 +43,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   behind a proxy, or reaching it under any other name or address, now
   needs `YF_MCP_ALLOWED_HOSTS` set to include that name, or the request
   gets HTTP 421.
+- The `docker run` examples in the README publish the port on
+  `127.0.0.1` only, as the compose files do. They published it on every
+  interface without a token, which the security notes advise against.
 
 ### Fixed
 

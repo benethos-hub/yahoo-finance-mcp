@@ -187,3 +187,12 @@ def test_readme_documents_exactly_the_registered_tools() -> None:
         f"described in the README but not registered: {phantom}. Readers will "
         "go looking for something that is not there."
     )
+
+
+def test_every_published_port_in_a_docker_run_is_on_the_loopback_address() -> None:
+    """The image binds every interface, so ``-p 8000:8000`` reaches the LAN."""
+    readme = README.read_text(encoding="utf-8")
+    published = re.findall(r"^docker run\b.*?\s-p\s+(\S+)", readme, re.MULTILINE)
+    assert published, "no docker run with a published port found"
+    for port in published:
+        assert port.startswith("127.0.0.1:"), port

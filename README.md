@@ -568,9 +568,13 @@ clone, no build. Every release is pushed to the GitHub Container Registry for
 `linux/amd64` and `linux/arm64`:
 
 ```bash
-docker run --rm -p 8000:8000 ghcr.io/benethos-hub/benethos-yahoo-finance-mcp:latest
+docker run --rm -p 127.0.0.1:8000:8000 ghcr.io/benethos-hub/benethos-yahoo-finance-mcp:latest
 # Server is now reachable at http://localhost:8000/mcp
 ```
+
+The examples publish the port on the loopback address only. Drop the
+`127.0.0.1:` prefix only behind a reverse proxy that authenticates, or at the
+very least with `YF_MCP_BEARER_TOKEN` set.
 
 Pin a version for anything you depend on — `:0.8.8` for an exact release, `:0.8`
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
@@ -598,11 +602,11 @@ single setting with `-e` does not disturb the others.
 docker build -f containers/images/yahoo-finance-mcp/Dockerfile -t benethos-yahoo-finance-mcp .
 
 # Run with the built-in defaults (streamable-HTTP on 0.0.0.0:8000)
-docker run --rm -p 8000:8000 benethos-yahoo-finance-mcp
+docker run --rm -p 127.0.0.1:8000:8000 benethos-yahoo-finance-mcp
 # Server is now reachable at http://localhost:8000/mcp
 
 # Override settings via -e, opt into the cache and persist it in a named volume
-docker run --rm -p 9000:9000 \
+docker run --rm -p 127.0.0.1:9000:9000 \
     -e YF_MCP_PORT=9000 \
     -e YF_MCP_LOG_LEVEL=DEBUG \
     -e YF_MCP_CACHE=1 \
@@ -631,7 +635,7 @@ directory. Without the second, `yfinance` silently does without its cookie and
 time zone cache and asks Yahoo again each time:
 
 ```bash
-docker run --rm -p 8000:8000 --read-only --tmpfs /tmp \
+docker run --rm -p 127.0.0.1:8000:8000 --read-only --tmpfs /tmp \
     --tmpfs /home/appuser/.cache:uid=10001,gid=10001,mode=0700 \
     --cap-drop ALL --security-opt no-new-privileges:true \
     ghcr.io/benethos-hub/benethos-yahoo-finance-mcp:latest

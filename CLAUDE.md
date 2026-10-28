@@ -46,23 +46,36 @@ src/benethos_yahoo_finance_mcp/
   cache.py        # opt-in persistent result cache (SQLite) with per-tool TTLs
   formatting.py   # pandas/yfinance -> compact JSON-safe values
   logbook/        # every log line as a function, the one stderr handler
+    _describe.py  #   what a line may carry: printable(), subject(), size()
+    output.py     #   the one stderr handler, other libraries' lines made printable
+    formats.py    #   how a line looks, plain or in colour
+    access.py     #   uvicorn's request log, without the query string
+    lifecycle.py  #   the lines: starting, the guard, settings ignored
+    calls.py      #   the lines: one per tool call, arguments refused
+    cache.py      #   the lines: the result cache's state and failures
+    upstream.py   #   the lines: rate limits, a missing constant
   transport/      # stdio.py, http.py (Host allow-list + optional bearer guard)
   errors.py       # ToolError / SymbolNotFoundError / RateLimitError
   py.typed        # PEP 561 marker, without it the annotations reach nobody
 tests/            # mocked, offline unit tests (+ live smoke.py, not collected)
-  yahoo/          #   one test file per yahoo module, FakeTicker in fakes.py
+  yahoo/          #   one test file per yahoo module, test_tickers.py included,
+                  #   plus the cross-module test_empty_answers.py, FakeTicker in fakes.py
 containers/
+  README.md       # hosting with Docker and Compose
   images/yahoo-finance-mcp/Dockerfile   # build context: the repository root
   production/     # compose.yaml + Caddyfile + .env.example, the published image
   development/    # compose.yaml, built from the checkout, port 8001
 .github/workflows/
   ci.yml          # brand, lint, test, lowest-versions, audit, coverage-badge (the organisation's workflows), fresh-install, docker
   publish.yml     # PyPI, ghcr, .mcpb bundle, MCP Registry on a published release, through the organisation's actions
+.github/dependabot.yml   # weekly proposals for uv, the actions and the Dockerfile
+.github/ISSUE_TEMPLATE/  # the bug report form, its version example read by test_packaging.py
 .github/publish/   # one folder per place a release is listed, read by publish.yml
   mcp-registry/   # server.json (the entry, its bundle hash filled in at release)
   mcpb/            # Claude Desktop bundle: manifest.json, server.py, build.py
 assets/           # render_icon.py, the architecture diagram it draws, old icon copies
   brand/          # icon.svg, and icon.png (512x512) and social-preview.png (1280x640) exported from it
+SECURITY.md       # how to report a vulnerability, and what the server guards
 ```
 
 The brand folder follows the rules of the benethos-hub organisation, kept in
@@ -84,6 +97,8 @@ line is a function in `logbook/lifecycle.py`, `calls.py`, `cache.py` or
 `tests/test_logbook_catalog.py`, and it never carries a search query, the
 token, a URL's query string, Yahoo's data or an error's text (see SPECS §4).
 A tool writes no line of its own, `register_tool` writes one per call.
+`logbook/formats.py` reads `NO_COLOR` from the environment itself, the one
+exception to `settings.py` being the only module that does.
 
 ## How to add or change a tool
 

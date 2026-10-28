@@ -334,3 +334,47 @@ def test_the_oldest_tested_python_is_the_floor_everywhere():
     assert lowest == oldest, (
         f"lowest-versions installs on {lowest}, the oldest tested Python is {oldest}"
     )
+
+
+_ROOT = PACKAGE_DIR.parent.parent
+
+
+def _layout_paths() -> list[str]:
+    """Every path the "Project layout" block of CLAUDE.md names, by its indent."""
+    text = (_ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+    block = text.split("## Project layout", 1)[1].split("```", 2)[1]
+    paths, parents = [], []
+    for line in block.splitlines():
+        entry = line.split("#", 1)[0].rstrip()
+        if not entry.strip():
+            continue
+        depth = (len(entry) - len(entry.lstrip())) // 2
+        del parents[depth:]
+        paths.append("".join(parents) + entry.strip())
+        parents.append(entry.strip())
+    return paths
+
+
+def test_every_path_in_the_layout_block_exists() -> None:
+    paths = _layout_paths()
+    assert "src/benethos_yahoo_finance_mcp/logbook/_describe.py" in paths
+    missing = [p for p in paths if not (_ROOT / p).exists()]
+    assert not missing, f"CLAUDE.md names paths that do not exist: {missing}"
+
+
+def test_every_module_is_named_in_claude_md_or_specs() -> None:
+    """A module nobody names is one a contributor will not find the rules of.
+
+    The eight subject modules of tools/ and yahoo/ are named once, as subjects.
+    """
+    docs = "".join(
+        (_ROOT / name).read_text(encoding="utf-8") for name in ("CLAUDE.md", "SPECS.md")
+    )
+    [subjects] = re.findall(r"one per\s+subject \(([^)]+)\)", docs)
+    named = {s.strip() + ".py" for s in subjects.split(",")}
+    unnamed = sorted(
+        path.relative_to(PACKAGE_DIR).as_posix()
+        for path in PACKAGE_DIR.rglob("*.py")
+        if path.name not in docs and path.name not in named
+    )
+    assert not unnamed, f"named in neither CLAUDE.md nor SPECS.md: {unnamed}"
