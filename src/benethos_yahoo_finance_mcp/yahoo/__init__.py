@@ -35,7 +35,12 @@ from .company import (
 )
 from .funds import get_fund_data
 from .options import get_options
-from .ownership import get_holders, get_insider_activity, get_sec_filings
+from .ownership import (
+    FILINGS_MAX,
+    get_holders,
+    get_insider_activity,
+    get_sec_filings,
+)
 from .quotes import (
     INTERVALS,
     PERIODS,
@@ -49,6 +54,7 @@ from .screener import SCREEN_ALIASES, SCREEN_OPERATORS, screen
 
 __all__ = [
     "EARNINGS_MAX",
+    "FILINGS_MAX",
     "INDUSTRY_KEYS",
     "INTERVALS",
     "MARKET_KEYS",

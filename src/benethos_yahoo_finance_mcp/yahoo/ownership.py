@@ -85,6 +85,9 @@ _NO_SEC_FILINGS_REASON = (
     "is expected to have no filings. ETFs, funds and crypto have none either."
 )
 
+# The most filings get_sec_filings returns.
+FILINGS_MAX = 100
+
 
 @cache.cached("sec_filings")
 def get_sec_filings(symbol: str, *, limit: int = 25) -> dict[str, Any]:
@@ -95,7 +98,7 @@ def get_sec_filings(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     filings, a non-US issuer or an ETF, fund or crypto, raises
     SymbolNotFoundError with ``_NO_SEC_FILINGS_REASON``.
     """
-    limit = max(1, min(int(limit), 100))
+    limit = max(1, min(int(limit), FILINGS_MAX))
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load SEC filings for {symbol!r}"):
         filings = ticker.sec_filings

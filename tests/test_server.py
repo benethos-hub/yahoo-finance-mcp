@@ -175,6 +175,7 @@ BOUNDS = [
     ("search", "limit", "(1-{})", yahoo.SEARCH_MAX),
     ("get_news", "limit", "1-{})", yahoo.NEWS_MAX),
     ("get_earnings", "limit", None, yahoo.EARNINGS_MAX),
+    ("get_sec_filings", "limit", None, yahoo.FILINGS_MAX),
 ]
 
 
