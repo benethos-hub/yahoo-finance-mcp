@@ -8,7 +8,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- The container image is built with uv 0.13.5 (was 0.13.2), and CI and the
+- The container image is built with uv 0.13.6 (was 0.13.2), and CI and the
   release use `astral-sh/setup-uv` 10.3.2 (was 10.3.0). Neither release
   changes how this project is built or what the image holds.
 - A release takes every newer version on offer, image tags and actions
@@ -32,9 +32,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   that a dependency audit cannot see, since the library is compiled in.
   The live smoke test returns the same sections and fields before and
   after. Also `platformdirs` 4.13.7 and `tzdata` 2026.6.
-- The Dockerfile pins the current index of `python:3.15-slim`. Only its
-  riscv64 image was rebuilt, the amd64 and arm64 images this project
-  builds on are byte for byte the same, so the image does not change.
+- Security, for the image: it runs on Python 3.15.2 (was 3.15.1), the
+  current `python:3.15-slim`. The release fixes three security issues,
+  among them CVE 2026-115557: `ssl` now refuses certificate chains that
+  hold one of the compromised eMudhra intermediate keys.
 
 ## [0.8.8] - 2026-10-22
 
