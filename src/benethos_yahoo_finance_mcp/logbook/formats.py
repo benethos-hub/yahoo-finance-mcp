@@ -51,7 +51,14 @@ def timestamp(record: logging.LogRecord) -> str:
     return moment.isoformat(timespec="milliseconds")
 
 
-class Plain(logging.Formatter):
+class _IsoTime(logging.Formatter):
+    """A formatter that writes the time as :func:`timestamp` does."""
+
+    def formatTime(self, record: logging.LogRecord, datefmt: str | None = None) -> str:
+        return timestamp(record)
+
+
+class Plain(_IsoTime):
     """The line for a file or a container log, see the module docstring."""
 
     def __init__(self) -> None:
@@ -61,15 +68,9 @@ class Plain(logging.Formatter):
         record.source = short_source(record.name)
         return super().format(record)
 
-    def formatTime(self, record: logging.LogRecord, datefmt: str | None = None) -> str:
-        return timestamp(record)
 
-
-class Console(logging.Formatter):
+class Console(_IsoTime):
     """The line for a person at a terminal, see the module docstring."""
-
-    def formatTime(self, record: logging.LogRecord, datefmt: str | None = None) -> str:
-        return timestamp(record)
 
     def format(self, record: logging.LogRecord) -> str:
         colour = _LEVEL_COLOURS.get(record.levelno, "")
