@@ -17,7 +17,6 @@ from .analysts import (
     get_upgrades_downgrades,
 )
 from .browse import (
-    INDUSTRY_KEYS,
     MARKET_KEYS,
     SECTOR_KEYS,
     get_industry,
@@ -56,7 +55,6 @@ from .screener import SCREEN_ALIASES, SCREEN_MAX, SCREEN_OPERATORS, screen
 __all__ = [
     "EARNINGS_MAX",
     "FILINGS_MAX",
-    "INDUSTRY_KEYS",
     "INTERVALS",
     "MARKET_KEYS",
     "NEWS_MAX",
