@@ -37,6 +37,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   among them CVE 2026-115557: `ssl` now refuses certificate chains that
   hold one of the compromised eMudhra intermediate keys.
 
+### Fixed
+
+- A line another library writes to the log is reduced to printable
+  characters. Under `--transport sse` the SDK logged a rejected
+  `session_id` from the query string as it came, so a caller who reached
+  the port could forge a second log line or send an escape sequence to
+  a terminal.
+
 ## [0.8.8] - 2026-10-22
 
 `get_news` returns articles again, now from Yahoo's search when the

@@ -137,6 +137,9 @@ submodules.
     typed, the line gives the number of matches), a URL's query string,
     anything from Yahoo's answer, or the text of an error this server raised,
     which is written for the model. A line names the error's class instead.
+    A line another library wrote, which may quote what a caller sent, is
+    reduced to printable characters on its way to stderr, so it cannot forge
+    a second line either.
   - **Other loggers.** The chosen level applies to this package and to
     uvicorn's request log only. The root logger stays at WARNING, so every
     other library, including one nobody thought of, says only what went

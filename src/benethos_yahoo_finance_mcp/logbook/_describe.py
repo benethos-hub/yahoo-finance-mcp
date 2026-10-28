@@ -24,8 +24,16 @@ def printable(text: str, limit: int = _SUBJECT_MAX) -> str:
     line, an escape sequence would reach a terminal, and nothing else bounds
     its length. A cut is marked with ``...``.
     """
-    kept = "".join(ch for ch in text if ch.isprintable())
+    kept = one_line(text)
     return kept if len(kept) <= limit else kept[: limit - 3] + "..."
+
+
+def one_line(text: str) -> str:
+    """``text`` with printable characters only, and nothing cut.
+
+    For a line another library wrote, which may quote what a caller sent.
+    """
+    return "".join(ch for ch in text if ch.isprintable())
 
 
 def subject(arguments: Mapping[str, Any]) -> str:
