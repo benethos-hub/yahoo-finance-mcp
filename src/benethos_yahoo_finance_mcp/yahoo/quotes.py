@@ -240,6 +240,7 @@ def get_history(
     if start:
         start, end = tickers.checked_range(start, end)
     else:
+        end = None
         period = (period or "").strip().lower()
         if period not in PERIODS and not _PERIOD_SHAPE.fullmatch(period):
             raise ToolError(

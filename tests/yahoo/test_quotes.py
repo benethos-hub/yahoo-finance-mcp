@@ -338,6 +338,12 @@ def test_get_history_checks_only_what_it_uses(patch_ticker):
     assert yahoo.get_history("aapl", end="tomorrow")["count"]
 
 
+def test_get_history_echoes_no_end_it_did_not_use(patch_ticker):
+    df = pd.DataFrame({"Close": [1.0]}, index=pd.DatetimeIndex(["2024-01-01"]))
+    patch_ticker(FakeTicker(history=df))
+    assert yahoo.get_history("aapl", end="tomorrow")["end"] is None
+
+
 # --- search limit clamping ------------------------------------------------
 
 

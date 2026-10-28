@@ -57,6 +57,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A cache TTL of 0 bypasses the cache for reading too, as the help for
   `--cache-ttl` says. A restart with `financials=0` to get fresh numbers
   still served an entry stored under the earlier TTL until it expired.
+- `get_history` answers `end: null` when no `start` was given, since
+  `end` is used only together with it. It echoed the unused value as
+  if the range had applied.
 
 ## [0.8.8] - 2026-10-22
 
