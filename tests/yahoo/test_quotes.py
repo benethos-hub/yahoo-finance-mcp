@@ -234,6 +234,14 @@ def test_get_history_empty_raises(patch_ticker):
         yahoo.get_history("nope")
 
 
+def test_not_found_names_the_symbol_as_answers_echo_it(patch_ticker):
+    patch_ticker(FakeTicker(history=pd.DataFrame()))
+    with pytest.raises(SymbolNotFoundError) as info:
+        yahoo.get_history(" aapl ")
+    assert "'AAPL'" in str(info.value)
+    assert "' aapl '" not in str(info.value)
+
+
 def test_get_history_empty_range_names_the_range_first(patch_ticker):
     """A real date can lie after the last data point of a symbol that exists."""
     patch_ticker(FakeTicker(history=pd.DataFrame()))
