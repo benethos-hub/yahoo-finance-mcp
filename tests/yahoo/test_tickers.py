@@ -8,7 +8,6 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 import pytest
-from fakes import FakeTicker
 from yfinance.exceptions import YFRateLimitError
 
 from benethos_yahoo_finance_mcp import yahoo
@@ -18,6 +17,7 @@ from benethos_yahoo_finance_mcp.errors import (
     ToolError,
 )
 from benethos_yahoo_finance_mcp.yahoo import tickers
+from fakes import FakeTicker
 
 # --- checked_range --------------------------------------------------------
 

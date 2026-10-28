@@ -395,15 +395,14 @@ def test_cached_decorator_honours_worth_keeping(enabled_cache):
 def test_get_quotes_does_not_pin_a_complete_miss(enabled_cache, monkeypatch):
     from benethos_yahoo_finance_mcp import yahoo
     from benethos_yahoo_finance_mcp.yahoo import tickers
+    from fakes import FakeTicker
 
     built = {"n": 0}
 
-    class Empty:
-        fast_info: dict = {}
-
+    # Counts each ticker built, which patch_ticker's single fake cannot.
     def fake(symbol):
         built["n"] += 1
-        return Empty()
+        return FakeTicker(fast_info={})
 
     monkeypatch.setattr(tickers, "get_ticker", fake)
     assert yahoo.get_quotes(["AAPL"])["count"] == 0

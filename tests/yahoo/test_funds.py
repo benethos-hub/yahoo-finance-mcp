@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-from fakes import FakeTicker
 from yfinance.exceptions import YFDataException, YFRateLimitError
 
 from benethos_yahoo_finance_mcp import yahoo
@@ -16,6 +15,7 @@ from benethos_yahoo_finance_mcp.errors import (
     SymbolNotFoundError,
     ToolError,
 )
+from fakes import FakeTicker
 
 # --- get_fund_data --------------------------------------------------------
 

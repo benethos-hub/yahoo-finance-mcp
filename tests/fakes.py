@@ -1,4 +1,4 @@
-"""Stand-ins for yfinance objects, shared by the tests in this directory."""
+"""Stand-ins for yfinance objects, shared by the tests."""
 
 from __future__ import annotations
 

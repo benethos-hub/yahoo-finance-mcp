@@ -22,6 +22,7 @@ from benethos_yahoo_finance_mcp.logbook import access, formats, output
 from benethos_yahoo_finance_mcp.server import build_server
 from benethos_yahoo_finance_mcp.settings import Settings
 from benethos_yahoo_finance_mcp.yahoo import tickers
+from fakes import FakeTicker
 
 mcp = build_server()
 PACKAGE = "benethos_yahoo_finance_mcp"
@@ -146,13 +147,9 @@ def test_refused_arguments_name_the_field_not_the_value(caplog):
     assert all("31337" not in r.getMessage() for r in _ours(caplog))
 
 
-def test_an_answer_from_the_result_cache_says_so(monkeypatch, caplog, tmp_path):
+def test_an_answer_from_the_result_cache_says_so(patch_ticker, caplog, tmp_path):
     cache.configure(Settings(cache_enabled=True, cache_dir=tmp_path))
-
-    class Fast:
-        fast_info = {"lastPrice": 1.0}
-
-    monkeypatch.setattr(tickers, "get_ticker", lambda symbol: Fast())
+    patch_ticker(FakeTicker(fast_info={"lastPrice": 1.0}))
     with caplog.at_level(logging.INFO, logger=TOOLS):
         _call("get_quote", {"symbol": "AAPL"})
         _call("get_quote", {"symbol": "AAPL"})

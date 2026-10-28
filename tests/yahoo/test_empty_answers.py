@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-from fakes import FakeTicker
 
 from benethos_yahoo_finance_mcp import cache, yahoo
 from benethos_yahoo_finance_mcp.errors import (
@@ -19,6 +18,7 @@ from benethos_yahoo_finance_mcp.errors import (
 )
 from benethos_yahoo_finance_mcp.settings import Settings
 from benethos_yahoo_finance_mcp.yahoo import tickers
+from fakes import FakeTicker
 
 # The six equity-only tools, each with the fake that answers nothing. Their
 # descriptions used to promise an empty answer for ETFs, funds and crypto.
@@ -75,26 +75,22 @@ class _Fast:
         return None
 
 
-def test_an_unreachable_yahoo_is_not_an_unknown_symbol(monkeypatch):
+def test_an_unreachable_yahoo_is_not_an_unknown_symbol(patch_ticker):
     """Measured with a dead proxy: a ConnectionError among the fields."""
     from curl_cffi.requests.exceptions import ConnectionError as CurlConnectionError
 
     fast = _Fast({"lastPrice": KeyError("x"), "open": CurlConnectionError("down")})
-    monkeypatch.setattr(
-        tickers, "get_ticker", lambda s: type("T", (), {"fast_info": fast})()
-    )
+    patch_ticker(FakeTicker(fast_info=fast))
     with pytest.raises(ToolError) as info:
         yahoo.get_quote("MSFT")
     assert not isinstance(info.value, SymbolNotFoundError)
     assert "Yahoo could not be reached (ConnectionError)" in str(info.value)
 
 
-def test_an_unknown_symbol_still_is_one(monkeypatch):
+def test_an_unknown_symbol_still_is_one(patch_ticker):
     """Measured: an unknown symbol raises KeyError for some fields, nothing else."""
     fast = _Fast({"lastPrice": KeyError("x"), "open": KeyError("y")})
-    monkeypatch.setattr(
-        tickers, "get_ticker", lambda s: type("T", (), {"fast_info": fast})()
-    )
+    patch_ticker(FakeTicker(fast_info=fast))
     with pytest.raises(SymbolNotFoundError):
         yahoo.get_quote("NOPE")
 
