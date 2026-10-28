@@ -184,7 +184,10 @@ submodules.
   visible in the process list to every other user on the machine. All of them
   are read once, by `settings.load_settings`. A value that cannot be used
   falls back to its default with a warning in the log, a flag value that
-  cannot be used is a usage error.
+  cannot be used is a usage error. The port is the exception: a value
+  outside 1 to 65535, from the flag or the environment, stops an HTTP start
+  as a usage error, since a server that silently moved to 8000 would listen
+  on the wrong port.
 - **Entry points:** `python -m benethos_yahoo_finance_mcp` or the
   `benethos-yahoo-finance-mcp` console script.
 - **Python:** 3.11-3.15, all covered by the CI matrix.
