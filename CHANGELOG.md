@@ -54,6 +54,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A symbol made of marks alone, `.`, `..` or `-=^` say, is answered as
   not found without a request to Yahoo. The check let it through, though
   its comment said a `..` had no business in Yahoo's URLs.
+- A cache TTL of 0 bypasses the cache for reading too, as the help for
+  `--cache-ttl` says. A restart with `financials=0` to get fresh numbers
+  still served an entry stored under the earlier TTL until it expired.
 
 ## [0.8.8] - 2026-10-22
 
