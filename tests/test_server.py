@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-from benethos_yahoo_finance_mcp import yahoo
+from benethos_yahoo_finance_mcp import formatting, yahoo
 from benethos_yahoo_finance_mcp.server import _without_titles, build_server
 
 mcp = build_server()
@@ -178,6 +178,7 @@ BOUNDS = [
     ("get_sec_filings", "limit", None, yahoo.FILINGS_MAX),
     ("screen", "limit", None, yahoo.SCREEN_MAX),
     ("get_quotes", None, "more than {} were passed", yahoo.QUOTES_MAX),
+    ("get_history", None, "the most recent {} rows", formatting.MAX_ROWS),
 ]
 
 
