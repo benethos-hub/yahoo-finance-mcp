@@ -179,6 +179,7 @@ BOUNDS = [
     ("screen", "limit", None, yahoo.SCREEN_MAX),
     ("get_quotes", None, "more than {} were passed", yahoo.QUOTES_MAX),
     ("get_history", None, "the most recent {} rows", formatting.MAX_ROWS),
+    ("get_options", None, "up to {} strikes", yahoo.STRIKES_MAX),
 ]
 
 

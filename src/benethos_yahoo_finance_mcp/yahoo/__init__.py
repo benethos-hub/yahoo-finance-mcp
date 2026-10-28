@@ -34,7 +34,7 @@ from .company import (
     get_shares,
 )
 from .funds import get_fund_data
-from .options import get_options
+from .options import STRIKES_MAX, get_options
 from .ownership import (
     FILINGS_MAX,
     get_holders,
@@ -67,6 +67,7 @@ __all__ = [
     "SCREEN_OPERATORS",
     "SEARCH_MAX",
     "SECTOR_KEYS",
+    "STRIKES_MAX",
     "get_calendar",
     "get_company_info",
     "get_dividends",
