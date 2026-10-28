@@ -80,6 +80,11 @@ one. No tool, parameter or input schema changes.
   the host when 443 is taken, and the domain goes into the allow-list with
   any port too, so `https://finance.lan:8443/mcp` is not answered with 421.
   With `acme` the router still has to forward 443 from outside.
+- The README describes the compose files as they are now: the port inside
+  the container is fixed, `YAHOO_FINANCE_MCP_HTTPS_PORT` moves Caddy, Caddy
+  answers on 443 only, and `.env` cannot set what `compose.yaml` fixes. It
+  also says that a symbol needs a letter or a digit, that a port out of range
+  stops the start, and that other libraries' log lines are made printable.
 
 ### Fixed
 

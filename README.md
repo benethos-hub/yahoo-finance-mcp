@@ -262,9 +262,10 @@ All `get_*` tools expect a Yahoo Finance **symbol**. Both a ticker (`AAPL`,
 the moment the ticker object is created, and the ticker found stands in for it
 from then on. The server passes the symbol through unchanged apart from
 trimming and uppercasing, and echoes what it was given. A symbol has at most
-32 characters and the shape Yahoo uses, letters, digits and `. - ^ = &`, as in
-`^GSPC`, `EURUSD=X` or `BRK-B`. Anything else, and an ISIN-shaped string that
-Yahoo cannot resolve, answers as an unknown symbol.
+32 characters and the shape Yahoo uses, letters, digits and `. - ^ = &` with
+at least one letter or digit among them, as in `^GSPC`, `EURUSD=X` or `BRK-B`.
+Anything else, and an ISIN-shaped string that Yahoo cannot resolve, answers as
+an unknown symbol.
 
 To turn a **company name** into a symbol, call `search` first — the same Yahoo
 search endpoint handles free text, tickers, and ISINs. A ticker is preferable to
@@ -505,7 +506,7 @@ containers), with one deliberate exception noted below. Precedence is
 | `--version` | — | — | Print the version and exit. Same value the server reports in the MCP handshake. |
 | `--transport` | `YF_MCP_TRANSPORT` | `stdio` | `stdio`, `streamable-http`, or `sse`. |
 | `--host` | `YF_MCP_HOST` | `127.0.0.1` | Bind host for HTTP transports (`0.0.0.0` for remote). |
-| `--port` | `YF_MCP_PORT` | `8000` | Port for HTTP transports (1 to 65535). |
+| `--port` | `YF_MCP_PORT` | `8000` | Port for HTTP transports, 1 to 65535. Anything else stops an HTTP start, from the flag and from the variable alike. |
 | `--path` | `YF_MCP_PATH` | `/mcp` (`/sse` for sse) | URL path for HTTP transports. |
 | _(none)_ | `YF_MCP_BEARER_TOKEN` | unset | Require this bearer token on every HTTP request. Environment only, deliberately: an argument is visible in the process list. |
 | `--allowed-hosts` | `YF_MCP_ALLOWED_HOSTS` | see below, or derived from origins | Comma-separated `Host` header allow-list for the DNS-rebinding guard. |
@@ -524,7 +525,10 @@ failed call is a `WARNING` naming the error's class, and so is a Yahoo rate
 limit. Over HTTP a refused request (status 400 and up, 401 and 421 included)
 is logged with the address that tried. `DEBUG` adds every answered request.
 The log never contains the bearer token, a search query, a URL's query
-string, the data Yahoo returned or the text of an error message.
+string, the data Yahoo returned or the text of an error message. A line another
+library writes is reduced to printable characters on its way out, so nothing
+a caller sends can forge a second line or reach a terminal as an escape
+sequence.
 
 Every line names its source short: `server`, `tools`, `yahoo`, `cache`,
 `uvicorn` for uvicorn's server log and `http` for requests, and the time as
@@ -688,16 +692,20 @@ the host but not from the rest of the network. That is deliberate, since the
 server is unauthenticated unless `YF_MCP_BEARER_TOKEN` is set. To expose it,
 remove the `127.0.0.1:` prefix from the `ports:` entry, set the token at the
 very least, and put a reverse proxy with authentication in front of it. Set
-`YAHOO_FINANCE_MCP_PORT` in `.env` if the host port is taken.
+`YAHOO_FINANCE_MCP_PORT` in `.env` if the host port is taken. The port inside
+the container stays 8000, both compose files fix it, since the port mapping
+and Caddy forward to that number.
 
 For clients on other machines, the production folder brings such a proxy
 along. With `COMPOSE_PROFILES=https`, `YAHOO_FINANCE_MCP_DOMAIN` and
-`YF_MCP_BEARER_TOKEN` in `.env`, Caddy starts in front of the server on
-port 443, gets a certificate for the domain from its own CA (the
-default), from files you provide or from Let's Encrypt
-(`YAHOO_FINANCE_MCP_TLS`), and turns
-away a request without an `Authorization` header before it reaches the
-server. The server's port stays on `127.0.0.1`. The
+`YF_MCP_BEARER_TOKEN` in `.env`, Caddy starts in front of the server on port
+443 of every address, gets a certificate for the domain from its own CA (the
+default), from files you provide or from a public CA (`YAHOO_FINANCE_MCP_TLS`),
+and turns away a request without an `Authorization` header before it reaches
+the server. Port 80 stays closed, so a client set up with `http://` fails at
+once instead of sending its token in the clear. If 443 is taken on the host,
+`YAHOO_FINANCE_MCP_HTTPS_PORT` moves Caddy to another port, and clients put
+that port into the URL. The server's port stays on `127.0.0.1`. The
 [containers README](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/containers/README.md#with-https)
 has the details.
 
@@ -712,17 +720,16 @@ example with `journald`, and read it with
 Secrets go in the `.env` beside the compose file, which Compose reads through
 `env_file` and git and the Docker build context both ignore. Set
 `YF_MCP_BEARER_TOKEN` there, not in `compose.yaml`. Compose takes
-`YAHOO_FINANCE_MCP_VERSION`, `YAHOO_FINANCE_MCP_PORT` and `COMPOSE_PROFILES`
-for itself, hands `YAHOO_FINANCE_MCP_DOMAIN` and `YAHOO_FINANCE_MCP_TLS` to
-Caddy, and everything else to the server. A name set under `environment:` in
-`compose.yaml` wins over the same name in `.env`. Only Compose reads the file.
-The server itself never loads it, so for a plain `docker run` pass
+`YAHOO_FINANCE_MCP_VERSION`, `YAHOO_FINANCE_MCP_PORT`,
+`YAHOO_FINANCE_MCP_HTTPS_PORT` and `COMPOSE_PROFILES` for itself, hands
+`YAHOO_FINANCE_MCP_DOMAIN` and `YAHOO_FINANCE_MCP_TLS` to Caddy, and
+everything else to the server. A name set under `environment:` in
+`compose.yaml` wins over the same name in `.env`: `YF_MCP_PORT`,
+`YF_MCP_ALLOWED_HOSTS` and `YF_MCP_CACHE_DIR` are fixed there, and the domain
+is appended to the allowed hosts on its own. Only Compose reads the file. The
+server itself never loads it, so for a plain `docker run` pass
 `--env-file .env`, and for a local or Claude Desktop setup keep using the
 environment.
-
-A setup from the compose file that used to sit at the repository root moves to
-`containers/production/`. Its project name is the same, so the cache volume
-stays.
 
 ### Manual (uv or venv)
 
