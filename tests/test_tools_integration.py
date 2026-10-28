@@ -62,7 +62,7 @@ def test_tool_args_table_matches_registered_tools():
 
 @pytest.mark.parametrize("tool,args", list(TOOL_ARGS.items()))
 def test_tool_invokes_client_and_result_serializes(monkeypatch, tool, args):
-    """Each tool calls its client function exactly once and returns JSON-safe data."""
+    """Each tool calls its yahoo function exactly once and returns JSON-safe data."""
     calls: list[tuple] = []
 
     # ``search`` is the only tool that returns a list; all others return a dict.
@@ -81,7 +81,7 @@ def test_tool_invokes_client_and_result_serializes(monkeypatch, tool, args):
 
     result = _call(tool, args)
 
-    assert len(calls) == 1, f"{tool} did not forward to its client function once"
+    assert len(calls) == 1, f"{tool} did not forward to its yahoo function once"
     assert not result.is_error, f"{tool} reported an error result"
     # The structured result is what a client consumes, so it must serialize.
     json.dumps(result.structured_content)

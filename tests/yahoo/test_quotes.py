@@ -103,7 +103,7 @@ def test_get_quote_without_price_raises(patch_ticker):
 
 
 def _patch_tickers(monkeypatch, mapping):
-    """Patch _get_ticker to resolve each symbol from a {SYMBOL: FakeTicker} map."""
+    """Patch get_ticker to resolve each symbol from a {SYMBOL: FakeTicker} map."""
     monkeypatch.setattr(tickers, "get_ticker", lambda s: mapping[s.strip().upper()])
 
 

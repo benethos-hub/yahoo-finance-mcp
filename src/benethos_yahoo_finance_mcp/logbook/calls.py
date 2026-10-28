@@ -66,7 +66,10 @@ def read(tool: str, arguments: Mapping[str, Any], result: Any, seconds: float) -
 def ended(
     tool: str, arguments: Mapping[str, Any], error: BaseException, seconds: float
 ) -> None:
-    """A call that raised, e.g. ``get_options SAP.DE failed: SymbolNotFoundError``."""
+    """A call that raised.
+
+    For example ``get_options SAP.DE failed: SymbolNotFoundError, 12 ms``.
+    """
     _log.warning(
         "%s failed: %s, %s",
         _head(tool, arguments),

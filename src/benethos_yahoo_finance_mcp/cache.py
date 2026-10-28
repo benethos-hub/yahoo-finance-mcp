@@ -1,12 +1,12 @@
 """Optional persistent result cache with per-tool TTLs.
 
-This caches the *normalized results* of the client functions (not yfinance HTTP
+This caches the *normalized results* of the yahoo functions (not yfinance HTTP
 responses — yfinance uses curl_cffi and rejects caching sessions). Results are
 stored in a small SQLite file so they survive restarts; each tool category has
 its own time-to-live.
 
 The cache is **disabled until :func:`configure` is called** (which the server
-entry point does at startup). Importing the package or calling client functions
+entry point does at startup). Importing the package or calling yahoo functions
 directly therefore does not touch the disk unless caching is explicitly turned
 on — convenient for tests and library use.
 
@@ -293,7 +293,7 @@ def has_content(result: Any) -> bool:
 def cached(
     category: str, *, worth_keeping: Callable[[Any], bool] = has_content
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    """Decorate a client function to cache its successful results under ``category``.
+    """Decorate a yahoo function to cache its successful results under ``category``.
 
     ``worth_keeping`` decides whether a result is stored. The default,
     :func:`has_content`, skips empty ones, so a transient empty response is
