@@ -85,8 +85,9 @@ def test_get_options_returns_chain(patch_ticker):
     calls = pd.DataFrame({"strike": [100.0]})
     puts = pd.DataFrame({"strike": [90.0]})
     chain = types.SimpleNamespace(calls=calls, puts=puts)
-    patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
+    ticker = patch_ticker(FakeTicker(options=("2024-01-19",), option_chain=chain))
     out = yahoo.get_options("aapl", expiration="2024-01-19")
+    assert ticker.requested_expiration == "2024-01-19"
     assert out["calls"][0]["strike"] == 100.0
     assert out["puts"][0]["strike"] == 90.0
 
