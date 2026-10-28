@@ -27,31 +27,23 @@ import benethos_yahoo_finance_mcp
 PACKAGE = Path(benethos_yahoo_finance_mcp.__file__).resolve().parent
 ROOT = "__init__"
 
-# unit -> the units it may import. Order is bottom to top.
+# unit -> the units it imports, exactly. Order is bottom to top. A new edge
+# goes in here and in SPECS §3 in the same change, an edge no longer used
+# comes out, so the table describes the code rather than a ceiling over it.
 LAYERS: dict[str, set[str]] = {
     ROOT: set(),  # the version, nothing else
     "errors": set(),
     "settings": set(),
     "logbook": set(),
-    "formatting": {"errors"},
-    "cache": {ROOT, "errors", "settings", "logbook"},
+    "formatting": set(),
+    "cache": {ROOT, "settings", "logbook"},
     "yahoo": {"errors", "logbook", "cache", "formatting"},
     # Never formatting: a tool returns what yahoo built.
     "tools": {"errors", "logbook", "yahoo"},
-    "server": {ROOT, "tools", "settings", "logbook"},
-    "transport": {"server", "errors", "settings", "logbook"},
-    "cli": {
-        ROOT,
-        "errors",
-        "settings",
-        "logbook",
-        "formatting",
-        "cache",
-        "yahoo",
-        "tools",
-        "server",
-        "transport",
-    },
+    "server": {ROOT, "tools", "logbook"},
+    # The server comes in as the SDK's type, never as this package's module.
+    "transport": {"settings", "logbook"},
+    "cli": {ROOT, "settings", "logbook", "cache", "server", "transport"},
     "__main__": {"cli"},
 }
 
@@ -118,8 +110,6 @@ def _specs_table() -> dict[str, set[str]]:
             continue
         unit = cells[0].strip("`").removesuffix(".py")
         names = {n.removesuffix(".py") for n in re.findall(r"`([^`]+)`", cells[1])}
-        if cells[1].startswith("everything except"):
-            names = set(LAYERS) - names - {unit}
         table[unit] = names
     return table
 
@@ -149,6 +139,14 @@ def test_imports_follow_the_layers(path):
     assert not wrong, wrong
 
 
+def test_every_edge_in_the_table_is_used():
+    """The table describes the imports, so an edge nobody uses comes out."""
+    used: dict[str, set[str]] = {unit: set() for unit in LAYERS}
+    for _, unit, other, _ in _edges():
+        used[unit].add(other)
+    assert used == LAYERS
+
+
 @pytest.mark.parametrize("path", _sources(), ids=lambda p: "/".join(p.parts[-2:]))
 def test_packages_are_entered_through_their_init(path):
     unit = _unit(path.relative_to(PACKAGE).parts)
@@ -162,6 +160,18 @@ def test_packages_are_entered_through_their_init(path):
             continue  # a plain module has no __init__ to go through
         exported = set(importlib.import_module(f"{PACKAGE.name}.{other}").__all__)
         assert set(names) <= exported, f"{where} takes {set(names) - exported}"
+
+
+def test_no_unit_reaches_into_yahoo_through_an_attribute():
+    """``yahoo.tickers.X`` is invisible to the import check above but just as
+    tied to the submodule's name."""
+    reaching = [
+        path.relative_to(PACKAGE).as_posix()
+        for path in _sources()
+        if _unit(path.relative_to(PACKAGE).parts) != "yahoo"
+        and "yahoo.tickers." in path.read_text(encoding="utf-8")
+    ]
+    assert not reaching
 
 
 def test_only_the_command_line_entry_imports_cli():
@@ -179,15 +189,30 @@ def test_only_settings_reads_the_environment():
     assert readers == {"settings.py", "logbook/formats.py"}
 
 
-def test_only_the_yahoo_package_imports_yfinance():
+# Each library this package builds on, and the units that import it. A second
+# home for a library is a decision, not an accident, so it needs a line here.
+LIBRARY_HOMES = {
+    "yfinance": {"yahoo"},
+    "pandas": {"formatting"},
+    "sqlite3": {"cache"},
+    "uvicorn": {"transport"},
+    "starlette": {"transport"},
+    "pydantic": {"server", "tools"},
+    # cli names the SDK's server type for the checker only.
+    "mcp": {"errors", "server", "tools", "transport", "cli"},
+}
+
+
+@pytest.mark.parametrize("library", sorted(LIBRARY_HOMES))
+def test_a_library_is_imported_only_in_its_home(library):
+    homes = set()
     for path in _sources():
-        if _unit(path.relative_to(PACKAGE).parts) == "yahoo":
-            continue
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             names = []
             if isinstance(node, ast.Import):
                 names = [a.name for a in node.names]
             elif isinstance(node, ast.ImportFrom) and not node.level:
                 names = [node.module or ""]
-            assert not any(n.split(".")[0] == "yfinance" for n in names), path.name
+            if any(n.split(".")[0] == library for n in names):
+                homes.add(_unit(path.relative_to(PACKAGE).parts))
+    assert homes == LIBRARY_HOMES[library]

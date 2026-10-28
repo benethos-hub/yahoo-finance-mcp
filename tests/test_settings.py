@@ -175,6 +175,17 @@ class TestTtlBounds:
         assert load_settings({"cache_ttl": ["quote=0"]}, {}).cache_ttls["quote"] == 0
 
 
+def test_a_port_out_of_range_under_http_is_a_settings_error():
+    with pytest.raises(SettingsError, match="--port must be between 1 and 65535"):
+        load_settings({"transport": "streamable-http", "port": 0}, {})
+    assert load_settings({"transport": "stdio", "port": 0}, {}).port == 0
+
+
+def test_a_path_without_a_leading_slash_is_a_settings_error():
+    with pytest.raises(SettingsError, match="--path must start with '/'"):
+        load_settings({"path": "mcp"}, {})
+
+
 class TestOrigins:
     def test_a_final_slash_is_dropped(self):
         env = {"YF_MCP_ALLOWED_ORIGINS": "http://localhost:8000/, https://a.example"}
