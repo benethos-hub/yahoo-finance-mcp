@@ -6,7 +6,6 @@ the one an operator would read.
 
 from __future__ import annotations
 
-import asyncio
 import io
 import logging
 import subprocess
@@ -24,14 +23,9 @@ from benethos_yahoo_finance_mcp.settings import Settings
 from benethos_yahoo_finance_mcp.yahoo import tickers
 from fakes import FakeTicker
 
-mcp = build_server()
 PACKAGE = "benethos_yahoo_finance_mcp"
 TOOLS = "benethos_yahoo_finance_mcp.tools"
 YAHOO = "benethos_yahoo_finance_mcp.yahoo"
-
-
-def _call(tool: str, args: dict[str, object]):
-    return asyncio.run(mcp.call_tool(tool, args))
 
 
 def _ours(caplog) -> list[logging.LogRecord]:
@@ -40,13 +34,13 @@ def _ours(caplog) -> list[logging.LogRecord]:
     ]
 
 
-def test_a_call_that_returned_is_one_info_line(monkeypatch, caplog):
+def test_a_call_that_returned_is_one_info_line(call_tool, monkeypatch, caplog):
     rows = [{"close": 1.0}] * 250
     monkeypatch.setattr(
         yahoo, "get_history", lambda *a, **k: {"rows": rows, "truncated": True}
     )
     with caplog.at_level(logging.INFO):
-        _call("get_history", {"symbol": "sap.de"})
+        call_tool("get_history", {"symbol": "sap.de"})
     [record] = _ours(caplog)
     assert (record.name, record.levelno) == (TOOLS, logging.INFO)
     message = record.getMessage()
@@ -54,32 +48,34 @@ def test_a_call_that_returned_is_one_info_line(monkeypatch, caplog):
     assert message.endswith(" ms")
 
 
-def test_a_quotes_call_counts_found_and_missing(monkeypatch, caplog):
+def test_a_quotes_call_counts_found_and_missing(call_tool, monkeypatch, caplog):
     answer = {"count": 2, "quotes": [{}, {}], "not_found": ["X"], "truncated": False}
     monkeypatch.setattr(yahoo, "get_quotes", lambda *a, **k: answer)
     with caplog.at_level(logging.INFO):
-        _call("get_quotes", {"symbols": ["A", "B", "X"]})
+        call_tool("get_quotes", {"symbols": ["A", "B", "X"]})
     [record] = _ours(caplog)
     assert record.getMessage().startswith("get_quotes 3 symbols, 2 found, 1 missing, ")
 
 
-def test_a_search_line_never_carries_the_query(monkeypatch, caplog):
+def test_a_search_line_never_carries_the_query(call_tool, monkeypatch, caplog):
     """A query is free text a person typed. Only the number of matches is logged."""
     monkeypatch.setattr(yahoo, "search", lambda *a, **k: [{"symbol": "AAPL"}])
     with caplog.at_level(logging.DEBUG):
-        _call("search", {"query": "my private shopping list"})
+        call_tool("search", {"query": "my private shopping list"})
     [record] = _ours(caplog)
     assert record.getMessage().startswith("search 1 matches, ")
     assert all("shopping" not in r.getMessage() for r in caplog.records)
 
 
-def test_a_failed_call_is_a_warning_naming_the_class_not_the_text(monkeypatch, caplog):
+def test_a_failed_call_is_a_warning_naming_the_class_not_the_text(
+    call_tool, monkeypatch, caplog
+):
     def boom(*a, **k):
         raise SymbolNotFoundError("NOPE")
 
     monkeypatch.setattr(yahoo, "get_options", boom)
     with caplog.at_level(logging.INFO), pytest.raises(Exception):  # noqa: B017
-        _call("get_options", {"symbol": "nope"})
+        call_tool("get_options", {"symbol": "nope"})
     [record] = _ours(caplog)
     assert (record.name, record.levelno) == (TOOLS, logging.WARNING)
     assert record.getMessage().startswith(
@@ -88,19 +84,21 @@ def test_a_failed_call_is_a_warning_naming_the_class_not_the_text(monkeypatch, c
     assert "search" not in record.getMessage()  # the model's hint stays out
 
 
-def test_a_rate_limit_is_named_for_the_operator(monkeypatch, caplog):
+def test_a_rate_limit_is_named_for_the_operator(call_tool, monkeypatch, caplog):
     def limited(*a, **k):
         raise RateLimitError()
 
     monkeypatch.setattr(yahoo, "get_news", limited)
     with caplog.at_level(logging.INFO), pytest.raises(Exception):  # noqa: B017
-        _call("get_news", {"symbol": "aapl"})
+        call_tool("get_news", {"symbol": "aapl"})
     [record] = _ours(caplog)
     assert (record.name, record.levelno) == (YAHOO, logging.WARNING)
     assert record.getMessage() == "Yahoo rate limited get_news for AAPL"
 
 
-def test_a_symbol_cannot_forge_a_line_or_colour_the_terminal(monkeypatch, caplog):
+def test_a_symbol_cannot_forge_a_line_or_colour_the_terminal(
+    call_tool, monkeypatch, caplog
+):
     """The caller chooses the symbol, and it is logged before Yahoo is asked."""
 
     def boom(*a, **k):
@@ -109,7 +107,7 @@ def test_a_symbol_cannot_forge_a_line_or_colour_the_terminal(monkeypatch, caplog
     monkeypatch.setattr(yahoo, "get_quote", boom)
     forged = "AAPL\n2026 INFO x\x1b[31m"
     with caplog.at_level(logging.INFO), pytest.raises(Exception):  # noqa: B017
-        _call("get_quote", {"symbol": forged})
+        call_tool("get_quote", {"symbol": forged})
     [record] = _ours(caplog)
     message = record.getMessage()
     assert "\n" not in message
@@ -131,28 +129,30 @@ def test_a_line_keeps_as_much_of_a_symbol_as_the_schema_lets_through():
     assert _describe._SUBJECT_MAX == tickers.SYMBOL_MAX
 
 
-def test_a_symbol_longer_than_any_ticker_is_refused_by_the_schema(caplog):
+def test_a_symbol_longer_than_any_ticker_is_refused_by_the_schema(call_tool, caplog):
     with caplog.at_level(logging.INFO), pytest.raises(Exception):  # noqa: B017
-        _call("get_quote", {"symbol": "A" * 33})
+        call_tool("get_quote", {"symbol": "A" * 33})
     [record] = _ours(caplog)
     assert record.getMessage() == "get_quote refused arguments: symbol"
 
 
-def test_refused_arguments_name_the_field_not_the_value(caplog):
+def test_refused_arguments_name_the_field_not_the_value(call_tool, caplog):
     with caplog.at_level(logging.INFO), pytest.raises(Exception):  # noqa: B017
-        _call("get_news", {"symbol": "AAPL", "limit": 31337})
+        call_tool("get_news", {"symbol": "AAPL", "limit": 31337})
     [record] = _ours(caplog)
     assert (record.name, record.levelno) == (TOOLS, logging.WARNING)
     assert record.getMessage() == "get_news refused arguments: limit"
     assert all("31337" not in r.getMessage() for r in _ours(caplog))
 
 
-def test_an_answer_from_the_result_cache_says_so(patch_ticker, caplog, tmp_path):
+def test_an_answer_from_the_result_cache_says_so(
+    call_tool, patch_ticker, caplog, tmp_path
+):
     cache.configure(Settings(cache_enabled=True, cache_dir=tmp_path))
     patch_ticker(FakeTicker(fast_info={"lastPrice": 1.0}))
     with caplog.at_level(logging.INFO, logger=TOOLS):
-        _call("get_quote", {"symbol": "AAPL"})
-        _call("get_quote", {"symbol": "AAPL"})
+        call_tool("get_quote", {"symbol": "AAPL"})
+        call_tool("get_quote", {"symbol": "AAPL"})
     first, second = [r.getMessage() for r in caplog.records if r.name == TOOLS]
     assert not first.endswith("cached")
     assert second.endswith(", cached")

@@ -9,9 +9,7 @@ import sys
 import pytest
 
 from benethos_yahoo_finance_mcp import formatting, yahoo
-from benethos_yahoo_finance_mcp.server import _without_titles, build_server
-
-mcp = build_server()
+from benethos_yahoo_finance_mcp.server import _without_titles
 
 EXPECTED_TOOLS = {
     "search",
@@ -40,27 +38,27 @@ EXPECTED_TOOLS = {
 }
 
 
-def _list_tools():
-    return asyncio.run(mcp.list_tools())
+def _list_tools(server):
+    return asyncio.run(server.list_tools())
 
 
-def test_all_expected_tools_are_registered():
-    names = {t.name for t in _list_tools()}
+def test_all_expected_tools_are_registered(server):
+    names = {t.name for t in _list_tools(server)}
     assert names == EXPECTED_TOOLS
 
 
-def test_search_is_listed_first():
+def test_search_is_listed_first(server):
     """A name has to be resolved before anything else can use it."""
-    assert _list_tools()[0].name == "search"
+    assert _list_tools(server)[0].name == "search"
 
 
-def test_every_tool_has_a_description():
-    for tool in _list_tools():
+def test_every_tool_has_a_description(server):
+    for tool in _list_tools(server):
         assert tool.description and tool.description.strip(), tool.name
 
 
-def test_every_parameter_has_a_description():
-    for tool in _list_tools():
+def test_every_parameter_has_a_description(server):
+    for tool in _list_tools(server):
         props = (tool.input_schema or {}).get("properties", {})
         assert props, f"{tool.name} has no parameters in its schema"
         for param, spec in props.items():
@@ -113,9 +111,9 @@ def test_importing_the_package_configures_no_logging():
     assert _fresh(code) == ["0"]
 
 
-def test_every_tool_is_annotated_read_only_and_open_world():
+def test_every_tool_is_annotated_read_only_and_open_world(server):
     """Clients read these hints, for example to skip a confirmation prompt."""
-    tools = asyncio.run(mcp.list_tools())
+    tools = asyncio.run(server.list_tools())
     for tool in tools:
         dumped = tool.model_dump(by_alias=True, exclude_none=True)
         assert dumped.get("annotations") == {
@@ -124,9 +122,9 @@ def test_every_tool_is_annotated_read_only_and_open_world():
         }, tool.name
 
 
-def test_every_tool_has_a_title_of_its_own():
+def test_every_tool_has_a_title_of_its_own(server):
     """A client shows the title to a person, two alike could not be told apart."""
-    titles = [tool.title for tool in asyncio.run(mcp.list_tools())]
+    titles = [tool.title for tool in asyncio.run(server.list_tools())]
     assert all(titles), titles
     assert len(set(titles)) == len(titles), titles
 
@@ -148,9 +146,9 @@ def _titles_in(schema: object) -> list[str]:
     return found
 
 
-def test_the_schemas_carry_no_titles():
+def test_the_schemas_carry_no_titles(server):
     """pydantic names every model and field, and no client reads those names."""
-    for tool in asyncio.run(mcp.list_tools()):
+    for tool in asyncio.run(server.list_tools()):
         assert _titles_in(tool.input_schema) == [], tool.name
         assert _titles_in(tool.output_schema) == [], tool.name
 
@@ -184,14 +182,16 @@ BOUNDS = [
 
 
 @pytest.mark.parametrize(("tool", "param", "text", "value"), BOUNDS)
-def test_a_bound_is_stated_as_the_yahoo_function_holds_it(tool, param, text, value):
-    [listed] = [t for t in _list_tools() if t.name == tool]
+def test_a_bound_is_stated_as_the_yahoo_function_holds_it(
+    server, tool, param, text, value
+):
+    [listed] = [t for t in _list_tools(server) if t.name == tool]
     if text:
         assert text.format(value) in listed.description
     if param:
         assert listed.input_schema["properties"][param]["maximum"] == value
 
 
-def test_the_server_names_its_website():
+def test_the_server_names_its_website(server):
     """The initialize handshake points a client at the repository."""
-    assert mcp.website_url == "https://github.com/benethos-hub/yahoo-finance-mcp"
+    assert server.website_url == "https://github.com/benethos-hub/yahoo-finance-mcp"
