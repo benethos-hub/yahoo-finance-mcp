@@ -18,7 +18,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 from . import access, formats
-from ._describe import PACKAGE, one_line
+from ._describe import ACCESS_LOGGER, PACKAGE, one_line
 
 # The chosen level applies to this package (PACKAGE) and to uvicorn's request
 # log. Everything else inherits the root logger's WARNING, so a library nobody
@@ -77,7 +77,7 @@ class _ForeignLines(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         name = record.name
-        if name in (PACKAGE, access.ACCESS_LOGGER) or name.startswith(f"{PACKAGE}."):
+        if name in (PACKAGE, ACCESS_LOGGER) or name.startswith(f"{PACKAGE}."):
             return True
         record.msg = one_line(record.getMessage())
         record.args = ()

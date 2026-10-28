@@ -23,7 +23,7 @@ import sys
 from datetime import datetime
 from http import HTTPStatus
 
-from ._describe import PACKAGE
+from ._describe import ACCESS_ARGS, ACCESS_LOGGER, PACKAGE
 
 FORMAT = "%(asctime)s %(levelname)-8s %(source)s: %(message)s"
 
@@ -40,9 +40,6 @@ _LEVEL_COLOURS = {
 }
 # As uvicorn colours a status: 2xx green, 3xx yellow, 4xx red, 5xx bold red.
 _STATUS_COLOURS = {2: "\033[32m", 3: "\033[33m", 4: "\033[31m", 5: "\033[1;31m"}
-
-# uvicorn's request line: client, method, path, HTTP version, status.
-_ACCESS_ARGS = 5
 
 # Wide enough for every short source of this server, ``uvicorn`` the longest.
 SOURCE_WIDTH = 8
@@ -95,7 +92,7 @@ def short_source(name: str) -> str:
     log. Any other logger keeps its name."""
     if name == PACKAGE:
         return "server"
-    if name == "uvicorn.access":
+    if name == ACCESS_LOGGER:
         return "http"
     if name.startswith("uvicorn"):
         return "uvicorn"
@@ -104,9 +101,9 @@ def short_source(name: str) -> str:
 
 def _request(record: logging.LogRecord) -> str | None:
     """``POST /mcp 401 Unauthorized 10.0.0.7:5555`` for a request line."""
-    if record.name != "uvicorn.access" or not isinstance(record.args, tuple):
+    if record.name != ACCESS_LOGGER or not isinstance(record.args, tuple):
         return None
-    if len(record.args) != _ACCESS_ARGS:
+    if len(record.args) != ACCESS_ARGS:
         return None
     client, method, path, _, status = record.args
     if not isinstance(status, int):
