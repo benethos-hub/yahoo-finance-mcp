@@ -5,6 +5,8 @@ yfinance is mocked completely, nothing here reaches the network.
 
 from __future__ import annotations
 
+from datetime import date, timedelta
+
 import pytest
 from fakes import FakeTicker
 from yfinance.exceptions import YFRateLimitError
@@ -16,6 +18,18 @@ from benethos_yahoo_finance_mcp.errors import (
     ToolError,
 )
 from benethos_yahoo_finance_mcp.yahoo import tickers
+
+# --- checked_range --------------------------------------------------------
+
+
+def test_a_start_after_today_is_refused_before_yahoo_answers_nothing():
+    tomorrow = (date.today() + timedelta(days=1)).isoformat()
+    with pytest.raises(ToolError, match="future") as info:
+        tickers.checked_range(tomorrow, None)
+    assert not isinstance(info.value, SymbolNotFoundError)
+    today = date.today().isoformat()
+    assert tickers.checked_range(today, None) == (today, None)
+
 
 # --- get_ticker -----------------------------------------------------------
 

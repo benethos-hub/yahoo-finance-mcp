@@ -106,11 +106,14 @@ def checked_range(start: str | None, end: str | None) -> tuple[str | None, str |
     """``start`` and ``end`` as real dates, ``end`` after ``start`` when both are set.
 
     yfinance's ``end`` is exclusive: 2024-01-02 to 2024-01-02 is no day at all,
-    and a range the wrong way round is none either. Yahoo answers both with no
-    rows, which reads as an unknown symbol, so the order is checked first.
+    and a range the wrong way round is none either. Nor is a ``start`` after
+    today. Yahoo answers all three with no rows, which reads as an unknown
+    symbol, so they are checked first.
     """
     start = checked_date("start", start) if start else None
     end = checked_date("end", end) if end else None
+    if start and start > date.today().isoformat():
+        raise ToolError(f"start {start!r} is in the future.")
     if start and end and end <= start:
         raise ToolError(
             f"end {end!r} must be after start {start!r}. end is exclusive: for "

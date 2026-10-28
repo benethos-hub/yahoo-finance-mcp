@@ -60,6 +60,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `get_history` answers `end: null` when no `start` was given, since
   `end` is used only together with it. It echoed the unused value as
   if the range had applied.
+- `get_history` and `get_shares` refuse a `start` after today with a
+  message that says so. Yahoo answers such a range with no rows, which
+  came back as an unknown symbol and sent the model to search for a
+  ticker that was right.
 
 ## [0.8.8] - 2026-10-22
 
