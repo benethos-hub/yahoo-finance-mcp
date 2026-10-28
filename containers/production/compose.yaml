@@ -76,7 +76,12 @@ services:
     environment:
       # YF_MCP_TRANSPORT: streamable-http
       # YF_MCP_HOST: "0.0.0.0"
-      # YF_MCP_PORT: "8000"
+      # The port inside the container stays put, since the mapping above and
+      # Caddy's reverse_proxy both name it. Set in .env it would win over the
+      # image and leave both talking to nothing, while the health check, which
+      # reads it too, still says healthy. The port on the host is
+      # YAHOO_FINANCE_MCP_PORT.
+      YF_MCP_PORT: "8000"
       # YF_MCP_PATH: /mcp
       # The DNS-rebinding guard. The server binds 0.0.0.0 inside the
       # container, and an exposed bind without an allow-list accepts any Host

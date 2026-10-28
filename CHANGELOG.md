@@ -90,6 +90,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `http://localhost:8000?x=1`, stops the start like one with a path. It
   was passed on as written, and since the SDK compares `Origin` exactly,
   every browser request got 403.
+- Both compose files fix the port inside the container at 8000. A
+  `YF_MCP_PORT` in `.env` moved the server away from the port that the
+  mapping and Caddy forward to, so nothing reached it, while the health
+  check still said healthy. The port on the host stays
+  `YAHOO_FINANCE_MCP_PORT`.
 
 ## [0.8.8] - 2026-10-22
 
