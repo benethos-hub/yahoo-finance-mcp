@@ -123,6 +123,13 @@ def test_a_long_key_is_cut_in_the_line():
     assert subject == "k" * 29 + "..."
 
 
+def test_a_line_keeps_as_much_of_a_symbol_as_the_schema_lets_through():
+    """The logbook may not import the yahoo package, so a test ties the two."""
+    from benethos_yahoo_finance_mcp.logbook import _describe
+
+    assert _describe._SUBJECT_MAX == tickers.SYMBOL_MAX
+
+
 def test_a_symbol_longer_than_any_ticker_is_refused_by_the_schema(caplog):
     with caplog.at_level(logging.INFO), pytest.raises(Exception):  # noqa: B017
         _call("get_quote", {"symbol": "A" * 33})
