@@ -51,7 +51,9 @@ def test_get_ticker_takes_every_shape_yahoo_uses(monkeypatch, symbol):
 
 
 @pytest.mark.parametrize(
-    "symbol", ["../quote", "AAPL/X", "AAPL?crumb=1", "APPLE INC", "A" * 33, "AA\nPL"]
+    "symbol",
+    ["../quote", "AAPL/X", "AAPL?crumb=1", "APPLE INC", "A" * 33, "AA\nPL"]
+    + [".", "..", "-=^"],
 )
 def test_a_symbol_of_another_shape_never_reaches_yahoo(monkeypatch, symbol):
     """The symbol goes into the path of Yahoo's URLs."""

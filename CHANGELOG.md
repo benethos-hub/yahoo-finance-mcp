@@ -44,6 +44,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `session_id` from the query string as it came, so a caller who reached
   the port could forge a second log line or send an escape sequence to
   a terminal.
+- A symbol made of marks alone, `.`, `..` or `-=^` say, is answered as
+  not found without a request to Yahoo. The check let it through, though
+  its comment said a `..` had no business in Yahoo's URLs.
 
 ## [0.8.8] - 2026-10-22
 

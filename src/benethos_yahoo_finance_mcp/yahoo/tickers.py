@@ -23,10 +23,11 @@ from ..errors import RateLimitError, SymbolNotFoundError, ToolError
 from ..formatting import to_jsonable
 
 # What a Yahoo symbol or an ISIN can look like once upper-cased: letters,
-# digits and the few marks Yahoo uses, as in ^GSPC, EURUSD=X, BRK-B and
-# M&M.NS. The symbol goes into the path of Yahoo's URLs, where a slash, a
-# question mark or ".." has no business, and a name with a space is a case
-# for the search tool anyway.
+# digits and the marks . - ^ = & Yahoo uses, as in ^GSPC, EURUSD=X, BRK-B
+# and M&M.NS, at least one letter or digit among them and at most 32. The
+# symbol goes into the path of Yahoo's URLs, where a slash, a question mark
+# or a "." or ".." made of marks alone has no business, and a name with a
+# space is a case for the search tool anyway.
 SYMBOL_MAX = 32
 
 # For the tools whose data Yahoo keeps for single stocks only. An ETF such as
@@ -36,7 +37,7 @@ EQUITY_ONLY_REASON = (
     "Yahoo keeps this data for single stocks only, so an ETF, fund, index, "
     "currency or crypto is expected to have none."
 )
-_SYMBOL_SHAPE = re.compile(rf"[A-Z0-9.\-^=&]{{1,{SYMBOL_MAX}}}")
+_SYMBOL_SHAPE = re.compile(rf"(?=.*[A-Z0-9])[A-Z0-9.\-^=&]{{1,{SYMBOL_MAX}}}")
 
 
 def wrap_upstream(exc: Exception, message: str) -> ToolError:
