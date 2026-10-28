@@ -444,6 +444,29 @@ def test_ttl_override_zero_disables_category(tmp_path):
         cache.configure(Settings())
 
 
+def test_ttl_zero_skips_an_entry_stored_under_an_earlier_ttl(tmp_path):
+    """A restart with ``--cache-ttl quote=0`` is how to get fresh numbers."""
+    calls = {"n": 0}
+
+    @cache.cached("quote")
+    def fetch(symbol):
+        calls["n"] += 1
+        return symbol
+
+    cache.configure(Settings(cache_enabled=True, cache_dir=tmp_path))
+    try:
+        fetch("AAPL")
+        ttls = {**DEFAULT_TTLS, "quote": 0}
+        cache.configure(
+            Settings(cache_enabled=True, cache_dir=tmp_path, cache_ttls=ttls)
+        )
+        fetch("AAPL")
+        fetch("AAPL")
+        assert calls["n"] == 3
+    finally:
+        cache.configure(Settings())
+
+
 # --- key building ---------------------------------------------------------
 
 

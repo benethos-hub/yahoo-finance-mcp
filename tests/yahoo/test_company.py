@@ -298,6 +298,14 @@ def test_get_shares_empty_raises(patch_ticker):
         yahoo.get_shares("nope")
 
 
+def test_get_shares_empty_range_names_the_range_first(patch_ticker):
+    patch_ticker(FakeTicker(shares_full=pd.Series(dtype="float64")))
+    with pytest.raises(ToolError) as info:
+        yahoo.get_shares("aapl", start="2024-01-01", end="2024-02-01")
+    assert not isinstance(info.value, SymbolNotFoundError)
+    assert "between 2024-01-01 and 2024-02-01" in str(info.value)
+
+
 def test_get_shares_none_raises(patch_ticker):
     patch_ticker(FakeTicker(shares_full=None))
     with pytest.raises(SymbolNotFoundError):

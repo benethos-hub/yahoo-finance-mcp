@@ -304,6 +304,8 @@ def get_shares(
         series = ticker.get_shares_full(start=start, end=end)
 
     if series is None or len(series) == 0:
+        if start:
+            raise tickers.empty_range(symbol, start, end)
         raise SymbolNotFoundError(symbol)
 
     tail = series.tail(limit)

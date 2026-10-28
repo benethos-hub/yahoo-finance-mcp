@@ -234,6 +234,23 @@ def test_get_history_empty_raises(patch_ticker):
         yahoo.get_history("nope")
 
 
+def test_not_found_names_the_symbol_as_answers_echo_it(patch_ticker):
+    patch_ticker(FakeTicker(history=pd.DataFrame()))
+    with pytest.raises(SymbolNotFoundError) as info:
+        yahoo.get_history(" aapl ")
+    assert "'AAPL'" in str(info.value)
+    assert "' aapl '" not in str(info.value)
+
+
+def test_get_history_empty_range_names_the_range_first(patch_ticker):
+    """A real date can lie after the last data point of a symbol that exists."""
+    patch_ticker(FakeTicker(history=pd.DataFrame()))
+    with pytest.raises(ToolError) as info:
+        yahoo.get_history("aapl", start="2024-01-01")
+    assert not isinstance(info.value, SymbolNotFoundError)
+    assert "between 2024-01-01 and today" in str(info.value)
+
+
 # --- get_history arguments ------------------------------------------------
 #
 # Yahoo answers a period or interval it does not know with no rows, which used
@@ -336,6 +353,12 @@ def test_get_history_checks_only_what_it_uses(patch_ticker):
     patch_ticker(FakeTicker(history=df))
     assert yahoo.get_history("aapl", period="banana", start="2024-01-01")["count"]
     assert yahoo.get_history("aapl", end="tomorrow")["count"]
+
+
+def test_get_history_echoes_no_end_it_did_not_use(patch_ticker):
+    df = pd.DataFrame({"Close": [1.0]}, index=pd.DatetimeIndex(["2024-01-01"]))
+    patch_ticker(FakeTicker(history=df))
+    assert yahoo.get_history("aapl", end="tomorrow")["end"] is None
 
 
 # --- search limit clamping ------------------------------------------------

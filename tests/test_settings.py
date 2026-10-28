@@ -193,6 +193,19 @@ class TestOrigins:
         with pytest.raises(SettingsError, match="scheme://host"):
             load_settings({}, {"YF_MCP_ALLOWED_ORIGINS": origin})
 
+    @pytest.mark.parametrize(
+        "origin",
+        [
+            "http://localhost:8000?x=1",
+            "http://user@localhost:8000",
+            "http://localhost:8000#frag",
+        ],
+    )
+    def test_an_origin_with_more_than_scheme_and_host_stops_the_start(self, origin):
+        """The SDK compares Origin exactly, so no browser would ever match it."""
+        with pytest.raises(SettingsError, match="scheme://host"):
+            load_settings({}, {"YF_MCP_ALLOWED_ORIGINS": origin})
+
 
 def test_unusable_environment_values_fall_back_and_are_recorded():
     env = {

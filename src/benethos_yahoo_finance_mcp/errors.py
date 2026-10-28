@@ -35,9 +35,13 @@ class SymbolNotFoundError(ToolError):
     the caller hunting for a ticker that was already correct. Pass ``reason`` to
     say so instead. Distinguishing the two cases for certain would take a second
     upstream request, which is deliberately not spent here.
+
+    The symbol is named the way every answer echoes it, trimmed and upper-cased,
+    whatever form the caller passed.
     """
 
     def __init__(self, symbol: str, reason: str | None = None) -> None:
+        symbol = (symbol or "").strip().upper()
         if reason is None:
             message = (
                 f"No data found for symbol {symbol!r}. "

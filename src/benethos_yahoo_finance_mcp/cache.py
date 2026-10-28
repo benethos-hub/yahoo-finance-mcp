@@ -299,7 +299,9 @@ def cached(
     not pinned for the whole TTL. A function whose "nothing found" looks
     different passes its own test.
 
-    When caching is disabled the wrapper is a transparent pass-through. Only
+    When caching is disabled the wrapper is a transparent pass-through, and so
+    it is for a category whose TTL is 0, which skips reading as well as
+    writing: an entry stored under an earlier TTL is not served. Only
     successful returns are stored; exceptions propagate and are never cached.
 
     The cache is an optimisation, so its own failures never fail the call. A
@@ -311,7 +313,8 @@ def cached(
     def decorator(fn: F) -> F:
         @wraps(fn)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            if not _enabled or _cache is None:
+            ttl = _ttls.get(category, 0)
+            if not _enabled or _cache is None or ttl <= 0:
                 return fn(*args, **kwargs)
             store = _cache
             key = _make_key(category, args, kwargs)
@@ -326,7 +329,7 @@ def cached(
             result = fn(*args, **kwargs)
             if worth_keeping(result):
                 try:
-                    store.set(key, result, _ttls.get(category, 0))
+                    store.set(key, result, ttl)
                 except sqlite3.Error as exc:
                     logbook.cache.write_failed(exc)
             return result
