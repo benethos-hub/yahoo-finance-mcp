@@ -4,6 +4,9 @@ stdout carries the MCP JSON-RPC stream under stdio, so nothing here ever
 writes to it. Nothing is installed at import either. :func:`configure` is
 called once from ``cli.main``, and a program that imports the package and
 builds a server itself keeps whatever logging it set up.
+
+A line another library writes is reduced to printable characters on its way
+out, since it may quote what a caller sent.
 """
 
 from __future__ import annotations
@@ -15,7 +18,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 from . import access, formats
-from ._describe import PACKAGE
+from ._describe import PACKAGE, one_line
 
 # The chosen level applies to this package (PACKAGE) and to uvicorn's request
 # log. Everything else inherits the root logger's WARNING, so a library nobody
@@ -63,6 +66,24 @@ class _Handler(logging.StreamHandler):
     """The stderr handler, a class of its own so it is found again."""
 
 
+class _ForeignLines(logging.Filter):
+    """Reduces a line another library wrote to printable characters.
+
+    Such a line may quote what a caller sent, the SDK's SSE transport names a
+    rejected ``session_id`` from the query string say, and a line break in it
+    would forge a second line. This package's lines and uvicorn's request log
+    are shaped already and pass untouched. A traceback keeps its lines.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        name = record.name
+        if name in (PACKAGE, access.ACCESS_LOGGER) or name.startswith(f"{PACKAGE}."):
+            return True
+        record.msg = one_line(record.getMessage())
+        record.args = ()
+        return True
+
+
 def configure(level: str) -> None:
     """Send this server's lines at ``level`` and above to stderr.
 
@@ -85,6 +106,8 @@ def configure(level: str) -> None:
         ours = [handler]
     for handler in ours:
         handler.setLevel(level)
+        if not any(isinstance(f, _ForeignLines) for f in handler.filters):
+            handler.addFilter(_ForeignLines())
     root.setLevel(logging.WARNING)
     logging.getLogger(PACKAGE).setLevel(level)
     for name in QUIET:

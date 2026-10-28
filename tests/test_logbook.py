@@ -7,21 +7,24 @@ the one an operator would read.
 from __future__ import annotations
 
 import asyncio
+import io
 import logging
 import subprocess
 import sys
 import warnings
 
 import pytest
+from starlette.testclient import TestClient
 
 from benethos_yahoo_finance_mcp import cache, cli, transport, yahoo
 from benethos_yahoo_finance_mcp.errors import RateLimitError, SymbolNotFoundError
-from benethos_yahoo_finance_mcp.logbook import access, output
+from benethos_yahoo_finance_mcp.logbook import access, formats, output
 from benethos_yahoo_finance_mcp.server import build_server
 from benethos_yahoo_finance_mcp.settings import Settings
 from benethos_yahoo_finance_mcp.yahoo import tickers
 
 mcp = build_server()
+PACKAGE = "benethos_yahoo_finance_mcp"
 TOOLS = "benethos_yahoo_finance_mcp.tools"
 YAHOO = "benethos_yahoo_finance_mcp.yahoo"
 
@@ -216,6 +219,58 @@ class TestAccessLog:
 
     def test_uvicorn_gets_no_handlers_of_its_own(self):
         assert access.uvicorn_options()["log_config"] is None
+
+
+@pytest.fixture
+def stderr_lines():
+    """The stream behind a handler of this server's, as ``configure`` sets it up.
+
+    Under pytest the root logger has handlers of its own, so ``configure`` adds
+    none and only shapes the ones of ours it finds.
+    """
+    stream = io.StringIO()
+    handler = output._Handler(stream)
+    handler.setFormatter(formats.Plain())
+    root = logging.getLogger()
+    root.addHandler(handler)
+    output.configure("INFO")
+    try:
+        yield stream
+    finally:
+        root.removeHandler(handler)
+
+
+def test_a_library_line_cannot_forge_a_second_one(stderr_lines):
+    """The SDK's SSE transport logs a rejected session_id from the query string."""
+    app = transport.http_app(
+        build_server(),
+        transport="sse",
+        path="/sse",
+        host="127.0.0.1",
+        transport_security=transport.transport_security_for("127.0.0.1", (), ()),
+        token=None,
+    )
+    forged = "x\n2026-10-28T00:00:00.000+00:00 ERROR    server: forged \x1b[31m"
+    client = TestClient(app, base_url="http://127.0.0.1:8000")
+    response = client.post("/messages/", params={"session_id": forged}, json={})
+    assert response.status_code == 400
+    lines = stderr_lines.getvalue().splitlines()
+    assert len(lines) == 1, lines
+    assert "mcp.server.sse" in lines[0]
+    assert "\x1b" not in lines[0]
+
+
+@pytest.mark.parametrize(
+    ("name", "msg", "args"),
+    [
+        (f"{PACKAGE}.tools", "%s%s%s", ("get_quote SAP.DE", " ", "12 ms")),
+        ("uvicorn.access", '%s - "%s %s HTTP/%s" %d', ("a", "POST", "/", "1.1", 421)),
+    ],
+)
+def test_lines_of_ours_pass_the_library_filter_untouched(name, msg, args):
+    record = logging.LogRecord(name, logging.INFO, __file__, 1, msg, args, None)
+    assert output._ForeignLines().filter(record)
+    assert (record.msg, record.args) == (msg, args)
 
 
 def test_chatty_libraries_are_held_at_warning():

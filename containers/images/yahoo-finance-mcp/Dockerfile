@@ -48,11 +48,16 @@ FROM python:3.15-slim@sha256:94d3426f1def7db4a106a232ac121bfd975393e5dfd40a619b9
 # Defaults: serve streamable-HTTP on all interfaces. The result cache is
 # opt-in (off by default). Enable it with `-e YF_MCP_CACHE=1`, and it is
 # written to the mounted /cache volume. Override anything with -e.
+# The Host allow-list keeps the DNS-rebinding guard on, which a bind on all
+# interfaces alone would turn off. It names the loopback addresses and the
+# compose service. Add a proxy's name or another address the server is
+# reached by, or it answers HTTP 421.
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH" \
     YF_MCP_TRANSPORT=streamable-http \
     YF_MCP_HOST=0.0.0.0 \
+    YF_MCP_ALLOWED_HOSTS="localhost:*,127.0.0.1:*,[::1]:*,benethos-yahoo-finance-mcp:*" \
     YF_MCP_PORT=8000 \
     YF_MCP_PATH=/mcp \
     YF_MCP_LOG_LEVEL=INFO \

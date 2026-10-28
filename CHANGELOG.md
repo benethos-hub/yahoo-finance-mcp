@@ -36,6 +36,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   current `python:3.15-slim`. The release fixes three security issues,
   among them CVE 2026-115557: `ssl` now refuses certificate chains that
   hold one of the compromised eMudhra intermediate keys.
+- The container image sets the `Host` allow-list itself,
+  `localhost:*,127.0.0.1:*,[::1]:*,benethos-yahoo-finance-mcp:*`, the
+  value both compose files set. A bare `docker run` binds every interface,
+  and without the list the DNS-rebinding guard was off. Running the image
+  behind a proxy, or reaching it under any other name or address, now
+  needs `YF_MCP_ALLOWED_HOSTS` set to include that name, or the request
+  gets HTTP 421.
+
+### Fixed
+
+- A line another library writes to the log is reduced to printable
+  characters. Under `--transport sse` the SDK logged a rejected
+  `session_id` from the query string as it came, so a caller who reached
+  the port could forge a second log line or send an escape sequence to
+  a terminal.
+- A symbol made of marks alone, `.`, `..` or `-=^` say, is answered as
+  not found without a request to Yahoo. The check let it through, though
+  its comment said a `..` had no business in Yahoo's URLs.
 
 ## [0.8.8] - 2026-10-22
 

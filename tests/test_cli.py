@@ -331,6 +331,29 @@ def test_compose_keeps_the_rebinding_guard_on(folder):
     assert not guard._validate_origin("http://attacker.example:8000")
 
 
+def test_the_image_keeps_the_rebinding_guard_on():
+    """A bare ``docker run`` binds 0.0.0.0 too, without compose's allow-list."""
+    from pathlib import Path
+
+    from mcp.server.transport_security import TransportSecurityMiddleware
+
+    path = Path(__file__).parent.parent / "containers/images/yahoo-finance-mcp"
+    dockerfile = (path / "Dockerfile").read_text("utf-8")
+    [raw] = re.findall(r'^ +YF_MCP_ALLOWED_HOSTS="([^"]+)" \\$', dockerfile, re.M)
+    hosts = settings.split_csv(raw)
+    assert hosts == (
+        "localhost:*",
+        "127.0.0.1:*",
+        "[::1]:*",
+        "benethos-yahoo-finance-mcp:*",
+    )
+    guard = TransportSecurityMiddleware(
+        http_transport.transport_security_for("0.0.0.0", hosts, [])
+    )
+    assert guard._validate_host("localhost:8000")
+    assert not guard._validate_host("attacker.example:8000")
+
+
 def test_compose_lets_the_https_domain_through():
     """Caddy keeps the client's Host, so without the domain every call gets 421."""
     guard = _compose_guard("production", {"YAHOO_FINANCE_MCP_DOMAIN": "mcp.test"})
