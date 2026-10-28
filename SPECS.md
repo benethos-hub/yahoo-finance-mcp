@@ -668,7 +668,8 @@ client shows the tool's own title and the model reads descriptions.
   version in its own file, the wheel, `pyproject.toml`, `manifest.json` or
   `server.json`, since PyPI would refuse the upload while the image job
   pushed its tags with the old code. The workflow can also be started by
-  hand, which is the trial before a release: it pushes the image as `edge`,
+  hand as a trial, which is not part of a release and runs only when the
+  maintainer asks for it: it pushes the image as `edge`,
   from `main` only, and `pypi-trial` builds and checks the package and asks
   PyPI whether it would take it, without uploading and without the
   credentials of the upload job, because a version may only be uploaded
