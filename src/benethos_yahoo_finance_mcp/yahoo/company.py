@@ -10,7 +10,12 @@ import yfinance as yf
 
 from .. import cache
 from ..errors import SymbolNotFoundError, ToolError
-from ..formatting import MAX_ROWS, dataframe_to_records, to_jsonable
+from ..formatting import (
+    MAX_ROWS,
+    dataframe_to_records,
+    series_to_records,
+    to_jsonable,
+)
 from . import tickers
 
 # Fields surfaced from Ticker.info for get_company_info. A curated subset keeps
@@ -160,19 +165,10 @@ def get_dividends(symbol: str, *, limit: int = MAX_ROWS) -> dict[str, Any]:
     if dividends is None and splits is None:
         raise SymbolNotFoundError(symbol)
 
-    def _series_records(series: Any, value_key: str) -> list[dict[str, Any]]:
-        if series is None or series.empty:
-            return []
-        tail = series.tail(limit)
-        return [
-            {"date": to_jsonable(idx), value_key: to_jsonable(val)}
-            for idx, val in tail.items()
-        ]
-
     return {
         "symbol": tickers.normalize(symbol),
-        "dividends": _series_records(dividends, "dividend"),
-        "splits": _series_records(splits, "split_ratio"),
+        "dividends": series_to_records(dividends, value_key="dividend", max_rows=limit),
+        "splits": series_to_records(splits, value_key="split_ratio", max_rows=limit),
     }
 
 
@@ -308,9 +304,5 @@ def get_shares(
             raise tickers.empty_range(symbol, start, end)
         raise SymbolNotFoundError(symbol)
 
-    tail = series.tail(limit)
-    rows = [
-        {"date": to_jsonable(idx), "shares": to_jsonable(val)}
-        for idx, val in tail.items()
-    ]
+    rows = series_to_records(series, value_key="shares", max_rows=limit)
     return {"symbol": tickers.normalize(symbol), "count": len(rows), "shares": rows}
