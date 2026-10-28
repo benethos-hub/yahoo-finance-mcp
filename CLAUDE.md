@@ -87,9 +87,12 @@ so they stay until those entries no longer matter.
 
 Keep the layers separate: **tools stay thin** and hand their arguments to the
 yahoo function of the same name. Put any new yfinance call in `yahoo/`, never
-in a tool. `tests/test_layers.py` holds the import table (which unit may
-import which), and a new module needs a line there. Packages are entered only
-through their `__init__.py`, so a new public name goes into its `__all__`.
+in a tool. `tests/test_layers.py` holds the import table (which unit imports
+which, checked in both directions), so a new module needs a line there and a
+new or dropped import changes its row. The same file pins every library to
+its one home module and keeps the environment out of every module but
+`settings.py`, `NO_COLOR` in `logbook/formats.py` excepted. Packages are entered only through their `__init__.py`, so a
+new public name goes into its `__all__`.
 
 **Logging goes through `logbook/`.** No other module imports `logging`. A new
 line is a function in `logbook/lifecycle.py`, `calls.py`, `cache.py` or
@@ -134,6 +137,10 @@ exception to `settings.py` being the only module that does.
    Give every parameter an `Annotated[type, Field(description=...)]` (reuse
    the `Symbol` alias for ticker arguments); add `ge`/`le` bounds for numeric
    limits. A row cap is called `limit`, in the tool and in the yahoo function.
+   Its ceiling is a `*_MAX` constant in the yahoo module, exported from
+   `yahoo/__init__.py` and used as the schema's `le`, and
+   `tests/test_server.py` holds every number a description names to its
+   constant.
 4. Add unit tests in `tests/yahoo/test_<module>.py` using the `FakeTicker`
    pattern (the `patch_ticker` fixture patches `tickers.get_ticker`, or patch
    `tickers.yf.Search`). Do not hit the network in tests.
@@ -187,6 +194,9 @@ and it now asserts the message text as well.
   with the text dropped.
 - Default tool output is compact JSON; keep responses small (row caps) to
   respect the client's token budget.
+- ruff's `BLE` rule is on: a bare `except Exception` carries
+  `# noqa: BLE001` with its reason in the comment, and there are seven such
+  places, each a deliberate fallback.
 
 ## Git / commits
 

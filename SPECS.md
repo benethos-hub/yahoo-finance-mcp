@@ -231,7 +231,11 @@ submodules.
   compose files run it: `containers/production/` pulls the published image at
   the version `.env` names, required and without a default, and needs no
   clone, `containers/development/` builds from the checkout under a project
-  name and host port of its own (8001), so both run side by side. Secrets such
+  name and host port of its own (8001), so both run side by side. Both fix
+  the port inside the container at 8000 under `environment:`, where it wins
+  over `.env`, since the port mapping and Caddy forward to that number and
+  the health check reads the same variable. The port on the host is
+  `YAHOO_FINANCE_MCP_PORT`. Secrets such
   as the bearer token go in an optional `.env` beside the compose file, read
   through `env_file` and ignored by git and the build context, with
   `containers/production/.env.example` as the tracked template. Only Compose
@@ -251,13 +255,17 @@ submodules.
   beside the compose file, on port 443 of every address, TCP and, for
   HTTP/3, UDP. Port 80 is not published and Caddy redirects nothing, so a
   client set up with `http://` fails at once instead of sending its token in
-  the clear first. It forwards to the server by service name over the
+  the clear first. `YAHOO_FINANCE_MCP_HTTPS_PORT` moves the host side of
+  both mappings when 443 is taken, and the domain stands in the allow-list
+  alone and with any port, since Caddy hands on the client's `Host`. It
+  forwards to the server by service name over the
   compose network, so the server's port stays on 127.0.0.1. The domain comes
   from `YAHOO_FINANCE_MCP_DOMAIN`, the certificate from one of three
   snippets picked by `YAHOO_FINANCE_MCP_TLS`: `internal` (default, Caddy's
   own CA, for a private network), `files` (`secrets/tls/cert.pem` and
-  `key.pem`, ignored by git) or `acme` (a public CA, which needs the host
-  reachable from the internet). A request without an `Authorization` header
+  `key.pem`, ignored by git) or `acme` (a public CA, which needs the name in
+  public DNS and port 443 reachable from the internet, whatever port Caddy
+  has on the host). A request without an `Authorization` header
   gets 401 from Caddy and never reaches the server, which checks the token
   of every other, and the token is required with the profile. The server
   trusts no forwarded header, so its log names Caddy's address for a
@@ -292,8 +300,9 @@ submodules.
   apart from trimming and uppercasing. The server itself resolves nothing
   (Variant A) and never assembles or rewrites a symbol.
 - A symbol has at most 32 characters, which the schema says (`maxLength`), and
-  must have the shape Yahoo uses: letters, digits and `. - ^ = &`, as in
-  `^GSPC`, `EURUSD=X`, `BRK-B`, `M&M.NS`. `yahoo.tickers.get_ticker` answers
+  must have the shape Yahoo uses: letters, digits and `. - ^ = &`, at least
+  one letter or digit among them, as in `^GSPC`, `EURUSD=X`, `BRK-B`,
+  `M&M.NS`. `yahoo.tickers.get_ticker` answers
   anything else with `SymbolNotFoundError` before yfinance is asked, since the
   symbol goes into the path of Yahoo's URLs. 128 symbols from 25 live
   searches across markets, futures, currencies and crypto all fit, checked
@@ -439,7 +448,8 @@ client shows the tool's own title and the model reads descriptions.
   `--cache-dir` (`YF_MCP_CACHE_DIR`), `--cache-max-entries <N>`
   (`YF_MCP_CACHE_MAX_ENTRIES`, default 10 000, at least 1),
   `--cache-ttl <NAME>=<SECONDS>` (`YF_MCP_CACHE_TTL_<NAME>`). A TTL of `0`
-  bypasses caching for that tool.
+  bypasses the cache for that tool, reading included, so an entry stored
+  under an earlier TTL is not served.
 - Only successful, non-empty returns are cached. Exceptions propagate and are
   never cached, and empty results are not pinned for the TTL. Empty means a
   falsy value, a search with no matches say, or a dict whose `count` is 0,
@@ -482,7 +492,9 @@ client shows the tool's own title and the model reads descriptions.
 
 - Expected failures raise a `ToolError` subclass with a concise message
   (surfaced to the client, never a raw traceback).
-  - `SymbolNotFoundError` — unknown symbol / empty result.
+  - `SymbolNotFoundError` — unknown symbol / empty result. It names the
+    symbol trimmed and upper-cased, as every answer echoes it, whatever form
+    the caller passed.
   - `RateLimitError` — Yahoo throttling (`YFRateLimitError` is mapped to it via
     `yahoo.tickers.wrap_upstream`).
 - All upstream exceptions are normalized through `wrap_upstream`: a rate
@@ -503,7 +515,8 @@ client shows the tool's own title and the model reads descriptions.
   `freq` of `get_financials`, the sector, industry and market keys, and the
   arguments of `get_history`: `interval` from a fixed set, `period` listed or
   shaped as a count of d, wk, mo or y (Yahoo serves `7mo` and `3y` too), and
-  `start`/`end` as real dates written `YYYY-MM-DD`, with `end` after `start`.
+  `start`/`end` as real dates written `YYYY-MM-DD`, with `end` after `start`
+  and `start` not after today.
   yfinance's `end` is exclusive, so the same day twice is no day at all, and
   the description says so. `get_shares` takes its dates through the same
   check, `tickers.checked_range`, and `get_options` its `expiration` through
@@ -513,7 +526,11 @@ client shows the tool's own title and the model reads descriptions.
   Valid arguments can still come back empty: Yahoo keeps 1m bars for 8 days,
   2m to 90m for 60 and the hourly bars for 730. No intraday rows is therefore
   a `ToolError` naming that reach and the symbol as the other possibility,
-  not a `SymbolNotFoundError`.
+  not a `SymbolNotFoundError`. The same goes for a range with a `start` that
+  comes back empty from daily or longer bars, or from `get_shares`: the
+  message (`tickers.empty_range`) names the range first, which may lie after
+  the symbol's last data point, and an unknown symbol second. Without a
+  `start` an empty answer is still an unknown symbol.
 - `ToolError` derives from the SDK's own `ToolError`, and that is what carries
   the text. Since `mcp` 2.1.0 anything else raised from a tool is treated as
   unexpected: logged with a traceback, and reported to the client as
@@ -531,11 +548,16 @@ client shows the tool's own title and the model reads descriptions.
   end-to-end tool invocation via `mcp.call_tool` (`test_formatting.py`,
   `test_cache.py`, `test_settings.py`, `test_cli.py`, `test_logbook.py`,
   `test_logbook_formats.py`, `test_server.py`, `test_tools_integration.py`,
-  `test_transport.py`). Two guard the shape of
-  the code: `test_layers.py` the import table, `test_logbook_catalog.py` that
-  every line is a logbook function. Five more guard what ships rather than
+  `test_transport.py`). Three guard the shape of
+  the code: `test_layers.py` the import table in both directions, that every
+  library is imported in its one home and that only `settings.py` reads the
+  environment (`NO_COLOR` excepted), `test_logbook_catalog.py` that every
+  line is a logbook function, and `test_cache.py` that every cached category
+  has a default TTL and a row in §8a. Five more guard what ships rather than
   what runs: `test_packaging.py` on the PEP 561 marker, the version
-  examples and the supported Pythons, `test_readme.py` on link targets PyPI
+  examples, the supported Pythons and the layout block in CLAUDE.md (every
+  path in it exists, every module is named there or here),
+  `test_readme.py` on link targets PyPI
   cannot resolve, on every `#anchor` link landing on a heading, on the table
   of contents naming every section in order and on the tool list matching
   the registry, `test_server_json.py` on the MCP Registry
@@ -616,9 +638,10 @@ client shows the tool's own title and the model reads descriptions.
   transitive ones move only when a direct bump drags them along, so a periodic
   `uv lock --upgrade` remains the way to refresh the rest. The moment for it is
   **before every version bump**, as the first step of the release checklist in
-  CLAUDE.md. 0.5.2 is why: three direct packages had moved through Dependabot
-  and eleven transitive ones underneath had not, and an image that ships the
-  first without the second is half a rebuild.
+  CLAUDE.md, and a release takes every newer version on offer rather than
+  waiting for a proposal. 0.5.2 is why: three direct packages had moved
+  through Dependabot and eleven transitive ones underneath had not, and an
+  image that ships the first without the second is half a rebuild.
   Minor and patch updates arrive grouped, one pull request per ecosystem and
   week, a major on its own, and `yfinance` and `mcp` always on their own,
   since each needs the checks CLAUDE.md describes.
@@ -728,15 +751,18 @@ every answer would need to carry its age.
 
 (Multi-symbol batch quoting is implemented as `get_quotes` — see §7 and §12.)
 
-## 12. Tool expansion plan
+## 12. Tool coverage: what yfinance offers and what became a tool
 
-Goal: expose every **working** yfinance method as an MCP tool. "Working" was
-verified empirically (probed live on a stock `AAPL`, an ETF `SPY`, and a crypto
-pair `BTC-USD`). Only methods that return real data are in scope. Availability
-is symbol-dependent (equity fields are empty for ETFs/crypto and vice versa) —
+Every **working** yfinance method is exposed as an MCP tool, grouped by
+subject rather than one tool per method. "Working" was verified empirically
+(probed live on a stock `AAPL`, an ETF `SPY`, and a crypto pair `BTC-USD`),
+and only methods that return real data were taken. Availability is
+symbol-dependent (equity fields are empty for ETFs/crypto and vice versa) —
 a tool answers that with a `SymbolNotFoundError` whose reason says Yahoo keeps
 the data for single stocks only (`tickers.EQUITY_ONLY_REASON`), so the model
-does not go looking for another ticker.
+does not go looking for another ticker. This section keeps the probe results
+and the decisions, so a yfinance bump or a new idea can be checked against
+them.
 
 ### Verified data sources (probe results)
 
@@ -764,13 +790,13 @@ does not go looking for another ticker.
   `capital_gains`.
 - **Out of scope (non-goals, §2):** `live`/`WebSocket` (streaming), and the SDK's
   OAuth `Auth` machinery, which presumes a user to authorize and an issuer.
-- **Dependency note:** `get_earnings_dates` requires `lxml`. It was added to
-  `dependencies` when Phase 1 landed.
+- **Dependency note:** `get_earnings_dates` requires `lxml`, which is why it
+  is a runtime dependency.
 
-### Proposed new tools (grouped, not one-per-method)
+### The grouped tools and the methods behind them
 
-Grouping keeps the tool list legible for the LLM. Each takes a `Symbol`, is
-wrapped via `tickers.upstream`, cached with a per-tool TTL, and row-capped.
+Each takes a `Symbol`, runs under `tickers.upstream`, is cached with a
+per-tool TTL and row-capped.
 
 | Tool | Backed by | Notes |
 |------|-----------|-------|
@@ -783,21 +809,20 @@ wrapped via `tickers.upstream`, cached with a per-tool TTL, and row-capped.
 | `get_calendar` | `calendar` | next earnings/ex-div dates |
 | `get_shares` | `get_shares_full` | shares outstanding over time |
 | `get_fund_data` | `funds_data` | holdings/sector weights — ETFs & funds |
-| extend `get_financials` | `ttm_income_stmt`, `ttm_cashflow` | add a `ttm` frequency (income/cashflow only, no `ttm_balance_sheet` upstream) |
+| `get_financials` with `freq=ttm` | `ttm_income_stmt`, `ttm_cashflow` | income/cashflow only, there is no `ttm_balance_sheet` upstream |
 
-Excluded from tools: `sustainability`, `capital_gains` (empty). `isin`/
-`history_metadata` are minor and may be folded into existing tools rather than
-new ones. The planned `get_recommendations` extension was **dropped**:
-`recommendations_summary` is identical to `recommendations`, which the existing
-tool already returns as `recommendation_trend`.
+Not exposed: `sustainability` and `capital_gains` (empty upstream), `isin`
+and `history_metadata` (minor, `get_company_info` reports the resolved
+symbol instead), and `recommendations_summary`, which is identical to
+`recommendations`, already returned by `get_recommendations` as
+`recommendation_trend`.
 
-### Module-level (separate, larger category)
+### Module-level (no per-symbol `Ticker`)
 
-These take no per-symbol `Ticker`. `Sector` / `Industry` browsing landed in
-Phase 4 (`get_sector` / `get_industry`), `Market` later as `get_market`, and
-multi-symbol quotes as `get_quotes` (Phase 5), the screener as `screen`
-(Phase 6). Bulk history (`download`) and `Lookup` were dropped, see the
-roadmap below.
+`Sector` and `Industry` browsing are `get_sector` and `get_industry`,
+`Market` is `get_market`, multi-symbol quotes are `get_quotes`, and the
+screener is `screen`. Bulk history (`download`) and `Lookup` were dropped,
+see the decisions below.
 
 The sector/industry key set is sourced from yfinance's own constant
 (`yfinance.const.SECTOR_INDUSTY_MAPPING_LC`, imported defensively in
@@ -826,44 +851,25 @@ PY
 (Some industry keys use an em-dash, not a hyphen — copy them from `get_sector`
 output rather than typing them.)
 
-### Process
-
-Per the working agreement: **plan (this section) → implement → test → update
-docs**. Each tool follows the established pattern (logic in the yahoo module +
+Every tool followed the same pattern, which CLAUDE.md describes under "How
+to add or change a tool": the logic in the yahoo module under
 `@cache.cached`, a thin function in the tools module of the same name, added
-to its `register()`, with `Annotated` Fields, FakeTicker
-unit tests, and a smoke-test entry). Land in reviewable PRs (CI must stay
-green).
+to its `register()`, with `Annotated` fields, FakeTicker unit tests and a
+smoke-test entry, one pull request per group. The per-symbol groups came
+first, the screener last with 0.8.0.
 
-### Phase status
+### Decisions on the module-level candidates
 
-- **Phase 1 — done:** `get_earnings`, `get_estimates`, `get_upgrades_downgrades`
-  (added `lxml`).
-- **Phase 2 — done:** `get_holders`, `get_insider_activity`, `get_sec_filings`,
-  `get_calendar`.
-- **Phase 3 — done:** `get_financials` gained a `ttm` frequency, plus new
-  `get_shares` (`get_shares_full`) and `get_fund_data` (`funds_data`). The
-  `get_recommendations`/`recommendations_summary` extension was dropped as
-  redundant (see above).
-- **Phase 4 — done:** module-level sector/industry browsing — `get_sector`
-  (`yf.Sector`) and `get_industry` (`yf.Industry`). These take a sector/industry
-  key, not a symbol.
-- **Phase 5 — done:** `get_quotes` — compact multi-symbol quotes in one call
-  (per-symbol `not_found`), covering the §11 multi-symbol-quote item. Backed by
-  per-symbol `fast_info` (yfinance's `Tickers` is only a convenience wrapper, not
-  true batching, and neither is `yf.download`, see below).
-- **Phase 6 — done:** `screen` (`yf.screen` / `EquityQuery`), see below.
-
-### Roadmap after the per-symbol tools
-
-All per-symbol `Ticker` methods that return real data are exposed. These were
-the module-level candidates, each built or dropped:
-
-- **`get_market`** (`yf.Market`) — **done.** Eight fixed market keys. Probed
-  live: only `US` serves a trading status, every other key raises upstream when
-  asked for one, so `status` is `null` there. The index summary works for all
-  eight, which is why the tool leads with it and treats the status as optional.
-- **Screener** (`yf.screen` / `EquityQuery`) — **done** as `screen`. The only
+- **`get_market`** (`yf.Market`) — **built.** Eight fixed market keys. Only
+  `US` serves a trading status: Yahoo's markettime endpoint ignores the
+  market parameter and always answers with US data, which yfinance 1.7.0
+  detects for another key and reports as no status (older versions raised),
+  so `status` is `null` there. The index summary works for all eight, which
+  is why the tool leads with it and treats the status as optional.
+  `get_quotes` is backed by per-symbol `fast_info`, since yfinance's
+  `Tickers` is a convenience wrapper over single tickers, not batching, and
+  neither is `yf.download`, see below.
+- **Screener** (`yf.screen` / `EquityQuery`) — **built** as `screen`. The only
   candidate that added a capability rather than convenience. Yahoo knows 92
   fields with names no model guesses, so the description lists 31 aliases in
   groups and raw names stay accepted. The fields and category values come
@@ -900,11 +906,9 @@ the module-level candidates, each built or dropped:
   toolset harder for a model to navigate. A price is one `get_quotes` call
   away, and filtering by industry is what `screen` does.
 
-A note on the ordering above: it is deliberately not "everything that is
-technically possible". With 23 tools already registered, every additional
-description competes for the model's attention on every single request. A tool
-that only saves a loop is a net loss.
-
-Decisions still apply: read-only only, native Yahoo tickers, grouped tools,
-empirically probe each method live before building, one reviewable PR per phase,
-keep responses row/symbol-capped for the token budget.
+The set is deliberately not "everything that is technically possible". With
+23 tools registered, every additional description competes for the model's
+attention on every single request, and a tool that only saves a loop is a
+net loss. What still applies to a new tool: read-only only, native Yahoo
+tickers, grouped by subject, probed live before it is built, one reviewable
+pull request, and responses row- or symbol-capped for the token budget.
