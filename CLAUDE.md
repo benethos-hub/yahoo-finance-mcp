@@ -91,7 +91,7 @@ in a tool. `tests/test_layers.py` holds the import table (which unit imports
 which, checked in both directions), so a new module needs a line there and a
 new or dropped import changes its row. The same file pins every library to
 its one home module and keeps the environment out of every module but
-`settings.py`. Packages are entered only through their `__init__.py`, so a
+`settings.py`, `NO_COLOR` in `logbook/formats.py` excepted. Packages are entered only through their `__init__.py`, so a
 new public name goes into its `__all__`.
 
 **Logging goes through `logbook/`.** No other module imports `logging`. A new
