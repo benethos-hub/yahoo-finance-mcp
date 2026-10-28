@@ -30,7 +30,11 @@ def search(
     ],
     limit: Annotated[
         int,
-        Field(description="Maximum number of matches to return.", ge=1, le=25),
+        Field(
+            description="Maximum number of matches to return.",
+            ge=1,
+            le=yahoo.SEARCH_MAX,
+        ),
     ] = 8,
 ) -> list[dict[str, Any]]:
     """Search Yahoo Finance by company name, ticker symbol, or ISIN.

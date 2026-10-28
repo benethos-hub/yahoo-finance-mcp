@@ -32,6 +32,9 @@ _QUOTE_FAST_FIELDS = (
     "yearChange",
 )
 
+# The most matches a search returns.
+SEARCH_MAX = 25
+
 
 @cache.cached("search")
 def search(query: str, *, limit: int = 8) -> list[dict[str, Any]]:
@@ -45,7 +48,7 @@ def search(query: str, *, limit: int = 8) -> list[dict[str, Any]]:
     if not query:
         raise ToolError("A non-empty search query is required.")
 
-    limit = max(1, min(int(limit), 25))
+    limit = max(1, min(int(limit), SEARCH_MAX))
     with tickers.upstream(f"Search failed for {query!r}"):
         result = yf.Search(query, max_results=limit, news_count=0, lists_count=0)
         quotes = result.quotes or []

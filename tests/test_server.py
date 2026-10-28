@@ -6,6 +6,9 @@ import asyncio
 import subprocess
 import sys
 
+import pytest
+
+from benethos_yahoo_finance_mcp import yahoo
 from benethos_yahoo_finance_mcp.server import _without_titles, build_server
 
 mcp = build_server()
@@ -163,6 +166,22 @@ def test_a_parameter_called_title_would_survive():
         "properties": {"title": {"type": "string"}},
         "$defs": {"title": {"type": "object"}},
     }
+
+
+# A bound a tool states in prose the model reads, and in the ``le`` of a
+# parameter where it has one, against the constant the yahoo function holds.
+# A docstring cannot take the number from the constant, so this ties them.
+BOUNDS = [
+    ("search", "limit", "(1-{})", yahoo.SEARCH_MAX),
+]
+
+
+@pytest.mark.parametrize(("tool", "param", "text", "value"), BOUNDS)
+def test_a_bound_is_stated_as_the_yahoo_function_holds_it(tool, param, text, value):
+    [listed] = [t for t in _list_tools() if t.name == tool]
+    assert text.format(value) in listed.description
+    if param:
+        assert listed.input_schema["properties"][param]["maximum"] == value
 
 
 def test_the_server_names_its_website():
