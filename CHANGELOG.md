@@ -57,6 +57,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the internet, and on a local network only kept asking Let's Encrypt in
   vain. A setup that relies on `acme` without naming it in `.env` sets
   `YAHOO_FINANCE_MCP_TLS=acme` now.
+- Caddy in the HTTPS profile answers on port 443 only. Port 80 is no
+  longer published and nothing redirects to HTTPS, so a client set up
+  with `http://` fails at once instead of sending its bearer token in the
+  clear before following the redirect. A public CA reaches Caddy on 443.
 
 ### Fixed
 

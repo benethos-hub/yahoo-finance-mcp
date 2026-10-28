@@ -10,6 +10,10 @@
 	# read-only and trusted by nobody. The clients need it, see
 	# containers/README.md.
 	skip_install_trust
+	# Port 80 is not published, so nothing would hear a redirect from it. A
+	# client set up with http:// fails at once instead of sending its token
+	# in the clear before a redirect it follows without anyone noticing.
+	auto_https disable_redirects
 }
 
 # Caddy's own CA, for a name on the local network. Every client trusts its
@@ -20,8 +24,8 @@
 }
 
 # A certificate from a public CA, Let's Encrypt or ZeroSSL, requested and
-# renewed by Caddy. The name has to resolve to this host in public DNS and
-# ports 80 and 443 have to be reachable from the internet.
+# renewed by Caddy over port 443. The name has to resolve to this host in
+# public DNS and the port has to be reachable from the internet.
 (tls-acme) {
 }
 

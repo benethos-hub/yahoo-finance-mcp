@@ -108,8 +108,8 @@ services:
       - cache:/cache
 
   # HTTPS for clients on other machines, off unless the profile `https` is
-  # active (COMPOSE_PROFILES=https in .env). Caddy takes ports 80 and 443 on
-  # every address, gets a certificate and forwards to the server over the
+  # active (COMPOSE_PROFILES=https in .env). Caddy takes port 443 on every
+  # address, gets a certificate and forwards to the server over the
   # compose network, so the server's own port stays on 127.0.0.1. The
   # Caddyfile beside this file says how. With the profile on, set
   # YF_MCP_BEARER_TOKEN: the server is then reachable from everywhere.
@@ -133,9 +133,9 @@ services:
         exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
     logging: *logging
     ports:
-      # 80 for the ACME challenge and the redirect to HTTPS, 443 over TCP for
-      # HTTP/1.1 and HTTP/2, over UDP for HTTP/3.
-      - "80:80"
+      # 443 over TCP for HTTP/1.1 and HTTP/2, over UDP for HTTP/3. No port
+      # 80: it would only redirect, and a client set up with http:// would
+      # send its token in the clear first. A public CA reaches Caddy on 443.
       - "443:443"
       - "443:443/udp"
     depends_on:
@@ -147,7 +147,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp
-    # Binding 80 and 443 is the one privilege Caddy needs.
+    # Binding 443 is the one privilege Caddy needs.
     cap_drop:
       - ALL
     cap_add:
