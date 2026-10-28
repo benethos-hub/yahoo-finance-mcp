@@ -283,3 +283,27 @@ def test_the_same_screen_is_served_from_the_cache(fake_screen, tmp_path):
         assert len(fake_screen) == 1
     finally:
         cache.configure(Settings())
+
+
+# --- the tool's schema and description against this module ----------------
+
+
+def test_the_tool_takes_exactly_the_operators_this_module_knows():
+    import typing
+
+    from benethos_yahoo_finance_mcp.tools.screener import ScreenFilter
+
+    op = ScreenFilter.model_fields["op"].annotation
+    assert typing.get_args(op) == yahoo.SCREEN_OPERATORS
+
+
+def test_the_tool_description_names_every_alias():
+    """In the list of aliases itself, where "beta" means the field."""
+    import re
+
+    from benethos_yahoo_finance_mcp.tools import screener as tool
+
+    doc = tool.screen.__doc__ or ""
+    block = doc.split("Fields are these aliases", 1)[1].split("\n\n", 1)[0]
+    words = set(re.findall(r"[a-z0-9_]+", block))
+    assert not [a for a in yahoo.SCREEN_ALIASES if a not in words]
