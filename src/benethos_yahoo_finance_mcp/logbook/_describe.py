@@ -12,6 +12,12 @@ from typing import Any
 
 PACKAGE = "benethos_yahoo_finance_mcp"
 
+# uvicorn's request log and its server log, and the arguments of a request
+# line: client, method, path with query, HTTP version and status.
+ACCESS_LOGGER = "uvicorn.access"
+SERVER_LOGGER = "uvicorn.error"
+ACCESS_ARGS = 5
+
 # Longer than any ticker, ISIN or sector key, short enough for one line.
 _SUBJECT_MAX = 32
 

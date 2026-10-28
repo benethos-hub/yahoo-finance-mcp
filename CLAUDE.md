@@ -57,9 +57,9 @@ src/benethos_yahoo_finance_mcp/
   transport/      # stdio.py, http.py (Host allow-list + optional bearer guard)
   errors.py       # ToolError / SymbolNotFoundError / RateLimitError
   py.typed        # PEP 561 marker, without it the annotations reach nobody
-tests/            # mocked, offline unit tests (+ live smoke.py, not collected)
+tests/            # mocked, offline unit tests (+ live smoke.py, not collected), FakeTicker in fakes.py
   yahoo/          #   one test file per yahoo module, test_tickers.py included,
-                  #   plus the cross-module test_empty_answers.py, FakeTicker in fakes.py
+                  #   plus the cross-module test_empty_answers.py
 containers/
   README.md       # hosting with Docker and Compose
   images/yahoo-finance-mcp/Dockerfile   # build context: the repository root

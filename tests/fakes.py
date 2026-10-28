@@ -1,4 +1,4 @@
-"""Stand-ins for yfinance objects, shared by the tests in this directory."""
+"""Stand-ins for yfinance objects, shared by the tests."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import pandas as pd
 
 
 class FakeTicker:
-    """Stand-in for ``yf.Ticker`` exposing only what the client touches."""
+    """Stand-in for ``yf.Ticker`` exposing only what the yahoo functions touch."""
 
     def __init__(self, **attrs):
         self._attrs = attrs

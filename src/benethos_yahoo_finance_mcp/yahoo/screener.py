@@ -236,6 +236,10 @@ def _hit(quote: dict[str, Any]) -> dict[str, Any]:
     return row
 
 
+# The most matches one page of screen returns, well under Yahoo's 250.
+SCREEN_MAX = 100
+
+
 @cache.cached("screen")
 def screen(
     filters: tuple[Filter, ...],
@@ -260,7 +264,7 @@ def screen(
     sort_field = _field(sort_by)
     if sort_field in _CATEGORIES:
         raise ToolError(f"Cannot sort by the category {sort_by!r}, pick a number.")
-    limit = max(1, min(int(limit), 100))
+    limit = max(1, min(int(limit), SCREEN_MAX))
     offset = max(0, int(offset))
 
     with tickers.upstream("Screen failed"):

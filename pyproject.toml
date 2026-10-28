@@ -102,6 +102,7 @@ select = [
     "UP",   # pyupgrade
     "B",    # flake8-bugbear
     "W",    # pycodestyle warnings
+    "BLE",  # blind except, each one here carries its reason
 ]
 
 [tool.mypy]

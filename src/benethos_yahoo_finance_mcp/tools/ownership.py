@@ -58,7 +58,11 @@ def get_sec_filings(
     symbol: Symbol,
     limit: Annotated[
         int,
-        Field(description="Maximum number of filings to return.", ge=1, le=100),
+        Field(
+            description="Maximum number of filings to return.",
+            ge=1,
+            le=yahoo.FILINGS_MAX,
+        ),
     ] = 25,
 ) -> dict[str, Any]:
     """Get recent SEC filings for a Yahoo symbol.

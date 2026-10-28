@@ -314,6 +314,20 @@ def _compose_guard(folder: str, env: dict[str, str]):
     return TransportSecurityMiddleware(ts)
 
 
+def _refused(guard, host: str, origin: str | None = None) -> int | None:
+    """The status the SDK's own check answers a POST with, None when it passes."""
+    from starlette.requests import Request
+
+    headers = [(b"host", host.encode()), (b"content-type", b"application/json")]
+    if origin:
+        headers.append((b"origin", origin.encode()))
+    request = Request(
+        {"type": "http", "method": "POST", "path": "/mcp", "headers": headers}
+    )
+    response = asyncio.run(guard.validate_request(request, is_post=True))
+    return None if response is None else response.status_code
+
+
 @pytest.mark.parametrize("folder", ["development", "production"])
 def test_compose_keeps_the_rebinding_guard_on(folder):
     """The container binds 0.0.0.0, which alone turns the guard off.
@@ -324,11 +338,11 @@ def test_compose_keeps_the_rebinding_guard_on(folder):
     """
     guard = _compose_guard(folder, {})
     for host in ("localhost:8000", "127.0.0.1:8000", "[::1]:8000"):
-        assert guard._validate_host(host), host
-    assert guard._validate_host("benethos-yahoo-finance-mcp:8000")
-    assert not guard._validate_host("attacker.example:8000")
-    assert guard._validate_origin("http://localhost:8000")
-    assert not guard._validate_origin("http://attacker.example:8000")
+        assert _refused(guard, host) is None, host
+    assert _refused(guard, "benethos-yahoo-finance-mcp:8000") is None
+    assert _refused(guard, "attacker.example:8000") == 421
+    assert _refused(guard, "localhost:8000", "http://localhost:8000") is None
+    assert _refused(guard, "localhost:8000", "http://attacker.example:8000") == 403
 
 
 def test_the_image_keeps_the_rebinding_guard_on():
@@ -350,18 +364,17 @@ def test_the_image_keeps_the_rebinding_guard_on():
     guard = TransportSecurityMiddleware(
         http_transport.transport_security_for("0.0.0.0", hosts, [])
     )
-    assert guard._validate_host("localhost:8000")
-    assert not guard._validate_host("attacker.example:8000")
+    assert _refused(guard, "localhost:8000") is None
+    assert _refused(guard, "attacker.example:8000") == 421
 
 
 def test_compose_lets_the_https_domain_through():
     """Caddy keeps the client's Host, so without the domain every call gets 421."""
     guard = _compose_guard("production", {"YAHOO_FINANCE_MCP_DOMAIN": "mcp.test"})
-    assert guard._validate_host("mcp.test")
-    assert guard._validate_origin("https://mcp.test")
-    assert guard._validate_host("localhost:8000")
-    assert not guard._validate_host("attacker.example")
-    assert not _compose_guard("production", {})._validate_host("mcp.test")
+    assert _refused(guard, "mcp.test", "https://mcp.test") is None
+    assert _refused(guard, "localhost:8000") is None
+    assert _refused(guard, "attacker.example") == 421
+    assert _refused(_compose_guard("production", {}), "mcp.test") == 421
 
 
 def test_transport_security_explicit_origins_are_kept():

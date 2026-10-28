@@ -166,8 +166,8 @@ def get_industry(key: str, *, limit: int = 25) -> dict[str, Any]:
 
 # Market keys accepted by yfinance's ``Market``. There is no upstream constant to
 # import, so this mirrors the list its own validation reports. Probed live: only
-# "US" serves a market status — the other keys raise upstream when asked for one,
-# while the index summary works for all eight.
+# "US" serves a market status. Since yfinance 1.7.0 the status of every other
+# key comes back as None, while the index summary works for all eight.
 MARKET_KEYS: tuple[str, ...] = (
     "US",
     "GB",
@@ -214,14 +214,15 @@ def get_market(key: str = "US") -> dict[str, Any]:
     with tickers.upstream(f"Failed to load market {key!r}"):
         market = yf.Market(key)
 
-    # Yahoo only serves the markettime endpoint for "US". Every other key raises
-    # here instead of returning nothing, so treat a failure as "unavailable".
+    # Yahoo only serves the markettime endpoint for "US", and since yfinance
+    # 1.7.0 every other key reads as None. The except stays for the parse
+    # errors yfinance hides, and because yfinance has changed this twice
+    # already: older versions raised here for every other key.
     status: dict[str, Any] | None = None
     try:
         raw = market.status or {}
-        # Normalize an empty selection to None. Upstream is inconsistent about
-        # how it reports "no status": it raises for some keys and returns None
-        # for others, and an empty dict would be a third, ambiguous answer.
+        # Normalize an empty selection to None, since an empty dict would be
+        # a third, ambiguous answer next to None and a status.
         status = {
             f: to_jsonable(raw.get(f)) for f in _MARKET_STATUS_FIELDS if f in raw
         } or None

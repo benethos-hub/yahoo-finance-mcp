@@ -215,13 +215,13 @@ def test_get_industry_upstream_error(monkeypatch):
 
 
 def _fake_market(status=None, summary=None, status_raises=False):
-    import types
+    """A ``yf.Market``. ``status_raises`` is an older yfinance, which raised
+    for every key other than "US" where 1.7.0 returns None."""
 
     class _M:
         @property
         def status(self):
             if status_raises:
-                # Mirrors upstream: every key other than "US" raises here.
                 raise AttributeError("'NoneType' object has no attribute 'get'")
             return status
 
@@ -229,7 +229,6 @@ def _fake_market(status=None, summary=None, status_raises=False):
         def summary(self):
             return summary
 
-    _ = types
     return _M()
 
 

@@ -30,7 +30,11 @@ def search(
     ],
     limit: Annotated[
         int,
-        Field(description="Maximum number of matches to return.", ge=1, le=25),
+        Field(
+            description="Maximum number of matches to return.",
+            ge=1,
+            le=yahoo.SEARCH_MAX,
+        ),
     ] = 8,
 ) -> list[dict[str, Any]]:
     """Search Yahoo Finance by company name, ticker symbol, or ISIN.
@@ -53,7 +57,8 @@ def get_quotes(
         list[Annotated[str, Field(max_length=yahoo.tickers.SYMBOL_MAX)]],
         Field(
             description="Yahoo tickers or ISINs, e.g. ['AAPL', 'MSFT', "
-            "'SAP.DE']. Not company names. Up to 50, extras are dropped."
+            f"'SAP.DE']. Not company names. Up to {yahoo.QUOTES_MAX}, extras are "
+            "dropped."
         ),
     ],
 ) -> dict[str, Any]:

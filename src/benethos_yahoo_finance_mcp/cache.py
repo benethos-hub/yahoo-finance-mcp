@@ -1,12 +1,12 @@
 """Optional persistent result cache with per-tool TTLs.
 
-This caches the *normalized results* of the client functions (not yfinance HTTP
+This caches the *normalized results* of the yahoo functions (not yfinance HTTP
 responses — yfinance uses curl_cffi and rejects caching sessions). Results are
 stored in a small SQLite file so they survive restarts; each tool category has
 its own time-to-live.
 
 The cache is **disabled until :func:`configure` is called** (which the server
-entry point does at startup). Importing the package or calling client functions
+entry point does at startup). Importing the package or calling yahoo functions
 directly therefore does not touch the disk unless caching is explicitly turned
 on — convenient for tests and library use.
 
@@ -25,13 +25,14 @@ import time
 from collections.abc import Callable, Mapping
 from functools import wraps
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 from . import __version__, logbook
 from . import settings as settings_mod
 from .settings import Settings
 
-F = TypeVar("F", bound=Callable[..., Any])
+P = ParamSpec("P")
+R = TypeVar("R")
 
 # Seconds SQLite waits for another process's lock, see ResultCache.__init__.
 LOCK_TIMEOUT = 0.5
@@ -212,19 +213,25 @@ def configure(settings: Settings) -> None:
     """Enable or disable the cache and apply the TTLs, as ``settings`` says.
 
     Called once at startup. Safe to call again (e.g. in tests); it closes any
-    existing cache first.
+    existing cache first. An enabled cache needs ``settings.cache_dir``, which
+    ``settings.load_settings`` resolves. A ``Settings`` built by hand without
+    it raises ``ValueError``, and nothing changes.
     """
     global _enabled, _ttls, _cache
+    directory = settings.cache_dir
+    if settings.cache_enabled and directory is None:
+        raise ValueError(
+            "cache_enabled without cache_dir: load_settings resolves the directory"
+        )
     with _lock:
         _ttls = {**settings_mod.DEFAULT_TTLS, **settings.cache_ttls}
         if _cache is not None:
             _cache.close()
             _cache = None
         _enabled = settings.cache_enabled
-        if not _enabled:
+        if not _enabled or directory is None:
             logbook.cache.disabled()
             return
-        directory: Path = settings.cache_dir or settings_mod.default_cache_dir()
         # The cache is an optimisation, and a file it cannot use, damaged or
         # held by another process, must not stop the server. It runs without.
         store: ResultCache | None = None
@@ -291,8 +298,8 @@ def has_content(result: Any) -> bool:
 
 def cached(
     category: str, *, worth_keeping: Callable[[Any], bool] = has_content
-) -> Callable[[F], F]:
-    """Decorate a client function to cache its successful results under ``category``.
+) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    """Decorate a yahoo function to cache its successful results under ``category``.
 
     ``worth_keeping`` decides whether a result is stored. The default,
     :func:`has_content`, skips empty ones, so a transient empty response is
@@ -310,9 +317,9 @@ def cached(
     as if caching were off, and a warning says why.
     """
 
-    def decorator(fn: F) -> F:
+    def decorator(fn: Callable[P, R]) -> Callable[P, R]:
         @wraps(fn)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             ttl = _ttls.get(category, 0)
             if not _enabled or _cache is None or ttl <= 0:
                 return fn(*args, **kwargs)
@@ -334,6 +341,6 @@ def cached(
                     logbook.cache.write_failed(exc)
             return result
 
-        return wrapper  # type: ignore[return-value]
+        return wrapper
 
     return decorator

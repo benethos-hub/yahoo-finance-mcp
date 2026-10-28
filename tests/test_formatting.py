@@ -128,3 +128,17 @@ def test_dataframe_to_records_date_columns_become_iso_dates():
 def test_dataframe_to_records_non_string_columns_are_strings():
     df = pd.DataFrame({0: [1], 1: [2]})
     assert list(formatting.dataframe_to_records(df)[0]) == ["index", "0", "1"]
+
+
+def test_series_to_records_none_and_empty_are_empty():
+    assert formatting.series_to_records(None, value_key="v") == []
+    assert formatting.series_to_records(pd.Series(dtype="float64"), value_key="v") == []
+
+
+def test_series_to_records_keeps_the_tail():
+    index = pd.DatetimeIndex(["2024-01-01", "2024-01-02", "2024-01-03"])
+    series = pd.Series([1.0, 2.0, 3.0], index=index)
+    assert formatting.series_to_records(series, value_key="v", max_rows=2) == [
+        {"date": "2024-01-02T00:00:00", "v": 2.0},
+        {"date": "2024-01-03T00:00:00", "v": 3.0},
+    ]

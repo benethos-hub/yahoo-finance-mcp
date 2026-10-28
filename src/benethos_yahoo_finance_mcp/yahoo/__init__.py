@@ -10,13 +10,13 @@ from __future__ import annotations
 
 from . import tickers
 from .analysts import (
+    EARNINGS_MAX,
     get_earnings,
     get_estimates,
     get_recommendations,
     get_upgrades_downgrades,
 )
 from .browse import (
-    INDUSTRY_KEYS,
     MARKET_KEYS,
     SECTOR_KEYS,
     get_industry,
@@ -24,6 +24,7 @@ from .browse import (
     get_sector,
 )
 from .company import (
+    NEWS_MAX,
     get_calendar,
     get_company_info,
     get_dividends,
@@ -32,19 +33,39 @@ from .company import (
     get_shares,
 )
 from .funds import get_fund_data
-from .options import get_options
-from .ownership import get_holders, get_insider_activity, get_sec_filings
-from .quotes import INTERVALS, PERIODS, get_history, get_quote, get_quotes, search
-from .screener import SCREEN_ALIASES, SCREEN_OPERATORS, screen
+from .options import STRIKES_MAX, get_options
+from .ownership import (
+    FILINGS_MAX,
+    get_holders,
+    get_insider_activity,
+    get_sec_filings,
+)
+from .quotes import (
+    INTERVALS,
+    PERIODS,
+    QUOTES_MAX,
+    SEARCH_MAX,
+    get_history,
+    get_quote,
+    get_quotes,
+    search,
+)
+from .screener import SCREEN_ALIASES, SCREEN_MAX, SCREEN_OPERATORS, screen
 
 __all__ = [
-    "INDUSTRY_KEYS",
+    "EARNINGS_MAX",
+    "FILINGS_MAX",
     "INTERVALS",
     "MARKET_KEYS",
+    "NEWS_MAX",
     "PERIODS",
+    "QUOTES_MAX",
     "SCREEN_ALIASES",
+    "SCREEN_MAX",
     "SCREEN_OPERATORS",
+    "SEARCH_MAX",
     "SECTOR_KEYS",
+    "STRIKES_MAX",
     "get_calendar",
     "get_company_info",
     "get_dividends",

@@ -395,15 +395,14 @@ def test_cached_decorator_honours_worth_keeping(enabled_cache):
 def test_get_quotes_does_not_pin_a_complete_miss(enabled_cache, monkeypatch):
     from benethos_yahoo_finance_mcp import yahoo
     from benethos_yahoo_finance_mcp.yahoo import tickers
+    from fakes import FakeTicker
 
     built = {"n": 0}
 
-    class Empty:
-        fast_info: dict = {}
-
+    # Counts each ticker built, which patch_ticker's single fake cannot.
     def fake(symbol):
         built["n"] += 1
-        return Empty()
+        return FakeTicker(fast_info={})
 
     monkeypatch.setattr(tickers, "get_ticker", fake)
     assert yahoo.get_quotes(["AAPL"])["count"] == 0
@@ -424,6 +423,13 @@ def test_cached_decorator_does_not_cache_exceptions(enabled_cache):
     with pytest.raises(ValueError):
         fetch("AAPL")
     assert calls["n"] == 2  # error path re-runs every time
+
+
+def test_an_enabled_cache_without_a_directory_is_refused():
+    """load_settings resolves the directory, and it is the one place that does."""
+    with pytest.raises(ValueError, match="cache_dir"):
+        cache.configure(Settings(cache_enabled=True))
+    assert not cache._enabled
 
 
 def test_ttl_override_zero_disables_category(tmp_path):

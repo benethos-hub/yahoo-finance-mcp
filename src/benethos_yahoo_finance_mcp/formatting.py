@@ -117,3 +117,18 @@ def dataframe_to_records(
             record[col] = to_jsonable(val)
         records.append(record)
     return records
+
+
+def series_to_records(
+    series: pd.Series | None, *, value_key: str, max_rows: int = MAX_ROWS
+) -> list[dict[str, Any]]:
+    """Convert a dated Series to ``{"date", value_key}`` dicts, the tail kept.
+
+    ``None`` and an empty series both give an empty list.
+    """
+    if series is None or series.empty:
+        return []
+    return [
+        {"date": to_jsonable(idx), value_key: to_jsonable(val)}
+        for idx, val in series.tail(max_rows).items()
+    ]

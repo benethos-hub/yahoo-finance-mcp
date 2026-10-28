@@ -17,9 +17,6 @@ import pytest
 
 from benethos_yahoo_finance_mcp import yahoo
 from benethos_yahoo_finance_mcp.errors import SymbolNotFoundError
-from benethos_yahoo_finance_mcp.server import build_server
-
-mcp = build_server()
 
 # Minimal valid arguments to invoke each tool (one per registered tool). Optional
 # parameters are omitted; required ones use a representative value.
@@ -50,19 +47,15 @@ TOOL_ARGS: dict[str, dict[str, object]] = {
 }
 
 
-def _call(tool: str, args: dict[str, object]):
-    return asyncio.run(mcp.call_tool(tool, args))
-
-
-def test_tool_args_table_matches_registered_tools():
+def test_tool_args_table_matches_registered_tools(server):
     """The argument table must stay in sync with the registered tools."""
-    registered = {t.name for t in asyncio.run(mcp.list_tools())}
+    registered = {t.name for t in asyncio.run(server.list_tools())}
     assert set(TOOL_ARGS) == registered
 
 
 @pytest.mark.parametrize("tool,args", list(TOOL_ARGS.items()))
-def test_tool_invokes_client_and_result_serializes(monkeypatch, tool, args):
-    """Each tool calls its client function exactly once and returns JSON-safe data."""
+def test_tool_invokes_client_and_result_serializes(call_tool, monkeypatch, tool, args):
+    """Each tool calls its yahoo function exactly once and returns JSON-safe data."""
     calls: list[tuple] = []
 
     # ``search`` is the only tool that returns a list; all others return a dict.
@@ -79,9 +72,9 @@ def test_tool_invokes_client_and_result_serializes(monkeypatch, tool, args):
     # of the right name suffices.
     monkeypatch.setattr(yahoo, tool, spy)
 
-    result = _call(tool, args)
+    result = call_tool(tool, args)
 
-    assert len(calls) == 1, f"{tool} did not forward to its client function once"
+    assert len(calls) == 1, f"{tool} did not forward to its yahoo function once"
     assert not result.is_error, f"{tool} reported an error result"
     # The structured result is what a client consumes, so it must serialize.
     json.dumps(result.structured_content)
@@ -115,7 +108,7 @@ LIMIT_AS_LIMIT = {
 
 
 @pytest.mark.parametrize("tool,base", list(LIMIT_AS_LIMIT.items()))
-def test_limit_is_forwarded_as_limit(monkeypatch, tool, base):
+def test_limit_is_forwarded_as_limit(call_tool, monkeypatch, tool, base):
     captured: dict[str, object] = {}
 
     def spy(*a, **k):
@@ -123,11 +116,11 @@ def test_limit_is_forwarded_as_limit(monkeypatch, tool, base):
         return [{"ok": True}] if tool == "search" else {"ok": True}
 
     monkeypatch.setattr(yahoo, tool, spy)
-    _call(tool, {**base, "limit": 7})
+    call_tool(tool, {**base, "limit": 7})
     assert captured.get("limit") == 7, f"{tool} should forward limit as limit"
 
 
-def test_get_shares_forwards_start_end_and_limit(monkeypatch):
+def test_get_shares_forwards_start_end_and_limit(call_tool, monkeypatch):
     captured: dict[str, object] = {}
 
     def spy(*a, **k):
@@ -135,7 +128,7 @@ def test_get_shares_forwards_start_end_and_limit(monkeypatch):
         return {"ok": True}
 
     monkeypatch.setattr(yahoo, "get_shares", spy)
-    _call(
+    call_tool(
         "get_shares",
         {"symbol": "AAPL", "start": "2024-01-01", "end": "2024-06-01", "limit": 7},
     )
@@ -144,7 +137,7 @@ def test_get_shares_forwards_start_end_and_limit(monkeypatch):
     assert captured["limit"] == 7
 
 
-def test_get_financials_forwards_statement_and_freq(monkeypatch):
+def test_get_financials_forwards_statement_and_freq(call_tool, monkeypatch):
     captured: dict[str, object] = {}
 
     def spy(*a, **k):
@@ -152,12 +145,14 @@ def test_get_financials_forwards_statement_and_freq(monkeypatch):
         return {"ok": True}
 
     monkeypatch.setattr(yahoo, "get_financials", spy)
-    _call("get_financials", {"symbol": "AAPL", "statement": "cashflow", "freq": "ttm"})
+    call_tool(
+        "get_financials", {"symbol": "AAPL", "statement": "cashflow", "freq": "ttm"}
+    )
     assert captured["statement"] == "cashflow"
     assert captured["freq"] == "ttm"
 
 
-def test_tool_error_message_reaches_the_caller(monkeypatch):
+def test_tool_error_message_reaches_the_caller(call_tool, monkeypatch):
     """A ToolError must arrive with its text, not just as a failed call.
 
     The SDK forwards the message only for errors deriving from its own
@@ -174,14 +169,14 @@ def test_tool_error_message_reaches_the_caller(monkeypatch):
     monkeypatch.setattr(yahoo, "get_quote", boom)
 
     with pytest.raises(Exception) as excinfo:  # noqa: B017 - the type is the SDK's
-        _call("get_quote", {"symbol": "NOPE"})
+        call_tool("get_quote", {"symbol": "NOPE"})
 
     message = str(excinfo.value)
     assert "No data found for symbol 'NOPE'" in message, message
     assert "'search' tool" in message, message
 
 
-def test_screen_forwards_filters_as_tuples(monkeypatch):
+def test_screen_forwards_filters_as_tuples(call_tool, monkeypatch):
     """The cache key needs hashable, ordered values, so lists become tuples."""
     captured: dict[str, object] = {}
 
@@ -191,7 +186,7 @@ def test_screen_forwards_filters_as_tuples(monkeypatch):
         return {"total": 0, "count": 0, "offset": 0, "matches": []}
 
     monkeypatch.setattr(yahoo, "screen", spy)
-    _call(
+    call_tool(
         "screen",
         {
             "filters": [
@@ -212,7 +207,7 @@ def test_screen_forwards_filters_as_tuples(monkeypatch):
     assert captured["offset"] == 25
 
 
-def test_a_bad_screen_filter_reaches_the_model_as_text(monkeypatch):
+def test_a_bad_screen_filter_reaches_the_model_as_text(call_tool, monkeypatch):
     """The check's own message, before Yahoo is asked at all."""
 
     def never(*a, **k):  # pragma: no cover - must not be reached
@@ -220,14 +215,16 @@ def test_a_bad_screen_filter_reaches_the_model_as_text(monkeypatch):
 
     monkeypatch.setattr(yahoo.tickers.yf, "screen", never)
     with pytest.raises(Exception) as excinfo:  # noqa: B017 - the type is the SDK's
-        _call("screen", {"filters": [{"field": "sector", "op": "gt", "value": 3}]})
+        call_tool("screen", {"filters": [{"field": "sector", "op": "gt", "value": 3}]})
 
     message = str(excinfo.value)
     assert "is a category, compare it with eq or is-in" in message, message
 
 
 @pytest.mark.parametrize("value", [True, [1, True]])
-def test_a_boolean_screen_value_is_refused_not_read_as_one(monkeypatch, value):
+def test_a_boolean_screen_value_is_refused_not_read_as_one(
+    call_tool, monkeypatch, value
+):
     """JSON's true would otherwise pass as 1.0 and screen for something else."""
 
     def never(*a, **k):  # pragma: no cover - must not be reached
@@ -235,4 +232,6 @@ def test_a_boolean_screen_value_is_refused_not_read_as_one(monkeypatch, value):
 
     monkeypatch.setattr(yahoo, "screen", never)
     with pytest.raises(Exception):  # noqa: B017 - the type is the SDK's
-        _call("screen", {"filters": [{"field": "beta", "op": "gt", "value": value}]})
+        call_tool(
+            "screen", {"filters": [{"field": "beta", "op": "gt", "value": value}]}
+        )

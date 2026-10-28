@@ -14,9 +14,7 @@ import logging
 from typing import Any
 
 from . import _describe
-
-ACCESS_LOGGER = "uvicorn.access"
-SERVER_LOGGER = "uvicorn.error"
+from ._describe import ACCESS_ARGS, ACCESS_LOGGER, SERVER_LOGGER
 
 
 class AccessFilter(logging.Filter):
@@ -29,7 +27,7 @@ class AccessFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         args = record.args
-        if not isinstance(args, tuple) or len(args) != 5:
+        if not isinstance(args, tuple) or len(args) != ACCESS_ARGS:
             return True
         client, method, path, version, status = args
         record.args = (client, method, _describe.path_only(str(path)), version, status)

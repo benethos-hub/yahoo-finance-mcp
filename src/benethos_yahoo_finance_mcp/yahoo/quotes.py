@@ -32,6 +32,9 @@ _QUOTE_FAST_FIELDS = (
     "yearChange",
 )
 
+# The most matches a search returns.
+SEARCH_MAX = 25
+
 
 @cache.cached("search")
 def search(query: str, *, limit: int = 8) -> list[dict[str, Any]]:
@@ -45,7 +48,7 @@ def search(query: str, *, limit: int = 8) -> list[dict[str, Any]]:
     if not query:
         raise ToolError("A non-empty search query is required.")
 
-    limit = max(1, min(int(limit), 25))
+    limit = max(1, min(int(limit), SEARCH_MAX))
     with tickers.upstream(f"Search failed for {query!r}"):
         result = yf.Search(query, max_results=limit, news_count=0, lists_count=0)
         quotes = result.quotes or []
@@ -106,14 +109,14 @@ _QUOTES_FAST_FIELDS = (
 )
 
 # Hard cap on the number of symbols a single get_quotes call may return.
-_MAX_QUOTES = 50
+QUOTES_MAX = 50
 
 
 # A call where every symbol missed is still a non-empty dict, so the default
 # test would store it, and a momentary upstream hiccup would then answer every
 # repeat of the call with "none found" for the whole TTL.
 @cache.cached("quotes", worth_keeping=lambda result: result["count"] > 0)
-def get_quotes(symbols: list[str], *, limit: int = _MAX_QUOTES) -> dict[str, Any]:
+def get_quotes(symbols: list[str], *, limit: int = QUOTES_MAX) -> dict[str, Any]:
     """Return compact current quotes for several symbols at once.
 
     Each symbol is looked up individually; symbols that return no data are
@@ -122,7 +125,7 @@ def get_quotes(symbols: list[str], *, limit: int = _MAX_QUOTES) -> dict[str, Any
     if not symbols:
         raise ToolError("At least one symbol is required.")
 
-    limit = max(1, min(int(limit), _MAX_QUOTES))
+    limit = max(1, min(int(limit), QUOTES_MAX))
     # Normalize, drop blanks, de-duplicate (preserving order), and cap.
     seen: set[str] = set()
     cleaned: list[str] = []

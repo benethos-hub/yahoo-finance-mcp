@@ -27,7 +27,11 @@ def get_earnings(
     symbol: Symbol,
     limit: Annotated[
         int,
-        Field(description="Maximum number of earnings rows to return.", ge=1, le=50),
+        Field(
+            description="Maximum number of earnings rows to return.",
+            ge=1,
+            le=yahoo.EARNINGS_MAX,
+        ),
     ] = 12,
 ) -> dict[str, Any]:
     """Get upcoming and historical earnings for a Yahoo symbol.

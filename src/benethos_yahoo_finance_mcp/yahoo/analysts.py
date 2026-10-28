@@ -41,6 +41,10 @@ def get_recommendations(symbol: str) -> dict[str, Any]:
     }
 
 
+# The most earnings dates get_earnings returns.
+EARNINGS_MAX = 50
+
+
 @cache.cached("earnings")
 def get_earnings(symbol: str, *, limit: int = 12) -> dict[str, Any]:
     """Return upcoming and historical earnings for ``symbol``.
@@ -50,7 +54,7 @@ def get_earnings(symbol: str, *, limit: int = 12) -> dict[str, Any]:
     an ETF, fund or crypto symbol raises SymbolNotFoundError with
     ``tickers.EQUITY_ONLY_REASON``.
     """
-    limit = max(1, min(int(limit), 50))
+    limit = max(1, min(int(limit), EARNINGS_MAX))
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load earnings for {symbol!r}"):
         dates = ticker.get_earnings_dates(limit=limit)

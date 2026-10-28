@@ -17,13 +17,16 @@ _NO_OPTIONS_REASON = (
     "symbol is expected to have none."
 )
 
+# How many strikes of each side get_options keeps by default.
+STRIKES_MAX = 60
+
 
 @cache.cached("options")
 def get_options(
     symbol: str,
     *,
     expiration: str | None = None,
-    limit: int = 60,
+    limit: int = STRIKES_MAX,
 ) -> dict[str, Any]:
     """Return the option chain for ``symbol``.
 

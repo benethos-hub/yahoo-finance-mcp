@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-from fakes import FakeTicker
 from yfinance.exceptions import YFRateLimitError
 
 from benethos_yahoo_finance_mcp import yahoo
@@ -17,6 +16,7 @@ from benethos_yahoo_finance_mcp.errors import (
     ToolError,
 )
 from benethos_yahoo_finance_mcp.yahoo import tickers
+from fakes import FakeTicker
 
 # --- search ---------------------------------------------------------------
 
@@ -103,7 +103,7 @@ def test_get_quote_without_price_raises(patch_ticker):
 
 
 def _patch_tickers(monkeypatch, mapping):
-    """Patch _get_ticker to resolve each symbol from a {SYMBOL: FakeTicker} map."""
+    """Patch get_ticker to resolve each symbol from a {SYMBOL: FakeTicker} map."""
     monkeypatch.setattr(tickers, "get_ticker", lambda s: mapping[s.strip().upper()])
 
 
