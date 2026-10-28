@@ -64,6 +64,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   message that says so. Yahoo answers such a range with no rows, which
   came back as an unknown symbol and sent the model to search for a
   ticker that was right.
+- When `get_history` with daily or longer bars, or `get_shares`, finds no
+  rows for a range with a `start`, the message names the range first and
+  an unknown symbol second. The range may lie after the last data point
+  of a symbol that exists.
 
 ## [0.8.8] - 2026-10-22
 

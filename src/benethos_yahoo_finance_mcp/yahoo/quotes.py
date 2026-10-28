@@ -269,6 +269,8 @@ def get_history(
                 "them or a larger interval. If the range is recent, the symbol "
                 "may be unknown: use the 'search' tool to look it up."
             )
+        if start:
+            raise tickers.empty_range(symbol, start, end)
         raise SymbolNotFoundError(symbol)
 
     rows = dataframe_to_records(df, max_rows=limit, index_name="date")

@@ -122,6 +122,20 @@ def checked_range(start: str | None, end: str | None) -> tuple[str | None, str |
     return start, end
 
 
+def empty_range(symbol: str, start: str, end: str | None) -> ToolError:
+    """The error for a range Yahoo answered with no rows.
+
+    A real date can still lie after the last data point, so the range is named
+    first and an unknown symbol second, rather than sending the caller after a
+    ticker that may be right.
+    """
+    return ToolError(
+        f"No rows for {normalize(symbol)!r} between {start} and {end or 'today'}. "
+        "The range may lie after the last data point, or the symbol may be "
+        "unknown: use the 'search' tool to look it up."
+    )
+
+
 def normalize(symbol: str) -> str:
     """The form a symbol is cached under and echoed back in."""
     return (symbol or "").strip().upper()
