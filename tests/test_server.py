@@ -174,13 +174,15 @@ def test_a_parameter_called_title_would_survive():
 BOUNDS = [
     ("search", "limit", "(1-{})", yahoo.SEARCH_MAX),
     ("get_news", "limit", "1-{})", yahoo.NEWS_MAX),
+    ("get_earnings", "limit", None, yahoo.EARNINGS_MAX),
 ]
 
 
 @pytest.mark.parametrize(("tool", "param", "text", "value"), BOUNDS)
 def test_a_bound_is_stated_as_the_yahoo_function_holds_it(tool, param, text, value):
     [listed] = [t for t in _list_tools() if t.name == tool]
-    assert text.format(value) in listed.description
+    if text:
+        assert text.format(value) in listed.description
     if param:
         assert listed.input_schema["properties"][param]["maximum"] == value
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from . import tickers
 from .analysts import (
+    EARNINGS_MAX,
     get_earnings,
     get_estimates,
     get_recommendations,
@@ -47,6 +48,7 @@ from .quotes import (
 from .screener import SCREEN_ALIASES, SCREEN_OPERATORS, screen
 
 __all__ = [
+    "EARNINGS_MAX",
     "INDUSTRY_KEYS",
     "INTERVALS",
     "MARKET_KEYS",
