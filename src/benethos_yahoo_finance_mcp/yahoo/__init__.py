@@ -51,7 +51,7 @@ from .quotes import (
     search,
 )
 from .screener import SCREEN_ALIASES, SCREEN_MAX, SCREEN_OPERATORS, screen
-from .tickers import SYMBOL_MAX
+from .tickers import SYMBOL_MAX, last_answer
 
 __all__ = [
     "EARNINGS_MAX",
@@ -89,6 +89,7 @@ __all__ = [
     "get_sector",
     "get_shares",
     "get_upgrades_downgrades",
+    "last_answer",
     "screen",
     "search",
     "tickers",

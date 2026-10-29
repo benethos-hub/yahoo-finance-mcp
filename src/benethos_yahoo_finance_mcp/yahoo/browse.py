@@ -9,7 +9,7 @@ import yfinance as yf
 from yfinance.exceptions import YFRateLimitError
 
 from .. import cache, logbook
-from ..errors import RateLimitError, ToolError
+from ..errors import ToolError
 from ..formatting import dataframe_to_records, to_jsonable
 from . import tickers
 
@@ -227,7 +227,7 @@ def get_market(key: str = "US") -> dict[str, Any]:
             f: to_jsonable(raw.get(f)) for f in _MARKET_STATUS_FIELDS if f in raw
         } or None
     except YFRateLimitError as exc:
-        raise RateLimitError() from exc
+        raise tickers.wrap_upstream(exc, f"Failed to load market {key!r}") from exc
     except Exception:  # noqa: BLE001 - status is optional, the summary is not
         status = None
 

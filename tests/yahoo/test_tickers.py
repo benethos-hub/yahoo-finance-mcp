@@ -237,3 +237,84 @@ def test_get_options_chain_rate_limit(monkeypatch):
     monkeypatch.setattr(tickers, "get_ticker", lambda s: ticker)
     with pytest.raises(RateLimitError):
         yahoo.get_options("AAPL", expiration="2024-01-19")
+
+
+# --- how the last request ended -------------------------------------------
+
+
+@pytest.fixture
+def fresh(monkeypatch):
+    """No request made yet in this process."""
+    monkeypatch.setattr(tickers, "_last_answer", None)
+
+
+def test_nothing_is_known_before_the_first_request(fresh):
+    assert tickers.last_answer() is None
+
+
+def test_a_block_that_ran_through_reached_yahoo(fresh):
+    with tickers.upstream("Failed"):
+        pass
+    assert tickers.last_answer() == (True, 0)
+
+
+def test_a_missing_symbol_reached_yahoo(fresh):
+    with pytest.raises(SymbolNotFoundError):
+        with tickers.upstream("Failed", not_found=(_NoSuchData,), symbol="SPY"):
+            raise _NoSuchData()
+    assert tickers.last_answer() == (True, 0)
+
+
+def test_yfinances_own_error_reached_yahoo(fresh):
+    from yfinance.exceptions import YFTickerMissingError
+
+    tickers.wrap_upstream(YFTickerMissingError("XYZ", "no timezone"), "Failed")
+    assert tickers.last_answer() == (True, 0)
+
+
+@pytest.mark.parametrize(
+    "exc", [YFRateLimitError(), ConnectionError("down")], ids=["rate", "network"]
+)
+def test_a_refusal_or_a_network_error_did_not_reach_yahoo(fresh, exc):
+    with pytest.raises(ToolError):
+        with tickers.upstream("Failed"):
+            raise exc
+    assert tickers.last_answer() == (False, 0)
+
+
+def test_a_fault_in_code_says_nothing_about_yahoo(monkeypatch):
+    monkeypatch.setattr(tickers, "_last_answer", (False, 0.0))
+    with pytest.raises(ToolError):
+        with tickers.upstream("Failed"):
+            raise RuntimeError("boom")
+    assert tickers.last_answer() is not None
+    assert tickers.last_answer()[0] is False
+
+
+def test_the_age_is_counted_in_whole_seconds(monkeypatch):
+    now = tickers.time.monotonic()
+    monkeypatch.setattr(tickers, "_last_answer", (True, now - 17.9))
+    assert tickers.last_answer() == (True, 17)
+
+
+def test_a_rate_limit_in_a_batch_of_quotes_is_remembered(fresh, monkeypatch):
+    """get_quotes reads fast_info outside every upstream block."""
+
+    class Limited:
+        def get(self, field):
+            raise YFRateLimitError()
+
+    monkeypatch.setattr(
+        tickers, "get_ticker", lambda s: FakeTicker(fast_info=Limited())
+    )
+    with pytest.raises(RateLimitError):
+        yahoo.get_quotes(["AAPL"])
+    assert tickers.last_answer() == (False, 0)
+
+
+def test_a_batch_of_quotes_that_came_back_reached_yahoo(fresh, monkeypatch):
+    monkeypatch.setattr(
+        tickers, "get_ticker", lambda s: FakeTicker(fast_info={"lastPrice": 1.0})
+    )
+    yahoo.get_quotes(["AAPL"])
+    assert tickers.last_answer() == (True, 0)

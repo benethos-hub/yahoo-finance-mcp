@@ -10,6 +10,7 @@ never as a name imported from it, so a test that patches
 from __future__ import annotations
 
 import re
+import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import date
@@ -37,6 +38,32 @@ EQUITY_ONLY_REASON = (
 )
 _SYMBOL_SHAPE = re.compile(rf"(?=.*[A-Z0-9])[A-Z0-9.\-^=&]{{1,{SYMBOL_MAX}}}")
 
+# How the last request to Yahoo ended, for the server's status: whether Yahoo
+# answered, and when by the monotonic clock. None until the first request. A
+# cached result asks nobody and leaves it alone. One tuple replaced whole, so
+# a reader in another worker thread sees the old pair or the new one.
+_last_answer: tuple[bool, float] | None = None
+
+
+def answered(reachable: bool) -> None:
+    """Remember that the request just made reached Yahoo, or did not."""
+    global _last_answer
+    _last_answer = (reachable, time.monotonic())
+
+
+def last_answer() -> tuple[bool, int] | None:
+    """Whether the last request reached Yahoo, and how many seconds ago.
+
+    ``None`` before the first. A rate limit counts as not reached, Yahoo
+    refused, and so does a network error. An error yfinance raised about the
+    data counts as reached, Yahoo answered with it.
+    """
+    last = _last_answer
+    if last is None:
+        return None
+    reachable, at = last
+    return reachable, int(time.monotonic() - at)
+
 
 def wrap_upstream(exc: Exception, message: str) -> ToolError:
     """Normalize an upstream yfinance exception into a ``ToolError``.
@@ -49,12 +76,18 @@ def wrap_upstream(exc: Exception, message: str) -> ToolError:
     yfinance's, whose text tells the model nothing. Both are named by class
     only, and the unexpected kind goes to the log with its traceback. The
     HTTP clients yfinance uses derive their errors from ``OSError``.
+
+    The first three also say how the request ended, see :func:`answered`.
+    A fault in code says nothing about Yahoo and leaves that alone.
     """
     if isinstance(exc, YFRateLimitError):
+        answered(False)
         return RateLimitError()
     if isinstance(exc, YFException):
+        answered(True)
         return ToolError(f"{message}: {exc}")
     if isinstance(exc, OSError):
+        answered(False)
         return ToolError(
             f"{message}: Yahoo could not be reached ({type(exc).__name__})."
         )
@@ -76,13 +109,17 @@ def upstream(
     exceptions that mean ``symbol`` simply has no such data, such as
     yfinance's ``YFDataException`` for the fund data of a stock. They become
     a ``SymbolNotFoundError``, except a rate limit, which keeps its own.
+
+    A block that ran through, or ended in ``not_found``, reached Yahoo.
     """
     try:
         yield
     except Exception as exc:  # noqa: BLE001 - normalize upstream errors
         if isinstance(exc, not_found) and not isinstance(exc, YFRateLimitError):
+            answered(True)
             raise SymbolNotFoundError(symbol) from exc
         raise wrap_upstream(exc, message) from exc
+    answered(True)
 
 
 _DATE_SHAPE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")

@@ -115,7 +115,7 @@ def fast_fields(fast: Any, fields: tuple[str, ...], message: str) -> dict[str, A
         try:
             value = fast.get(field)
         except YFRateLimitError as exc:
-            raise RateLimitError() from exc
+            raise tickers.wrap_upstream(exc, message) from exc
         except OSError as exc:
             network, value = exc, None
         except Exception:  # noqa: BLE001 - some fields raise when unavailable
@@ -123,6 +123,7 @@ def fast_fields(fast: Any, fields: tuple[str, ...], message: str) -> dict[str, A
         out[field] = to_jsonable(value)
     if network is not None and all(value is None for value in out.values()):
         raise tickers.wrap_upstream(network, message) from network
+    tickers.answered(True)
     return out
 
 
@@ -185,7 +186,9 @@ def get_quotes(symbols: list[str], *, limit: int = QUOTES_MAX) -> dict[str, Any]
         try:
             fast = ticker.fast_info
         except YFRateLimitError as exc:
-            raise RateLimitError() from exc
+            raise tickers.wrap_upstream(
+                exc, f"Failed to load quote for {sym!r}"
+            ) from exc
         except Exception:  # noqa: BLE001 - treat as a per-symbol miss
             not_found.append(sym)
             continue
