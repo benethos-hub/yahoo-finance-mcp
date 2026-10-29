@@ -167,6 +167,11 @@ the tools. Replace the bracketed placeholders with concrete values.
 - "For [Ticker A], [Ticker B] and [Ticker C]: pull quote, six months of history,
   company info and analyst recommendations, then give me a short picture of each."
 
+**The server itself**
+
+- "Which version of the Yahoo Finance server is running, and did its last
+  request reach Yahoo?"
+
 > **The server computes nothing itself.** It passes through what Yahoo returns,
 > which already includes derived figures such as moving averages, P/E, beta and
 > dividend yield. Anything Yahoo does not carry — RSI, MACD, drawdown,
@@ -177,9 +182,9 @@ the tools. Replace the bracketed placeholders with concrete values.
 Every tool only reads, and each one says so to the client with the MCP
 annotation `readOnlyHint`. Every tool that asks Yahoo also carries
 `openWorldHint`, which is all of them but `server_status`. A client that
-honours them may run the tools without asking for confirmation each time. Each tool also has a
-short title, such as "Stock screener", that a client may show in place of its
-name.
+honours them may run the tools without asking for confirmation each time.
+Each tool also has a short title, such as "Stock screener", that a client may
+show in place of its name.
 
 | Tool | Description |
 |------|-------------|
@@ -505,7 +510,7 @@ containers), with one deliberate exception noted below. Precedence is
 
 | Flag | Env var | Default | Description |
 |------|---------|---------|-------------|
-| `--version` | — | — | Print the version and exit. Same value the server reports in the MCP handshake. |
+| `--version` | — | — | Print the version and exit. The same value the server reports in the MCP handshake and `server_status` answers. |
 | `--transport` | `YF_MCP_TRANSPORT` | `stdio` | `stdio`, `streamable-http`, or `sse`. |
 | `--host` | `YF_MCP_HOST` | `127.0.0.1` | Bind host for HTTP transports (`0.0.0.0` for remote). |
 | `--port` | `YF_MCP_PORT` | `8000` | Port for HTTP transports, 1 to 65535. Anything else stops an HTTP start, from the flag and from the variable alike. |

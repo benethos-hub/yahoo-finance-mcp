@@ -30,6 +30,8 @@ parameter or schema changes.
 - CI and the release use `astral-sh/setup-uv` 10.3.3 (was 10.3.2), which
   reads uv's version list from Astral's mirror before GitHub. Nothing the
   package or the image holds changes.
+- The README asks the new tool a question among the example prompts and
+  names it next to `--version` as the third place the version shows.
 
 ## [0.9.0] - 2026-10-28
 
