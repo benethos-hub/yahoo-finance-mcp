@@ -10,7 +10,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from . import analysts, browse, company, funds, options, ownership, quotes, screener
+from . import (
+    analysts,
+    browse,
+    company,
+    funds,
+    options,
+    ownership,
+    quotes,
+    screener,
+    status,
+)
 
 if TYPE_CHECKING:  # pragma: no cover - imported for typing only
     from mcp.server.mcpserver import MCPServer
@@ -21,7 +31,12 @@ __all__ = ["register_tools"]
 _MODULES = (quotes, company, analysts, ownership, options, funds, browse, screener)
 
 
-def register_tools(server: MCPServer) -> None:
-    """Register every tool with ``server``."""
+def register_tools(server: MCPServer, transport: str) -> None:
+    """Register every tool with ``server``, the status of the server last.
+
+    ``transport`` is what the status reports, the only thing it cannot read
+    from the server itself.
+    """
     for module in _MODULES:
         module.register(server)
+    status.register(server, transport)

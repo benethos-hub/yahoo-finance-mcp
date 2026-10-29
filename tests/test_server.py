@@ -35,6 +35,7 @@ EXPECTED_TOOLS = {
     "get_industry",
     "get_market",
     "screen",
+    "server_status",
 }
 
 
@@ -112,13 +113,16 @@ def test_importing_the_package_configures_no_logging():
 
 
 def test_every_tool_is_annotated_read_only_and_open_world(server):
-    """Clients read these hints, for example to skip a confirmation prompt."""
+    """Clients read these hints, for example to skip a confirmation prompt.
+
+    ``server_status`` asks Yahoo nothing, so it is the one closed-world tool.
+    """
     tools = asyncio.run(server.list_tools())
     for tool in tools:
         dumped = tool.model_dump(by_alias=True, exclude_none=True)
         assert dumped.get("annotations") == {
             "readOnlyHint": True,
-            "openWorldHint": True,
+            "openWorldHint": tool.name != "server_status",
         }, tool.name
 
 

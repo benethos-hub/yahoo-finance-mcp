@@ -175,8 +175,9 @@ the tools. Replace the bracketed placeholders with concrete values.
 ## Tools
 
 Every tool only reads, and each one says so to the client with the MCP
-annotations `readOnlyHint` and `openWorldHint`. A client that honours them may
-run the tools without asking for confirmation each time. Each tool also has a
+annotation `readOnlyHint`. Every tool that asks Yahoo also carries
+`openWorldHint`, which is all of them but `server_status`. A client that
+honours them may run the tools without asking for confirmation each time. Each tool also has a
 short title, such as "Stock screener", that a client may show in place of its
 name.
 
@@ -205,6 +206,7 @@ name.
 | `get_industry` | Browse an industry by key: overview, parent sector, top/top-performing/top-growth companies. |
 | `get_market` | Trading status and headline index summary for a market (US, EUROPE, ASIA, …). |
 | `screen` | Find stocks by criteria (dividend yield, P/E, market cap, region, sector, …), ranked, with the total number of matches. |
+| `server_status` | This server's version, transport and uptime, and with `details` whether its last request reached Yahoo and how long ago. Asks Yahoo nothing. |
 
 Most `get_*` tools take a Yahoo Finance **symbol** — either a ticker (`AAPL`,
 `SAP.DE`) or a plain ISIN. Use `search` to turn a company name into one. Four

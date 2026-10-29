@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- A tool `server_status` answers which version of the server runs, over
+  which transport and since how long, the version a client such as Claude
+  Desktop does not show. With `details: true` it adds whether the last
+  request reached Yahoo and how many seconds ago. It never asks Yahoo
+  itself, answers in plain text and writes no log line.
+
 ## [0.9.0] - 2026-10-28
 
 A minor release, because the container image now keeps its HTTP port's

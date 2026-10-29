@@ -121,6 +121,10 @@
     {
       "name": "screen",
       "description": "Find stocks by criteria, e.g. dividend payers in a region or cheap large caps."
+    },
+    {
+      "name": "server_status",
+      "description": "Report this server's version, transport and uptime."
     }
   ],
   "keywords": [
