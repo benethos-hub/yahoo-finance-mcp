@@ -14,6 +14,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   request reached Yahoo and how many seconds ago. It never asks Yahoo
   itself, answers in plain text and writes no log line.
 
+### Changed
+
+- Lock refresh: `pytz` 2026.6 and `platformdirs` 4.14.0 under `yfinance`,
+  and for development only `mypy` 2.4.1. A live smoke run returns the same
+  28 sections before and after.
+
 ## [0.9.0] - 2026-10-28
 
 A minor release, because the container image now keeps its HTTP port's
