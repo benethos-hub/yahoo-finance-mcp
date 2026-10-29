@@ -369,7 +369,7 @@ returns symbols.
 | `get_industry` | `key` (industry key), `limit` 1-100 (=25) | `{key, name, index_symbol, sector_key, sector_name, overview, top_companies[], top_performing_companies[], top_growth_companies[]}` (module-level, not a symbol) |
 | `get_market` | `key` (market key, =US) | `{key, status, count, indices[{symbol, shortName, fullExchangeName, marketState, price, previous close, change, change %}]}` (module-level, `status` only for `US`, null elsewhere) |
 | `screen` | `filters[{field, op, value}]` (up to 10, all must hold), `sort_by` (=market_cap), `sort_desc` (=true), `limit` 1-100 (=25), `offset` 0-9900 (=0) | `{total, count, offset, matches[{symbol, name, exchange, currency, price, change_percent, market_cap, pe_ratio, price_to_book, eps, dividend_yield, change_52w_percent, avg_volume_3m}]}` (empty columns left out, module-level, see §12) |
-| `server_status` | `details` (=false) | plain text, one `key: value` per line: `name`, `version`, `transport`, `python`, `mcp`, `uptime_seconds`, and with `details` the lines `details:` and `upstream:` with `reachable` (yes/no/unknown), `checked_seconds_ago` (or `never`) and `token_set` (always `no`, Yahoo takes no key) |
+| `server_status` | `details` (=false) | plain text, one `key: value` per line: `name`, `version`, `transport`, `python`, `mcp`, `uptime_seconds`, and with `details` the lines `details:` and `upstream:` with `reachable` (yes/no/unknown) and `checked_seconds_ago` (or `never`), no `token_set`, since Yahoo is a public API and takes no key |
 
 `server_status` never asks Yahoo. Its upstream lines say how the last
 request ended, which `yahoo/tickers.py` remembers (`last_answer`): reached

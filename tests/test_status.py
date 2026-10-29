@@ -94,7 +94,6 @@ def test_details_add_the_upstream_block_after_the_core(server, no_request_yet):
         "  upstream:",
         "    reachable: unknown",
         "    checked_seconds_ago: never",
-        "    token_set: no",
     ]
 
 

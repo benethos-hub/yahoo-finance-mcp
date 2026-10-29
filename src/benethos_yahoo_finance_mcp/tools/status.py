@@ -73,11 +73,10 @@ def _upstream() -> list[str]:
         reachable, checked = "unknown", "never"
     else:
         reachable, checked = ("yes" if last[0] else "no"), str(last[1])
+    # No token_set line: Yahoo is a public API and takes no key.
     return [
         f"    reachable: {reachable}",
         f"    checked_seconds_ago: {checked}",
-        # Yahoo takes no key. The line stays, every upstream block has it.
-        "    token_set: no",
     ]
 
 
