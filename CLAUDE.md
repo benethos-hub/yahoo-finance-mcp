@@ -42,7 +42,7 @@ src/benethos_yahoo_finance_mcp/
   tools/          # the tools a client sees, one module per subject, thin
     _base.py      #   Symbol, READ_ONLY, register_tool (adds the log line)
     status.py     #   server_status: plain text, no log line, asks Yahoo nothing
-  yahoo/          # all yfinance access, the same eight subjects as tools/
+  yahoo/          # all yfinance access, the eight subjects of tools/, status has no twin
     tickers.py    #   get_ticker, upstream(), normalize(), last_answer()
   cache.py        # opt-in persistent result cache (SQLite) with per-tool TTLs
   formatting.py   # pandas/yfinance -> compact JSON-safe values
@@ -133,9 +133,10 @@ exception to `settings.py` being the only module that does.
    expects when a tool or a first sentence changed.
    `register_tool` gives it the shared
    `readOnlyHint`/`openWorldHint` pair every tool carries (a test asserts it
-   for all of them, `server_status` excepted) and its log line. The **docstring becomes the
-   tool description** Claude sees — write it for an LLM caller, and leave
-   allowed values to the parameter descriptions rather than repeating them.
+   for all of them, `server_status` excepted) and its log line. The
+   **docstring becomes the tool description** Claude sees — write it for an
+   LLM caller, and leave allowed values to the parameter descriptions rather
+   than repeating them.
    Give every parameter an `Annotated[type, Field(description=...)]` (reuse
    the `Symbol` alias for ticker arguments); add `ge`/`le` bounds for numeric
    limits. A row cap is called `limit`, in the tool and in the yahoo function.
