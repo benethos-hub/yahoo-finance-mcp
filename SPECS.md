@@ -50,7 +50,7 @@ screener), so
 | `__main__.py` | Enables `python -m benethos_yahoo_finance_mcp` (delegates to `cli.main`). |
 | `settings.py` | Every `YF_MCP_*` variable and flag, resolved once into a `Settings` dataclass (flag > env > default), plus the default cache TTLs. The only module that reads the environment, apart from `NO_COLOR`, a terminal convention `logbook/formats.colours_wanted` reads for itself. |
 | `server.py` | The server's identity and instructions, `build_server()`, and the `call_tool` override that logs refused arguments. |
-| `tools/` | The tools a client sees, thin: parameters, descriptions, and a call to the yahoo function of the same name. `_base.py` holds the `Symbol` parameter, the shared annotations and `register_tool`, which wraps every tool with its log line. |
+| `tools/` | The tools a client sees, thin: parameters, descriptions, and a call to the yahoo function of the same name. `_base.py` holds the `Symbol` parameter, the shared annotations and `register_tool`, which wraps every tool with its log line. `status.py` holds `server_status`, the one tool with no yahoo twin and no log line. |
 | `yahoo/` | All yfinance usage, one module per subject. `tickers.py` builds the `Ticker` and holds the error mapping every subject shares. The only package that imports yfinance. |
 | `cache.py` | Opt-in persistent result cache (SQLite) with per-tool TTLs. Off until `configure(settings)` enables it. |
 | `formatting.py` | Convert pandas/yfinance output to compact, JSON-safe values. |
@@ -129,7 +129,8 @@ submodules.
   - **One line per call**, written by the wrapper `register_tool` puts around
     every tool: `get_history SAP.DE 250 rows, truncated, 412 ms`, with
     `cached` appended when the result cache answered (the cache notes that in
-    a context variable).
+    a context variable). `server_status` is registered without the wrapper
+    and writes none: a status question is not an activity.
   - **What a line may carry.** A symbol or a key, since both are public
     identifiers, with printable characters only and cut at 32, because the
     caller chose them and the line is written before Yahoo says whether they
@@ -331,7 +332,8 @@ submodules.
 
 All tools are read-only, and each one carries the MCP annotations
 `readOnlyHint: true` and `openWorldHint: true` (one shared `ToolAnnotations`
-in `tools/_base.py`, set by `register_tool`). `destructiveHint` and `idempotentHint` are omitted because
+in `tools/_base.py`, set by `register_tool`), except `server_status`, which
+asks Yahoo nothing and carries `openWorldHint: false`. `destructiveHint` and `idempotentHint` are omitted because
 the spec defines them only for tools that are not read-only. Each tool also
 has a short `title` (e.g. "Stock screener" for `screen`), which a client
 shows a person in place of the name. The model reads the name and the
@@ -367,6 +369,14 @@ returns symbols.
 | `get_industry` | `key` (industry key), `limit` 1-100 (=25) | `{key, name, index_symbol, sector_key, sector_name, overview, top_companies[], top_performing_companies[], top_growth_companies[]}` (module-level, not a symbol) |
 | `get_market` | `key` (market key, =US) | `{key, status, count, indices[{symbol, shortName, fullExchangeName, marketState, price, previous close, change, change %}]}` (module-level, `status` only for `US`, null elsewhere) |
 | `screen` | `filters[{field, op, value}]` (up to 10, all must hold), `sort_by` (=market_cap), `sort_desc` (=true), `limit` 1-100 (=25), `offset` 0-9900 (=0) | `{total, count, offset, matches[{symbol, name, exchange, currency, price, change_percent, market_cap, pe_ratio, price_to_book, eps, dividend_yield, change_52w_percent, avg_volume_3m}]}` (empty columns left out, module-level, see §12) |
+| `server_status` | `details` (=false) | plain text, one `key: value` per line: `name`, `version`, `transport`, `python`, `mcp`, `uptime_seconds`, and with `details` the lines `details:` and `upstream:` with `reachable` (yes/no/unknown), `checked_seconds_ago` (or `never`) and `token_set` (always `no`, Yahoo takes no key) |
+
+`server_status` never asks Yahoo. Its upstream lines say how the last
+request ended, which `yahoo/tickers.py` remembers (`last_answer`): reached
+when an upstream block ran through, ended in `not_found` or yfinance raised
+about the data, not reached on a rate limit or a network error. A cached
+result asks nobody and changes nothing, and after a restart the answer is
+`unknown` until the first request.
 
 ### Parameter descriptions
 
@@ -381,7 +391,9 @@ client shows the tool's own title and the model reads descriptions.
 
 ## 8. Output format
 
-- Default output is **compact JSON** (JSON-safe dicts/lists). A result
+- Default output is **compact JSON** (JSON-safe dicts/lists). The one
+  exception is `server_status`, which answers in plain text without a
+  structured copy (§7). A result
   travels twice, as `structuredContent` and as one text block holding the
   same JSON without indentation (`tools/_base.py`, `_packed`). Left to the
   SDK the text block is indented by two spaces, two fifths more bytes for
@@ -908,7 +920,7 @@ first, the screener last with 0.8.0.
   away, and filtering by industry is what `screen` does.
 
 The set is deliberately not "everything that is technically possible". With
-23 tools registered, every additional description competes for the model's
+24 tools registered, every additional description competes for the model's
 attention on every single request, and a tool that only saves a loop is a
 net loss. What still applies to a new tool: read-only only, native Yahoo
 tickers, grouped by subject, probed live before it is built, one reviewable
