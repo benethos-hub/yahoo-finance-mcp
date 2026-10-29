@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-29
+
+A minor release for one new tool, `server_status`, which tells a person or
+a model which version of the server runs, the version Claude Desktop does
+not show. The `:0.9` image tag stays on 0.9.0, so an image pinned to it
+needs the line moved to `:0.10` to get the tool. No existing tool,
+parameter or schema changes.
+
 ### Added
 
 - A tool `server_status` answers which version of the server runs, over
@@ -13,6 +21,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Desktop does not show. With `details: true` it adds whether the last
   request reached Yahoo and how many seconds ago. It never asks Yahoo
   itself, answers in plain text and writes no log line.
+
+### Changed
+
+- Lock refresh: `pytz` 2026.6 and `platformdirs` 4.14.0 under `yfinance`,
+  and for development only `mypy` 2.4.1. A live smoke run returns the same
+  28 sections before and after.
+- CI and the release use `astral-sh/setup-uv` 10.3.3 (was 10.3.2), which
+  reads uv's version list from Astral's mirror before GitHub. Nothing the
+  package or the image holds changes.
+- The README asks the new tool a question among the example prompts and
+  names it next to `--version` as the third place the version shows.
 
 ## [0.9.0] - 2026-10-28
 
@@ -1612,7 +1631,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.8...v0.9.0
 [0.8.8]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.7...v0.8.8
 [0.8.7]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.6...v0.8.7

@@ -41,8 +41,10 @@ MCP client (Claude)  --stdio / HTTP-->  transport/  -->  server.py (MCPServer)
 `cli.py` resolves the settings, sets up the log, builds the server and hands
 it to a transport. `tools/` and `yahoo/` have the same eight modules, one per
 subject (quotes, company, analysts, ownership, options, funds, browse,
-screener), so
-`tools/options.py` exposes exactly what `yahoo/options.py` fetches.
+screener), so `tools/options.py` exposes exactly what `yahoo/options.py`
+fetches.
+`tools/status.py` is the ninth and has no twin: `server_status` asks Yahoo
+nothing and answers from the process itself.
 
 | Module | Responsibility |
 |--------|----------------|
@@ -333,16 +335,17 @@ submodules.
 All tools are read-only, and each one carries the MCP annotations
 `readOnlyHint: true` and `openWorldHint: true` (one shared `ToolAnnotations`
 in `tools/_base.py`, set by `register_tool`), except `server_status`, which
-asks Yahoo nothing and carries `openWorldHint: false`. `destructiveHint` and `idempotentHint` are omitted because
-the spec defines them only for tools that are not read-only. Each tool also
-has a short `title` (e.g. "Stock screener" for `screen`), which a client
-shows a person in place of the name. The model reads the name and the
-description, not the title. `symbol` always
-means a Yahoo ticker or an ISIN (see §6). The four exceptions are
-`get_sector` / `get_industry`, which take a sector/industry **key** (e.g.
-`technology`, `semiconductors`), `get_market`, which takes a market key
-(e.g. `US`), rather than a symbol, and `screen`, which takes filters and
-returns symbols.
+asks Yahoo nothing and carries `openWorldHint: false`. `destructiveHint` and
+`idempotentHint` are omitted because the spec defines them only for tools
+that are not read-only. Each tool also has a short `title` (e.g. "Stock
+screener" for `screen`), which a client shows a person in place of the name.
+The model reads the name and the description, not the title. `symbol`
+always means a Yahoo ticker or an ISIN (see §6). The four exceptions among
+the data tools are `get_sector` / `get_industry`, which take a
+sector/industry **key** (e.g. `technology`, `semiconductors`), `get_market`,
+which takes a market key (e.g. `US`), rather than a symbol, and `screen`,
+which takes filters and returns symbols. `server_status` takes none of
+these, it describes the server (see the end of the table).
 
 | Tool | Inputs | Output (shape) |
 |------|--------|----------------|
@@ -393,12 +396,12 @@ client shows the tool's own title and the model reads descriptions.
 
 - Default output is **compact JSON** (JSON-safe dicts/lists). The one
   exception is `server_status`, which answers in plain text without a
-  structured copy (§7). A result
-  travels twice, as `structuredContent` and as one text block holding the
-  same JSON without indentation (`tools/_base.py`, `_packed`). Left to the
-  SDK the text block is indented by two spaces, two fifths more bytes for
-  what Claude Desktop hands the model. The `search` list is wrapped as
-  `{"result": [...]}` in the structured copy, as its output schema says.
+  structured copy (§7). A result travels twice, as `structuredContent` and
+  as one text block holding the same JSON without indentation
+  (`tools/_base.py`, `_packed`). Left to the SDK the text block is indented
+  by two spaces, two fifths more bytes for what Claude Desktop hands the
+  model. The `search` list is wrapped as `{"result": [...]}` in the
+  structured copy, as its output schema says.
 - `formatting.to_jsonable` normalizes `NaN`/`inf` -> `null`, `Timestamp`/
   `datetime` -> ISO-8601 string, numpy scalars -> native, and recurses through
   containers.
@@ -556,11 +559,12 @@ client shows the tool's own title and the model reads descriptions.
   functions and error normalization (`tests/yahoo/`, one file per yahoo
   module, `test_tickers.py` included, plus the cross-module
   `test_empty_answers.py`), formatting, the cache, settings, CLI/transport
-  selection, the log lines and how they look, tool registration/schema, and
-  end-to-end tool invocation via `mcp.call_tool` (`test_formatting.py`,
+  selection, the log lines and how they look, tool registration/schema,
+  end-to-end tool invocation via `mcp.call_tool`, and `server_status` as a
+  client calls it, with Yahoo refused (`test_formatting.py`,
   `test_cache.py`, `test_settings.py`, `test_cli.py`, `test_logbook.py`,
   `test_logbook_formats.py`, `test_server.py`, `test_tools_integration.py`,
-  `test_transport.py`). Three guard the shape of
+  `test_status.py`, `test_transport.py`). Three guard the shape of
   the code: `test_layers.py` the import table in both directions, that every
   library is imported in its one home and that only `settings.py` reads the
   environment (`NO_COLOR` excepted), `test_logbook_catalog.py` that every
@@ -920,8 +924,9 @@ first, the screener last with 0.8.0.
   away, and filtering by industry is what `screen` does.
 
 The set is deliberately not "everything that is technically possible". With
-24 tools registered, every additional description competes for the model's
-attention on every single request, and a tool that only saves a loop is a
-net loss. What still applies to a new tool: read-only only, native Yahoo
-tickers, grouped by subject, probed live before it is built, one reviewable
-pull request, and responses row- or symbol-capped for the token budget.
+24 tools registered, `server_status` among them, every additional
+description competes for the model's attention on every single request, and
+a tool that only saves a loop is a net loss. What still applies to a new
+tool: read-only only, native Yahoo tickers, grouped by subject, probed live
+before it is built, one reviewable pull request, and responses row- or
+symbol-capped for the token budget.
