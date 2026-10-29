@@ -19,6 +19,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Lock refresh: `pytz` 2026.6 and `platformdirs` 4.14.0 under `yfinance`,
   and for development only `mypy` 2.4.1. A live smoke run returns the same
   28 sections before and after.
+- CI and the release use `astral-sh/setup-uv` 10.3.3 (was 10.3.2), which
+  reads uv's version list from Astral's mirror before GitHub. Nothing the
+  package or the image holds changes.
 
 ## [0.9.0] - 2026-10-28
 
