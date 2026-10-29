@@ -129,14 +129,15 @@ def _without_titles(schema: Any) -> Any:
     return stripped
 
 
-def build_server() -> MCPServer:
-    """A server with every tool registered, ready to be handed to a transport.
+def build_server(transport: str = "stdio") -> MCPServer:
+    """A server with every tool registered, ready to be handed to ``transport``.
 
     ``name`` is the programmatic identifier reported in the MCP initialize
     handshake and is kept identical to the PyPI distribution name, so the
     server a client lists is traceable to the package it came from. ``title``
     is what a client shows to a person, ``website_url`` where it can read
-    more.
+    more. The transport is only reported, by ``server_status``, whose uptime
+    starts here.
     """
     # The constructor installs a RichHandler on the root logger if it has
     # none, see logbook.output.untouched_root.
@@ -148,7 +149,7 @@ def build_server() -> MCPServer:
             instructions=_INSTRUCTIONS,
             website_url="https://github.com/benethos-hub/yahoo-finance-mcp",
         )
-    register_tools(server)
+    register_tools(server, transport)
     return server
 
 

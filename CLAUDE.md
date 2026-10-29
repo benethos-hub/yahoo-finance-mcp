@@ -41,8 +41,9 @@ src/benethos_yahoo_finance_mcp/
   server.py       # instructions + build_server() + refused-arguments logging
   tools/          # the tools a client sees, one module per subject, thin
     _base.py      #   Symbol, READ_ONLY, register_tool (adds the log line)
+    status.py     #   server_status: plain text, no log line, asks Yahoo nothing
   yahoo/          # all yfinance access, the same eight subjects as tools/
-    tickers.py    #   get_ticker, upstream(), normalize()
+    tickers.py    #   get_ticker, upstream(), normalize(), last_answer()
   cache.py        # opt-in persistent result cache (SQLite) with per-tool TTLs
   formatting.py   # pandas/yfinance -> compact JSON-safe values
   logbook/        # every log line as a function, the one stderr handler
@@ -100,6 +101,7 @@ line is a function in `logbook/lifecycle.py`, `calls.py`, `cache.py` or
 `tests/test_logbook_catalog.py`, and it never carries a search query, the
 token, a URL's query string, Yahoo's data or an error's text (see SPECS §4).
 A tool writes no line of its own, `register_tool` writes one per call.
+`server_status` is registered past it and writes none, see SPECS §4.
 `logbook/formats.py` reads `NO_COLOR` from the environment itself, the one
 exception to `settings.py` being the only module that does.
 
@@ -131,7 +133,7 @@ exception to `settings.py` being the only module that does.
    expects when a tool or a first sentence changed.
    `register_tool` gives it the shared
    `readOnlyHint`/`openWorldHint` pair every tool carries (a test asserts it
-   for all of them) and its log line. The **docstring becomes the
+   for all of them, `server_status` excepted) and its log line. The **docstring becomes the
    tool description** Claude sees — write it for an LLM caller, and leave
    allowed values to the parameter descriptions rather than repeating them.
    Give every parameter an `Annotated[type, Field(description=...)]` (reuse

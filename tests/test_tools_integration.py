@@ -48,9 +48,13 @@ TOOL_ARGS: dict[str, dict[str, object]] = {
 
 
 def test_tool_args_table_matches_registered_tools(server):
-    """The argument table must stay in sync with the registered tools."""
+    """The argument table must stay in sync with the registered tools.
+
+    ``server_status`` has no yahoo function to forward to, test_status.py
+    calls it through the SDK instead.
+    """
     registered = {t.name for t in asyncio.run(server.list_tools())}
-    assert set(TOOL_ARGS) == registered
+    assert set(TOOL_ARGS) == registered - {"server_status"}
 
 
 @pytest.mark.parametrize("tool,args", list(TOOL_ARGS.items()))

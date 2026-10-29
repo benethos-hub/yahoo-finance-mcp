@@ -173,7 +173,10 @@ def test_readme_documents_exactly_the_registered_tools() -> None:
 
     registered = {tool.name for tool in asyncio.run(mcp.list_tools())}
     documented = set(
-        re.findall(r"`(get_[a-z_]+|search|screen)`", README.read_text(encoding="utf-8"))
+        re.findall(
+            r"`(get_[a-z_]+|search|screen|server_status)`",
+            README.read_text(encoding="utf-8"),
+        )
     )
 
     undocumented = sorted(registered - documented)

@@ -148,7 +148,7 @@ def main(argv: list[str] | None = None) -> None:
         lifecycle.setting_ignored(variable, value)
 
     cache.configure(settings)
-    server = build_server()
+    server = build_server(settings.transport)
 
     try:
         _serve(settings, server)
