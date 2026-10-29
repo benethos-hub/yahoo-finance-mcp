@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The README shows how to add the server to Claude Code with
+  `claude mcp add`, over stdio with `uvx`, or by URL to a server already
+  running over HTTP, plain on this machine or HTTPS with the bearer token.
+
 ## [0.10.0] - 2026-10-29
 
 A minor release for one new tool, `server_status`, which tells a person or

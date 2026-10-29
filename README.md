@@ -46,6 +46,7 @@ Yahoo's unofficial endpoints.
 - [Installation](#installation)
   - [Quick start: Claude Desktop extension](#quick-start-claude-desktop-extension)
   - [Claude Desktop with uv (manual config)](#claude-desktop-with-uv-manual-config)
+  - [Claude Code](#claude-code)
   - [Other ways to install](#other-ways-to-install)
 - [Running as a standalone server](#running-as-a-standalone-server)
   - [Docker](#docker)
@@ -296,7 +297,8 @@ talks to it over stdin and stdout. This is the default transport and needs no
 network. Claude Desktop, Claude Code, Cursor, VS Code (Copilot agent mode), Zed,
 Windsurf, the JetBrains AI assistants, Cline, Roo Code, Continue and Goose all
 work this way. Claude Desktop also takes the server as an extension, a single
-file to open, see [Quick start](#quick-start-claude-desktop-extension). The
+file to open, see [Quick start](#quick-start-claude-desktop-extension), and
+Claude Code adds it with one command, see [Claude Code](#claude-code). The
 configuration file differs per client, but the command is always the one shown
 under [Claude Desktop with uv](#claude-desktop-with-uv-manual-config):
 
@@ -397,6 +399,43 @@ on demand from
 > the app — or use the absolute path to `uvx` as `command`. The first launch
 > downloads the package and its dependencies, so it takes a moment. Later
 > launches use the cache.
+
+### Claude Code
+
+Claude Code adds the server with one command and needs uv as above. With
+`-s user` it is there in every project, without it only in the current
+directory:
+
+```bash
+claude mcp add benethos-yahoo-finance-mcp -s user -- uvx benethos-yahoo-finance-mcp
+```
+
+Settings go in with `-e`, after the name, since `-e` takes several values and
+would read the name as one of them:
+
+```bash
+claude mcp add benethos-yahoo-finance-mcp -s user -e YF_MCP_CACHE=1 -- uvx benethos-yahoo-finance-mcp
+```
+
+A server already running over HTTP is added by its URL. `--transport http`
+names MCP's streamable-HTTP transport, the scheme is the URL's own: plain
+`http://` for the container on this machine, `https://` behind the Caddy
+profile of the production compose file, where the bearer token is required:
+
+```bash
+claude mcp add --transport http benethos-yahoo-finance-mcp http://127.0.0.1:8000/mcp
+
+claude mcp add --transport http benethos-yahoo-finance-mcp https://<domain>/mcp \
+  --header "Authorization: Bearer <token>"
+```
+
+A local server with a token set takes the same `--header`. A server
+started with `--transport sse` takes `--transport sse` and its `/sse` URL
+instead.
+
+`-s project` writes the entry to a `.mcp.json` in the current directory,
+which a team can commit to its repository. `claude mcp list` shows whether the
+server starts, and in a chat `server_status` says which version runs.
 
 ### Other ways to install
 
