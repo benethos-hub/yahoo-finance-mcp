@@ -417,13 +417,21 @@ would read the name as one of them:
 claude mcp add benethos-yahoo-finance-mcp -s user -e YF_MCP_CACHE=1 -- uvx benethos-yahoo-finance-mcp
 ```
 
-A server already running over HTTP, such as the Caddy profile of the
-production compose file, is added by its URL and the bearer token:
+A server already running over HTTP is added by its URL. `--transport http`
+names MCP's streamable-HTTP transport, the scheme is the URL's own: plain
+`http://` for the container on this machine, `https://` behind the Caddy
+profile of the production compose file, where the bearer token is required:
 
 ```bash
+claude mcp add --transport http benethos-yahoo-finance-mcp http://127.0.0.1:8000/mcp
+
 claude mcp add --transport http benethos-yahoo-finance-mcp https://<domain>/mcp \
   --header "Authorization: Bearer <token>"
 ```
+
+A local server with a token set takes the same `--header`. A server
+started with `--transport sse` takes `--transport sse` and its `/sse` URL
+instead.
 
 `-s project` writes the entry to a `.mcp.json` in the current directory,
 which a team can commit to its repository. `claude mcp list` shows whether the
