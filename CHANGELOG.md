@@ -11,6 +11,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The README shows how to add the server to Claude Code with
   `claude mcp add`, over stdio with `uvx`, or by URL to a server already
   running over HTTP, plain on this machine or HTTPS with the bearer token.
+- Lock refresh for the image: `python-dateutil` 4.0.0 (was 3.0.0) under
+  `pandas`, which drops `six` from the lock, `platformdirs` 4.14.2 and
+  `websockets` 17.4 under `yfinance`, and `pydantic` 2.14.2,
+  `pydantic-core` 2.50.2, `opentelemetry-api` 1.45.2 and `python-multipart`
+  0.0.33 under `mcp`. An installation through `uvx` or `pip` resolves these
+  already. A live smoke run returns the same 29 sections before and after,
+  and the tool schemas are byte for byte the same.
 
 ## [0.10.0] - 2026-10-29
 
