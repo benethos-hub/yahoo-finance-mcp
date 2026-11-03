@@ -208,6 +208,19 @@ class TestAccessLog:
         assert access.AccessFilter().filter(record)
         assert record.getMessage() == '10.0.0.7:5555 - "POST /mcp HTTP/1.1" 401'
 
+    def test_the_client_field_is_made_printable(self):
+        record = logging.LogRecord(
+            "uvicorn.access",
+            logging.INFO,
+            __file__,
+            1,
+            '%s - "%s %s HTTP/%s" %d',
+            ("[31mx[0m:1", "POST", "/mcp", "1.1", 401),
+            None,
+        )
+        access.AccessFilter().filter(record)
+        assert record.getMessage() == '[31mx[0m:1 - "POST /mcp HTTP/1.1" 401'
+
     def test_a_refused_request_stays_info(self):
         record = self._record("/mcp", 421)
         access.AccessFilter().filter(record)
