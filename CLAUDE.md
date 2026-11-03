@@ -138,7 +138,8 @@ exception to `settings.py` being the only module that does.
    LLM caller, and leave allowed values to the parameter descriptions rather
    than repeating them.
    Give every parameter an `Annotated[type, Field(description=...)]` (reuse
-   the `Symbol` alias for ticker arguments); add `ge`/`le` bounds for numeric
+   the `Symbol` alias for ticker arguments, and `Methodology` in
+   `tools/analysts.py` for the EPS basis); add `ge`/`le` bounds for numeric
    limits. A row cap is called `limit`, in the tool and in the yahoo function.
    Its ceiling is a `*_MAX` constant in the yahoo module, exported from
    `yahoo/__init__.py` and used as the schema's `le`, and
