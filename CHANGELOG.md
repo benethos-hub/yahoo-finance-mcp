@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-11-03
+
+A patch release for `get_news`, which failed for every symbol in 0.10.0
+since Yahoo changed its 404 page. It also brings the image up to the
+dependencies an installation through `uvx` or `pip` resolves already, uv
+0.13.7 and the current build of `python:3.15-slim`. No tool, parameter or
+schema changes.
+
 ### Fixed
 
 - `get_news` answered every symbol with `Failed to load news ...: *** YAHOO!
@@ -1662,7 +1670,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.8...v0.9.0
 [0.8.8]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.7...v0.8.8
