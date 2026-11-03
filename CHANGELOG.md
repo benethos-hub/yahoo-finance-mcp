@@ -27,6 +27,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   0.0.33 under `mcp`. An installation through `uvx` or `pip` resolves these
   already. A live smoke run returns the same 29 sections before and after,
   and the tool schemas are byte for byte the same.
+- A second lock refresh for the image: `soupsieve` 4.0 (was 3.0.4) under
+  `beautifulsoup4`, whose breaking changes concern CSS selectors in
+  `template` and `iframe`, which yfinance never calls, `platformdirs`
+  4.14.3 under `yfinance`, and `anyio` 4.16.0 under `mcp`. For development
+  only, `coverage` 7.17.1. The smoke run returns the same 28 sections, and
+  a tool answers over stdio and HTTP.
+- The image builds with uv 0.13.7 (was 0.13.6) and on the current build of
+  `python:3.15-slim`, rebuilt under the same tag with Debian's updates.
+  Python stays 3.15.2. Only the image changes.
 
 ## [0.10.0] - 2026-10-29
 
