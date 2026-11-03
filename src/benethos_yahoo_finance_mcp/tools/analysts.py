@@ -10,6 +10,19 @@ from pydantic import Field
 from .. import yahoo
 from ._base import Symbol, register_tool
 
+# One parameter for both tools, so they describe the choice alike.
+Methodology = Annotated[
+    str | None,
+    Field(
+        description="EPS basis: 'gaap' (as reported) or 'normalized' (without "
+        "one-off items). Omit for the basis Yahoo uses for the symbol, which "
+        "differs between companies, so pick one to compare several. Each EPS "
+        "row names its basis in `methodology`, which is Yahoo's own label when "
+        "omitted and not always right. A basis Yahoo lacks for a symbol comes "
+        "back as null values."
+    ),
+]
+
 if TYPE_CHECKING:  # pragma: no cover - imported for typing only
     from mcp.server.mcpserver import MCPServer
 
@@ -33,24 +46,27 @@ def get_earnings(
             le=yahoo.EARNINGS_MAX,
         ),
     ] = 12,
+    methodology: Methodology = None,
 ) -> dict[str, Any]:
     """Get upcoming and historical earnings for a Yahoo symbol.
 
     Returns the earnings calendar (upcoming and past dates with EPS estimate,
     reported EPS, and surprise %) plus the recent earnings history. Equity-only:
     an ETF, fund or crypto symbol answers with an error that says so.
+    `methodology` applies to the history, the calendar has one basis only.
     """
-    return yahoo.get_earnings(symbol, limit=limit)
+    return yahoo.get_earnings(symbol, limit=limit, methodology=methodology)
 
 
-def get_estimates(symbol: Symbol) -> dict[str, Any]:
+def get_estimates(symbol: Symbol, methodology: Methodology = None) -> dict[str, Any]:
     """Get forward analyst estimates for a Yahoo symbol.
 
     Returns earnings and revenue estimates, EPS trend and revisions, and growth
     estimates (small tables keyed by period). Equity-only: an ETF, fund or
-    crypto symbol answers with an error that says so.
+    crypto symbol answers with an error that says so. `methodology` applies
+    to the three EPS tables, revenue and growth have one basis only.
     """
-    return yahoo.get_estimates(symbol)
+    return yahoo.get_estimates(symbol, methodology=methodology)
 
 
 def get_upgrades_downgrades(

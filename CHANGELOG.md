@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `get_estimates` and `get_earnings` take a `methodology` of `gaap` or
+  `normalized`, the basis Yahoo counts earnings per share on. Yahoo picks
+  one per company by default, GAAP for Amazon and Alphabet, normalized for
+  Microsoft and SAP, and the two can differ a lot: Alphabet's EPS estimate
+  for the year is 19.71 on GAAP and 15.50 normalized. Asking for one basis
+  lets companies be compared alike. It applies to the earnings estimate,
+  EPS trend and revisions and the earnings history. Revenue, growth and the
+  earnings calendar have one basis only. Without it the answer is Yahoo's
+  default, as before.
+
 ### Changed
 
 - yfinance 1.8.0, now the lowest version allowed. `get_news` gets the

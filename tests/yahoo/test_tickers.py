@@ -162,7 +162,7 @@ _UPSTREAM_CASES = [
     ("recommendations", lambda: yahoo.get_recommendations("AAPL")),
     ("options", lambda: yahoo.get_options("AAPL")),
     ("get_earnings_dates", lambda: yahoo.get_earnings("AAPL")),
-    ("earnings_estimate", lambda: yahoo.get_estimates("AAPL")),
+    ("get_earnings_estimate", lambda: yahoo.get_estimates("AAPL")),
     ("upgrades_downgrades", lambda: yahoo.get_upgrades_downgrades("AAPL")),
     ("major_holders", lambda: yahoo.get_holders("AAPL")),
     ("insider_transactions", lambda: yahoo.get_insider_activity("AAPL")),

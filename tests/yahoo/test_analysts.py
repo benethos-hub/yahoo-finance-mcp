@@ -11,6 +11,7 @@ import pytest
 from benethos_yahoo_finance_mcp import yahoo
 from benethos_yahoo_finance_mcp.errors import (
     SymbolNotFoundError,
+    ToolError,
 )
 from fakes import FakeTicker
 
@@ -90,6 +91,66 @@ def test_get_estimates_returns_tables(patch_ticker):
     out = yahoo.get_estimates("aapl")
     assert out["earnings_estimate"][0]["avg"] == 2.0
     assert out["revenue_estimate"] == []
+
+
+def _estimates_ticker():
+    est = pd.DataFrame({"avg": [2.0]}, index=pd.Index(["0y"], name="period"))
+    return FakeTicker(
+        earnings_estimate=est,
+        revenue_estimate=None,
+        eps_trend=None,
+        eps_revisions=None,
+        growth_estimates=None,
+    )
+
+
+def test_get_estimates_asks_for_yahoos_default_basis_unless_told(patch_ticker):
+    ticker = patch_ticker(_estimates_ticker())
+    yahoo.get_estimates("aapl")
+    assert ticker.eps_requests == [
+        ("earnings_estimate", None),
+        ("eps_trend", None),
+        ("eps_revisions", None),
+    ]
+
+
+def test_get_estimates_asks_every_eps_table_for_the_chosen_basis(patch_ticker):
+    """Revenue and growth have no basis to choose and are asked as before."""
+    ticker = patch_ticker(_estimates_ticker())
+    yahoo.get_estimates("aapl", methodology=" GAAP ")
+    assert ticker.eps_requests == [
+        ("earnings_estimate", "gaap"),
+        ("eps_trend", "gaap"),
+        ("eps_revisions", "gaap"),
+    ]
+
+
+def test_get_estimates_refuses_an_unknown_basis_before_asking_yahoo(patch_ticker):
+    ticker = patch_ticker(_estimates_ticker())
+    with pytest.raises(ToolError, match="gaap, normalized"):
+        yahoo.get_estimates("aapl", methodology="ifrs")
+    assert "eps_requests" not in vars(ticker)
+
+
+def test_get_estimates_treats_a_blank_basis_as_the_default(patch_ticker):
+    ticker = patch_ticker(_estimates_ticker())
+    yahoo.get_estimates("aapl", methodology="  ")
+    assert ticker.eps_requests[0] == ("earnings_estimate", None)
+
+
+def test_get_earnings_asks_the_history_for_the_chosen_basis(patch_ticker):
+    history = pd.DataFrame(
+        {"epsActual": [1.6]}, index=pd.Index(["1Q2024"], name="quarter")
+    )
+    ticker = patch_ticker(FakeTicker(earnings_dates=None, earnings_history=history))
+    yahoo.get_earnings("aapl", methodology="normalized")
+    assert ticker.eps_requests == [("earnings_history", "normalized")]
+
+
+def test_get_earnings_refuses_an_unknown_basis(patch_ticker):
+    patch_ticker(FakeTicker(earnings_dates=None, earnings_history=None))
+    with pytest.raises(ToolError, match="Invalid methodology 'ifrs'"):
+        yahoo.get_earnings("aapl", methodology="ifrs")
 
 
 def test_get_estimates_empty_raises(patch_ticker):

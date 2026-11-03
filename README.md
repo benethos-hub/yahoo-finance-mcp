@@ -199,8 +199,8 @@ show in place of its name.
 | `get_news` | Recent news headlines (title, summary, publisher, URL), 10 by default and up to 50, from Yahoo's search when the symbol's own news is empty. |
 | `get_recommendations` | Analyst recommendation trend and price targets. |
 | `get_options` | Option expiration dates and the calls/puts chain for a date, centred on the money. |
-| `get_earnings` | Upcoming and historical earnings (EPS estimate/actual, surprise). |
-| `get_estimates` | Forward analyst estimates (earnings, revenue, EPS trend/revisions, growth). |
+| `get_earnings` | Upcoming and historical earnings (EPS estimate/actual, surprise), the history on a GAAP or normalized basis. |
+| `get_estimates` | Forward analyst estimates (earnings, revenue, EPS trend/revisions, growth), the EPS tables on a GAAP or normalized basis. |
 | `get_upgrades_downgrades` | Recent analyst rating changes (upgrades/downgrades). |
 | `get_holders` | Ownership breakdown (insider/institutional %, top institutional and mutual-fund holders). |
 | `get_insider_activity` | Insider transactions, 6-month purchases/sales summary, and current roster. |
