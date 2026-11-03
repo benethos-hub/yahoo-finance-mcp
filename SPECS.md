@@ -360,7 +360,7 @@ these, it describes the server (see the end of the table).
 | `get_sec_filings` | `symbol`, `limit` 1-100 (=25) | `{symbol, count, filings[{date, type, title, url, exhibits}]}` (equity-only) |
 | `get_calendar` | `symbol` | `{symbol, calendar{}}` (next earnings/dividend dates + estimate ranges, equity-only) |
 | `get_shares` | `symbol`, `start?`, `end?`, `limit` 1-250 (=50) | `{symbol, count, shares[{date, shares}]}` (most recent kept, last 18 months unless `start` is given) |
-| `get_fund_data` | `symbol`, `limit` 1-100 (=25) | `{symbol, description, fund_overview, asset_classes, sector_weightings, top_holdings[]}` (fund/ETF-only) |
+| `get_fund_data` | `symbol`, `limit` 1-100 (=25) | `{symbol, description, fund_overview, key_figures{expense_ratio, category_expense_ratio, holdings_turnover, total_assets, ytd_return, three_year_average_return, five_year_average_return}, asset_classes, sector_weightings, top_holdings[]}` (fund/ETF-only, ratios and returns as fractions, a figure Yahoo lacks left out) |
 | `get_sector` | `key` (sector key), `limit` 1-100 (=25) | `{key, name, index_symbol, overview, top_companies[], top_etfs, top_mutual_funds, industries[]}` (module-level, not a symbol) |
 | `get_industry` | `key` (industry key), `limit` 1-100 (=25) | `{key, name, index_symbol, sector_key, sector_name, overview, top_companies[], top_performing_companies[], top_growth_companies[]}` (module-level, not a symbol) |
 | `get_market` | `key` (market key, =US) | `{key, status, count, indices[{symbol, shortName, fullExchangeName, marketState, price, previous close, change, change %}]}` (module-level, `status` only for `US`, null elsewhere) |
@@ -826,7 +826,7 @@ per-tool TTL and row-capped.
 | `get_sec_filings` | `sec_filings` | recent filings |
 | `get_calendar` | `calendar` | next earnings/ex-div dates |
 | `get_shares` | `get_shares_full` | shares outstanding over time |
-| `get_fund_data` | `funds_data` | holdings/sector weights — ETFs & funds |
+| `get_fund_data` | `funds_data` (with `fund_operations`), `info` | holdings/sector weights, costs, size and returns — ETFs & funds. Yahoo gives `info`'s ytdReturn and netExpenseRatio in percent and the rest as fractions, the answer has fractions throughout. US funds carry every figure, European ETFs mostly the expense ratio and turnover only (probed 2026-11-03: SPY, QQQ, FFOJX full, EUNL.DE, CSPX.L, XDWD.DE costs only, VWCE.DE size without costs) |
 | `get_financials` with `freq=ttm` | `ttm_income_stmt`, `ttm_cashflow` | income/cashflow only, there is no `ttm_balance_sheet` upstream |
 
 Not exposed: `sustainability` and `capital_gains` (empty upstream), `isin`

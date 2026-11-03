@@ -8,6 +8,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `get_fund_data` answers with `key_figures`: the expense ratio and the
+  category average beside it, the holdings turnover, the total assets, and
+  the returns year to date and averaged over three and five years. Yahoo
+  states some of these in percent and some as fractions, the answer gives
+  every ratio and return as a fraction, 0.0007 for 0.07%. A figure Yahoo
+  lacks is left out. US funds carry all of them, European ETFs mostly the
+  expense ratio and the turnover. One more request to Yahoo per call.
+
 - `get_estimates` and `get_earnings` take a `methodology` of `gaap` or
   `normalized`, the basis Yahoo counts earnings per share on. Yahoo picks
   one per company by default, GAAP for Amazon and Alphabet, normalized for

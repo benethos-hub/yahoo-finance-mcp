@@ -207,7 +207,7 @@ show in place of its name.
 | `get_sec_filings` | Recent SEC filings (type, date, title, EDGAR/exhibit links). |
 | `get_calendar` | Upcoming earnings and dividend / ex-dividend dates with estimate ranges. |
 | `get_shares` | Shares-outstanding history (date → shares), the last 18 months unless a start date is given. |
-| `get_fund_data` | Fund/ETF profile: overview, asset-class & sector weightings, top holdings. |
+| `get_fund_data` | Fund/ETF profile: overview, expense ratio, size and returns, asset-class & sector weightings, top holdings. |
 | `get_sector` | Browse a market sector by key: overview, top companies/ETFs/funds, industries. |
 | `get_industry` | Browse an industry by key: overview, parent sector, top/top-performing/top-growth companies. |
 | `get_market` | Trading status and headline index summary for a market (US, EUROPE, ASIA, …). |

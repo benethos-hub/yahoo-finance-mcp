@@ -22,9 +22,13 @@ def get_fund_data(
 ) -> dict[str, Any]:
     """Get fund/ETF profile data for a Yahoo symbol.
 
-    Returns the fund overview, asset-class and sector weightings, and the top
-    holdings. Fund/ETF-only, raises for stocks and crypto, which have no fund
-    data.
+    Returns the fund overview, key figures, asset-class and sector weightings,
+    and the top holdings. The key figures are the expense ratio (with the
+    category average), holdings turnover, total assets, and the returns year
+    to date and averaged over three and five years. Ratios and returns are
+    fractions, 0.0007 for 0.07%, and a figure Yahoo lacks is left out, which
+    for European ETFs is often the returns and the size. Fund/ETF-only, raises
+    for stocks and crypto, which have no fund data.
     """
     return yahoo.get_fund_data(symbol, limit=limit)
 
