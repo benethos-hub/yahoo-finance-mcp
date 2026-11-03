@@ -25,6 +25,9 @@ _FRACTION_FIELDS = (
     ("fiveYearAverageReturn", "five_year_average_return"),
 )
 
+# The most top holdings get_fund_data returns.
+HOLDINGS_MAX = 100
+
 
 def _number(value: Any) -> float | None:
     """``value`` as a float, ``None`` for a missing or non-finite value."""
@@ -89,6 +92,7 @@ def get_fund_data(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     holdings. Fund/ETF-only; raises for stocks and crypto, which have no fund
     data.
     """
+    limit = max(1, min(int(limit), HOLDINGS_MAX))
     ticker = tickers.get_ticker(symbol)
     # yfinance raises YFDataException for a stock or crypto, which has no
     # fund data: that is a missing symbol, not a failure. So is an unknown

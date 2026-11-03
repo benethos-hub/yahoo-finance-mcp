@@ -198,12 +198,6 @@ class ResultCache:
         if dropped > 0:
             logbook.cache.capped(dropped, self._max_entries)
 
-    def clear(self) -> None:
-        with self._lock:
-            with self._conn:
-                self._conn.execute("DELETE FROM cache")
-            self._shrink()
-
     def close(self) -> None:
         with self._lock:
             self._conn.close()

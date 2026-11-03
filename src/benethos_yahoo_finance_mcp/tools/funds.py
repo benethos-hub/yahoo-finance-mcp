@@ -17,7 +17,11 @@ def get_fund_data(
     symbol: Symbol,
     limit: Annotated[
         int,
-        Field(description="Maximum number of top holdings to return.", ge=1, le=100),
+        Field(
+            description="Maximum number of top holdings to return.",
+            ge=1,
+            le=yahoo.HOLDINGS_MAX,
+        ),
     ] = 25,
 ) -> dict[str, Any]:
     """Get fund/ETF profile data for a Yahoo symbol.

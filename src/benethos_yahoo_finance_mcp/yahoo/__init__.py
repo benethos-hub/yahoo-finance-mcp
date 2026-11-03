@@ -10,13 +10,16 @@ from __future__ import annotations
 
 from . import tickers
 from .analysts import (
+    CHANGES_MAX,
     EARNINGS_MAX,
+    EPS_METHODOLOGIES,
     get_earnings,
     get_estimates,
     get_recommendations,
     get_upgrades_downgrades,
 )
 from .browse import (
+    COMPANIES_MAX,
     MARKET_KEYS,
     SECTOR_KEYS,
     get_industry,
@@ -25,6 +28,7 @@ from .browse import (
 )
 from .company import (
     NEWS_MAX,
+    SHARES_MAX,
     get_calendar,
     get_company_info,
     get_dividends,
@@ -32,10 +36,12 @@ from .company import (
     get_news,
     get_shares,
 )
-from .funds import get_fund_data
+from .funds import HOLDINGS_MAX, get_fund_data
 from .options import STRIKES_MAX, get_options
 from .ownership import (
     FILINGS_MAX,
+    HOLDERS_MAX,
+    INSIDER_MAX,
     get_holders,
     get_insider_activity,
     get_sec_filings,
@@ -51,15 +57,28 @@ from .quotes import (
     get_quotes,
     search,
 )
-from .screener import SCREEN_ALIASES, SCREEN_MAX, SCREEN_OPERATORS, screen
+from .screener import (
+    OFFSET_MAX,
+    SCREEN_ALIASES,
+    SCREEN_MAX,
+    SCREEN_OPERATORS,
+    screen,
+)
 from .tickers import SYMBOL_MAX, last_answer
 
 __all__ = [
+    "CHANGES_MAX",
+    "COMPANIES_MAX",
     "EARNINGS_MAX",
+    "EPS_METHODOLOGIES",
     "FILINGS_MAX",
+    "HOLDERS_MAX",
+    "HOLDINGS_MAX",
+    "INSIDER_MAX",
     "INTERVALS",
     "MARKET_KEYS",
     "NEWS_MAX",
+    "OFFSET_MAX",
     "PERIODS",
     "QUERY_MAX",
     "QUOTES_MAX",
@@ -68,6 +87,7 @@ __all__ = [
     "SCREEN_OPERATORS",
     "SEARCH_MAX",
     "SECTOR_KEYS",
+    "SHARES_MAX",
     "STRIKES_MAX",
     "SYMBOL_MAX",
     "get_calendar",

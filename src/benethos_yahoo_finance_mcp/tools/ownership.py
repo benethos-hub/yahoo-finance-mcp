@@ -21,7 +21,7 @@ def get_holders(
             description="Maximum number of institutional/mutual-fund holders to "
             "return per list.",
             ge=1,
-            le=100,
+            le=yahoo.HOLDERS_MAX,
         ),
     ] = 25,
 ) -> dict[str, Any]:
@@ -41,7 +41,7 @@ def get_insider_activity(
         Field(
             description="Maximum number of insider transactions/roster rows to return.",
             ge=1,
-            le=100,
+            le=yahoo.INSIDER_MAX,
         ),
     ] = 50,
 ) -> dict[str, Any]:

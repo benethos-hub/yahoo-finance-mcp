@@ -179,6 +179,14 @@ BOUNDS = [
     ("get_earnings", "limit", None, yahoo.EARNINGS_MAX),
     ("get_sec_filings", "limit", None, yahoo.FILINGS_MAX),
     ("screen", "limit", None, yahoo.SCREEN_MAX),
+    ("get_upgrades_downgrades", "limit", None, yahoo.CHANGES_MAX),
+    ("get_holders", "limit", None, yahoo.HOLDERS_MAX),
+    ("get_insider_activity", "limit", None, yahoo.INSIDER_MAX),
+    ("get_fund_data", "limit", None, yahoo.HOLDINGS_MAX),
+    ("get_sector", "limit", None, yahoo.COMPANIES_MAX),
+    ("get_industry", "limit", None, yahoo.COMPANIES_MAX),
+    ("get_shares", "limit", None, yahoo.SHARES_MAX),
+    ("screen", "offset", None, yahoo.OFFSET_MAX),
     ("get_quotes", None, "more than {} were passed", yahoo.QUOTES_MAX),
     ("get_history", None, "the most recent {} rows", formatting.MAX_ROWS),
     ("get_options", None, "up to {} strikes", yahoo.STRIKES_MAX),
@@ -194,6 +202,36 @@ def test_a_bound_is_stated_as_the_yahoo_function_holds_it(
         assert text.format(value) in listed.description
     if param:
         assert listed.input_schema["properties"][param]["maximum"] == value
+
+
+# A closed set of values a parameter's description lists, against the constant
+# the yahoo function checks them with.
+CLOSED_SETS = [
+    ("get_earnings", "methodology", yahoo.EPS_METHODOLOGIES),
+    ("get_estimates", "methodology", yahoo.EPS_METHODOLOGIES),
+    ("get_history", "interval", yahoo.INTERVALS),
+    ("get_history", "period", yahoo.PERIODS),
+    ("get_sector", "key", yahoo.SECTOR_KEYS),
+    ("get_market", "key", yahoo.MARKET_KEYS),
+]
+
+
+@pytest.mark.parametrize(("tool", "param", "values"), CLOSED_SETS)
+def test_a_description_names_every_value_of_its_closed_set(server, tool, param, values):
+    [listed] = [t for t in _list_tools(server) if t.name == tool]
+    description = listed.input_schema["properties"][param]["description"]
+    assert [value for value in values if value not in description] == []
+
+
+def test_every_row_cap_and_offset_is_bound_to_a_constant(server):
+    """A new literal in a schema fails here instead of passing unseen."""
+    capped = {
+        (tool.name, param)
+        for tool in _list_tools(server)
+        for param in tool.input_schema["properties"]
+        if param in ("limit", "offset")
+    }
+    assert capped == {(tool, param) for tool, param, _, _ in BOUNDS if param}
 
 
 def test_the_search_query_has_a_length_bound(server):

@@ -132,6 +132,10 @@ def test_the_auto_update_manifest_is_the_pinned_one_in_all_but_its_own_fields():
         k: v for k, v in MANIFEST.items() if k not in own
     }
     assert manifest["version"] == benethos_yahoo_finance_mcp.__version__
+    # Its own description opens as the project's does, so a new one in
+    # pyproject.toml cannot leave this card behind.
+    opening = MANIFEST["description"].split("(via yfinance)")[0] + "(via yfinance)"
+    assert manifest["description"].startswith(opening)
 
 
 def test_the_auto_update_bundle_stands_beside_the_pinned_one():

@@ -166,3 +166,29 @@ def test_get_sec_filings_empty_explains_why(patch_ticker):
     assert "U.S. SEC" in message
     assert "does not show that the symbol is wrong" in message
     assert excinfo.value.reason is not None
+
+
+def test_get_holders_holds_its_ceiling(patch_ticker):
+    institutional = pd.DataFrame({"Holder": [f"H{i}" for i in range(150)]})
+    patch_ticker(
+        FakeTicker(
+            major_holders=None,
+            institutional_holders=institutional,
+            mutualfund_holders=None,
+        )
+    )
+    out = yahoo.get_holders("aapl", limit=10_000)
+    assert len(out["institutional_holders"]) == yahoo.HOLDERS_MAX
+
+
+def test_get_insider_activity_holds_its_ceiling(patch_ticker):
+    transactions = pd.DataFrame({"Insider": [f"I{i}" for i in range(150)]})
+    patch_ticker(
+        FakeTicker(
+            insider_transactions=transactions,
+            insider_purchases=None,
+            insider_roster_holders=None,
+        )
+    )
+    out = yahoo.get_insider_activity("aapl", limit=10_000)
+    assert len(out["transactions"]) == yahoo.INSIDER_MAX

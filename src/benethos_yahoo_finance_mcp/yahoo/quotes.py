@@ -95,12 +95,12 @@ def _quote_row(
     """
     row = {
         "symbol": tickers.normalize(symbol),
-        **fast_fields(fast, fields, f"Failed to load quote for {symbol!r}"),
+        **_fast_fields(fast, fields, f"Failed to load quote for {symbol!r}"),
     }
     return row if row["lastPrice"] is not None else None
 
 
-def fast_fields(fast: Any, fields: tuple[str, ...], message: str) -> dict[str, Any]:
+def _fast_fields(fast: Any, fields: tuple[str, ...], message: str) -> dict[str, Any]:
     """Read ``fields`` from a ``fast_info``, JSON-safe, ``None`` where missing.
 
     Some fields raise instead of returning nothing when Yahoo lacks them, and

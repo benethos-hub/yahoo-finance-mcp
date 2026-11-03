@@ -71,6 +71,24 @@ def test_get_fund_data_caps_holdings(patch_ticker):
     assert len(out["top_holdings"]) == 5
 
 
+def test_get_fund_data_holds_its_ceiling(patch_ticker):
+    top = pd.DataFrame(
+        {"Name": [f"H{i}" for i in range(150)]},
+        index=pd.Index([f"S{i}" for i in range(150)], name="Symbol"),
+    )
+    fd = SimpleNamespace(
+        description=None,
+        fund_overview={},
+        asset_classes={},
+        sector_weightings={},
+        top_holdings=top,
+        fund_operations=None,
+    )
+    patch_ticker(FakeTicker(funds_data=fd))
+    out = yahoo.get_fund_data("spy", limit=10_000)
+    assert len(out["top_holdings"]) == yahoo.HOLDINGS_MAX
+
+
 def _operations(own, category, symbol="SPY"):
     """fund_operations as yfinance 1.8.0 builds it, the fund's column first."""
     rows = [

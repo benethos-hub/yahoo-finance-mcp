@@ -145,6 +145,10 @@ def get_estimates(symbol: str, *, methodology: str | None = None) -> dict[str, A
     return out
 
 
+# The most rating changes get_upgrades_downgrades returns.
+CHANGES_MAX = 100
+
+
 @cache.cached("upgrades_downgrades")
 def get_upgrades_downgrades(symbol: str, *, limit: int = 50) -> dict[str, Any]:
     """Return recent analyst rating changes for ``symbol``.
@@ -153,6 +157,7 @@ def get_upgrades_downgrades(symbol: str, *, limit: int = 50) -> dict[str, Any]:
     most recent first. Equity-only: an ETF, fund or crypto symbol raises
     SymbolNotFoundError with ``tickers.EQUITY_ONLY_REASON``.
     """
+    limit = max(1, min(int(limit), CHANGES_MAX))
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load upgrades/downgrades for {symbol!r}"):
         df = ticker.upgrades_downgrades
