@@ -782,8 +782,14 @@ them.
   `earnings_history`, `get_earnings_dates`, `major_holders`,
   `institutional_holders`, `mutualfund_holders`, `insider_purchases`,
   `insider_roster_holders`, `insider_transactions`, `sec_filings`, `calendar`,
-  `ttm_income_stmt`, `ttm_cashflow`, `valuation`, `get_shares_full`.
-- **Fund/ETF:** `funds_data`.
+  `ttm_income_stmt`, `ttm_cashflow`, `valuation`, `get_shares_full`. The
+  four EPS tables among them (`earnings_estimate`, `eps_trend`,
+  `eps_revisions`, `earnings_history`) are read through their `get_*`
+  methods, which take a `methodology` since yfinance 1.8.0, GAAP or
+  normalized, and answer in Yahoo's default for the symbol without one.
+- **Fund/ETF:** `funds_data`, its `fund_operations` included, and from
+  `info` the size and returns (`totalAssets`, `ytdReturn`, the three- and
+  five-year average returns), probed 2026-11-03 for SPY, QQQ and FFOJX.
 - **Any symbol:** `history_metadata`, `isin`.
 - **Crypto (`BTC-USD`):** the existing core paths work — `history`,
   `fast_info`/`info` (rich), `history_metadata`, `isin` — so `get_quote`,

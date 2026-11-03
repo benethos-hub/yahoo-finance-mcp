@@ -112,6 +112,7 @@ the tools. Replace the bracketed placeholders with concrete values.
 - "What's the analyst consensus for [Ticker], and how far is the average price target from the current price?"
 - "Any upgrades or downgrades for [Ticker] in the last few weeks?"
 - "What are the forward revenue and EPS estimates for [Ticker], and how were they revised recently?"
+- "Compare the EPS estimates of [Ticker A] and [Ticker B] on the same basis, GAAP or normalized."
 - "Summarize the recent news on [Ticker]."
 
 **Earnings & calendar**
@@ -135,6 +136,7 @@ the tools. Replace the bracketed placeholders with concrete values.
 
 - "What are the top holdings and sector weightings of the ETF [Ticker]?"
 - "What's the asset-class split of [ETF Ticker], and which fund family runs it?"
+- "What does the ETF [Ticker] cost per year, how large is it, and how did it do over three and five years?"
 
 **Filings**
 
@@ -393,7 +395,7 @@ on demand from
    }
    ```
 
-   Pin a version for stability with `benethos-yahoo-finance-mcp==0.10.2`. To
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.11.0`. To
    enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
@@ -638,7 +640,7 @@ The examples publish the port on the loopback address only. Drop the
 `127.0.0.1:` prefix only behind a reverse proxy that authenticates, or at the
 very least with `YF_MCP_BEARER_TOKEN` set.
 
-Pin a version for anything you depend on — `:0.10.2` for an exact release, `:0.10`
+Pin a version for anything you depend on — `:0.11.0` for an exact release, `:0.11`
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
 built from `main` on demand and is not a release at all.
 
