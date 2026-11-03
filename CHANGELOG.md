@@ -41,6 +41,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   could choose the address in the request log, an escape sequence included,
   and the request counted as HTTPS. The header is ignored now, as SPECS and
   the README always said. The compose setups were not affected.
+- `get_earnings` answered with the oldest dates Yahoo's page holds and dropped
+  the next one. yfinance returns a whole page of 25, 50 or 100 rows, newest
+  first, and the server kept the end of it, so the default of 12 gave AAPL's
+  dates from 2023 back to 2021. It keeps the newest now.
 
 ## [0.11.0] - 2026-11-03
 

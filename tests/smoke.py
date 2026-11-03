@@ -67,6 +67,9 @@ if __name__ == "__main__":
             "earnings_history": earnings["earnings_history"][:2],
         },
     )
+    # In the future or in the last quarter. A date years back means the calendar
+    # was cut at the wrong end.
+    print("first earnings_date:", earnings["earnings_dates"][:1])
 
     show("get_estimates('AAPL')", yahoo.get_estimates("AAPL"))
 
