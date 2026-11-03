@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from . import tickers
 from .analysts import (
+    CHANGES_MAX,
     EARNINGS_MAX,
     get_earnings,
     get_estimates,
@@ -55,6 +56,7 @@ from .screener import SCREEN_ALIASES, SCREEN_MAX, SCREEN_OPERATORS, screen
 from .tickers import SYMBOL_MAX, last_answer
 
 __all__ = [
+    "CHANGES_MAX",
     "EARNINGS_MAX",
     "FILINGS_MAX",
     "INTERVALS",

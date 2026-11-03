@@ -73,7 +73,11 @@ def get_upgrades_downgrades(
     symbol: Symbol,
     limit: Annotated[
         int,
-        Field(description="Maximum number of rating changes to return.", ge=1, le=100),
+        Field(
+            description="Maximum number of rating changes to return.",
+            ge=1,
+            le=yahoo.CHANGES_MAX,
+        ),
     ] = 50,
 ) -> dict[str, Any]:
     """Get recent analyst rating changes (upgrades/downgrades) for a Yahoo symbol.

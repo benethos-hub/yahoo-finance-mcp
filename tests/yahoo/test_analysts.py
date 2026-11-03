@@ -205,3 +205,13 @@ def test_get_upgrades_downgrades_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(upgrades_downgrades=pd.DataFrame()))
     with pytest.raises(SymbolNotFoundError):
         yahoo.get_upgrades_downgrades("nope")
+
+
+def test_get_upgrades_downgrades_holds_its_ceiling(patch_ticker):
+    df = pd.DataFrame(
+        {"Firm": ["x"] * 150},
+        index=pd.date_range("2020-01-01", periods=150, name="GradeDate"),
+    )
+    patch_ticker(FakeTicker(upgrades_downgrades=df))
+    out = yahoo.get_upgrades_downgrades("aapl", limit=10_000)
+    assert len(out["changes"]) == yahoo.CHANGES_MAX
