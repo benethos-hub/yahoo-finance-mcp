@@ -226,9 +226,19 @@ def serve(app: ASGIApp, *, host: str, port: int) -> None:
     The SDK's own runner builds the app and starts uvicorn in one step, which
     leaves nowhere to put the guard. This does the same two things with the
     wrapper in between. uvicorn's log goes where the logbook sends it.
+
+    uvicorn believes ``X-Forwarded-For`` from a loopback peer by default, which
+    on the default bind is every peer. This server trusts no forwarded header,
+    so that is off.
     """
     import uvicorn  # imported here so stdio never pays for it
 
     uvicorn.Server(
-        uvicorn.Config(app, host=host, port=port, **access.uvicorn_options())
+        uvicorn.Config(
+            app,
+            host=host,
+            port=port,
+            proxy_headers=False,
+            **access.uvicorn_options(),
+        )
     ).run()

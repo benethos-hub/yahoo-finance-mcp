@@ -28,6 +28,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   server imports it itself. The lowest versions allowed (pandas 3.0.0,
   yfinance 1.8.0, mcp 2.2.0 on Python 3.11) pass the tests.
 
+### Fixed
+
+- The HTTP transports believed an `X-Forwarded-For` header from a loopback
+  peer, which is uvicorn's default. With the default bind, a local process
+  could choose the address in the request log, an escape sequence included,
+  and the request counted as HTTPS. The header is ignored now, as SPECS and
+  the README always said. The compose setups were not affected.
+
 ## [0.11.0] - 2026-11-03
 
 A minor release. yfinance 1.8.0 brings the symbol's own news back to
