@@ -13,10 +13,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   on PyPI through `uv tool run`, so a new release arrives with a restart of
   Claude Desktop instead of a new download. uv checks for one at most every
   10 minutes, when the server starts, and takes the newest dependency
-  versions the release allows, not the locked ones. Nothing rolls back on its
-  own when a release or a dependency breaks something. The README says how
-  and when it updates, and that the way out is the pinned extension of a
-  release that worked. The pinned extension stays as it is.
+  versions the release allows, not the locked ones. A dependency can change
+  under the same version number and make it crash or return wrong data with
+  no error, and nothing rolls back on its own. The README says how and when
+  it updates, and that the way out is the pinned extension of a release that
+  worked. The pinned extension stays as it is.
 
 ### Changed
 

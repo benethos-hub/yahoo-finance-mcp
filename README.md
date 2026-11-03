@@ -418,15 +418,22 @@ How and when it updates:
 
 If it fails:
 
-- **What you see.** The extension does not start and its tools are missing
+- **It can come without a release of this project.** A dependency can change
+  under the same version number, so `server_status` naming the version that
+  worked yesterday proves nothing, and two machines on one version can run
+  different dependencies.
+- **A crash shows.** The extension does not start and its tools are missing
   from the chat, or a tool answers with an error. The reason is in Claude
   Desktop's log folder, in `mcp-server-<extension name>.log`, uv's own
   messages included.
-- **Nothing rolls back on its own.** uv runs the newest release at every
-  start. When a new release or a new version of a dependency breaks
-  something, every restart runs it again, until a release fixes it. Restarting
-  does not help, and the auto-update file of an older release does not either,
-  since it runs the newest release as well.
+- **Wrong data does not show.** A dependency that changes a field or its
+  meaning can leave the server running, with empty or wrong values and no
+  error anywhere. If an answer looks off, compare it with the pinned extension
+  or with Yahoo's page before relying on it.
+- **Nothing rolls back on its own.** uv runs the newest versions at every
+  start. Once something broke, every restart runs it again, until a release
+  fixes it. Restarting does not help, and the auto-update file of an older
+  release does not either, since it runs the newest release as well.
 - **The way out is the pinned extension.** Remove this one and install
   `benethos-yahoo-finance-mcp-X.Y.Z.mcpb` of a release that worked, from the
   [releases page](https://github.com/benethos-hub/yahoo-finance-mcp/releases).
