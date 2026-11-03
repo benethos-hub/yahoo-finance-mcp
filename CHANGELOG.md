@@ -21,6 +21,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- `server_status` with `details` names the installed yfinance. It decides what
+  the data looks like, and two installations of one server version can differ
+  in it, most of all with the auto-update extension.
 - The picture of how a question gets answered, in the README and SPECS, has
   a symbol per station, the project's icon on the server and the colours of
   the social preview. What it says stays the same.

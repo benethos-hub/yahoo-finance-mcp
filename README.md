@@ -215,7 +215,7 @@ show in place of its name.
 | `get_industry` | Browse an industry by key: overview, parent sector, top/top-performing/top-growth companies. |
 | `get_market` | Trading status and headline index summary for a market (US, EUROPE, ASIA, …). |
 | `screen` | Find stocks by criteria (dividend yield, P/E, market cap, region, sector, …), ranked, with the total number of matches. |
-| `server_status` | This server's version, transport and uptime, and with `details` whether its last request reached Yahoo and how long ago. Asks Yahoo nothing. |
+| `server_status` | This server's version, transport and uptime, and with `details` the yfinance version in use and whether its last request reached Yahoo and how long ago. Asks Yahoo nothing. |
 
 Most `get_*` tools take a Yahoo Finance **symbol** — either a ticker (`AAPL`,
 `SAP.DE`) or a plain ISIN. Use `search` to turn a company name into one. Four
@@ -421,7 +421,8 @@ If it fails:
 - **It can come without a release of this project.** A dependency can change
   under the same version number, so `server_status` naming the version that
   worked yesterday proves nothing, and two machines on one version can run
-  different dependencies.
+  different dependencies. `server_status` with `details` names the yfinance
+  in use, the likeliest cause.
 - **A crash shows.** The extension does not start and its tools are missing
   from the chat, or a tool answers with an error. The reason is in Claude
   Desktop's log folder, in `mcp-server-<extension name>.log`, uv's own

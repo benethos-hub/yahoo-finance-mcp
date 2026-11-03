@@ -2,8 +2,10 @@
 
 Unlike every other tool, this one asks Yahoo nothing. It answers from memory
 in plain text, one ``key: value`` per line, and writes no log line, since a
-status question is not an activity worth one. With ``details`` it adds what
-the yahoo package remembers of its last request, never a request of its own.
+status question is not an activity worth one. With ``details`` it adds the
+installed yfinance, which decides what the data looks like and can differ
+between two installations of one version, and what the yahoo package remembers
+of its last request, never a request of its own.
 """
 
 from __future__ import annotations
@@ -40,22 +42,31 @@ def register(server: MCPServer, transport: str) -> None:
         "python": python,
         "mcp": _installed("mcp"),
     }
+    yfinance = _installed("yfinance")
 
     def server_status(
         details: Annotated[
             bool,
-            Field(description="Also report whether Yahoo answered, and when."),
+            Field(
+                description="Also report the yfinance version, and whether Yahoo "
+                "answered, and when."
+            ),
         ] = False,
     ) -> str:
         """Report this server's version, transport and uptime.
 
-        With `details`, also whether its last request reached Yahoo and how
-        long ago, without asking Yahoo again.
+        With `details`, also the yfinance version in use, and whether its last
+        request reached Yahoo and how long ago, without asking Yahoo again.
         """
         lines = [f"{key}: {value}" for key, value in core.items()]
         lines.append(f"uptime_seconds: {int(time.monotonic() - started)}")
         if details:
-            lines += ["details:", "  upstream:", *_upstream()]
+            lines += [
+                "details:",
+                f"  yfinance: {yfinance}",
+                "  upstream:",
+                *_upstream(),
+            ]
         return "\n".join(lines)
 
     server.add_tool(
@@ -84,5 +95,5 @@ def _installed(package: str) -> str:
     """The installed version of ``package``, ``unknown`` rather than an error."""
     try:
         return version(package)
-    except PackageNotFoundError:  # pragma: no cover - mcp is a dependency
+    except PackageNotFoundError:  # pragma: no cover - both are dependencies
         return "unknown"

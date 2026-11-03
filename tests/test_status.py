@@ -82,10 +82,15 @@ def test_the_uptime_counts_from_the_build(monkeypatch):
     assert _value(_status(server), "uptime_seconds") == "418"
 
 
-def test_details_add_the_upstream_block_after_the_core(server, no_request_yet):
+def test_details_add_yfinance_and_the_upstream_block_after_the_core(
+    server, no_request_yet
+):
+    """yfinance decides what the data looks like, and two installations of one
+    server version can differ in it."""
     text = _status(server, details=True)
     assert text.splitlines()[len(CORE) :] == [
         "details:",
+        f"  yfinance: {version('yfinance')}",
         "  upstream:",
         "    reachable: unknown",
         "    checked_seconds_ago: never",
