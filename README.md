@@ -434,8 +434,10 @@ started with `--transport sse` takes `--transport sse` and its `/sse` URL
 instead.
 
 `-s project` writes the entry to a `.mcp.json` in the current directory,
-which a team can commit to its repository. `claude mcp list` shows whether the
-server starts, and in a chat `server_status` says which version runs.
+which a team can commit to its repository. Claude Code asks each person once
+before it starts a server from that file, and until then `claude mcp list`
+shows it as pending approval. After that it shows whether the server starts,
+and in a chat `server_status` says which version runs.
 
 ### Other ways to install
 

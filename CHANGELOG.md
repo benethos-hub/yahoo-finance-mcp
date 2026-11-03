@@ -28,6 +28,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The README says that an entry made with `-s project` waits for each
+  person's approval in Claude Code, and shows as pending approval in
+  `claude mcp list` until then.
 - The descriptions of `get_quote` and `get_quotes` say that a
   cryptocurrency's market cap is null there and that `get_company_info` has
   it. Yahoo's quote data leaves it out for crypto, its profile carries it.
