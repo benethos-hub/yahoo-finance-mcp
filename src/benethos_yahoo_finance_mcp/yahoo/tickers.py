@@ -38,6 +38,17 @@ EQUITY_ONLY_REASON = (
 )
 _SYMBOL_SHAPE = re.compile(rf"(?=.*[A-Z0-9])[A-Z0-9.\-^=&]{{1,{SYMBOL_MAX}}}")
 
+# The error class of yfinance's HTTP backend, curl_cffi or requests. The module
+# is semi-internal, and a release that moves it must not stop the server: an
+# HTTP error then reads as a network error again, as it did before.
+_HTTP_ERRORS: tuple[type[Exception], ...]
+try:
+    from yfinance import _http
+
+    _HTTP_ERRORS = (_http.HTTPError,)
+except (ImportError, AttributeError):  # pragma: no cover - see above
+    _HTTP_ERRORS = ()
+
 # How the last request to Yahoo ended, for the server's status: whether Yahoo
 # answered, and when by the monotonic clock. None until the first request. A
 # cached result asks nobody and leaves it alone. One tuple replaced whole, so
@@ -56,13 +67,21 @@ def last_answer() -> tuple[bool, int] | None:
 
     ``None`` before the first. A rate limit counts as not reached, Yahoo
     refused, and so does a network error. An error yfinance raised about the
-    data counts as reached, Yahoo answered with it.
+    data counts as reached, Yahoo answered with it, and so does an HTTP status.
     """
     last = _last_answer
     if last is None:
         return None
     reachable, at = last
     return reachable, int(time.monotonic() - at)
+
+
+def _http_status(exc: Exception) -> int | None:
+    """The status of an HTTP error from Yahoo, ``None`` for anything else."""
+    if not isinstance(exc, _HTTP_ERRORS):
+        return None
+    status = getattr(getattr(exc, "response", None), "status_code", None)
+    return status if isinstance(status, int) else None
 
 
 def wrap_upstream(exc: Exception, message: str) -> ToolError:
@@ -75,9 +94,11 @@ def wrap_upstream(exc: Exception, message: str) -> ToolError:
     crumb in it, and anything else is a fault in code, this package's or
     yfinance's, whose text tells the model nothing. Both are named by class
     only, and the unexpected kind goes to the log with its traceback. The
-    HTTP clients yfinance uses derive their errors from ``OSError``.
+    HTTP clients yfinance uses derive their errors from ``OSError``. An HTTP
+    status among them is an answer, not a failure to reach Yahoo, so it is
+    named by its number.
 
-    The first three also say how the request ended, see :func:`answered`.
+    The first four also say how the request ended, see :func:`answered`.
     A fault in code says nothing about Yahoo and leaves that alone.
     """
     if isinstance(exc, YFRateLimitError):
@@ -86,6 +107,14 @@ def wrap_upstream(exc: Exception, message: str) -> ToolError:
     if isinstance(exc, YFException):
         answered(True)
         return ToolError(f"{message}: {exc}")
+    if isinstance(exc, _HTTP_ERRORS):
+        answered(True)
+        status = _http_status(exc)
+        return ToolError(
+            f"{message}: Yahoo answered HTTP {status}."
+            if status
+            else f"{message}: Yahoo answered with an HTTP error."
+        )
     if isinstance(exc, OSError):
         answered(False)
         return ToolError(

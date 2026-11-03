@@ -6,8 +6,10 @@ yfinance is mocked completely, nothing here reaches the network.
 from __future__ import annotations
 
 from datetime import date, timedelta
+from types import SimpleNamespace
 
 import pytest
+from yfinance._http import HTTPError
 from yfinance.exceptions import YFRateLimitError
 
 from benethos_yahoo_finance_mcp import yahoo
@@ -318,3 +320,39 @@ def test_a_batch_of_quotes_that_came_back_reached_yahoo(fresh, monkeypatch):
     )
     yahoo.get_quotes(["AAPL"])
     assert tickers.last_answer() == (True, 0)
+
+
+def _http_error(status: int | None) -> HTTPError:
+    """The backend's error, with a response as yfinance's raise_for_status gives it."""
+    response = None if status is None else SimpleNamespace(status_code=status)
+    return HTTPError(f"HTTP Error {status}: ", response=response)
+
+
+@pytest.mark.parametrize("status", [404, 503])
+def test_an_http_status_is_an_answer_and_is_named(fresh, status):
+    error = tickers.wrap_upstream(_http_error(status), "Failed")
+    assert str(error) == f"Failed: Yahoo answered HTTP {status}."
+    assert tickers.last_answer() == (True, 0)
+
+
+def test_an_http_error_without_a_response_is_still_an_answer(fresh):
+    error = tickers.wrap_upstream(_http_error(None), "Failed")
+    assert str(error) == "Failed: Yahoo answered with an HTTP error."
+    assert tickers.last_answer() == (True, 0)
+
+
+def test_the_text_of_an_http_error_stays_out(fresh):
+    """The requests backend's text carries the URL with Yahoo's crumb."""
+    exc = HTTPError(
+        "404 for url: https://x/?crumb=s3cret",
+        response=SimpleNamespace(status_code=404),
+    )
+    message = str(tickers.wrap_upstream(exc, "Failed"))
+    assert "s3cret" not in message
+    assert "answered HTTP 404" in message
+
+
+def test_a_network_error_is_still_one(fresh):
+    error = tickers.wrap_upstream(ConnectionError("down"), "Failed")
+    assert str(error) == "Failed: Yahoo could not be reached (ConnectionError)."
+    assert tickers.last_answer() == (False, 0)

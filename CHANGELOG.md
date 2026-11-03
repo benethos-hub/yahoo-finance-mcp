@@ -45,6 +45,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the next one. yfinance returns a whole page of 25, 50 or 100 rows, newest
   first, and the server kept the end of it, so the default of 12 gave AAPL's
   dates from 2023 back to 2021. It keeps the newest now.
+- An HTTP error from Yahoo read as `Yahoo could not be reached`, and
+  `server_status` then said `reachable: no`, though Yahoo had answered. The
+  error names the status now, and `server_status` says `reachable: yes`.
 
 ## [0.11.0] - 2026-11-03
 
