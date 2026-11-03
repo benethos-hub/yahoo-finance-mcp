@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- yfinance 1.8.0, now the lowest version allowed. `get_news` gets the
+  symbol's own news from Yahoo again, with a summary, also for symbols
+  outside the US such as SAP.DE, NESN.SW or 7203.T, where the search found
+  nothing. The search stays as the fallback. The EPS tables of
+  `get_estimates` and the history of `get_earnings` carry a new
+  `methodology` column, GAAP or normalized, which says how Yahoo counted
+  the earnings. The `multitasking` package is no longer installed.
+
 ## [0.10.2] - 2026-11-03
 
 A patch release that finishes the `get_news` fix of 0.10.1, which still let

@@ -46,8 +46,10 @@ dependencies = [
     # 2.2.0 fixes GHSA-84m7-p3x7-pcfv: a stateful Streamable HTTP server never
     # reclaimed its sessions, and this server offers that transport.
     "mcp>=2.2.0,<3",
-    # 1.6.0 is the first to know the screener field `dividendyield`.
-    "yfinance>=1.6.0",
+    # 1.8.0 reaches the ticker's news again, through the GraphQL route Yahoo's
+    # site uses since it dropped the old one (ranaroussi/yfinance#3018), and
+    # stops tripping pandas 3.1's deprecation of `inplace` (#3020).
+    "yfinance>=1.8.0",
     # Required by yfinance for HTML-table scraping (e.g. earnings dates).
     # 6.1.0 fixes GHSA-vfmq-68hx-4jfw, XXE in iterparse() and ETCompatXMLParser().
     "lxml>=6.1.0",
