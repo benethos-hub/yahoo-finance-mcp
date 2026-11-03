@@ -17,6 +17,7 @@ from __future__ import annotations
 import ast
 import importlib
 import re
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -198,21 +199,37 @@ LIBRARY_HOMES = {
     "uvicorn": {"transport"},
     "starlette": {"transport"},
     "pydantic": {"server", "tools"},
+    "pydantic_core": {"tools"},
     # cli names the SDK's server type for the checker only.
     "mcp": {"errors", "server", "tools", "transport", "cli"},
 }
 
 
+def _absolute_imports(path: Path) -> Iterator[str]:
+    """The top-level name of every absolute import in ``path``."""
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Import):
+            yield from (a.name.split(".")[0] for a in node.names)
+        elif isinstance(node, ast.ImportFrom) and not node.level:
+            yield (node.module or "").split(".")[0]
+
+
 @pytest.mark.parametrize("library", sorted(LIBRARY_HOMES))
 def test_a_library_is_imported_only_in_its_home(library):
-    homes = set()
-    for path in _sources():
-        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
-            names = []
-            if isinstance(node, ast.Import):
-                names = [a.name for a in node.names]
-            elif isinstance(node, ast.ImportFrom) and not node.level:
-                names = [node.module or ""]
-            if any(n.split(".")[0] == library for n in names):
-                homes.add(_unit(path.relative_to(PACKAGE).parts))
+    homes = {
+        _unit(path.relative_to(PACKAGE).parts)
+        for path in _sources()
+        if library in _absolute_imports(path)
+    }
     assert homes == LIBRARY_HOMES[library]
+
+
+def test_every_library_imported_has_a_home():
+    """The check above sees only the libraries it names, so a new one fails here."""
+    outside = {
+        name
+        for path in _sources()
+        for name in _absolute_imports(path)
+        if name not in sys.stdlib_module_names and name != PACKAGE.name
+    }
+    assert outside <= set(LIBRARY_HOMES)
