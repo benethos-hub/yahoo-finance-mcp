@@ -63,6 +63,31 @@ class FakeTicker:
         self.requested_expiration = expiration
         return self._attrs.get("option_chain")
 
+    # The EPS tables take a methodology since yfinance 1.8.0. Each request
+    # is kept, (table, methodology), and the table is the attribute of the
+    # same name, as the properties before them.
+    def _eps_table(self, name, methodology):
+        self.__dict__.setdefault("eps_requests", []).append((name, methodology))
+        return self._attrs.get(name)
+
+    def get_earnings_estimate(self, methodology=None):
+        return self._eps_table("earnings_estimate", methodology)
+
+    def get_eps_trend(self, methodology=None):
+        return self._eps_table("eps_trend", methodology)
+
+    def get_eps_revisions(self, methodology=None):
+        return self._eps_table("eps_revisions", methodology)
+
+    def get_earnings_history(self, methodology=None):
+        return self._eps_table("earnings_history", methodology)
+
+    def get_revenue_estimate(self):
+        return self._attrs.get("revenue_estimate")
+
+    def get_growth_estimates(self):
+        return self._attrs.get("growth_estimates")
+
     def get_earnings_dates(self, **kwargs):
         self.earnings_dates_kwargs = kwargs
         return self._attrs.get("earnings_dates")

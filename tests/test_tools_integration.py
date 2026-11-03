@@ -156,6 +156,21 @@ def test_get_financials_forwards_statement_and_freq(call_tool, monkeypatch):
     assert captured["freq"] == "ttm"
 
 
+@pytest.mark.parametrize("tool", ["get_estimates", "get_earnings"])
+def test_methodology_is_forwarded(call_tool, monkeypatch, tool):
+    captured: dict[str, object] = {}
+
+    def spy(*a, **k):
+        captured.update(k)
+        return {"ok": True}
+
+    monkeypatch.setattr(yahoo, tool, spy)
+    call_tool(tool, {"symbol": "AAPL", "methodology": "gaap"})
+    assert captured["methodology"] == "gaap"
+    call_tool(tool, {"symbol": "AAPL"})
+    assert captured["methodology"] is None
+
+
 def test_tool_error_message_reaches_the_caller(call_tool, monkeypatch):
     """A ToolError must arrive with its text, not just as a failed call.
 

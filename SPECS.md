@@ -352,8 +352,8 @@ these, it describes the server (see the end of the table).
 | `get_news` | `symbol`, `limit` 1-50 (=10) | `{symbol, count, source, articles[{title, summary, publisher, published, url}]}` (`source` `ticker`, or `search` when the ticker has none: the articles Yahoo's search tags with the symbol, `summary` null) |
 | `get_recommendations` | `symbol` | `{symbol, price_targets, recommendation_trend[]}` (trend rows keyed by `period`) |
 | `get_options` | `symbol`, `expiration?` | without `expiration`: `{symbol, expirations[]}`, with it: `{symbol, expiration, truncated, calls[], puts[]}` (≤60 strikes per side, centred on the money, rows keyed by `contractSymbol`) |
-| `get_earnings` | `symbol`, `limit` 1-50 (=12) | `{symbol, earnings_dates[], earnings_history[]}` (equity-only) |
-| `get_estimates` | `symbol` | `{symbol, earnings_estimate[], revenue_estimate[], eps_trend[], eps_revisions[], growth_estimates[]}` (equity-only) |
+| `get_earnings` | `symbol`, `limit` 1-50 (=12), `methodology` `gaap`/`normalized` (=Yahoo's default) | `{symbol, earnings_dates[], earnings_history[]}` (equity-only, `methodology` applies to the history and each row names it) |
+| `get_estimates` | `symbol`, `methodology` `gaap`/`normalized` (=Yahoo's default) | `{symbol, earnings_estimate[], revenue_estimate[], eps_trend[], eps_revisions[], growth_estimates[]}` (equity-only, `methodology` applies to the three EPS tables and each row names it) |
 | `get_upgrades_downgrades` | `symbol`, `limit` 1-100 (=50) | `{symbol, changes[]}` (rating changes, newest first, equity-only) |
 | `get_holders` | `symbol`, `limit` 1-100 (=25) | `{symbol, major_holders[], institutional_holders[], mutualfund_holders[]}` (top holders first, equity-only) |
 | `get_insider_activity` | `symbol`, `limit` 1-100 (=50) | `{symbol, transactions[], purchases_summary[], roster[]}` (transactions newest first, equity-only) |
@@ -818,8 +818,8 @@ per-tool TTL and row-capped.
 
 | Tool | Backed by | Notes |
 |------|-----------|-------|
-| `get_earnings` | `get_earnings_dates`, `earnings_history` | upcoming + historical EPS estimate/actual/surprise, **needs `lxml`** |
-| `get_estimates` | `earnings_estimate`, `revenue_estimate`, `eps_trend`, `eps_revisions`, `growth_estimates` | forward analyst estimates |
+| `get_earnings` | `get_earnings_dates`, `get_earnings_history` | upcoming + historical EPS estimate/actual/surprise, **needs `lxml`** |
+| `get_estimates` | `get_earnings_estimate`, `get_revenue_estimate`, `get_eps_trend`, `get_eps_revisions`, `get_growth_estimates` | forward analyst estimates |
 | `get_upgrades_downgrades` | `upgrades_downgrades` | analyst rating changes (large, row-capped) |
 | `get_holders` | `major_holders`, `institutional_holders`, `mutualfund_holders` | ownership breakdown |
 | `get_insider_activity` | `insider_transactions`, `insider_purchases`, `insider_roster_holders` | insider trading |
