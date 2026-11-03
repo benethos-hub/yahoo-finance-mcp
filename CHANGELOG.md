@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-11-03
+
+A patch release that finishes the `get_news` fix of 0.10.1, which still let
+about one call in 25 fail. No tool, parameter or schema changes, and the
+dependencies are those of 0.10.1.
+
 ### Fixed
 
 - `get_news` still failed about one call in 25 with `Yahoo could not be
@@ -1677,7 +1683,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.2...HEAD
+[0.10.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.8.8...v0.9.0
