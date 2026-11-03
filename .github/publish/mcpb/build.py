@@ -81,10 +81,14 @@ def _fresh(target: Path) -> None:
     target.mkdir(parents=True)
 
 
-def stage(target: Path) -> None:
+def _copy(files: dict[str, Path], target: Path) -> None:
     _fresh(target)
-    for name, source in FILES.items():
+    for name, source in files.items():
         shutil.copy2(source, target / name)
+
+
+def stage(target: Path) -> None:
+    _copy(FILES, target)
     shutil.copytree(
         REPO / "src",
         target / "src",
@@ -100,9 +104,7 @@ def auto_update_manifest() -> dict[str, object]:
 
 
 def stage_auto_update(target: Path) -> None:
-    _fresh(target)
-    for name, source in AUTO_UPDATE_FILES.items():
-        shutil.copy2(source, target / name)
+    _copy(AUTO_UPDATE_FILES, target)
     (target / "manifest.json").write_text(
         json.dumps(auto_update_manifest(), indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
