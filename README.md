@@ -112,6 +112,7 @@ the tools. Replace the bracketed placeholders with concrete values.
 - "What's the analyst consensus for [Ticker], and how far is the average price target from the current price?"
 - "Any upgrades or downgrades for [Ticker] in the last few weeks?"
 - "What are the forward revenue and EPS estimates for [Ticker], and how were they revised recently?"
+- "Compare the EPS estimates of [Ticker A] and [Ticker B] on the same basis, GAAP or normalized."
 - "Summarize the recent news on [Ticker]."
 
 **Earnings & calendar**
@@ -135,6 +136,7 @@ the tools. Replace the bracketed placeholders with concrete values.
 
 - "What are the top holdings and sector weightings of the ETF [Ticker]?"
 - "What's the asset-class split of [ETF Ticker], and which fund family runs it?"
+- "What does the ETF [Ticker] cost per year, how large is it, and how did it do over three and five years?"
 
 **Filings**
 

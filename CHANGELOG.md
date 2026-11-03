@@ -9,13 +9,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.11.0] - 2026-11-03
 
 A minor release. yfinance 1.8.0 brings the symbol's own news back to
-`get_news`, for markets outside the US too, and two tools gain an
-argument: `get_news` takes up to 50 articles, and `get_estimates` and
-`get_earnings` take the basis of earnings per share. `get_fund_data` adds
-what a fund costs, how large it is and how it did. The image's
-dependencies are those of 0.10.2 apart from yfinance 1.8.0, which no
-longer pulls `multitasking`, on the same builds of uv 0.13.7 and
-`python:3.15-slim`.
+`get_news`, for markets outside the US too and up to 50 articles of it.
+`get_estimates` and `get_earnings` gain an argument, the basis of earnings
+per share, and `get_fund_data` adds what a fund costs, how large it is and
+how it did. The image's dependencies are those of 0.10.2 apart from
+yfinance 1.8.0, which no longer pulls `multitasking`, on the same builds of
+uv 0.13.7 and `python:3.15-slim`.
 
 ### Added
 
@@ -65,6 +64,9 @@ longer pulls `multitasking`, on the same builds of uv 0.13.7 and
   `claude mcp list` until then.
 - Lock refresh, development only: `mypy-extensions` 1.2.0 (was 1.1.0)
   under mypy. It reaches neither the package nor the image.
+- The README asks for the new things among the example prompts: EPS
+  estimates of two companies on one basis, and what an ETF costs, how large
+  it is and how it did.
 
 ## [0.10.2] - 2026-11-03
 
