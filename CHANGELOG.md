@@ -53,6 +53,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `get_fund_data` answered with a hollow profile, kept in the cache for a
   day, when yfinance found nothing in Yahoo's answer. That is "not found" now,
   and not cached.
+- The production compose file ignored `YF_MCP_LOG_LEVEL` in `.env`, a literal
+  `INFO` stood in its place, though the README and `.env.example` say it works
+  there. It takes the value from `.env` now.
 
 ## [0.11.0] - 2026-11-03
 
