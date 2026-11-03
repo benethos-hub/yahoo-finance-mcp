@@ -35,6 +35,10 @@ _QUOTE_FAST_FIELDS = (
 # The most matches a search returns.
 SEARCH_MAX = 25
 
+# The longest query a search takes, far past a company name or an ISIN. It goes
+# to Yahoo in the URL and is hashed into the cache key.
+QUERY_MAX = 200
+
 
 @cache.cached("search")
 def search(query: str, *, limit: int = 8) -> list[dict[str, Any]]:

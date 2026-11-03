@@ -27,6 +27,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   checked it. `pandas` is now a direct dependency, `>=3.0.0`, since the
   server imports it itself. The lowest versions allowed (pandas 3.0.0,
   yfinance 1.8.0, mcp 2.2.0 on Python 3.11) pass the tests.
+- `search` takes a `query` of at most 200 characters, like every other
+  text argument it has a bound now.
 
 ### Fixed
 

@@ -43,6 +43,7 @@ from .ownership import (
 from .quotes import (
     INTERVALS,
     PERIODS,
+    QUERY_MAX,
     QUOTES_MAX,
     SEARCH_MAX,
     get_history,
@@ -60,6 +61,7 @@ __all__ = [
     "MARKET_KEYS",
     "NEWS_MAX",
     "PERIODS",
+    "QUERY_MAX",
     "QUOTES_MAX",
     "SCREEN_ALIASES",
     "SCREEN_MAX",

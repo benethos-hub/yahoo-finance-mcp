@@ -196,6 +196,11 @@ def test_a_bound_is_stated_as_the_yahoo_function_holds_it(
         assert listed.input_schema["properties"][param]["maximum"] == value
 
 
+def test_the_search_query_has_a_length_bound(server):
+    [listed] = [t for t in _list_tools(server) if t.name == "search"]
+    assert listed.input_schema["properties"]["query"]["maxLength"] == yahoo.QUERY_MAX
+
+
 def test_the_server_names_its_website(server):
     """The initialize handshake points a client at the repository."""
     assert server.website_url == "https://github.com/benethos-hub/yahoo-finance-mcp"

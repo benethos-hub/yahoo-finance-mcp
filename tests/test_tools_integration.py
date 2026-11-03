@@ -240,6 +240,19 @@ def test_a_bad_screen_filter_reaches_the_model_as_text(call_tool, monkeypatch):
     assert "is a category, compare it with eq or is-in" in message, message
 
 
+def test_an_overlong_query_is_refused_and_named_not_quoted(
+    call_tool, monkeypatch, caplog
+):
+    def never(*a, **k):  # pragma: no cover - must not be reached
+        raise AssertionError("Yahoo was asked")
+
+    monkeypatch.setattr(yahoo, "search", never)
+    with pytest.raises(Exception):  # noqa: B017 - the type is the SDK's
+        call_tool("search", {"query": "x" * 201})
+    assert "search refused arguments: query" in caplog.text
+    assert "xxx" not in caplog.text
+
+
 @pytest.mark.parametrize("value", [True, [1, True]])
 def test_a_boolean_screen_value_is_refused_not_read_as_one(
     call_tool, monkeypatch, value
