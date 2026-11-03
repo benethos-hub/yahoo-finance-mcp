@@ -378,3 +378,13 @@ def test_every_module_is_named_in_claude_md_or_specs() -> None:
         if path.name not in docs and path.name not in named
     )
     assert not unnamed, f"named in neither CLAUDE.md nor SPECS.md: {unnamed}"
+
+
+def test_the_build_backend_is_pinned_exactly() -> None:
+    """uv.lock pins what runs, not what builds this package.
+
+    An image build and the first start of the pinned bundle build the wheel,
+    so a range here would take whatever hatchling is newest on that day.
+    """
+    [backend] = PYPROJECT["build-system"]["requires"]
+    assert re.fullmatch(r"hatchling==\d+\.\d+\.\d+", backend), backend

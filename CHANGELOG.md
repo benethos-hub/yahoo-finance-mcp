@@ -29,6 +29,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   yfinance 1.8.0, mcp 2.2.0 on Python 3.11) pass the tests.
 - `search` takes a `query` of at most 200 characters, like every other
   text argument it has a bound now.
+- The build backend is pinned to an exact version, hatchling 1.33.0, so an
+  image build or the first start of the pinned extension no longer takes
+  whichever hatchling is newest. Its own dependencies still come from the
+  index.
 
 ### Fixed
 
