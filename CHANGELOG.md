@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-04
+
+A minor release, since a schema changed: `search` bounds the length of its query
+and `methodology` describes one more case. The fix that matters most is
+`get_earnings`, which answered with the oldest dates on Yahoo's page and dropped
+the next one. Every release from here on also carries a Claude Desktop extension
+that runs the newest release from PyPI, so a new release arrives with a restart
+of Claude Desktop. The six main dependencies now stay inside a patch window, so a
+minor of theirs waits until it was checked and released, and `server_status` with
+`details` names the yfinance in use. The image's dependencies are those of 0.11.0.
+
 ### Added
 
 - A second Claude Desktop extension on every release,
@@ -1809,7 +1820,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.2...v0.11.0
 [0.10.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.0...v0.10.1
