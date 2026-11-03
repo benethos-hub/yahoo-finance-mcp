@@ -222,7 +222,7 @@ def test_get_news_fallback_rate_limit_becomes_rate_limit_error(
 
 
 def test_get_news_falls_back_when_the_ticker_route_raises(patch_ticker, patch_search):
-    """yfinance 1.7.0 reads Yahoo's HTML 404 page as an outage and raises."""
+    """yfinance reads the HTML page of a dropped route as an outage and raises."""
     down = YFDataException("*** YAHOO! FINANCE IS CURRENTLY DOWN! ***")
     patch_ticker(FakeTicker(news_error=down))
     patch_search.news = [_searched("about-apple", "AAPL")]
