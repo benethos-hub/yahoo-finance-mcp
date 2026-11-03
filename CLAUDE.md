@@ -233,7 +233,7 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    catches up with what every index user already has. Refresh with
    `uv lock --upgrade` as its own commit, then the gates, plus the `yfinance`
    or `mcp` checks above for anything that sits under those. The refresh
-   stays inside the upper bounds (`mcp<3`, `yfinance<2`, `pandas<4`) and so
+   stays inside the upper bounds (`mcp<3`, `yfinance<2`, `pandas<4`, `pydantic<3`) and so
    never shows a major past one. `uv tree --outdated --depth 1` does: it
    names the newest release on the index whatever the bound, and a
    `(latest: ...)` line after the refresh is such a major. It is asked about,

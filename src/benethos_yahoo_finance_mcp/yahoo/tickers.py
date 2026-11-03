@@ -14,6 +14,7 @@ import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import date
+from typing import NamedTuple
 
 import yfinance as yf
 from yfinance.exceptions import YFException, YFRateLimitError
@@ -56,13 +57,20 @@ except (ImportError, AttributeError):  # pragma: no cover - see above
 _last_answer: tuple[bool, float] | None = None
 
 
+class LastAnswer(NamedTuple):
+    """How the last request to Yahoo ended, for the server's status."""
+
+    reachable: bool
+    seconds_ago: int
+
+
 def answered(reachable: bool) -> None:
     """Remember that the request just made reached Yahoo, or did not."""
     global _last_answer
     _last_answer = (reachable, time.monotonic())
 
 
-def last_answer() -> tuple[bool, int] | None:
+def last_answer() -> LastAnswer | None:
     """Whether the last request reached Yahoo, and how many seconds ago.
 
     ``None`` before the first. A rate limit counts as not reached, Yahoo
@@ -73,7 +81,7 @@ def last_answer() -> tuple[bool, int] | None:
     if last is None:
         return None
     reachable, at = last
-    return reachable, int(time.monotonic() - at)
+    return LastAnswer(reachable, int(time.monotonic() - at))
 
 
 def _http_status(exc: Exception) -> int | None:

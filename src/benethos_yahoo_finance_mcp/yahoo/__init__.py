@@ -64,7 +64,7 @@ from .screener import (
     SCREEN_OPERATORS,
     screen,
 )
-from .tickers import SYMBOL_MAX, last_answer
+from .tickers import SYMBOL_MAX, LastAnswer, last_answer
 
 __all__ = [
     "CHANGES_MAX",
@@ -76,6 +76,7 @@ __all__ = [
     "HOLDINGS_MAX",
     "INSIDER_MAX",
     "INTERVALS",
+    "LastAnswer",
     "MARKET_KEYS",
     "NEWS_MAX",
     "OFFSET_MAX",

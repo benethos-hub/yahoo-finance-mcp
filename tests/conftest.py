@@ -77,3 +77,13 @@ def _logging_levels_restored():
     yield
     for name, level in saved.items():
         logging.getLogger(name).setLevel(level)
+
+
+@pytest.fixture
+def no_request_yet(monkeypatch):
+    """No request to Yahoo made in this process, whatever a test does with it.
+
+    The one place above ``tests/yahoo/`` that touches the module's state, since
+    the state has no way back to nothing. ``monkeypatch`` restores it afterwards.
+    """
+    monkeypatch.setattr(tickers, "_last_answer", None)

@@ -60,6 +60,10 @@ dependencies = [
     # Imported directly by formatting.py, so named here and not only reached
     # through yfinance.
     "pandas>=3.0.0,<4",
+    # Imported directly by server.py and the tools, so named here and not only
+    # reached through mcp. It pins pydantic-core exactly, which tools/_base.py
+    # imports too. The lower bound is what mcp 2.2.0 asks for.
+    "pydantic>=2.12.0,<3",
     # Required by yfinance for HTML-table scraping (e.g. earnings dates).
     # 6.1.0 fixes GHSA-vfmq-68hx-4jfw, XXE in iterparse() and ETCompatXMLParser().
     "lxml>=6.1.0",
