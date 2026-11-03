@@ -14,6 +14,12 @@ from . import tickers
 # keeps them whole, it is not a page size like ``limit``.
 _SUMMARY_ROWS = 10
 
+# The most institutional or mutual-fund holders get_holders returns per list.
+HOLDERS_MAX = 100
+
+# The most transactions or roster rows get_insider_activity returns.
+INSIDER_MAX = 100
+
 
 @cache.cached("holders")
 def get_holders(symbol: str, *, limit: int = 25) -> dict[str, Any]:
@@ -24,6 +30,7 @@ def get_holders(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     fund or crypto symbol raises SymbolNotFoundError with
     ``tickers.EQUITY_ONLY_REASON``.
     """
+    limit = max(1, min(int(limit), HOLDERS_MAX))
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load holders for {symbol!r}"):
         major = ticker.major_holders
@@ -56,6 +63,7 @@ def get_insider_activity(symbol: str, *, limit: int = 50) -> dict[str, Any]:
     fund or crypto symbol raises SymbolNotFoundError with
     ``tickers.EQUITY_ONLY_REASON``.
     """
+    limit = max(1, min(int(limit), INSIDER_MAX))
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load insider activity for {symbol!r}"):
         transactions = ticker.insider_transactions

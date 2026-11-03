@@ -180,6 +180,8 @@ BOUNDS = [
     ("get_sec_filings", "limit", None, yahoo.FILINGS_MAX),
     ("screen", "limit", None, yahoo.SCREEN_MAX),
     ("get_upgrades_downgrades", "limit", None, yahoo.CHANGES_MAX),
+    ("get_holders", "limit", None, yahoo.HOLDERS_MAX),
+    ("get_insider_activity", "limit", None, yahoo.INSIDER_MAX),
     ("get_quotes", None, "more than {} were passed", yahoo.QUOTES_MAX),
     ("get_history", None, "the most recent {} rows", formatting.MAX_ROWS),
     ("get_options", None, "up to {} strikes", yahoo.STRIKES_MAX),

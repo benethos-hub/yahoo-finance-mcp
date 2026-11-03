@@ -37,6 +37,8 @@ from .funds import get_fund_data
 from .options import STRIKES_MAX, get_options
 from .ownership import (
     FILINGS_MAX,
+    HOLDERS_MAX,
+    INSIDER_MAX,
     get_holders,
     get_insider_activity,
     get_sec_filings,
@@ -59,6 +61,8 @@ __all__ = [
     "CHANGES_MAX",
     "EARNINGS_MAX",
     "FILINGS_MAX",
+    "HOLDERS_MAX",
+    "INSIDER_MAX",
     "INTERVALS",
     "MARKET_KEYS",
     "NEWS_MAX",
