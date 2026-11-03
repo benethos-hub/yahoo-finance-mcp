@@ -28,6 +28,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The descriptions of `get_quote` and `get_quotes` say that a
+  cryptocurrency's market cap is null there and that `get_company_info` has
+  it. Yahoo's quote data leaves it out for crypto, its profile carries it.
 - yfinance 1.8.0, now the lowest version allowed. `get_news` gets the
   symbol's own news from Yahoo again, with a summary, also for symbols
   outside the US such as SAP.DE, NESN.SW or 7203.T, where the search found

@@ -48,7 +48,10 @@ def search(
 
 
 def get_quote(symbol: Symbol) -> dict[str, Any]:
-    """Get the current price and key intraday figures for a Yahoo symbol."""
+    """Get the current price and key intraday figures for a Yahoo symbol.
+
+    A cryptocurrency's market cap is null here, `get_company_info` has it.
+    """
     return yahoo.get_quote(symbol)
 
 
@@ -68,7 +71,8 @@ def get_quotes(
     is looked up individually and returns currency, last price, previous close,
     open, day high/low, and market cap. Symbols that return no data are listed
     under `not_found` rather than failing the whole call, and `truncated`
-    is set when more than 50 were passed.
+    is set when more than 50 were passed. A cryptocurrency's market cap is
+    null here, `get_company_info` has it.
     """
     return yahoo.get_quotes(symbols)
 
