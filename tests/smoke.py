@@ -40,7 +40,8 @@ if __name__ == "__main__":
     news = yahoo.get_news("AAPL", limit=3)
     show("get_news('AAPL', limit=3)", news)
     # Yahoo dropped the route behind Ticker.get_news in October 2026 (yfinance
-    # issue #3004), and get_news fell back to the search. "ticker" means a
+    # issue #3004), and get_news fell back to the search. Since November 2026
+    # yfinance raises on that 404 instead of answering []. "ticker" means a
     # yfinance release reached the news again, and the fallback rests.
     print(f"get_news source: {news['source']}")
     show("get_recommendations('AAPL')", yahoo.get_recommendations("AAPL"))
