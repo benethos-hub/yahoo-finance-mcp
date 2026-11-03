@@ -6,15 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Added
+## [0.11.0] - 2026-11-03
 
-- `get_fund_data` answers with `key_figures`: the expense ratio and the
-  category average beside it, the holdings turnover, the total assets, and
-  the returns year to date and averaged over three and five years. Yahoo
-  states some of these in percent and some as fractions, the answer gives
-  every ratio and return as a fraction, 0.0007 for 0.07%. A figure Yahoo
-  lacks is left out. US funds carry all of them, European ETFs mostly the
-  expense ratio and the turnover. One more request to Yahoo per call.
+A minor release. yfinance 1.8.0 brings the symbol's own news back to
+`get_news`, for markets outside the US too, and two tools gain an
+argument: `get_news` takes up to 50 articles, and `get_estimates` and
+`get_earnings` take the basis of earnings per share. `get_fund_data` adds
+what a fund costs, how large it is and how it did. The image's
+dependencies are those of 0.10.2 apart from yfinance 1.8.0, which no
+longer pulls `multitasking`, on the same builds of uv 0.13.7 and
+`python:3.15-slim`.
+
+### Added
 
 - `get_estimates` and `get_earnings` take a `methodology` of `gaap` or
   `normalized`, the basis Yahoo counts earnings per share on. Yahoo picks
@@ -25,19 +28,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   EPS trend and revisions and the earnings history. Revenue, growth and the
   earnings calendar have one basis only. Without it the answer is Yahoo's
   default, as before.
+- `get_fund_data` answers with `key_figures`: the expense ratio and the
+  category average beside it, the holdings turnover, the total assets, and
+  the returns year to date and averaged over three and five years. Yahoo
+  states some of these in percent and some as fractions, the answer gives
+  every ratio and return as a fraction, 0.0007 for 0.07%. A figure Yahoo
+  lacks is left out. US funds carry all of them, European ETFs mostly the
+  expense ratio and the turnover. One more request to Yahoo per call.
 
 ### Changed
 
-- The README says why the Claude Desktop extension may not start on Windows
-  with Smart App Control on: it blocks the copy of uv Claude Desktop
-  downloads on a machine without uv, as it can block the launchers `uvx`
-  writes. It points to the install from PyPI with pip, which needs neither.
-- The README says that an entry made with `-s project` waits for each
-  person's approval in Claude Code, and shows as pending approval in
-  `claude mcp list` until then.
-- The descriptions of `get_quote` and `get_quotes` say that a
-  cryptocurrency's market cap is null there and that `get_company_info` has
-  it. Yahoo's quote data leaves it out for crypto, its profile carries it.
 - yfinance 1.8.0, now the lowest version allowed. `get_news` gets the
   symbol's own news from Yahoo again, with a summary, also for symbols
   outside the US such as SAP.DE, NESN.SW or 7203.T, where the search found
@@ -49,10 +49,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   what Yahoo's news route serves for most symbols with yfinance 1.8.0. The
   default stays at 10. The search fallback asks for 30 articles instead of
   20 before it keeps those tagged with the symbol.
+- The descriptions of `get_quote` and `get_quotes` say that a
+  cryptocurrency's market cap is null there and that `get_company_info` has
+  it. Yahoo's quote data leaves it out for crypto, its profile carries it.
 - The server no longer hides the deprecation warnings raised inside
   yfinance. The filter was there for pandas 3.1's deprecation of `inplace`,
   which yfinance 1.7.0 tripped up to 14 times per call, and 1.8.0 no
   longer uses it.
+- The README says why the Claude Desktop extension may not start on Windows
+  with Smart App Control on: it blocks the copy of uv Claude Desktop
+  downloads on a machine without uv, as it can block the launchers `uvx`
+  writes. It points to the install from PyPI with pip, which needs neither.
+- The README says that an entry made with `-s project` waits for each
+  person's approval in Claude Code, and shows as pending approval in
+  `claude mcp list` until then.
+- Lock refresh, development only: `mypy-extensions` 1.2.0 (was 1.1.0)
+  under mypy. It reaches neither the package nor the image.
 
 ## [0.10.2] - 2026-11-03
 
@@ -1731,7 +1743,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.2...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.2...v0.11.0
 [0.10.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.9.0...v0.10.0
