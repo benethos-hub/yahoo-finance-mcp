@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- `get_news` answered every symbol with `Failed to load news ...: *** YAHOO!
+  FINANCE IS CURRENTLY DOWN! ***` since early November 2026, although Yahoo
+  was up. Yahoo's 404 on the ticker's news route became an HTML page, and
+  yfinance 1.7.0 reads that page as an outage and raises, where it returned
+  an empty list before. The error now counts as no articles from the ticker,
+  and the search fallback delivers again. A rate limit still ends the call.
+
 ### Changed
 
 - The README shows how to add the server to Claude Code with

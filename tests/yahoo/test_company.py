@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-from yfinance.exceptions import YFRateLimitError
+from yfinance.exceptions import YFDataException, YFRateLimitError
 
 from benethos_yahoo_finance_mcp import yahoo
 from benethos_yahoo_finance_mcp.errors import (
@@ -219,6 +219,23 @@ def test_get_news_fallback_rate_limit_becomes_rate_limit_error(
     monkeypatch.setattr(tickers.yf, "Search", throttled)
     with pytest.raises(RateLimitError):
         yahoo.get_news("aapl")
+
+
+def test_get_news_falls_back_when_the_ticker_route_raises(patch_ticker, patch_search):
+    """yfinance 1.7.0 reads Yahoo's HTML 404 page as an outage and raises."""
+    down = YFDataException("*** YAHOO! FINANCE IS CURRENTLY DOWN! ***")
+    patch_ticker(FakeTicker(news_error=down))
+    patch_search.news = [_searched("about-apple", "AAPL")]
+    out = yahoo.get_news("aapl")
+    assert out["source"] == "search"
+    assert out["count"] == 1
+
+
+def test_get_news_ticker_route_rate_limit_still_raises(patch_ticker, patch_search):
+    patch_ticker(FakeTicker(news_error=YFRateLimitError()))
+    with pytest.raises(RateLimitError):
+        yahoo.get_news("aapl")
+    assert patch_search.calls == []
 
 
 def test_get_news_asks_yahoo_for_the_requested_count(patch_ticker):

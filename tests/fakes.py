@@ -43,6 +43,8 @@ class FakeTicker:
 
     def get_news(self, **kwargs):
         self.news_kwargs = kwargs
+        if "news_error" in self._attrs:
+            raise self._attrs["news_error"]
         return self._attrs.get("news", [])
 
     @property

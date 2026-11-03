@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import yfinance as yf
+from yfinance.exceptions import YFDataException
 
 from .. import cache
 from ..errors import SymbolNotFoundError, ToolError
@@ -188,15 +189,22 @@ def get_news(symbol: str, *, limit: int = NEWS_MAX) -> dict[str, Any]:
     The articles come from the ticker's own news when Yahoo serves any, and
     otherwise from Yahoo's search, keeping those tagged with the symbol.
     ``source`` says which. Since October 2026 Yahoo answers 404 on the route
-    behind ``Ticker.get_news`` (yfinance issue #3004), and yfinance turns
-    that into an empty list, so the search is what delivers for now. It finds
-    nothing for most symbols outside the US, and its articles carry no
-    summary.
+    behind ``Ticker.get_news`` (yfinance issue #3004), so the search is what
+    delivers for now. It finds nothing for most symbols outside the US, and
+    its articles carry no summary.
     """
     limit = max(1, min(int(limit), NEWS_MAX))
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load news for {symbol!r}"):
-        raw = ticker.get_news(count=limit) or []
+        try:
+            raw = ticker.get_news(count=limit) or []
+        except YFDataException:
+            # yfinance turned the 404 into an empty list until Yahoo's 404
+            # page became HTML (November 2026). It reads "Will be right back"
+            # in that page as an outage and raises, although Yahoo is up.
+            # Either way the ticker has no articles, and the search follows.
+            # A rate limit is a sibling class and still ends the call.
+            raw = []
     articles = [_ticker_article(item) for item in raw[:limit]]
     source = "ticker"
 
