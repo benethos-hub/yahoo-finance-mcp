@@ -354,3 +354,17 @@ def test_get_market_status_none_becomes_null_not_empty_dict(monkeypatch):
     out = yahoo.get_market("EUROPE")
     assert out["status"] is None
     assert out["count"] == 1
+
+
+def test_get_sector_holds_its_ceiling(monkeypatch):
+    monkeypatch.setattr(tickers.yf, "Sector", lambda key: _fake_sector(n_companies=150))
+    out = yahoo.get_sector("technology", limit=10_000)
+    assert len(out["top_companies"]) == yahoo.COMPANIES_MAX
+
+
+def test_get_industry_holds_its_ceiling(monkeypatch):
+    monkeypatch.setattr(
+        tickers.yf, "Industry", lambda key: _fake_industry(n_companies=150)
+    )
+    out = yahoo.get_industry("semiconductors", limit=10_000)
+    assert len(out["top_companies"]) == yahoo.COMPANIES_MAX

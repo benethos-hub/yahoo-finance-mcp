@@ -18,6 +18,7 @@ from .analysts import (
     get_upgrades_downgrades,
 )
 from .browse import (
+    COMPANIES_MAX,
     MARKET_KEYS,
     SECTOR_KEYS,
     get_industry,
@@ -59,6 +60,7 @@ from .tickers import SYMBOL_MAX, last_answer
 
 __all__ = [
     "CHANGES_MAX",
+    "COMPANIES_MAX",
     "EARNINGS_MAX",
     "FILINGS_MAX",
     "HOLDERS_MAX",

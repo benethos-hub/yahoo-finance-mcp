@@ -29,7 +29,11 @@ def get_sector(
     ],
     limit: Annotated[
         int,
-        Field(description="Maximum number of top companies to return.", ge=1, le=100),
+        Field(
+            description="Maximum number of top companies to return.",
+            ge=1,
+            le=yahoo.COMPANIES_MAX,
+        ),
     ] = 25,
 ) -> dict[str, Any]:
     """Browse a market sector by its Yahoo key (not a ticker symbol).
@@ -54,7 +58,11 @@ def get_industry(
     ],
     limit: Annotated[
         int,
-        Field(description="Maximum number of top companies to return.", ge=1, le=100),
+        Field(
+            description="Maximum number of top companies to return.",
+            ge=1,
+            le=yahoo.COMPANIES_MAX,
+        ),
     ] = 25,
 ) -> dict[str, Any]:
     """Browse an industry by its Yahoo key (not a ticker symbol).

@@ -183,6 +183,8 @@ BOUNDS = [
     ("get_holders", "limit", None, yahoo.HOLDERS_MAX),
     ("get_insider_activity", "limit", None, yahoo.INSIDER_MAX),
     ("get_fund_data", "limit", None, yahoo.HOLDINGS_MAX),
+    ("get_sector", "limit", None, yahoo.COMPANIES_MAX),
+    ("get_industry", "limit", None, yahoo.COMPANIES_MAX),
     ("get_quotes", None, "more than {} were passed", yahoo.QUOTES_MAX),
     ("get_history", None, "the most recent {} rows", formatting.MAX_ROWS),
     ("get_options", None, "up to {} strikes", yahoo.STRIKES_MAX),

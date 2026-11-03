@@ -66,6 +66,10 @@ def _no_data(kind: str, key: str) -> ToolError:
     )
 
 
+# The most top companies get_sector and get_industry return.
+COMPANIES_MAX = 100
+
+
 @cache.cached("sector")
 def get_sector(key: str, *, limit: int = 25) -> dict[str, Any]:
     """Return an overview of a market sector by its Yahoo ``key``.
@@ -83,6 +87,7 @@ def get_sector(key: str, *, limit: int = 25) -> dict[str, Any]:
             f"Unknown sector key {key!r}. Valid keys: {', '.join(SECTOR_KEYS)}."
         )
 
+    limit = max(1, min(int(limit), COMPANIES_MAX))
     with tickers.upstream(f"Failed to load sector {key!r}"):
         sector = yf.Sector(key)
         name = sector.name
@@ -132,6 +137,7 @@ def get_industry(key: str, *, limit: int = 25) -> dict[str, Any]:
             "'industries' list returned by get_sector."
         )
 
+    limit = max(1, min(int(limit), COMPANIES_MAX))
     with tickers.upstream(f"Failed to load industry {key!r}"):
         industry = yf.Industry(key)
         name = industry.name
