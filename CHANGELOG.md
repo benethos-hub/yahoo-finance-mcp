@@ -18,6 +18,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The picture of how a question gets answered, in the README and SPECS, has
+  a symbol per station, the project's icon on the server and the colours of
+  the social preview. What it says stays the same.
 - `yfinance` and `pandas` stop at their next major, `<2` and `<4`, as `mcp`
   already did at `<3`. The auto-update extension and `uvx` install the
   newest versions allowed, and a major would reach them before anyone
