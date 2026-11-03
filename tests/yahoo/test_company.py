@@ -172,7 +172,7 @@ def test_get_news_falls_back_to_the_articles_the_search_tags_with_the_symbol(
     ]
     [(query, kwargs)] = patch_search.calls
     assert query == "AAPL"
-    assert kwargs == {"max_results": 0, "news_count": 20, "lists_count": 0}
+    assert kwargs == {"max_results": 0, "news_count": 30, "lists_count": 0}
 
 
 def test_get_news_searches_the_symbol_an_isin_resolves_to(patch_ticker, patch_search):
@@ -267,9 +267,15 @@ def test_get_news_asks_yahoo_for_the_requested_count(patch_ticker):
     assert ticker.news_kwargs == {"count": 3}
 
 
-def test_get_news_limit_is_capped_at_what_yahoo_serves(patch_ticker):
+def test_get_news_limit_is_capped(patch_ticker):
     ticker = patch_ticker(FakeTicker(news=[]))
-    yahoo.get_news("aapl", limit=30)
+    yahoo.get_news("aapl", limit=50)
+    assert ticker.news_kwargs == {"count": yahoo.NEWS_MAX}
+
+
+def test_get_news_asks_for_ten_by_default(patch_ticker):
+    ticker = patch_ticker(FakeTicker(news=[]))
+    yahoo.get_news("aapl")
     assert ticker.news_kwargs == {"count": 10}
 
 

@@ -173,17 +173,19 @@ def get_dividends(symbol: str, *, limit: int = MAX_ROWS) -> dict[str, Any]:
     }
 
 
-# Yahoo serves at most this many articles per symbol, whatever count is asked
-# for. Probed 2026-09-25 with get_news(count=30) for AAPL: ten came back.
-NEWS_MAX = 10
+# The most articles one call returns, what Yahoo's news route serves for
+# most symbols since yfinance 1.8.0. Asked for 150 on 2026-11-03, ALV.DE and
+# NESN.SW gave 50 and AAPL 79. An article is about 500 characters, so the
+# tool asks for 10 unless the caller wants more.
+NEWS_MAX = 50
 
 # How many articles the fallback asks the search for. It serves 30 when asked,
 # and the ones that do not name the symbol are dropped afterwards.
-_SEARCH_NEWS = 20
+_SEARCH_NEWS = 30
 
 
 @cache.cached("news")
-def get_news(symbol: str, *, limit: int = NEWS_MAX) -> dict[str, Any]:
+def get_news(symbol: str, *, limit: int = 10) -> dict[str, Any]:
     """Return recent news headlines for ``symbol``.
 
     The articles come from the ticker's own news when Yahoo serves any, and

@@ -15,6 +15,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `get_estimates` and the history of `get_earnings` carry a new
   `methodology` column, GAAP or normalized, which says how Yahoo counted
   the earnings. The `multitasking` package is no longer installed.
+- `get_news` takes a `limit` of up to 50 articles, up from 10, which is
+  what Yahoo's news route serves for most symbols with yfinance 1.8.0. The
+  default stays at 10. The search fallback asks for 30 articles instead of
+  20 before it keeps those tagged with the symbol.
 - The server no longer hides the deprecation warnings raised inside
   yfinance. The filter was there for pandas 3.1's deprecation of `inplace`,
   which yfinance 1.7.0 tripped up to 14 times per call, and 1.8.0 no
