@@ -47,7 +47,7 @@ ICON_SIZE = 512
 PREVIEW_PNG = BRAND / "social-preview.png"
 PREVIEW_WIDTH, PREVIEW_HEIGHT = 1280, 640
 ARCHITECTURE_PNG = HERE / "architecture.png"
-ARCHITECTURE_WIDTH, ARCHITECTURE_HEIGHT = 1280, 380
+ARCHITECTURE_WIDTH, ARCHITECTURE_HEIGHT = 1280, 470
 
 # The preview's words. Unofficial is spelled out and nothing borrows Yahoo's
 # look: the icon and the colours are the project's own.
@@ -119,29 +119,71 @@ def _icon(x: int, y: int, size: int) -> str:
     )
 
 
-def _step(x: int, w: int, title: str, *lines: str, kind: str) -> str:
-    """One station on the way, a title and a line or two under it.
+# Plain line symbols on a 24 unit grid, for the stations that are not this
+# project. No logo of anyone else: the project is unofficial, and neither
+# Yahoo's nor a client's look belongs in its picture.
+SYMBOLS = {
+    "person": (
+        '<circle cx="12" cy="8" r="4"/>'
+        '<path d="M4.5 21c0-4.2 3.3-7.5 7.5-7.5s7.5 3.3 7.5 7.5"/>'
+    ),
+    "chat": (
+        '<path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H10'
+        'l-4.5 3.5v-3.5H4A1.5 1.5 0 0 1 2.5 16V7A1.5 1.5 0 0 1 4 5.5z"/>'
+        '<path d="M7.5 11.5h.01M12 11.5h.01M16.5 11.5h.01" stroke-width="2.6"/>'
+    ),
+    "market": ('<path d="M3 3.5V20.5H21"/><path d="M7 15.5l4-4.5 3.5 3 5.5-7"/>'),
+}
 
-    server is this project, outside is not its code, plain is the rest.
+# Where the stations sit, and the height of the arrows between them.
+CARD_Y, CARD_H = 170, 240
+GO_Y, BACK_Y = CARD_Y + 96, CARD_Y + 146
+
+
+def _badge(cx: float, symbol: str, colour: str) -> str:
+    """A symbol in a round plate at the top of a station."""
+    cy, size = CARD_Y + 58, 34
+    return (
+        f'<circle cx="{cx}" cy="{cy}" r="32" fill="{colour}" fill-opacity="0.14" '
+        f'stroke="{colour}" stroke-opacity="0.5" stroke-width="1.5"/>'
+        f'<svg x="{cx - size / 2}" y="{cy - size / 2}" width="{size}" '
+        f'height="{size}" viewBox="0 0 24 24" fill="none" stroke="{colour}" '
+        'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'
+        f"{SYMBOLS[symbol]}</svg>"
+    )
+
+
+def _step(x: int, w: int, title: str, *lines: str, kind: str, symbol: str) -> str:
+    """One station on the way: its symbol, a title and a line or two under it.
+
+    server is this project and carries its icon, outside is not its code,
+    plain is the rest.
     """
-    y, h = 170, 150
-    stroke = {"server": "#2DD4BF", "outside": "#64748B", "plain": "#64748B"}[kind]
-    fill = "#2DD4BF" if kind == "server" else "#1E293B"
-    opacity = "0.12" if kind == "server" else "1"
+    server = kind == "server"
+    stroke = "#2DD4BF" if server else "#475569"
+    fill = "url(#card-server)" if server else "url(#card)"
     dash = ' stroke-dasharray="7 6"' if kind == "outside" else ""
+    width = "2.5" if server else "1.5"
     cx = x + w / 2
+    badge = (
+        _icon(round(cx - 36), CARD_Y + 22, 72)
+        if server
+        else _badge(cx, symbol, "#94A3B8" if kind == "outside" else "#5EEAD4")
+    )
     parts = [
-        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="16" fill="{fill}" '
-        f'fill-opacity="{opacity}" stroke="{stroke}" stroke-width="2"{dash}/>',
-        f'<text x="{cx}" y="{y + 56}" font-size="26" font-weight="700" '
+        f'<rect x="{x}" y="{CARD_Y}" width="{w}" height="{CARD_H}" rx="20" '
+        f'fill="{fill}" stroke="{stroke}" stroke-width="{width}"{dash} '
+        'filter="url(#lift-card)"/>',
+        badge,
+        f'<text x="{cx}" y="{CARD_Y + 134}" font-size="26" font-weight="700" '
         f'fill="#F8FAFC" text-anchor="middle">{title}</text>',
     ]
     for i, line in enumerate(lines):
         mono = line.startswith("`")
         family = ' font-family="Consolas, Menlo, monospace"' if mono else ""
         parts.append(
-            f'<text x="{cx}" y="{y + 92 + 26 * i}" font-size="17" fill="#CBD5E1" '
-            f'text-anchor="middle"{family}>{line.strip("`")}</text>'
+            f'<text x="{cx}" y="{CARD_Y + 170 + 26 * i}" font-size="17" '
+            f'fill="#CBD5E1" text-anchor="middle"{family}>{line.strip("`")}</text>'
         )
     return "".join(parts)
 
@@ -150,15 +192,33 @@ def _hop(x1: int, x2: int, ask: str, reply: str) -> str:
     """A request going right above, its reply coming back below."""
     mid = (x1 + x2) / 2
     return (
-        f'<path d="M{x1 + 4} 222 H{x2 - 4}" stroke="#2DD4BF" stroke-width="2.5" '
+        f'<path d="M{x1 + 6} {GO_Y} H{x2 - 6}" stroke="#2DD4BF" stroke-width="2.5" '
         'marker-end="url(#go)"/>'
-        f'<path d="M{x2 - 4} 268 H{x1 + 4}" stroke="#94A3B8" stroke-width="2.5" '
+        f'<path d="M{x2 - 6} {BACK_Y} H{x1 + 6}" stroke="#94A3B8" stroke-width="2.5" '
         'marker-end="url(#back)"/>'
-        f'<text x="{mid}" y="210" font-size="15" fill="#5EEAD4" '
+        f'<text x="{mid}" y="{GO_Y - 12}" font-size="15" fill="#5EEAD4" '
         f'text-anchor="middle">{ask}</text>'
-        f'<text x="{mid}" y="292" font-size="15" fill="#CBD5E1" '
+        f'<text x="{mid}" y="{BACK_Y + 24}" font-size="15" fill="#CBD5E1" '
         f'text-anchor="middle">{reply}</text>'
     )
+
+
+def _pills(cx: int, y: int, *labels: str) -> str:
+    """Rounded labels in one centred row. Widths are estimated from the text."""
+    widths = [round(len(label) * 8.6) + 36 for label in labels]
+    gap = 12
+    x = cx - (sum(widths) + gap * (len(labels) - 1)) / 2
+    parts = []
+    for label, width in zip(labels, widths, strict=True):
+        parts.append(
+            f'<rect x="{x}" y="{y}" width="{width}" height="32" rx="16" '
+            'fill="#2DD4BF" fill-opacity="0.12" '
+            'stroke="#2DD4BF" stroke-opacity="0.45"/>'
+            f'<text x="{x + width / 2}" y="{y + 22}" font-size="16" fill="#E2E8F0" '
+            f'text-anchor="middle">{label}</text>'
+        )
+        x += width + gap
+    return "".join(parts)
 
 
 def _architecture() -> str:
@@ -166,19 +226,41 @@ def _architecture() -> str:
 
     The modules and which may import which stay in SPECS.md §3 as a table.
     """
-    markers = "".join(
+    defs = "".join(
         f'<marker id="{name}" viewBox="0 0 10 10" refX="9" refY="5" '
         'markerWidth="7" markerHeight="7" orient="auto">'
         f'<path d="M0 0L10 5L0 10z" fill="{colour}"/></marker>'
         for name, colour in (("go", "#2DD4BF"), ("back", "#94A3B8"))
     )
+    defs += (
+        '<linearGradient id="arch-bg" x1="0" y1="0" x2="0.35" y2="1">'
+        '<stop offset="0%" stop-color="#26334A"/>'
+        '<stop offset="100%" stop-color="#121A2A"/></linearGradient>'
+        '<linearGradient id="arch-line" x1="0" y1="1" x2="1" y2="0">'
+        '<stop offset="0%" stop-color="#2DD4BF"/>'
+        '<stop offset="100%" stop-color="#4ADE80"/></linearGradient>'
+        '<linearGradient id="card" x1="0" y1="0" x2="0" y2="1">'
+        '<stop offset="0%" stop-color="#2A3750"/>'
+        '<stop offset="100%" stop-color="#1B2538"/></linearGradient>'
+        '<linearGradient id="card-server" x1="0" y1="0" x2="0" y2="1">'
+        '<stop offset="0%" stop-color="#1F4A52"/>'
+        '<stop offset="100%" stop-color="#17303C"/></linearGradient>'
+        '<filter id="lift-card" x="-10%" y="-10%" width="120%" height="125%">'
+        '<feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0B1120" '
+        'flood-opacity="0.55"/></filter>'
+    )
     body = [
-        '<text x="640" y="80" font-size="30" font-weight="700" fill="#F8FAFC" '
+        '<polyline points="0,458 260,442 520,454 780,426 1020,436 1280,396" '
+        'fill="none" stroke="url(#arch-line)" stroke-width="3" opacity="0.16"/>',
+        '<text x="640" y="66" font-size="32" font-weight="700" fill="#F8FAFC" '
         'text-anchor="middle">How a question gets answered</text>',
-        '<text x="640" y="114" font-size="18" fill="#94A3B8" '
-        'text-anchor="middle">read-only, no Yahoo account, no API key</text>',
-        _step(40, 200, "You", "ask in plain", "language", kind="plain"),
-        _step(310, 230, "MCP client", "for example", "Claude", kind="plain"),
+        _pills(640, 92, "read-only", "no Yahoo account", "no API key"),
+        _step(
+            40, 200, "You", "ask in plain", "language", kind="plain", symbol="person"
+        ),
+        _step(
+            310, 230, "MCP client", "for example", "Claude", kind="plain", symbol="chat"
+        ),
         _step(
             630,
             300,
@@ -186,6 +268,7 @@ def _architecture() -> str:
             "`benethos-yahoo-finance-mcp`",
             "fetches, keeps it compact",
             kind="server",
+            symbol="",
         ),
         _step(
             1020,
@@ -194,6 +277,7 @@ def _architecture() -> str:
             "unofficial endpoints,",
             "via yfinance",
             kind="outside",
+            symbol="market",
         ),
         _hop(240, 310, "question", "answer"),
         _hop(540, 630, "tool call", "JSON"),
@@ -202,8 +286,8 @@ def _architecture() -> str:
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{ARCHITECTURE_WIDTH}" '
         f'height="{ARCHITECTURE_HEIGHT}" viewBox="0 0 {ARCHITECTURE_WIDTH} '
-        f'{ARCHITECTURE_HEIGHT}"><defs>{markers}</defs>'
-        '<rect width="100%" height="100%" fill="#121A2A"/>'
+        f'{ARCHITECTURE_HEIGHT}"><defs>{defs}</defs>'
+        '<rect width="100%" height="100%" fill="url(#arch-bg)"/>'
         '<g font-family="Segoe UI, Inter, Helvetica, Arial, sans-serif">'
         f"{''.join(body)}</g></svg>"
     )
