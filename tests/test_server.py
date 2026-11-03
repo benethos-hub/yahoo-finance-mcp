@@ -204,6 +204,25 @@ def test_a_bound_is_stated_as_the_yahoo_function_holds_it(
         assert listed.input_schema["properties"][param]["maximum"] == value
 
 
+# A closed set of values a parameter's description lists, against the constant
+# the yahoo function checks them with.
+CLOSED_SETS = [
+    ("get_earnings", "methodology", yahoo.EPS_METHODOLOGIES),
+    ("get_estimates", "methodology", yahoo.EPS_METHODOLOGIES),
+    ("get_history", "interval", yahoo.INTERVALS),
+    ("get_history", "period", yahoo.PERIODS),
+    ("get_sector", "key", yahoo.SECTOR_KEYS),
+    ("get_market", "key", yahoo.MARKET_KEYS),
+]
+
+
+@pytest.mark.parametrize(("tool", "param", "values"), CLOSED_SETS)
+def test_a_description_names_every_value_of_its_closed_set(server, tool, param, values):
+    [listed] = [t for t in _list_tools(server) if t.name == tool]
+    description = listed.input_schema["properties"][param]["description"]
+    assert [value for value in values if value not in description] == []
+
+
 def test_every_row_cap_and_offset_is_bound_to_a_constant(server):
     """A new literal in a schema fails here instead of passing unseen."""
     capped = {

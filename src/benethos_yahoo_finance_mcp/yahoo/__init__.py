@@ -12,6 +12,7 @@ from . import tickers
 from .analysts import (
     CHANGES_MAX,
     EARNINGS_MAX,
+    EPS_METHODOLOGIES,
     get_earnings,
     get_estimates,
     get_recommendations,
@@ -69,6 +70,7 @@ __all__ = [
     "CHANGES_MAX",
     "COMPANIES_MAX",
     "EARNINGS_MAX",
+    "EPS_METHODOLOGIES",
     "FILINGS_MAX",
     "HOLDERS_MAX",
     "HOLDINGS_MAX",
