@@ -236,5 +236,5 @@ def get_ticker(symbol: str) -> yf.Ticker:
         return yf.Ticker(key)
     except ValueError as exc:
         raise SymbolNotFoundError(key) from exc
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001 - normalize what the constructor raises
         raise wrap_upstream(exc, f"Failed to resolve {key!r}") from exc
