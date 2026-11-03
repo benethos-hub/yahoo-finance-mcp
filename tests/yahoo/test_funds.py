@@ -5,8 +5,11 @@ yfinance is mocked completely, nothing here reaches the network.
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pandas as pd
 import pytest
+from yfinance._http import HTTPError
 from yfinance.exceptions import YFDataException, YFRateLimitError
 
 from benethos_yahoo_finance_mcp import yahoo
@@ -15,6 +18,7 @@ from benethos_yahoo_finance_mcp.errors import (
     SymbolNotFoundError,
     ToolError,
 )
+from benethos_yahoo_finance_mcp.yahoo import funds, tickers
 from fakes import FakeTicker
 
 # --- get_fund_data --------------------------------------------------------
@@ -140,6 +144,41 @@ def test_get_fund_data_non_fund_raises_not_found(patch_ticker):
         yahoo.get_fund_data("aapl")
 
 
+def test_get_fund_data_unknown_symbol_raises_not_found(patch_ticker):
+    """The fund route answers an unknown symbol with a 404, and it reached Yahoo."""
+    error = HTTPError("HTTP Error 404: ", response=SimpleNamespace(status_code=404))
+    patch_ticker(FakeTicker(funds_data=error))
+    with pytest.raises(SymbolNotFoundError):
+        yahoo.get_fund_data("NOSUCHFUND")
+    assert tickers.last_answer() == (True, 0)
+
+
+def test_get_fund_data_server_error_is_not_a_missing_symbol(patch_ticker):
+    error = HTTPError("HTTP Error 503: ", response=SimpleNamespace(status_code=503))
+    patch_ticker(FakeTicker(funds_data=error))
+    with pytest.raises(ToolError, match="Yahoo answered HTTP 503") as info:
+        yahoo.get_fund_data("SPY")
+    assert not isinstance(info.value, SymbolNotFoundError)
+
+
+def test_get_fund_data_with_nothing_in_it_raises_not_found(patch_ticker):
+    """yfinance swallows a parse failure and leaves every attribute None.
+
+    A hollow profile would be kept in the cache for a day.
+    """
+    hollow = SimpleNamespace(
+        description=None,
+        fund_overview=None,
+        asset_classes=None,
+        sector_weightings=None,
+        top_holdings=None,
+        fund_operations=None,
+    )
+    patch_ticker(FakeTicker(funds_data=hollow, info={"totalAssets": 1.0}))
+    with pytest.raises(SymbolNotFoundError):
+        yahoo.get_fund_data("SPY")
+
+
 def test_get_fund_data_rate_limit(patch_ticker):
     patch_ticker(FakeTicker(funds_data=YFRateLimitError()))
     with pytest.raises(RateLimitError):
@@ -150,3 +189,9 @@ def test_get_fund_data_upstream_error(patch_ticker):
     patch_ticker(FakeTicker(funds_data=RuntimeError("boom")))
     with pytest.raises(ToolError):
         yahoo.get_fund_data("spy")
+
+
+@pytest.mark.parametrize("value", [float("inf"), float("-inf"), float("nan")])
+def test_a_figure_that_is_not_finite_is_left_out(value):
+    """Infinity is not JSON, and the rule in formatting holds here too."""
+    assert funds._fraction(value) is None

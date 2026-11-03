@@ -289,6 +289,17 @@ def test_transport_security_explicit_allow_list_wins_even_when_exposed():
     assert ts.allowed_origins == ["http://mcp:8000", "https://mcp:8000"]
 
 
+@pytest.mark.parametrize("folder", ["development", "production"])
+def test_compose_takes_the_log_level_from_env(folder):
+    """A literal under environment: would quietly win over the operator's .env."""
+    from pathlib import Path
+
+    path = Path(__file__).parent.parent / "containers" / folder / "compose.yaml"
+    compose = path.read_text("utf-8")
+    levels = re.findall(r"^ +YF_MCP_LOG_LEVEL: (.+)$", compose, re.M)
+    assert levels == ["${YF_MCP_LOG_LEVEL:-INFO}"]
+
+
 def _compose_guard(folder: str, env: dict[str, str]):
     """The rebinding guard ``folder``'s compose file sets up, under ``env``.
 

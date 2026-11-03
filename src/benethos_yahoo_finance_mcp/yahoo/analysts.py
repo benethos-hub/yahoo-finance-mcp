@@ -86,7 +86,14 @@ def get_earnings(
         dates = ticker.get_earnings_dates(limit=limit)
         history = ticker.get_earnings_history(methodology=chosen)
 
-    dates_rows = dataframe_to_records(dates, max_rows=limit, index_name="earnings_date")
+    # yfinance rounds limit up to a page of 25, 50 or 100 and returns all of it,
+    # so the cut happens here. Newest first, which holds the next date and the
+    # latest quarters, whichever order the page came in.
+    if dates is not None and not dates.empty:
+        dates = dates.sort_index(ascending=False)
+    dates_rows = dataframe_to_records(
+        dates, max_rows=limit, index_name="earnings_date", head=True
+    )
     history_rows = dataframe_to_records(history, max_rows=limit, index_name="quarter")
     if not dates_rows and not history_rows:
         raise SymbolNotFoundError(symbol, reason=tickers.EQUITY_ONLY_REASON)

@@ -68,6 +68,24 @@ def test_get_earnings_combines_dates_and_history(patch_ticker):
     assert ticker.earnings_dates_kwargs == {"limit": 8}
 
 
+@pytest.mark.parametrize("newest_first", [True, False])
+def test_get_earnings_keeps_the_newest_of_the_page(patch_ticker, newest_first):
+    """yfinance rounds limit up to a page of 25, 50 or 100 and returns all of it.
+
+    Yahoo sends the page newest first. Keeping the tail gave the oldest dates
+    and lost the next one. The other order must not bring that back.
+    """
+    index = pd.date_range(
+        "2020-01-01", periods=25, freq="QS", tz="America/New_York", name="Earnings Date"
+    )
+    dates = pd.DataFrame({"EPS Estimate": list(range(25))}, index=index)
+    if newest_first:
+        dates = dates.iloc[::-1]
+    patch_ticker(FakeTicker(earnings_dates=dates, earnings_history=None))
+    rows = yahoo.get_earnings("aapl", limit=12)["earnings_dates"]
+    assert [row["EPS Estimate"] for row in rows] == list(range(24, 12, -1))
+
+
 def test_get_earnings_empty_raises(patch_ticker):
     patch_ticker(FakeTicker(earnings_dates=None, earnings_history=None))
     with pytest.raises(SymbolNotFoundError):

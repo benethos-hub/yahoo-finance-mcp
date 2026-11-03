@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from yfinance.exceptions import YFDataException
 
 from .. import cache
+from ..errors import SymbolNotFoundError
 from ..formatting import dataframe_to_records, to_jsonable
 from . import tickers
 
@@ -25,14 +27,14 @@ _FRACTION_FIELDS = (
 
 
 def _number(value: Any) -> float | None:
-    """``value`` as a float, ``None`` for a missing or NaN value."""
+    """``value`` as a float, ``None`` for a missing or non-finite value."""
     if value is None or isinstance(value, bool):
         return None
     try:
         number = float(value)
     except (TypeError, ValueError):
         return None
-    return None if number != number else number  # NaN is not equal to itself
+    return number if math.isfinite(number) else None
 
 
 def _fraction(value: Any, *, percent: bool = False) -> float | None:
@@ -89,10 +91,13 @@ def get_fund_data(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     """
     ticker = tickers.get_ticker(symbol)
     # yfinance raises YFDataException for a stock or crypto, which has no
-    # fund data: that is a missing symbol, not a failure.
+    # fund data: that is a missing symbol, not a failure. So is an unknown
+    # symbol, which this route answers with a 404 that yfinance lets through,
+    # while its other scrapers read the same error as no data.
     with tickers.upstream(
         f"Failed to load fund data for {symbol!r}",
         not_found=(YFDataException,),
+        not_found_status=404,
         symbol=symbol,
     ):
         fd = ticker.funds_data
@@ -107,6 +112,16 @@ def get_fund_data(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     holdings_rows = dataframe_to_records(
         top_holdings, max_rows=limit, index_name="symbol", head=True
     )
+    # yfinance swallows a parse failure and leaves every attribute None. The
+    # key figures do not count, they come from ``info``, which a stock has too.
+    if (
+        not description
+        and overview is None
+        and asset_classes is None
+        and sector_weightings is None
+        and not holdings_rows
+    ):
+        raise SymbolNotFoundError(symbol)
     return {
         "symbol": tickers.normalize(symbol),
         "description": description,

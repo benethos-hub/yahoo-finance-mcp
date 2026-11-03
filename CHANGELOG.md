@@ -41,6 +41,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   could choose the address in the request log, an escape sequence included,
   and the request counted as HTTPS. The header is ignored now, as SPECS and
   the README always said. The compose setups were not affected.
+- `get_earnings` answered with the oldest dates Yahoo's page holds and dropped
+  the next one. yfinance returns a whole page of 25, 50 or 100 rows, newest
+  first, and the server kept the end of it, so the default of 12 gave AAPL's
+  dates from 2023 back to 2021. It keeps the newest now.
+- An HTTP error from Yahoo read as `Yahoo could not be reached`, and
+  `server_status` then said `reachable: no`, though Yahoo had answered. The
+  error names the status now, and `server_status` says `reachable: yes`.
+  `get_fund_data` answers a 404 as an unknown symbol, which is what it means
+  on that route.
+- `get_fund_data` answered with a hollow profile, kept in the cache for a
+  day, when yfinance found nothing in Yahoo's answer. That is "not found" now,
+  and not cached.
+- The production compose file ignored `YF_MCP_LOG_LEVEL` in `.env`, a literal
+  `INFO` stood in its place, though the README and `.env.example` say it works
+  there. It takes the value from `.env` now.
 
 ## [0.11.0] - 2026-11-03
 
