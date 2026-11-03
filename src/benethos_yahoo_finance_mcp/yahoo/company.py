@@ -198,12 +198,15 @@ def get_news(symbol: str, *, limit: int = NEWS_MAX) -> dict[str, Any]:
     with tickers.upstream(f"Failed to load news for {symbol!r}"):
         try:
             raw = ticker.get_news(count=limit) or []
-        except YFDataException:
+        except (YFDataException, OSError):
             # yfinance turned the 404 into an empty list until Yahoo's 404
             # page became HTML (November 2026). It reads "Will be right back"
             # in that page as an outage and raises, although Yahoo is up.
-            # Either way the ticker has no articles, and the search follows.
-            # A rate limit is a sibling class and still ends the call.
+            # About one read in 25 of that page also ends cut short, an
+            # IncompleteRead, which is an OSError. Either way the ticker has
+            # no articles, and the search follows. When the network is
+            # really gone, the search fails too and says so. A rate limit is
+            # neither class and still ends the call.
             raw = []
     articles = [_ticker_article(item) for item in raw[:limit]]
     source = "ticker"

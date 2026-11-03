@@ -800,7 +800,9 @@ them.
 - **News:** `get_news` has been empty for every symbol since October 2026,
   when Yahoo began answering 404 on its route (yfinance issue #3004).
   Since November 2026 that 404 is an HTML page, which yfinance 1.7.0 reads
-  as an outage and raises `YFDataException` on. Both count as no articles.
+  as an outage and raises `YFDataException` on. About one read in 25 of
+  that page also ends cut short, an `IncompleteRead`. All three count as no
+  articles.
   `Search(<symbol>).news`, kept to the articles whose `relatedTickers` name
   the symbol, serves US equities, ETFs, indices, crypto, FX and futures, and
   nothing for SAP.DE, ALV.DE, NESN.SW or 7203.T (probed 2026-10-22). A

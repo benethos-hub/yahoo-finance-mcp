@@ -231,6 +231,27 @@ def test_get_news_falls_back_when_the_ticker_route_raises(patch_ticker, patch_se
     assert out["count"] == 1
 
 
+def test_get_news_falls_back_when_the_ticker_route_breaks_off(
+    patch_ticker, patch_search
+):
+    """Yahoo's 404 page sometimes arrives cut short, curl_cffi's IncompleteRead."""
+    patch_ticker(FakeTicker(news_error=ConnectionResetError("665 bytes missing")))
+    patch_search.news = [_searched("about-apple", "AAPL")]
+    out = yahoo.get_news("aapl")
+    assert out["source"] == "search"
+    assert out["count"] == 1
+
+
+def test_get_news_without_a_network_fails_in_the_search(patch_ticker, monkeypatch):
+    def unreachable(*a, **k):
+        raise ConnectionError("no route to host")
+
+    patch_ticker(FakeTicker(news_error=ConnectionError("no route to host")))
+    monkeypatch.setattr(tickers.yf, "Search", unreachable)
+    with pytest.raises(ToolError, match="could not be reached"):
+        yahoo.get_news("aapl")
+
+
 def test_get_news_ticker_route_rate_limit_still_raises(patch_ticker, patch_search):
     patch_ticker(FakeTicker(news_error=YFRateLimitError()))
     with pytest.raises(RateLimitError):

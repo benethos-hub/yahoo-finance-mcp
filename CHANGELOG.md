@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- `get_news` still failed about one call in 25 with `Yahoo could not be
+  reached (IncompleteRead)`, and `server_status` then reported Yahoo as
+  unreachable. Yahoo's HTML 404 page on the ticker's news route sometimes
+  arrives cut short. A network error on that route now counts as no
+  articles from the ticker as well, and the search follows. When the
+  network is really gone, the search fails too and the call reports it.
+
 ## [0.10.1] - 2026-11-03
 
 A patch release for `get_news`, which failed for every symbol in 0.10.0
