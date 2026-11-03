@@ -48,6 +48,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - An HTTP error from Yahoo read as `Yahoo could not be reached`, and
   `server_status` then said `reachable: no`, though Yahoo had answered. The
   error names the status now, and `server_status` says `reachable: yes`.
+  `get_fund_data` answers a 404 as an unknown symbol, which is what it means
+  on that route.
 
 ## [0.11.0] - 2026-11-03
 

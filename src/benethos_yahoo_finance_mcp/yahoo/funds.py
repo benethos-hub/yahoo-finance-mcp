@@ -89,10 +89,13 @@ def get_fund_data(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     """
     ticker = tickers.get_ticker(symbol)
     # yfinance raises YFDataException for a stock or crypto, which has no
-    # fund data: that is a missing symbol, not a failure.
+    # fund data: that is a missing symbol, not a failure. So is an unknown
+    # symbol, which this route answers with a 404 that yfinance lets through,
+    # while its other scrapers read the same error as no data.
     with tickers.upstream(
         f"Failed to load fund data for {symbol!r}",
         not_found=(YFDataException,),
+        not_found_status=404,
         symbol=symbol,
     ):
         fd = ticker.funds_data
