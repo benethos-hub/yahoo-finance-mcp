@@ -50,6 +50,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   error names the status now, and `server_status` says `reachable: yes`.
   `get_fund_data` answers a 404 as an unknown symbol, which is what it means
   on that route.
+- `get_fund_data` answered with a hollow profile, kept in the cache for a
+  day, when yfinance found nothing in Yahoo's answer. That is "not found" now,
+  and not cached.
 
 ## [0.11.0] - 2026-11-03
 

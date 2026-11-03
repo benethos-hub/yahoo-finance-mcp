@@ -161,6 +161,24 @@ def test_get_fund_data_server_error_is_not_a_missing_symbol(patch_ticker):
     assert not isinstance(info.value, SymbolNotFoundError)
 
 
+def test_get_fund_data_with_nothing_in_it_raises_not_found(patch_ticker):
+    """yfinance swallows a parse failure and leaves every attribute None.
+
+    A hollow profile would be kept in the cache for a day.
+    """
+    hollow = SimpleNamespace(
+        description=None,
+        fund_overview=None,
+        asset_classes=None,
+        sector_weightings=None,
+        top_holdings=None,
+        fund_operations=None,
+    )
+    patch_ticker(FakeTicker(funds_data=hollow, info={"totalAssets": 1.0}))
+    with pytest.raises(SymbolNotFoundError):
+        yahoo.get_fund_data("SPY")
+
+
 def test_get_fund_data_rate_limit(patch_ticker):
     patch_ticker(FakeTicker(funds_data=YFRateLimitError()))
     with pytest.raises(RateLimitError):

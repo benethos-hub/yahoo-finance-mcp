@@ -7,6 +7,7 @@ from typing import Any
 from yfinance.exceptions import YFDataException
 
 from .. import cache
+from ..errors import SymbolNotFoundError
 from ..formatting import dataframe_to_records, to_jsonable
 from . import tickers
 
@@ -110,6 +111,16 @@ def get_fund_data(symbol: str, *, limit: int = 25) -> dict[str, Any]:
     holdings_rows = dataframe_to_records(
         top_holdings, max_rows=limit, index_name="symbol", head=True
     )
+    # yfinance swallows a parse failure and leaves every attribute None. The
+    # key figures do not count, they come from ``info``, which a stock has too.
+    if (
+        not description
+        and overview is None
+        and asset_classes is None
+        and sector_weightings is None
+        and not holdings_rows
+    ):
+        raise SymbolNotFoundError(symbol)
     return {
         "symbol": tickers.normalize(symbol),
         "description": description,
