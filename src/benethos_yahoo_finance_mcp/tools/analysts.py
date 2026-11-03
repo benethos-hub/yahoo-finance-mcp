@@ -19,7 +19,7 @@ Methodology = Annotated[
         "differs between companies, so pick one to compare several. Each EPS "
         "row names its basis in `methodology`, which is Yahoo's own label when "
         "omitted and not always right. A basis Yahoo lacks for a symbol comes "
-        "back as null values."
+        "back empty or as null values."
     ),
 ]
 
