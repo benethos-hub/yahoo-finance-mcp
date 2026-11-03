@@ -432,3 +432,10 @@ def test_get_company_info_omits_resolved_symbol_when_identical(patch_ticker):
     info = yahoo.get_company_info("aapl")
     assert info["symbol"] == "AAPL"
     assert "resolved_symbol" not in info
+
+
+def test_get_shares_holds_its_ceiling(patch_ticker):
+    idx = pd.date_range("2020-01-01", periods=300)
+    patch_ticker(FakeTicker(shares_full=pd.Series(range(300), index=idx)))
+    out = yahoo.get_shares("aapl", limit=10_000)
+    assert out["count"] == yahoo.SHARES_MAX

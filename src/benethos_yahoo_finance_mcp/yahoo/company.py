@@ -293,6 +293,10 @@ def get_calendar(symbol: str) -> dict[str, Any]:
     return {"symbol": tickers.normalize(symbol), "calendar": to_jsonable(cal)}
 
 
+# The most points get_shares returns, the same cap as a history's rows.
+SHARES_MAX = MAX_ROWS
+
+
 @cache.cached("shares")
 def get_shares(
     symbol: str,
@@ -308,6 +312,7 @@ def get_shares(
     looks back 548 days (18 months) from ``end``, not over the whole history.
     Only the most recent ``limit`` points are returned.
     """
+    limit = max(1, min(int(limit), SHARES_MAX))
     start, end = tickers.checked_range(start, end)
     ticker = tickers.get_ticker(symbol)
     with tickers.upstream(f"Failed to load shares for {symbol!r}"):

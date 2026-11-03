@@ -107,7 +107,7 @@ def get_shares(
         Field(
             description="Maximum number of (most recent) data points to return.",
             ge=1,
-            le=250,
+            le=yahoo.SHARES_MAX,
         ),
     ] = 50,
 ) -> dict[str, Any]:

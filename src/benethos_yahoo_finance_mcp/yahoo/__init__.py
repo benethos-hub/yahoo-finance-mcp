@@ -27,6 +27,7 @@ from .browse import (
 )
 from .company import (
     NEWS_MAX,
+    SHARES_MAX,
     get_calendar,
     get_company_info,
     get_dividends,
@@ -77,6 +78,7 @@ __all__ = [
     "SCREEN_OPERATORS",
     "SEARCH_MAX",
     "SECTOR_KEYS",
+    "SHARES_MAX",
     "STRIKES_MAX",
     "SYMBOL_MAX",
     "get_calendar",
