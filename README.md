@@ -396,12 +396,11 @@ How and when it updates:
   release found then, so a release published in between arrives with the
   first restart after those 10 minutes. In a test, a restart 11 seconds
   before the end of the 10 minutes still ran the previous release.
-- **It needs PyPI to start.** Once the 10 minutes are over, uv asks PyPI
+- **It needs to reach PyPI.** Once the 10 minutes are over, uv asks PyPI
   before it starts the server, and without an answer it stops with `Failed
-  to fetch` instead of falling back to the release it has. The extension
-  then does not start until PyPI can be reached again. Without a network
-  Yahoo cannot be reached either, but an outage of PyPI alone, or a network
-  that blocks it, stops this extension too.
+  to fetch` instead of falling back to the release it has. A network that
+  blocks PyPI, as some company networks do, keeps this extension from
+  starting. The pinned one is the choice there.
 - **The first start after a release takes longer.** uv downloads and
   installs the new release and its dependencies once, a few seconds, and
   later starts reuse them.
