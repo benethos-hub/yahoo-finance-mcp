@@ -745,6 +745,25 @@ client shows the tool's own title and the model reads descriptions.
   nothing installed beforehand. The `mcpb` CLI 2.1.2 requires the
   `mcp_config` with the `uv` command even for a `uv` bundle, although the
   format calls it optional.
+  The same job attaches a second bundle,
+  `benethos-yahoo-finance-mcp-auto-update.mcpb` (and its copy with the
+  version), through the same action. It carries no code, only the manifest,
+  the icon and the license: Claude Desktop runs `uv tool run
+  benethos-yahoo-finance-mcp`, the newest release on PyPI, with whatever
+  dependency versions that release allows. `build.py --auto-update` makes its
+  manifest from the pinned one, with its own name (Claude Desktop keys an
+  extension by it, so the two stand side by side), display name, description
+  and server, and `tests/test_mcpb.py` holds the rest equal. Tested on
+  2026-11-03 in a Windows Sandbox without uv or Python: Claude Desktop
+  downloaded uv 0.9.7 of its own, uv a Python 3.14, and the extension ran
+  0.10.2. After 0.11.0 was published, restarts at 3 and at 9 minutes 49
+  seconds after the last check still ran 0.10.2, the one at 12 minutes ran
+  0.11.0: uv keeps PyPI's simple index for its `max-age` of 600 seconds.
+  Offline, the command ran from the cache within those 10 minutes and failed
+  after them (`Failed to fetch`, uv 0.9.7, measured the same day), so the
+  extension needs PyPI to start once its last check is older. With
+  Smart App Control on, Code Integrity blocked that downloaded `uv.exe`, for
+  either bundle.
   One name is used throughout: the PyPI
   distribution, the import package (`benethos_yahoo_finance_mcp`, underscores
   because a module name cannot contain hyphens), the console script, and the

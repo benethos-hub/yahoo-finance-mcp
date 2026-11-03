@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- A second Claude Desktop extension on every release,
+  `benethos-yahoo-finance-mcp-auto-update.mcpb`. It runs the newest release
+  on PyPI through `uv tool run`, so a new release arrives with a restart of
+  Claude Desktop instead of a new download. uv checks for one at most every
+  10 minutes, when the server starts, and takes the newest dependency
+  versions the release allows, not the locked ones. The README says how and
+  when it updates. The pinned extension stays as it is.
+
 ## [0.11.0] - 2026-11-03
 
 A minor release. yfinance 1.8.0 brings the symbol's own news back to

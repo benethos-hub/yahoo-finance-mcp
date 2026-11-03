@@ -73,7 +73,7 @@ containers/
 .github/ISSUE_TEMPLATE/  # the bug report form, its version example read by test_packaging.py
 .github/publish/   # one folder per place a release is listed, read by publish.yml
   mcp-registry/   # server.json (the entry, its bundle hash filled in at release)
-  mcpb/            # Claude Desktop bundle: manifest.json, server.py, build.py
+  mcpb/            # Claude Desktop bundles: manifest.json, server.py, build.py (pinned, and --auto-update from it)
 assets/           # render_icon.py, the architecture diagram it draws, old icon copies
   brand/          # icon.svg, and icon.png (512x512) and social-preview.png (1280x640) exported from it
 SECURITY.md       # how to report a vulnerability, and what the server guards
