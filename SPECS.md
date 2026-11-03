@@ -263,8 +263,10 @@ submodules.
   public DNS and port 443 reachable from the internet, whatever port Caddy
   has on the host). A request without an `Authorization` header
   gets 401 from Caddy and never reaches the server, which checks the token
-  of every other, and the token is required with the profile. The server
-  trusts no forwarded header, so its log names Caddy's address for a
+  of every other. Set the token with the profile, since nothing in the stack
+  enforces it: without one Caddy still starts, and a request with any
+  `Authorization` header reaches a server that has no token to compare. The
+  server trusts no forwarded header, so its log names Caddy's address for a
   refused request, not the client's. Compose cannot require the domain for
   one profile only, since `:?` fails every start without it, so Caddy's
   command checks it first and stops with a message naming it. Caddy runs
