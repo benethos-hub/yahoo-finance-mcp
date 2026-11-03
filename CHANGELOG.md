@@ -28,6 +28,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The README says why the Claude Desktop extension may not start on Windows
+  with Smart App Control on: it blocks the copy of uv Claude Desktop
+  downloads on a machine without uv, as it can block the launchers `uvx`
+  writes. It points to the install from PyPI with pip, which needs neither.
 - The README says that an entry made with `-s project` waits for each
   person's approval in Claude Code, and shows as pending approval in
   `claude mcp list` until then.

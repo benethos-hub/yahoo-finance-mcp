@@ -357,6 +357,16 @@ If the server is also listed in `claude_desktop_config.json`, remove that
 entry, or every tool shows up twice. The extension is for Claude Desktop only.
 Other clients use the command below.
 
+> **Windows with Smart App Control on.** The extension may not start there,
+> and its tools never appear. Claude Desktop runs it through uv, and on a
+> machine without uv it downloads a copy of its own. Smart App Control judges
+> programs by their signature and reputation, and it can block that copy,
+> which Windows records as a Code Integrity block of `uv.exe`. The same goes
+> for the `.exe` launchers `uvx` writes for the manual setup below. The way
+> around both is [From PyPI with pip](#other-ways-to-install): Claude
+> Desktop then starts the `python.exe` of a virtual environment made from
+> the signed Python installer, with no generated program in between.
+
 ### Claude Desktop with uv (manual config)
 
 No clone, no manual virtual environment, no `git`. `uvx` fetches and runs it
