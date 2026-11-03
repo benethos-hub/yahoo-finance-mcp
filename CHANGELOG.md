@@ -16,6 +16,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   versions the release allows, not the locked ones. The README says how and
   when it updates. The pinned extension stays as it is.
 
+### Changed
+
+- `yfinance` and `pandas` stop at their next major, `<2` and `<4`, as `mcp`
+  already did at `<3`. The auto-update extension and `uvx` install the
+  newest versions allowed, and a major would reach them before anyone
+  checked it. `pandas` is now a direct dependency, `>=3.0.0`, since the
+  server imports it itself. The lowest versions allowed (pandas 3.0.0,
+  yfinance 1.8.0, mcp 2.2.0 on Python 3.11) pass the tests.
+
 ## [0.11.0] - 2026-11-03
 
 A minor release. yfinance 1.8.0 brings the symbol's own news back to

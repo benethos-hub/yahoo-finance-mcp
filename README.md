@@ -409,8 +409,10 @@ How and when it updates:
   that stays as it was.
 - **Dependencies are not pinned.** uv takes the newest versions each
   release allows, as `uvx` does, not the tested set in `uv.lock` the pinned
-  extension and the container image run. A dependency release that breaks
-  something reaches this extension first.
+  extension and the container image run. The ranges stop before the next
+  major of `mcp`, `yfinance` and `pandas`, so those wait for a release that
+  allows them. A smaller release that breaks something reaches this
+  extension first.
 - **Smart App Control** blocks it as it blocks the pinned extension, see the
   note above.
 
