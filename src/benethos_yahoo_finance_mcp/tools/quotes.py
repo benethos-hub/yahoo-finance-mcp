@@ -26,7 +26,11 @@ _INTERVAL_DESC = (
 
 def search(
     query: Annotated[
-        str, Field(description="Company name, ticker symbol, or ISIN to look up.")
+        str,
+        Field(
+            description="Company name, ticker symbol, or ISIN to look up.",
+            max_length=yahoo.QUERY_MAX,
+        ),
     ],
     limit: Annotated[
         int,

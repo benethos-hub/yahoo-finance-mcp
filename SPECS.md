@@ -342,7 +342,7 @@ these, it describes the server (see the end of the table).
 
 | Tool | Inputs | Output (shape) |
 |------|--------|----------------|
-| `search` | `query` (name/ticker/ISIN), `limit` 1-25 (=8) | list of `{symbol, name, exchange, type, sector, industry}` |
+| `search` | `query` (name/ticker/ISIN, at most 200 characters), `limit` 1-25 (=8) | list of `{symbol, name, exchange, type, sector, industry}` |
 | `get_quote` | `symbol` | `{symbol, currency, exchange, quoteType, lastPrice, previousClose, open, dayHigh, dayLow, lastVolume, marketCap, 50/200d avg, yearHigh/Low, yearChange}` |
 | `get_quotes` | `symbols[]` (≤50) | `{count, quotes[{symbol, currency, lastPrice, previousClose, open, dayHigh, dayLow, marketCap}], not_found[], truncated}` |
 | `get_history` | `symbol`, `period` (=1mo), `interval` (=1d), `start?`, `end?` | `{symbol, interval, period, start, end, count, truncated, rows[]}` (OHLCV, ≤250 rows, tail kept) |

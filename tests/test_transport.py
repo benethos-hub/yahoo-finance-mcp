@@ -195,3 +195,31 @@ class TestHttpApp:
         )
         assert app[0] == "sse"
         assert app[1]["sse_path"] == "/events"
+
+
+def test_the_server_believes_no_forwarded_header(monkeypatch):
+    """uvicorn trusts ``X-Forwarded-For`` from a loopback peer unless told not to.
+
+    On the default bind that is every peer, and the header would then choose
+    the address in the one log line the printable filter leaves alone.
+    """
+    import uvicorn
+    from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+
+    configs: list[Any] = []
+
+    class FakeServer:
+        def __init__(self, config: Any) -> None:
+            configs.append(config)
+
+        def run(self) -> None:
+            pass
+
+    async def app(scope: Any, receive: Any, send: Any) -> None:
+        pass  # pragma: no cover - never served
+
+    monkeypatch.setattr(uvicorn, "Server", FakeServer)
+    transport.http.serve(app, host="127.0.0.1", port=8000)
+    [config] = configs
+    config.load()
+    assert not isinstance(config.loaded_app, ProxyHeadersMiddleware)

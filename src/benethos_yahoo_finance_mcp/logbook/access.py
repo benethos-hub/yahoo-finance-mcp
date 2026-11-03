@@ -30,7 +30,13 @@ class AccessFilter(logging.Filter):
         if not isinstance(args, tuple) or len(args) != ACCESS_ARGS:
             return True
         client, method, path, version, status = args
-        record.args = (client, method, _describe.path_only(str(path)), version, status)
+        record.args = (
+            _describe.one_line(str(client)),
+            method,
+            _describe.path_only(str(path)),
+            version,
+            status,
+        )
         if isinstance(status, int) and status < 400:
             record.levelno = logging.DEBUG
             record.levelname = logging.getLevelName(logging.DEBUG)

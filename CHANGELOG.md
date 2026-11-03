@@ -27,6 +27,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   checked it. `pandas` is now a direct dependency, `>=3.0.0`, since the
   server imports it itself. The lowest versions allowed (pandas 3.0.0,
   yfinance 1.8.0, mcp 2.2.0 on Python 3.11) pass the tests.
+- `search` takes a `query` of at most 200 characters, like every other
+  text argument it has a bound now.
+- The build backend is pinned to an exact version, hatchling 1.33.0, so an
+  image build or the first start of the pinned extension no longer takes
+  whichever hatchling is newest. Its own dependencies still come from the
+  index.
+
+### Fixed
+
+- The HTTP transports believed an `X-Forwarded-For` header from a loopback
+  peer, which is uvicorn's default. With the default bind, a local process
+  could choose the address in the request log, an escape sequence included,
+  and the request counted as HTTPS. The header is ignored now, as SPECS and
+  the README always said. The compose setups were not affected.
 
 ## [0.11.0] - 2026-11-03
 

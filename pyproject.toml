@@ -1,5 +1,8 @@
 [build-system]
-requires = ["hatchling>=1.27,<2"]
+# Exact, since uv.lock pins what runs and not what builds this package. An image
+# build and the first start of the pinned bundle build the wheel. A release
+# moves it by hand, like the image tags (CLAUDE.md, Releasing).
+requires = ["hatchling==1.33.0"]
 build-backend = "hatchling.build"
 
 [project]

@@ -248,6 +248,8 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    a rebuild under the same tag, which is how the Debian fixes in the
    `python:3.X-slim` base arrive, gets no proposal at all. Every action
    pinned in `.github/workflows/` moves to its newest release, by its SHA.
+   The build backend in `pyproject.toml`, `hatchling`, moves to its newest
+   release by hand, like the image tags.
    Read the release notes of each, build the image for a Dockerfile change,
    and list every bump in the release PR.
    `mcp-publisher` and the bundle packer are pinned in the organisation's
