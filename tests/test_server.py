@@ -186,6 +186,7 @@ BOUNDS = [
     ("get_sector", "limit", None, yahoo.COMPANIES_MAX),
     ("get_industry", "limit", None, yahoo.COMPANIES_MAX),
     ("get_shares", "limit", None, yahoo.SHARES_MAX),
+    ("screen", "offset", None, yahoo.OFFSET_MAX),
     ("get_quotes", None, "more than {} were passed", yahoo.QUOTES_MAX),
     ("get_history", None, "the most recent {} rows", formatting.MAX_ROWS),
     ("get_options", None, "up to {} strikes", yahoo.STRIKES_MAX),
@@ -201,6 +202,17 @@ def test_a_bound_is_stated_as_the_yahoo_function_holds_it(
         assert text.format(value) in listed.description
     if param:
         assert listed.input_schema["properties"][param]["maximum"] == value
+
+
+def test_every_row_cap_and_offset_is_bound_to_a_constant(server):
+    """A new literal in a schema fails here instead of passing unseen."""
+    capped = {
+        (tool.name, param)
+        for tool in _list_tools(server)
+        for param in tool.input_schema["properties"]
+        if param in ("limit", "offset")
+    }
+    assert capped == {(tool, param) for tool, param, _, _ in BOUNDS if param}
 
 
 def test_the_search_query_has_a_length_bound(server):

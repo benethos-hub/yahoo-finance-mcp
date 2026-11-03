@@ -239,6 +239,9 @@ def _hit(quote: dict[str, Any]) -> dict[str, Any]:
 # The most matches one page of screen returns, well under Yahoo's 250.
 SCREEN_MAX = 100
 
+# The furthest a page of screen starts, Yahoo's matches end at about 10,000.
+OFFSET_MAX = 9900
+
 
 @cache.cached("screen")
 def screen(
@@ -265,7 +268,7 @@ def screen(
     if sort_field in _CATEGORIES:
         raise ToolError(f"Cannot sort by the category {sort_by!r}, pick a number.")
     limit = max(1, min(int(limit), SCREEN_MAX))
-    offset = max(0, int(offset))
+    offset = max(0, min(int(offset), OFFSET_MAX))
 
     with tickers.upstream("Screen failed"):
         result = yf.screen(

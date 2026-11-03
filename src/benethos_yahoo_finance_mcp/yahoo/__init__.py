@@ -56,7 +56,13 @@ from .quotes import (
     get_quotes,
     search,
 )
-from .screener import SCREEN_ALIASES, SCREEN_MAX, SCREEN_OPERATORS, screen
+from .screener import (
+    OFFSET_MAX,
+    SCREEN_ALIASES,
+    SCREEN_MAX,
+    SCREEN_OPERATORS,
+    screen,
+)
 from .tickers import SYMBOL_MAX, last_answer
 
 __all__ = [
@@ -70,6 +76,7 @@ __all__ = [
     "INTERVALS",
     "MARKET_KEYS",
     "NEWS_MAX",
+    "OFFSET_MAX",
     "PERIODS",
     "QUERY_MAX",
     "QUOTES_MAX",

@@ -50,7 +50,12 @@ def screen(
         ),
     ] = 25,
     offset: Annotated[
-        int, Field(description="Matches to skip, for the next page.", ge=0, le=9900)
+        int,
+        Field(
+            description="Matches to skip, for the next page.",
+            ge=0,
+            le=yahoo.OFFSET_MAX,
+        ),
     ] = 0,
 ) -> dict[str, Any]:
     """Find stocks by criteria, e.g. dividend payers in a region or cheap large caps.

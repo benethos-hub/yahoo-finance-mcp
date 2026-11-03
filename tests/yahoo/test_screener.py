@@ -172,6 +172,11 @@ def test_sort_limit_and_offset_reach_yahoo(fake_screen):
     assert call["offset"] == 50
 
 
+def test_the_offset_holds_its_ceiling(fake_screen):
+    yahoo.screen((US,), offset=1_000_000)
+    assert fake_screen[0]["offset"] == yahoo.OFFSET_MAX
+
+
 def test_the_default_sort_is_market_cap_descending(fake_screen):
     yahoo.screen((US,))
     assert fake_screen[0]["sortField"] == "intradaymarketcap"
