@@ -72,7 +72,7 @@ def _upstream() -> list[str]:
     if last is None:
         reachable, checked = "unknown", "never"
     else:
-        reachable, checked = ("yes" if last[0] else "no"), str(last[1])
+        reachable, checked = ("yes" if last.reachable else "no"), str(last.seconds_ago)
     # No token_set line: Yahoo is a public API and takes no key.
     return [
         f"    reachable: {reachable}",

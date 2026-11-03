@@ -48,11 +48,6 @@ def _value(text, key):
 
 
 @pytest.fixture
-def no_request_yet(monkeypatch):
-    monkeypatch.setattr(tickers, "_last_answer", None)
-
-
-@pytest.fixture
 def yahoo_unreachable(monkeypatch):
     """Any request to Yahoo fails the test."""
 
@@ -103,18 +98,19 @@ def test_no_request_either_way(server, no_request_yet, yahoo_unreachable, detail
     assert yahoo.last_answer() is None
 
 
-def test_after_an_answer_yahoo_is_reachable(server, monkeypatch):
-    monkeypatch.setattr(tickers, "_last_answer", (True, tickers.time.monotonic() - 17))
+def test_after_an_answer_yahoo_is_reachable(server, no_request_yet, monkeypatch):
+    clock = iter([1000.0, 1017.9])
+    monkeypatch.setattr(tickers, "time", SimpleNamespace(monotonic=lambda: next(clock)))
+    tickers.answered(True)
     text = _status(server, details=True)
     assert _value(text, "reachable") == "yes"
     assert _value(text, "checked_seconds_ago") == "17"
 
 
-def test_after_a_rate_limit_yahoo_is_not_reachable(server, monkeypatch):
+def test_after_a_rate_limit_yahoo_is_not_reachable(server, no_request_yet):
     """The status answers although the request before it failed."""
     from yfinance.exceptions import YFRateLimitError
 
-    monkeypatch.setattr(tickers, "_last_answer", None)
     with pytest.raises(RateLimitError):
         with tickers.upstream("Failed"):
             raise YFRateLimitError()

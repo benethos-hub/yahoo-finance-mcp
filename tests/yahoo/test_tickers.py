@@ -293,6 +293,13 @@ def test_a_fault_in_code_says_nothing_about_yahoo(monkeypatch):
     assert tickers.last_answer()[0] is False
 
 
+def test_the_last_answer_names_its_fields(fresh):
+    tickers.answered(True)
+    last = tickers.last_answer()
+    assert isinstance(last, yahoo.LastAnswer)
+    assert (last.reachable, last.seconds_ago) == (True, 0)
+
+
 def test_the_age_is_counted_in_whole_seconds(monkeypatch):
     now = tickers.time.monotonic()
     monkeypatch.setattr(tickers, "_last_answer", (True, now - 17.9))

@@ -175,6 +175,17 @@ def test_no_unit_reaches_into_yahoo_through_an_attribute():
     assert not reaching
 
 
+def test_no_test_above_the_yahoo_package_reaches_into_tickers():
+    """Above ``tests/yahoo/`` a test goes through what the package exports."""
+    reaching = [
+        path.name
+        for path in Path(__file__).parent.glob("*.py")
+        if path.name not in ("conftest.py", Path(__file__).name)
+        and re.search(r'tickers\._|tickers, "_', path.read_text(encoding="utf-8"))
+    ]
+    assert not reaching
+
+
 def test_only_the_command_line_entry_imports_cli():
     importers = {unit for _, unit, other, _ in _edges() if other == "cli"}
     assert importers <= {"__main__"}
