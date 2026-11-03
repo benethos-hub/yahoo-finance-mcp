@@ -18,7 +18,7 @@ from benethos_yahoo_finance_mcp.errors import (
     SymbolNotFoundError,
     ToolError,
 )
-from benethos_yahoo_finance_mcp.yahoo import tickers
+from benethos_yahoo_finance_mcp.yahoo import funds, tickers
 from fakes import FakeTicker
 
 # --- get_fund_data --------------------------------------------------------
@@ -189,3 +189,9 @@ def test_get_fund_data_upstream_error(patch_ticker):
     patch_ticker(FakeTicker(funds_data=RuntimeError("boom")))
     with pytest.raises(ToolError):
         yahoo.get_fund_data("spy")
+
+
+@pytest.mark.parametrize("value", [float("inf"), float("-inf"), float("nan")])
+def test_a_figure_that_is_not_finite_is_left_out(value):
+    """Infinity is not JSON, and the rule in formatting holds here too."""
+    assert funds._fraction(value) is None

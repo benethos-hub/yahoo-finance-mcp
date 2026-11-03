@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from yfinance.exceptions import YFDataException
@@ -26,14 +27,14 @@ _FRACTION_FIELDS = (
 
 
 def _number(value: Any) -> float | None:
-    """``value`` as a float, ``None`` for a missing or NaN value."""
+    """``value`` as a float, ``None`` for a missing or non-finite value."""
     if value is None or isinstance(value, bool):
         return None
     try:
         number = float(value)
     except (TypeError, ValueError):
         return None
-    return None if number != number else number  # NaN is not equal to itself
+    return number if math.isfinite(number) else None
 
 
 def _fraction(value: Any, *, percent: bool = False) -> float | None:
