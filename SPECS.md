@@ -263,8 +263,10 @@ submodules.
   public DNS and port 443 reachable from the internet, whatever port Caddy
   has on the host). A request without an `Authorization` header
   gets 401 from Caddy and never reaches the server, which checks the token
-  of every other, and the token is required with the profile. The server
-  trusts no forwarded header, so its log names Caddy's address for a
+  of every other. Set the token with the profile, since nothing in the stack
+  enforces it: without one Caddy still starts, and a request with any
+  `Authorization` header reaches a server that has no token to compare. The
+  server trusts no forwarded header, so its log names Caddy's address for a
   refused request, not the client's. Compose cannot require the domain for
   one profile only, since `:?` fails every start without it, so Caddy's
   command checks it first and stops with a message naming it. Caddy runs
@@ -363,7 +365,7 @@ these, it describes the server (see the end of the table).
 | `get_fund_data` | `symbol`, `limit` 1-100 (=25) | `{symbol, description, fund_overview, key_figures{expense_ratio, category_expense_ratio, holdings_turnover, total_assets, ytd_return, three_year_average_return, five_year_average_return}, asset_classes, sector_weightings, top_holdings[]}` (fund/ETF-only, ratios and returns as fractions, a figure Yahoo lacks left out) |
 | `get_sector` | `key` (sector key), `limit` 1-100 (=25) | `{key, name, index_symbol, overview, top_companies[], top_etfs, top_mutual_funds, industries[]}` (module-level, not a symbol) |
 | `get_industry` | `key` (industry key), `limit` 1-100 (=25) | `{key, name, index_symbol, sector_key, sector_name, overview, top_companies[], top_performing_companies[], top_growth_companies[]}` (module-level, not a symbol) |
-| `get_market` | `key` (market key, =US) | `{key, status, count, indices[{symbol, shortName, fullExchangeName, marketState, price, previous close, change, change %}]}` (module-level, `status` only for `US`, null elsewhere) |
+| `get_market` | `key` (market key, =US) | `{key, status, count, indices[{symbol, shortName, fullExchangeName, marketState, regularMarketPrice, regularMarketPreviousClose, regularMarketChange, regularMarketChangePercent}]}` (module-level, `status` only for `US`, null elsewhere) |
 | `screen` | `filters[{field, op, value}]` (up to 10, all must hold), `sort_by` (=market_cap), `sort_desc` (=true), `limit` 1-100 (=25), `offset` 0-9900 (=0) | `{total, count, offset, matches[{symbol, name, exchange, currency, price, change_percent, market_cap, pe_ratio, price_to_book, eps, dividend_yield, change_52w_percent, avg_volume_3m}]}` (empty columns left out, module-level, see §12) |
 | `server_status` | `details` (=false) | plain text, one `key: value` per line: `name`, `version`, `transport`, `python`, `mcp`, `uptime_seconds`, and with `details` the lines `details:` and `upstream:` with `reachable` (yes/no/unknown) and `checked_seconds_ago` (or `never`), no `token_set`, since Yahoo is a public API and takes no key |
 
@@ -577,7 +579,7 @@ client shows the tool's own title and the model reads descriptions.
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo, and it is not part of
   the pytest suite (no `test_*` functions, so it is not collected).
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
-  of 80% (currently ~97%).
+  of 80% (the badge in the README shows the current figure).
 - **What the gates cannot see.** The suite mocks yfinance and stops at
   the yahoo package, so a behaviour change in either boundary passes every gate. For
   `yfinance` the answer is `tests/smoke.py` run before and after a bump, with a

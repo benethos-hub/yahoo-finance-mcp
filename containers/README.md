@@ -77,10 +77,12 @@ moves Caddy there, and clients use `https://finance.lan:8443/mcp`. With
 `internal` and `files` that is all. With `acme` the public CA still connects
 to 443, so the router has to forward it to the port you chose.
 
-The token is required with the profile, since the server is then reachable
-from wherever this host is. Caddy answers a request without an
-`Authorization` header with 401 itself, and the server checks the token of
-every other. The domain goes into `YF_MCP_ALLOWED_HOSTS` on its own, alone
+Set the token with the profile, since the server is then reachable from
+wherever this host is. Nothing in the stack enforces it: without one Caddy
+still starts on 443, and any request that carries an `Authorization` header
+reaches the server, which then has no token to compare. With one, Caddy
+answers a request without an `Authorization` header with 401 itself, and the
+server checks the token of every other. The domain goes into `YF_MCP_ALLOWED_HOSTS` on its own, alone
 and with any port, since Caddy hands on the client's `Host` and the server
 would otherwise answer 421. Certificates and the ACME account live in the
 volumes `caddy-data` and `caddy-config`, so a restart does not ask the CA

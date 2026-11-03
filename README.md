@@ -479,7 +479,8 @@ claude mcp add benethos-yahoo-finance-mcp -s user -e YF_MCP_CACHE=1 -- uvx benet
 A server already running over HTTP is added by its URL. `--transport http`
 names MCP's streamable-HTTP transport, the scheme is the URL's own: plain
 `http://` for the container on this machine, `https://` behind the Caddy
-profile of the production compose file, where the bearer token is required:
+profile of the production compose file, where you set the bearer token, since
+nothing in the stack enforces it:
 
 ```bash
 claude mcp add --transport http benethos-yahoo-finance-mcp http://127.0.0.1:8000/mcp

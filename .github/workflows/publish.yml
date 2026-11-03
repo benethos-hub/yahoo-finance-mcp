@@ -4,7 +4,7 @@ name: Publish
 #   * sdist + wheel to PyPI, via Trusted Publishing (OIDC, no stored token)
 #   * the container image to ghcr.io, via the automatic GITHUB_TOKEN, as
 #     benethos-yahoo-finance-mcp, the name of the distribution
-#   * the Claude Desktop bundle (.mcpb) as an asset of the release itself
+#   * the two Claude Desktop bundles (.mcpb) as assets of the release itself
 #   * server.json to the MCP Registry, via the same OIDC token, once the
 #     three above are out
 #
@@ -18,7 +18,8 @@ name: Publish
 #
 # The PyPI, image and bundle jobs are independent, so a failure in one does
 # not withhold the others. The registry entry points at all three and waits
-# for them.
+# for them. Of the bundles it lists the pinned one, the auto-update bundle is
+# not listed there.
 #
 # Nothing is built before ci-passed has found a green CI run of the push to
 # main for this very commit, waiting for it if it is still running. A version
@@ -146,9 +147,9 @@ jobs:
           cache-scope: buildkit
 
   mcpb-bundle:
-    name: Attach the Claude Desktop bundle
-    # The bundle goes onto the release it is built for, and a manual run has
-    # no release to attach it to.
+    name: Attach the Claude Desktop bundles
+    # The bundles go onto the release they are built for, and a manual run has
+    # no release to attach them to.
     if: github.event_name == 'release'
     needs: ci-passed
     runs-on: ubuntu-latest
