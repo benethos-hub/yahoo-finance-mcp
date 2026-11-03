@@ -164,14 +164,7 @@ submodules.
     class, since its text can carry the URL with Yahoo's crumb, and anything
     else by class as well.
   - **Python warnings** go to stderr as Python prints them, outside the
-    line format, with one exception: `configure` drops `DeprecationWarning`s
-    raised in yfinance's own modules. yfinance switches them on for itself
-    at import, and since pandas 3.1.0 deprecated `inplace`, which yfinance
-    uses throughout (ranaroussi/yfinance#3009), a tool call printed up to
-    14 of them, on every call. A deprecation of yfinance's API is raised in
-    the calling module and still shows. The filter has to come after
-    yfinance's own, which `cli` ensures by importing yfinance through
-    `server`.
+    line format.
 - **CLI flags:** `--version`, `--transport`, `--host` (default 127.0.0.1), `--port`
   (default 8000, 1-65535, checked once an HTTP transport binds it), `--path`
   (default `/mcp`, `/sse` for sse), `--allowed-hosts`, `--allowed-origins`,
@@ -356,7 +349,7 @@ these, it describes the server (see the end of the table).
 | `get_company_info` | `symbol` | curated profile + key statistics, plus `resolved_symbol` when the input resolves to a different ticker (i.e. for an ISIN, see §6) |
 | `get_financials` | `symbol`, `statement` (income/balance/cashflow), `freq` (annual/quarterly/ttm — ttm income/cashflow only) | `{symbol, statement, freq, rows[]}` (every line item, columns = period-end dates as `YYYY-MM-DD`) |
 | `get_dividends` | `symbol` | `{symbol, dividends[], splits[]}` (both empty for an instrument that never paid or split, an unknown symbol raises) |
-| `get_news` | `symbol`, `limit` 1-10 (=10, Yahoo serves no more) | `{symbol, count, source, articles[{title, summary, publisher, published, url}]}` (`source` `ticker`, or `search` when the ticker has none: the articles Yahoo's search tags with the symbol, `summary` null) |
+| `get_news` | `symbol`, `limit` 1-50 (=10) | `{symbol, count, source, articles[{title, summary, publisher, published, url}]}` (`source` `ticker`, or `search` when the ticker has none: the articles Yahoo's search tags with the symbol, `summary` null) |
 | `get_recommendations` | `symbol` | `{symbol, price_targets, recommendation_trend[]}` (trend rows keyed by `period`) |
 | `get_options` | `symbol`, `expiration?` | without `expiration`: `{symbol, expirations[]}`, with it: `{symbol, expiration, truncated, calls[], puts[]}` (≤60 strikes per side, centred on the money, rows keyed by `contractSymbol`) |
 | `get_earnings` | `symbol`, `limit` 1-50 (=12) | `{symbol, earnings_dates[], earnings_history[]}` (equity-only) |
@@ -797,12 +790,16 @@ them.
   `get_history`, and `get_company_info` already cover crypto. All
   equity-specific methods (analysts, holders, earnings, financials, calendar)
   are empty, so the equity-only tools answer crypto with that error.
-- **News:** `get_news` has been empty for every symbol since October 2026,
-  when Yahoo began answering 404 on its route (yfinance issue #3004).
-  Since November 2026 that 404 is an HTML page, which yfinance 1.7.0 reads
-  as an outage and raises `YFDataException` on. About one read in 25 of
-  that page also ends cut short, an `IncompleteRead`. All three count as no
-  articles.
+- **News:** `Ticker.get_news` goes through Yahoo's GraphQL news route
+  since yfinance 1.8.0 (ranaroussi/yfinance#3018) and serves US and other
+  markets alike, SAP.DE, ALV.DE, NESN.SW and 7203.T included, about 50
+  articles for most symbols (probed 2026-11-03). Yahoo dropped the route
+  before it in October 2026 (yfinance issue #3004), and `get_news` lived on
+  the search fallback until 1.8.0. That fallback stays for a symbol without
+  news of its own (VWCE.DE) and for the next route Yahoo drops. A dropped
+  route answers with an HTML page yfinance reads as an outage, so its
+  `YFDataException`, and an `OSError` when that page breaks off, count as
+  no articles, as an empty list does.
   `Search(<symbol>).news`, kept to the articles whose `relatedTickers` name
   the symbol, serves US equities, ETFs, indices, crypto, FX and futures, and
   nothing for SAP.DE, ALV.DE, NESN.SW or 7203.T (probed 2026-10-22). A

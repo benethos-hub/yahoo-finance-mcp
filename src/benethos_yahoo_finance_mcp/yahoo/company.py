@@ -173,25 +173,27 @@ def get_dividends(symbol: str, *, limit: int = MAX_ROWS) -> dict[str, Any]:
     }
 
 
-# Yahoo serves at most this many articles per symbol, whatever count is asked
-# for. Probed 2026-09-25 with get_news(count=30) for AAPL: ten came back.
-NEWS_MAX = 10
+# The most articles one call returns, what Yahoo's news route serves for
+# most symbols since yfinance 1.8.0. Asked for 150 on 2026-11-03, ALV.DE and
+# NESN.SW gave 50 and AAPL 79. An article is about 500 characters, so the
+# tool asks for 10 unless the caller wants more.
+NEWS_MAX = 50
 
 # How many articles the fallback asks the search for. It serves 30 when asked,
 # and the ones that do not name the symbol are dropped afterwards.
-_SEARCH_NEWS = 20
+_SEARCH_NEWS = 30
 
 
 @cache.cached("news")
-def get_news(symbol: str, *, limit: int = NEWS_MAX) -> dict[str, Any]:
+def get_news(symbol: str, *, limit: int = 10) -> dict[str, Any]:
     """Return recent news headlines for ``symbol``.
 
     The articles come from the ticker's own news when Yahoo serves any, and
     otherwise from Yahoo's search, keeping those tagged with the symbol.
-    ``source`` says which. Since October 2026 Yahoo answers 404 on the route
-    behind ``Ticker.get_news`` (yfinance issue #3004), so the search is what
-    delivers for now. It finds nothing for most symbols outside the US, and
-    its articles carry no summary.
+    ``source`` says which. The search is the fallback for a symbol without
+    news of its own and for a route Yahoo drops, as it dropped the one
+    before in October 2026 (yfinance issue #3004, fixed in 1.8.0). It finds
+    little outside the US, and its articles carry no summary.
     """
     limit = max(1, min(int(limit), NEWS_MAX))
     ticker = tickers.get_ticker(symbol)
@@ -199,14 +201,15 @@ def get_news(symbol: str, *, limit: int = NEWS_MAX) -> dict[str, Any]:
         try:
             raw = ticker.get_news(count=limit) or []
         except (YFDataException, OSError):
-            # yfinance turned the 404 into an empty list until Yahoo's 404
-            # page became HTML (November 2026). It reads "Will be right back"
-            # in that page as an outage and raises, although Yahoo is up.
-            # About one read in 25 of that page also ends cut short, an
-            # IncompleteRead, which is an OSError. Either way the ticker has
-            # no articles, and the search follows. When the network is
-            # really gone, the search fails too and says so. A rate limit is
-            # neither class and still ends the call.
+            # What a dropped route looks like. Yahoo answers it with an HTML
+            # page that says "Will be right back", and yfinance reads that
+            # as an outage and raises, in 1.8.0 as before. That is how the
+            # previous route ended in November 2026, and about one read in
+            # 25 of that page also broke off, an IncompleteRead, which is an
+            # OSError. Either way the ticker has no articles, and the search
+            # follows. When the network is really gone, the search fails
+            # too and says so. A rate limit is neither class and still ends
+            # the call.
             raw = []
     articles = [_ticker_article(item) for item in raw[:limit]]
     source = "ticker"

@@ -66,12 +66,12 @@ def get_news(
         ),
     ] = 10,
 ) -> dict[str, Any]:
-    """Get recent news headlines for a Yahoo symbol (up to `limit`, 1-10).
+    """Get recent news headlines for a Yahoo symbol (up to `limit`, 1-50).
 
     Each article includes title, summary, publisher, publish time, and URL.
-    `source` is `ticker` for Yahoo's news on the symbol, or `search` for the
-    articles Yahoo's search tags with it, which have no summary and are rarely
-    found for symbols outside the US.
+    `source` is `ticker` for Yahoo's news on the symbol. When that has none,
+    `source` is `search` for the articles Yahoo's search tags with it, which
+    have no summary and are rarely found for symbols outside the US.
     """
     return yahoo.get_news(symbol, limit=limit)
 

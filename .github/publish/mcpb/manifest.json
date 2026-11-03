@@ -60,7 +60,7 @@
     },
     {
       "name": "get_news",
-      "description": "Get recent news headlines for a Yahoo symbol (up to limit, 1-10)."
+      "description": "Get recent news headlines for a Yahoo symbol (up to limit, 1-50)."
     },
     {
       "name": "get_calendar",
