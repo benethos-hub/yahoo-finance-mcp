@@ -45,6 +45,7 @@ Yahoo's unofficial endpoints.
 - [Requirements](#requirements)
 - [Installation](#installation)
   - [Quick start: Claude Desktop extension](#quick-start-claude-desktop-extension)
+  - [Claude Desktop extension that updates itself](#claude-desktop-extension-that-updates-itself)
   - [Claude Desktop with uv (manual config)](#claude-desktop-with-uv-manual-config)
   - [Claude Code](#claude-code)
   - [Other ways to install](#other-ways-to-install)
@@ -368,6 +369,52 @@ Other clients use the command below.
 > around both is [From PyPI with pip](#other-ways-to-install): Claude
 > Desktop then starts the `python.exe` of a virtual environment made from
 > the signed Python installer, with no generated program in between.
+
+### Claude Desktop extension that updates itself
+
+The extension above runs the release it was downloaded with, and a new
+release means a new download. A second extension runs the newest release on
+PyPI instead, so a new release arrives with a restart of Claude Desktop.
+
+1. **Download**
+   [`benethos-yahoo-finance-mcp-auto-update.mcpb`](https://github.com/benethos-hub/yahoo-finance-mcp/releases/latest/download/benethos-yahoo-finance-mcp-auto-update.mcpb).
+   Every release carries it, the copy with a version in its name as well.
+   Any of them runs the newest release, the version only says which release
+   built it.
+2. **Open it** as above. Install this one or the pinned one, not both, or
+   every tool shows up twice.
+
+How and when it updates:
+
+- **At the start of the server, not during a chat.** Claude Desktop starts it
+  with `uv tool run benethos-yahoo-finance-mcp`, using uv of its own on a
+  machine without uv. uv looks for a newer release only then, when Claude
+  Desktop starts or reconnects the extension. To pick up a release, quit
+  Claude Desktop from the tray and start it again.
+- **Up to 10 minutes late.** uv keeps PyPI's list of releases for 10 minutes,
+  as PyPI tells it to. A start within 10 minutes of the last check runs the
+  release found then, so a release published in between arrives with the
+  first restart after those 10 minutes. In a test, a restart 11 seconds
+  before the end of the 10 minutes still ran the previous release.
+- **It needs to reach PyPI.** Once the 10 minutes are over, uv asks PyPI
+  before it starts the server, and without an answer it stops with `Failed
+  to fetch` instead of falling back to the release it has. A network that
+  blocks PyPI, as some company networks do, keeps this extension from
+  starting. The pinned one is the choice there.
+- **The first start after a release takes longer.** uv downloads and
+  installs the new release and its dependencies once, a few seconds, and
+  later starts reuse them.
+- **The running version is the one `server_status` names.** Claude Desktop's
+  extension list shows the version of the file it was installed from, and
+  that stays as it was.
+- **Dependencies are not pinned.** uv takes the newest versions each
+  release allows, as `uvx` does, not the tested set in `uv.lock` the pinned
+  extension and the container image run. The ranges stop before the next
+  major of `mcp`, `yfinance` and `pandas`, so those wait for a release that
+  allows them. A smaller release that breaks something reaches this
+  extension first.
+- **Smart App Control** blocks it as it blocks the pinned extension, see the
+  note above.
 
 ### Claude Desktop with uv (manual config)
 

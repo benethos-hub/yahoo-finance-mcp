@@ -6,11 +6,11 @@ version: 2
 updates:
   # Python dependencies. The ecosystem is "uv", not "pip", because the versions
   # that actually get installed are the ones pinned in uv.lock, and the pip
-  # ecosystem does not read that file. "pip" had nothing to raise here anyway:
-  # every requirement in pyproject.toml is a `>=`, so the newest release is
-  # always allowed already and no constraint ever needs lifting. The two
-  # together were silent. The lockfile drifted fifteen packages behind, mcp and
-  # yfinance among them, and not one pull request said so.
+  # ecosystem does not read that file. The two together were silent. The
+  # lockfile drifted fifteen packages behind, mcp and yfinance among them, and
+  # not one pull request said so. Three requirements in pyproject.toml stop at
+  # the next major (mcp<3, yfinance<2, pandas<4). A release past one of them
+  # needs the bound lifted, and that pull request is the place to check it.
   - package-ecosystem: "uv"
     directory: "/"
     schedule:

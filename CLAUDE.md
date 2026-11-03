@@ -73,7 +73,7 @@ containers/
 .github/ISSUE_TEMPLATE/  # the bug report form, its version example read by test_packaging.py
 .github/publish/   # one folder per place a release is listed, read by publish.yml
   mcp-registry/   # server.json (the entry, its bundle hash filled in at release)
-  mcpb/            # Claude Desktop bundle: manifest.json, server.py, build.py
+  mcpb/            # Claude Desktop bundles: manifest.json, server.py, build.py (pinned, and --auto-update from it)
 assets/           # render_icon.py, the architecture diagram it draws, old icon copies
   brand/          # icon.svg, and icon.png (512x512) and social-preview.png (1280x640) exported from it
 SECURITY.md       # how to report a vulnerability, and what the server guards
@@ -232,7 +232,13 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    image freezes whatever `uv.lock` says, so a release is the moment the image
    catches up with what every index user already has. Refresh with
    `uv lock --upgrade` as its own commit, then the gates, plus the `yfinance`
-   or `mcp` checks above for anything that sits under those. A security hole
+   or `mcp` checks above for anything that sits under those. The refresh
+   stays inside the upper bounds (`mcp<3`, `yfinance<2`, `pandas<4`) and so
+   never shows a major past one. `uv tree --outdated --depth 1` does: it
+   names the newest release on the index whatever the bound, and a
+   `(latest: ...)` line after the refresh is such a major. It is asked about,
+   not taken: checked like any `yfinance` or `mcp` bump, the bound raised and
+   released on purpose. A security hole
    does not wait for this step: Dependabot's security updates read the whole
    lockfile, transitive packages included, and arrive on their own.
    The same goes for everything else pinned here, and a release does not

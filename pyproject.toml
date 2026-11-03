@@ -49,7 +49,14 @@ dependencies = [
     # 1.8.0 reaches the ticker's news again, through the GraphQL route Yahoo's
     # site uses since it dropped the old one (ranaroussi/yfinance#3018), and
     # stops tripping pandas 3.1's deprecation of `inplace` (#3020).
-    "yfinance>=1.8.0",
+    # The upper bounds stop at the next major of the two libraries this server
+    # leans on most. The auto-update extension and uvx install the newest
+    # versions allowed, so a major would reach them untested. A new major is
+    # taken on purpose: checked, the bound raised, released.
+    "yfinance>=1.8.0,<2",
+    # Imported directly by formatting.py, so named here and not only reached
+    # through yfinance.
+    "pandas>=3.0.0,<4",
     # Required by yfinance for HTML-table scraping (e.g. earnings dates).
     # 6.1.0 fixes GHSA-vfmq-68hx-4jfw, XXE in iterparse() and ETCompatXMLParser().
     "lxml>=6.1.0",

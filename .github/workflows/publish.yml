@@ -175,6 +175,18 @@ jobs:
           staged: ${{ runner.temp }}/bundle
           name: benethos-yahoo-finance-mcp
 
+      # The second bundle runs the newest release from PyPI instead of the
+      # code it was built with. Attached the same way, so the README links
+      # releases/latest/download/benethos-yahoo-finance-mcp-auto-update.mcpb.
+      # Its versioned copy only says which release built it.
+      - name: Stage the auto-update bundle
+        run: uv run --no-project .github/publish/mcpb/build.py --auto-update "$RUNNER_TEMP/bundle-auto-update"
+
+      - uses: benethos-hub/.github/actions/publish/mcpb@main
+        with:
+          staged: ${{ runner.temp }}/bundle-auto-update
+          name: benethos-yahoo-finance-mcp-auto-update
+
   mcp-registry:
     name: Publish to the MCP Registry
     # The registry checks every package when it takes the entry: the README

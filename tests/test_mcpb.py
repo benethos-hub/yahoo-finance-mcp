@@ -117,3 +117,52 @@ def test_the_staged_bundle_holds_what_uv_needs(tmp_path):
 def test_the_icon_is_the_size_claude_desktop_recommends():
     data = (REPO / "assets" / "brand" / "icon.png").read_bytes()
     assert struct.unpack(">II", data[16:24]) == (512, 512)
+
+
+# --- the auto-update bundle -----------------------------------------------
+
+
+def test_the_auto_update_manifest_is_the_pinned_one_in_all_but_its_own_fields():
+    """Version and tools come from the pinned manifest, so they cannot drift."""
+    build = _load_build_script()
+    manifest = build.auto_update_manifest()
+    own = set(build.AUTO_UPDATE)
+    assert own == {"name", "display_name", "description", "server"}
+    assert {k: v for k, v in manifest.items() if k not in own} == {
+        k: v for k, v in MANIFEST.items() if k not in own
+    }
+    assert manifest["version"] == benethos_yahoo_finance_mcp.__version__
+
+
+def test_the_auto_update_bundle_stands_beside_the_pinned_one():
+    """Claude Desktop keys an extension by its name, the same one would replace it."""
+    manifest = _load_build_script().auto_update_manifest()
+    assert manifest["name"] == PROJECT["name"] + "-auto-update"
+    assert manifest["display_name"] != MANIFEST["display_name"]
+    assert "auto-update" in manifest["display_name"]
+
+
+def test_the_auto_update_bundle_runs_the_newest_release_from_the_index():
+    server = _load_build_script().auto_update_manifest()["server"]
+    assert server["type"] == "uv"
+    assert server["mcp_config"]["command"] == "uv"
+    # No version, no lockfile, no directory: uv resolves the newest release.
+    assert server["mcp_config"]["args"] == ["tool", "run", PROJECT["name"]]
+    assert "env" not in server["mcp_config"]
+
+
+def test_the_staged_auto_update_bundle_carries_no_project(tmp_path):
+    """Without a pyproject.toml Claude Desktop has nothing to install."""
+    build = _load_build_script()
+    target = tmp_path / "auto-update"
+    build.stage_auto_update(target)
+    assert sorted(p.name for p in target.iterdir()) == [
+        "LICENSE",
+        "icon.png",
+        "manifest.json",
+    ]
+    staged = json.loads((target / "manifest.json").read_text(encoding="utf-8"))
+    assert staged == build.auto_update_manifest()
+    assert (target / staged["icon"]).read_bytes() == (
+        REPO / "assets" / "brand" / "icon.png"
+    ).read_bytes()

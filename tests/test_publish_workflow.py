@@ -141,6 +141,23 @@ def test_the_bundle_is_staged_where_the_action_takes_it():
     assert "staged: ${{ runner.temp }}/bundle" in job
 
 
+def test_both_bundles_are_staged_and_attached_under_their_names():
+    """The pinned bundle and the auto-update one, each through the action, so
+    each comes with and without its version in the file name."""
+    job = _jobs()["mcpb-bundle"]
+    assert (
+        "uv run --no-project .github/publish/mcpb/build.py --auto-update "
+        '"$RUNNER_TEMP/bundle-auto-update"' in job
+    )
+    names = re.findall(r"^\s+name: (benethos-[a-z-]+)$", job, re.M)
+    assert names == [
+        "benethos-yahoo-finance-mcp",
+        "benethos-yahoo-finance-mcp-auto-update",
+    ]
+    assert job.count(f"uses: {ACTIONS}mcpb@main") == 2
+    assert "staged: ${{ runner.temp }}/bundle-auto-update" in job
+
+
 def test_the_registry_entry_waits_for_every_package():
     """The registry checks the README on PyPI, the label in the image and the
     bundle's checksum when it takes the entry, so all three come first, and a
