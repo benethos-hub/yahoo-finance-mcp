@@ -8,6 +8,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `get_fund_data` answers with `key_figures`: the expense ratio and the
+  category average beside it, the holdings turnover, the total assets, and
+  the returns year to date and averaged over three and five years. Yahoo
+  states some of these in percent and some as fractions, the answer gives
+  every ratio and return as a fraction, 0.0007 for 0.07%. A figure Yahoo
+  lacks is left out. US funds carry all of them, European ETFs mostly the
+  expense ratio and the turnover. One more request to Yahoo per call.
+
 - `get_estimates` and `get_earnings` take a `methodology` of `gaap` or
   `normalized`, the basis Yahoo counts earnings per share on. Yahoo picks
   one per company by default, GAAP for Amazon and Alphabet, normalized for
@@ -20,6 +28,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The README says why the Claude Desktop extension may not start on Windows
+  with Smart App Control on: it blocks the copy of uv Claude Desktop
+  downloads on a machine without uv, as it can block the launchers `uvx`
+  writes. It points to the install from PyPI with pip, which needs neither.
+- The README says that an entry made with `-s project` waits for each
+  person's approval in Claude Code, and shows as pending approval in
+  `claude mcp list` until then.
+- The descriptions of `get_quote` and `get_quotes` say that a
+  cryptocurrency's market cap is null there and that `get_company_info` has
+  it. Yahoo's quote data leaves it out for crypto, its profile carries it.
 - yfinance 1.8.0, now the lowest version allowed. `get_news` gets the
   symbol's own news from Yahoo again, with a summary, also for symbols
   outside the US such as SAP.DE, NESN.SW or 7203.T, where the search found

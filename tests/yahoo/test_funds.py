@@ -33,6 +33,7 @@ def _fake_funds_data():
         asset_classes={"stockPosition": 0.99},
         sector_weightings={"technology": 0.39},
         top_holdings=top,
+        fund_operations=None,
     )
 
 
@@ -59,10 +60,78 @@ def test_get_fund_data_caps_holdings(patch_ticker):
         asset_classes={},
         sector_weightings={},
         top_holdings=top,
+        fund_operations=None,
     )
     patch_ticker(FakeTicker(funds_data=fd))
     out = yahoo.get_fund_data("spy", limit=5)
     assert len(out["top_holdings"]) == 5
+
+
+def _operations(own, category, symbol="SPY"):
+    """fund_operations as yfinance 1.8.0 builds it, the fund's column first."""
+    rows = [
+        "Annual Report Expense Ratio",
+        "Annual Holdings Turnover",
+        "Total Net Assets",
+    ]
+    return pd.DataFrame(
+        {symbol: own, "Category Average": category}, index=pd.Index(rows)
+    )
+
+
+# SPY as Yahoo gave it on 2026-11-03, in its two scales.
+_SPY_INFO = {
+    "netExpenseRatio": 0.0945,
+    "totalAssets": 809216114688,
+    "ytdReturn": 12.67538,
+    "threeYearAverageReturn": 0.2328269,
+    "fiveYearAverageReturn": 0.11966,
+}
+
+
+def _fund(operations, info):
+    fd = _fake_funds_data()
+    fd.fund_operations = operations
+    return FakeTicker(funds_data=fd, info=info)
+
+
+def test_get_fund_data_key_figures_are_fractions(patch_ticker):
+    operations = _operations(
+        [0.000945, 0.03, 542460.75], [0.0072176997, 0.9461, 542460.75]
+    )
+    patch_ticker(_fund(operations, _SPY_INFO))
+    assert yahoo.get_fund_data("spy")["key_figures"] == {
+        "expense_ratio": 0.000945,
+        "category_expense_ratio": 0.007218,
+        "holdings_turnover": 0.03,
+        "total_assets": 809216114688.0,
+        "ytd_return": 0.126754,
+        "three_year_average_return": 0.232827,
+        "five_year_average_return": 0.11966,
+    }
+
+
+def test_get_fund_data_key_figures_leave_out_what_yahoo_lacks(patch_ticker):
+    """EUNL.DE on 2026-11-03: costs and turnover, no size, no returns."""
+    operations = _operations(
+        [0.002, 0.113299996, 308088.2], [None, None, 308088.2], symbol="EUNL.DE"
+    )
+    patch_ticker(_fund(operations, {"netExpenseRatio": 0.2}))
+    assert yahoo.get_fund_data("eunl.de")["key_figures"] == {
+        "expense_ratio": 0.002,
+        "holdings_turnover": 0.1133,
+    }
+
+
+def test_get_fund_data_expense_ratio_falls_back_to_info_in_percent(patch_ticker):
+    operations = _operations([float("nan"), 0.07, 1.0], [None, None, 1.0])
+    patch_ticker(_fund(operations, {"netExpenseRatio": 0.19}))
+    assert yahoo.get_fund_data("vwce.de")["key_figures"]["expense_ratio"] == 0.0019
+
+
+def test_get_fund_data_without_operations_still_answers(patch_ticker):
+    patch_ticker(_fund(None, {}))
+    assert yahoo.get_fund_data("spy")["key_figures"] == {}
 
 
 def test_get_fund_data_non_fund_raises_not_found(patch_ticker):

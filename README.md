@@ -207,7 +207,7 @@ show in place of its name.
 | `get_sec_filings` | Recent SEC filings (type, date, title, EDGAR/exhibit links). |
 | `get_calendar` | Upcoming earnings and dividend / ex-dividend dates with estimate ranges. |
 | `get_shares` | Shares-outstanding history (date → shares), the last 18 months unless a start date is given. |
-| `get_fund_data` | Fund/ETF profile: overview, asset-class & sector weightings, top holdings. |
+| `get_fund_data` | Fund/ETF profile: overview, expense ratio, size and returns, asset-class & sector weightings, top holdings. |
 | `get_sector` | Browse a market sector by key: overview, top companies/ETFs/funds, industries. |
 | `get_industry` | Browse an industry by key: overview, parent sector, top/top-performing/top-growth companies. |
 | `get_market` | Trading status and headline index summary for a market (US, EUROPE, ASIA, …). |
@@ -357,6 +357,16 @@ If the server is also listed in `claude_desktop_config.json`, remove that
 entry, or every tool shows up twice. The extension is for Claude Desktop only.
 Other clients use the command below.
 
+> **Windows with Smart App Control on.** The extension may not start there,
+> and its tools never appear. Claude Desktop runs it through uv, and on a
+> machine without uv it downloads a copy of its own. Smart App Control judges
+> programs by their signature and reputation, and it can block that copy,
+> which Windows records as a Code Integrity block of `uv.exe`. The same goes
+> for the `.exe` launchers `uvx` writes for the manual setup below. The way
+> around both is [From PyPI with pip](#other-ways-to-install): Claude
+> Desktop then starts the `python.exe` of a virtual environment made from
+> the signed Python installer, with no generated program in between.
+
 ### Claude Desktop with uv (manual config)
 
 No clone, no manual virtual environment, no `git`. `uvx` fetches and runs it
@@ -434,8 +444,10 @@ started with `--transport sse` takes `--transport sse` and its `/sse` URL
 instead.
 
 `-s project` writes the entry to a `.mcp.json` in the current directory,
-which a team can commit to its repository. `claude mcp list` shows whether the
-server starts, and in a chat `server_status` says which version runs.
+which a team can commit to its repository. Claude Code asks each person once
+before it starts a server from that file, and until then `claude mcp list`
+shows it as pending approval. After that it shows whether the server starts,
+and in a chat `server_status` says which version runs.
 
 ### Other ways to install
 
