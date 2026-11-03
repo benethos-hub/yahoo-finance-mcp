@@ -416,6 +416,25 @@ How and when it updates:
 - **Smart App Control** blocks it as it blocks the pinned extension, see the
   note above.
 
+If it fails:
+
+- **What you see.** The extension does not start and its tools are missing
+  from the chat, or a tool answers with an error. The reason is in Claude
+  Desktop's log folder, in `mcp-server-<extension name>.log`, uv's own
+  messages included.
+- **Nothing rolls back on its own.** uv runs the newest release at every
+  start. When a new release or a new version of a dependency breaks
+  something, every restart runs it again, until a release fixes it. Restarting
+  does not help, and the auto-update file of an older release does not either,
+  since it runs the newest release as well.
+- **The way out is the pinned extension.** Remove this one and install
+  `benethos-yahoo-finance-mcp-X.Y.Z.mcpb` of a release that worked, from the
+  [releases page](https://github.com/benethos-hub/yahoo-finance-mcp/releases).
+  It runs that release with the versions tested for it, and stays there until
+  you install another. Please
+  [open an issue](https://github.com/benethos-hub/yahoo-finance-mcp/issues) with
+  the log, so the fix comes sooner.
+
 ### Claude Desktop with uv (manual config)
 
 No clone, no manual virtual environment, no `git`. `uvx` fetches and runs it
