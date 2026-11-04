@@ -409,20 +409,23 @@ How and when it updates:
   that stays as it was.
 - **Dependencies are not pinned.** uv takes the newest versions each
   release allows, as `uvx` does, not the tested set in `uv.lock` the pinned
-  extension and the container image run. The ranges stop before the next
-  major of `mcp`, `yfinance` and `pandas`, so those wait for a release that
-  allows them. A smaller release that breaks something reaches this
-  extension first.
+  extension and the container image run. The six libraries that decide what
+  an answer looks like (`mcp`, `yfinance`, `pandas`, `pydantic`, `lxml` and
+  `curl_cffi`) stay inside a patch window, so only their patch releases
+  arrive on their own, and a minor or major waits for a release here that
+  was checked against it. Everything underneath them moves freely. A check
+  in this repository runs the newest versions allowed every day and opens an
+  issue when they break the server, so a break shows up here within a day.
 - **Smart App Control** blocks it as it blocks the pinned extension, see the
   note above.
 
 If it fails:
 
-- **It can come without a release of this project.** A dependency can change
-  under the same version number, so `server_status` naming the version that
-  worked yesterday proves nothing, and two machines on one version can run
-  different dependencies. `server_status` with `details` names the yfinance
-  in use, the likeliest cause.
+- **It can come without a release of this project.** A patch of a dependency
+  arrives while this server's version stays the same, so `server_status`
+  naming the version that worked yesterday proves nothing, and two machines
+  on one version can run different dependencies. `server_status` with
+  `details` names the yfinance in use, the likeliest cause.
 - **A crash shows.** The extension does not start and its tools are missing
   from the chat, or a tool answers with an error. The reason is in Claude
   Desktop's log folder, in `mcp-server-<extension name>.log`, uv's own
