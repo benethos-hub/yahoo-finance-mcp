@@ -586,6 +586,14 @@ client shows the tool's own title and the model reads descriptions.
   new version of a direct dependency and every major below them, whether it
   reaches users and how it did. It sits beside Dependabot, which writes the pull
   requests. Neither issue is a required check, and a pull request runs neither.
+  A second workflow, `pins.yml`, calls the organisation's reusable
+  `freshness.yml` (`docs/freshness.md` in `benethos-hub/.github`) for the
+  issue "Pinned versions have newer releases": every pin of `uv.lock`, within
+  the windows and beyond, the build backend, the vulnerabilities, the images of
+  the Dockerfile and the compose files, and the actions pinned by commit. It
+  overlaps the news issue in the direct packages. Which of the two stays is
+  decided once both have run for a while. `tests/test_pins_workflow.py` holds
+  its wiring.
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo, and it is not part of
   the pytest suite (no `test_*` functions, so it is not collected). It exits
   with 1 when a section or one of its lists comes back empty and with 3 when

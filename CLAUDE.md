@@ -70,6 +70,7 @@ containers/
   ci.yml          # brand, lint, test, lowest-versions, audit, coverage-badge (the organisation's workflows), fresh-install, docker
   publish.yml     # PyPI, ghcr, .mcpb bundle, MCP Registry on a published release, through the organisation's actions
   freshness.yml   # daily: do the newest versions allowed still work, and what is new, each kept in an issue
+  pins.yml        # daily: the organisation's report of what is pinned and what is newer, one issue
 .github/scripts/  # freshness_report.py: the two reports of freshness.yml
 .github/dependabot.yml   # weekly proposals for uv, the actions and the Dockerfile
 .github/ISSUE_TEMPLATE/  # the bug report form, its version example read by test_packaging.py
