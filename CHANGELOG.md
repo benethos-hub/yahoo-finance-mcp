@@ -15,7 +15,9 @@ the next one. Every release from here on also carries a Claude Desktop extension
 that runs the newest release from PyPI, so a new release arrives with a restart
 of Claude Desktop. The six main dependencies now stay inside a patch window, so a
 minor of theirs waits until it was checked and released, and `server_status` with
-`details` names the yfinance in use. The image's dependencies are those of 0.11.0.
+`details` names the yfinance in use. The image's dependencies are those of 0.11.0
+apart from platformdirs 4.14.4, on the same builds of uv 0.13.7 and
+`python:3.15-slim`.
 
 ### Added
 
