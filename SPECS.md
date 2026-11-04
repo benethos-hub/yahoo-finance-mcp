@@ -613,6 +613,12 @@ client shows the tool's own title and the model reads descriptions.
   takes, and a lockfile hides breakage in the *declared* dependency ranges —
   0.3.0 shipped an unbounded `mcp` requirement, resolved to an incompatible major
   on a fresh install and failed at import while every other job stayed green.
+  Since 0.12.0 the six dependencies that decide what an answer looks like
+  (`mcp`, `yfinance`, `pandas`, `pydantic`, `lxml`, `curl_cffi`) are declared
+  with `~=`, a patch window: an index installation and the auto-update
+  extension take their patches on their own, a minor waits until it was
+  checked here and the window raised (CLAUDE.md, Releasing). The two times a
+  dependency hurt this server, mcp 2.1.0 and pandas 3.1.0, it was a minor.
   A `lowest-versions` job checks the other end of those ranges: it installs
   every direct dependency at its lower bound (`--resolution lowest-direct`)
   on Python 3.11, again without the lockfile, runs the suite and audits
