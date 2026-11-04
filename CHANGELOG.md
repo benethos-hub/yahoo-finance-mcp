@@ -37,6 +37,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   profile, since nothing enforces it. They say to set it and what happens
   without one: Caddy still starts, and any request with an `Authorization`
   header reaches every tool. If you run that profile without a token, set one.
+- A daily check runs the server on the newest versions it allows and reports in
+  two issues in this repository: one when they break it, one listing what is
+  new. This reaches no installation, it only tells the maintainer sooner.
 
 ### Fixed
 

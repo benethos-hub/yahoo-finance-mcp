@@ -69,6 +69,8 @@ containers/
 .github/workflows/
   ci.yml          # brand, lint, test, lowest-versions, audit, coverage-badge (the organisation's workflows), fresh-install, docker
   publish.yml     # PyPI, ghcr, .mcpb bundle, MCP Registry on a published release, through the organisation's actions
+  freshness.yml   # daily: do the newest versions allowed still work, and what is new, each kept in an issue
+.github/scripts/  # freshness_report.py: the two reports of freshness.yml
 .github/dependabot.yml   # weekly proposals for uv, the actions and the Dockerfile
 .github/ISSUE_TEMPLATE/  # the bug report form, its version example read by test_packaging.py
 .github/publish/   # one folder per place a release is listed, read by publish.yml
@@ -173,9 +175,10 @@ Commands use uv (recommended); the venv interpreter forms
 yfinance completely and stay green through any change in its behaviour, field
 names or response shapes, and the `fresh-install` CI job only catches import
 errors. Bump it on its own, run `tests/smoke.py` **before** the bump as a
-baseline and again afterwards, and check that every section returned data rather
-than trusting the exit code. Without the baseline a green run afterwards cannot
-be told apart from Yahoo simply having a good day.
+baseline and again afterwards, and compare the sections. It exits with 1 when a
+section or one of its lists comes back empty, but a wrong value still passes.
+Without the baseline a green run afterwards cannot be told apart from Yahoo
+simply having a good day.
 
 **They do not cover an `mcp` upgrade either.** The suite stops at the yahoo
 package and never travels through the SDK, so a change in the layer between the tools

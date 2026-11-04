@@ -1,13 +1,34 @@
-"""Ad-hoc smoke test hitting live Yahoo Finance. Not part of the unit suite."""
+"""Ad-hoc smoke test hitting live Yahoo Finance. Not part of the unit suite.
+
+Exits with 1 when a section came back empty, which a changed library or a changed
+Yahoo tends to do without raising anything.
+"""
 
 import json
+import sys
 
 from benethos_yahoo_finance_mcp import yahoo
+
+_empty: list[str] = []
+
+
+def empty_fields(value):
+    """What holds no data: "" for a whole section, else its empty list or dict fields.
+
+    A null stays allowed. Yahoo leaves single figures out, and which ones differs
+    by symbol and by day.
+    """
+    if not value:
+        return [""]
+    if not isinstance(value, dict):
+        return []
+    return [k for k, v in value.items() if isinstance(v, (list, dict)) and not v]
 
 
 def show(title, value):
     print(f"\n=== {title} ===")
     print(json.dumps(value, indent=2, ensure_ascii=False)[:1500])
+    _empty.extend(f"{title}: {field or 'everything'}" for field in empty_fields(value))
 
 
 if __name__ == "__main__":
@@ -163,3 +184,7 @@ if __name__ == "__main__":
         limit=3,
     )
     show("screen(industry software-infrastructure, pe_ratio < 40, limit=3)", screened)
+
+    if _empty:
+        print("\nEmpty:", *_empty, sep="\n  ")
+        sys.exit(1)
