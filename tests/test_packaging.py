@@ -401,3 +401,33 @@ def test_the_main_dependencies_stay_inside_a_patch_window() -> None:
     for name in ("mcp", "yfinance", "pandas", "pydantic", "lxml", "curl_cffi"):
         pattern = rf"{name}~=\d+\.\d+\.\d+"
         assert [r for r in requirements if re.fullmatch(pattern, r)], name
+
+
+def _dependabot_uv() -> str:
+    """The uv entry of dependabot.yml, as far as the next ecosystem."""
+    text = (REPO / ".github/dependabot.yml").read_text(encoding="utf-8")
+    return text.split('package-ecosystem: "uv"', 1)[1].split("package-ecosystem", 1)[0]
+
+
+def test_dependabot_keeps_the_patch_windows() -> None:
+    """Left to itself it takes this project for a library and widens the range.
+
+    Its description matches PyPI, which is how Dependabot tells, and a range over
+    two minors is no patch window any more.
+    """
+    assert "versioning-strategy: increase-if-necessary" in _dependabot_uv()
+
+
+def test_dependabot_proposes_each_of_the_six_alone() -> None:
+    """Each of their minors needs its own check, so none comes in a group."""
+    excluded = re.search(r"exclude-patterns: \[(.*)\]", _dependabot_uv())
+    assert excluded
+    for name in (
+        '"mcp"',
+        '"yfinance"',
+        '"pandas"',
+        '"pydantic"',
+        '"lxml"',
+        '"curl*cffi"',
+    ):
+        assert name in excluded[1], name
