@@ -6,16 +6,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Added
+### Changed
 
-- A second daily report, through the organisation's reusable freshness
-  workflow, keeps the issue "Pinned versions have newer releases": every
-  package `uv.lock` pins that has a newer release, within the patch windows
-  and beyond them, the build backend, known vulnerabilities of the pinned
-  versions, the images of the Dockerfile and the compose files, and the
-  actions pinned by commit. It runs beside the check of the newest versions
-  allowed, which keeps its own two issues. Nothing reaches an installation,
-  it only shows the maintainer what is new in one place.
+- The daily check runs through the organisation's freshness workflow now, one
+  run and two issues. The organisation's report keeps "Pinned versions have
+  newer releases": every package `uv.lock` pins that has a newer release,
+  within the patch windows and beyond them, the build backend, known
+  vulnerabilities of the pinned versions, the images of the Dockerfile and the
+  compose files, and the actions pinned by commit. This repository's own job
+  still installs the newest versions allowed, runs the tests and a live run
+  against Yahoo, and feeds the alarm "Newest dependency versions break the
+  server" as before. The issue "Newer dependency versions are available" is
+  gone, the pins report covers it. Nothing reaches an installation, it only
+  shows the maintainer what is new in one place.
 
 ### Fixed
 
