@@ -121,4 +121,4 @@ jobs:
         with:
           title: Newer dependency versions are available
           report: ${{ runner.temp }}/news.md
-          resolved: The versions in uv.lock are the newest there are.
+          resolved: Nothing new worth an issue.
