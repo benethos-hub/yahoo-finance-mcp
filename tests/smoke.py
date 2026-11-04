@@ -1,8 +1,9 @@
 """Ad-hoc smoke test hitting live Yahoo Finance. Not part of the unit suite.
 
 Exits with 1 when a section came back empty, which a changed library or a changed
-Yahoo tends to do without raising anything. ``--pause`` waits that many seconds
-after each call, for a runner that shares its address with many others.
+Yahoo tends to do without raising anything, and with 3 when Yahoo rate-limits the
+run, which says nothing about the versions under test. ``--pause`` waits that many
+seconds after each call, for a runner that shares its address with many others.
 """
 
 import argparse
@@ -11,6 +12,10 @@ import sys
 import time
 
 from benethos_yahoo_finance_mcp import yahoo
+from benethos_yahoo_finance_mcp.errors import RateLimitError
+
+# The exit code of a rate-limited run. .github/workflows/freshness.yml reads it.
+RATE_LIMITED = 3
 
 _empty: list[str] = []
 _pause = 0.0
@@ -43,8 +48,8 @@ def show(title, value):
         time.sleep(_pause)
 
 
-if __name__ == "__main__":
-    _pause = pause_from(sys.argv[1:])
+def run():
+    """Every tool that asks Yahoo, one section per call."""
     show("search('Apple')", yahoo.search("Apple", limit=3))
     show("search('US0378331005')  # AAPL ISIN", yahoo.search("US0378331005", limit=3))
     show("get_quote('AAPL')", yahoo.get_quote("AAPL"))
@@ -198,6 +203,20 @@ if __name__ == "__main__":
     )
     show("screen(industry software-infrastructure, pe_ratio < 40, limit=3)", screened)
 
+
+def verdict(calls):
+    """The run's exit code, once ``calls`` went through or Yahoo stopped it."""
+    try:
+        calls()
+    except RateLimitError:
+        print("\nRate-limited by Yahoo, so this says nothing about the versions.")
+        return RATE_LIMITED
     if _empty:
         print("\nEmpty:", *_empty, sep="\n  ")
-        sys.exit(1)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    _pause = pause_from(sys.argv[1:])
+    sys.exit(verdict(run))

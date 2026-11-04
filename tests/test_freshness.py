@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+import smoke
+
 ROOT = Path(__file__).resolve().parent.parent
 WORKFLOW = (ROOT / ".github" / "workflows" / "freshness.yml").read_text("utf-8")
 
@@ -87,6 +89,11 @@ def test_no_alarm_when_both_steps_pass():
     assert report.alarm(BEFORE, after, "success", "success") == ""
 
 
+def test_a_rate_limit_is_no_alarm():
+    after = report.load_lock(_lock(mcp="2.3.1"))
+    assert report.alarm(BEFORE, after, "success", "rate-limited") == ""
+
+
 def test_no_alarm_when_nothing_moved():
     """The versions are then the lockfile's, so no new version can be the cause."""
     assert report.alarm(BEFORE, BEFORE, "failure", "failure") == ""
@@ -114,6 +121,12 @@ def test_news_shows_a_release_past_the_bound_as_unchecked():
     assert (
         "| `mcp` | 2.3.1 | 2.4.0 | minor | no, past its bound | not checked |" in text
     )
+
+
+def test_news_says_when_the_smoke_run_was_limited():
+    after = report.load_lock(_lock(mcp="2.3.1"))
+    text = report.news(BEFORE, after, "", "success", "rate-limited")
+    assert "| success / rate-limited |" in text
 
 
 def test_news_leaves_development_tools_out():
@@ -180,7 +193,22 @@ def test_it_runs_on_a_schedule_and_by_hand_only():
 
 def test_a_failure_of_both_leaves_the_alarm_alone():
     """Yahoo being down must not close an open alarm with an empty report."""
-    assert "if: needs.locked.result == 'success'" in _step("Keep the alarm issue")
+    assert "needs.locked.result == 'success'" in _step("Keep the alarm issue")
+
+
+def test_a_rate_limit_leaves_the_alarm_alone():
+    """A limited run says nothing about the versions, so it must not close one."""
+    assert "steps.smoke.outputs.result != 'rate-limited'" in _step(
+        "Keep the alarm issue"
+    )
+
+
+def test_the_smoke_step_tells_a_rate_limit_from_a_failure():
+    step = WORKFLOW.split("id: smoke", 1)[1].split("\n      - ", 1)[0]
+    assert f"{smoke.RATE_LIMITED}) result=rate-limited" in step
+    assert "*) result=failure" in step
+    assert 'echo "result=$result" >> "$GITHUB_OUTPUT"' in step
+    assert "SMOKE: ${{ steps.smoke.outputs.result }}" in WORKFLOW
 
 
 def test_the_newest_job_runs_after_a_red_locked_one():
@@ -199,6 +227,4 @@ def test_the_runner_pauses_between_calls_to_yahoo():
 
 
 def test_a_red_step_still_reaches_the_reports():
-    for step in ("Tests", "Smoke run against Yahoo\n        id: smoke"):
-        body = WORKFLOW.split(f"- name: {step}", 1)[1].split("\n      - ", 1)[0]
-        assert "continue-on-error: true" in body
+    assert "continue-on-error: true" in _step("Tests")

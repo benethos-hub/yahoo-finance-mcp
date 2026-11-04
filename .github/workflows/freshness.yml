@@ -6,7 +6,8 @@ name: Freshness
 #
 #   * "Newest dependency versions break the server", when the newest versions
 #     fail and the locked ones pass. A failure of both says something about
-#     Yahoo, or about whether it lets this runner in, and leaves the issue alone.
+#     Yahoo, or about whether it lets this runner in, and leaves the issue alone,
+#     and so does a rate limit on the newest run.
 #   * "Newer dependency versions are available", the one place to see what is
 #     new, whether it reaches anyone yet and how it did.
 #
@@ -69,22 +70,30 @@ jobs:
           uv sync --frozen --extra dev
           uv tree --frozen --outdated > "$RUNNER_TEMP/outdated.txt"
 
-      # Each step's outcome goes into the reports, so a red one must not stop
+      # Each step's result goes into the reports, so a red one must not stop
       # the job before it gets there.
       - name: Tests
         id: tests
         continue-on-error: true
         run: uv run --frozen pytest -q
 
+      # Exit code 3 is a rate limit, which says nothing about these versions.
       - name: Smoke run against Yahoo
         id: smoke
-        continue-on-error: true
-        run: uv run --frozen python tests/smoke.py --pause 1
+        run: |
+          code=0
+          uv run --frozen python tests/smoke.py --pause 1 || code=$?
+          case "$code" in
+            0) result=success ;;
+            3) result=rate-limited ;;
+            *) result=failure ;;
+          esac
+          echo "result=$result" >> "$GITHUB_OUTPUT"
 
       - name: Write the reports
         env:
           TESTS: ${{ steps.tests.outcome }}
-          SMOKE: ${{ steps.smoke.outcome }}
+          SMOKE: ${{ steps.smoke.outputs.result }}
         run: |
           for report in alarm news; do
             uv run --frozen python .github/scripts/freshness_report.py "$report" \
@@ -94,13 +103,13 @@ jobs:
           done
 
       - name: Say that the alarm cannot speak
-        if: needs.locked.result != 'success'
+        if: needs.locked.result != 'success' || steps.smoke.outputs.result == 'rate-limited'
         run: |
-          echo "The locked versions failed too, so the alarm issue was left alone." \
+          echo "The locked versions failed or Yahoo rate-limited the run, so the alarm issue was left alone." \
             >> "$GITHUB_STEP_SUMMARY"
 
       - name: Keep the alarm issue
-        if: needs.locked.result == 'success'
+        if: needs.locked.result == 'success' && steps.smoke.outputs.result != 'rate-limited'
         uses: benethos-hub/.github/actions/report-issue@main
         with:
           title: Newest dependency versions break the server

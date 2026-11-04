@@ -1,10 +1,11 @@
-"""What the smoke run counts as an empty answer. The run itself needs Yahoo."""
+"""What the smoke run's exit code says. The run itself needs Yahoo."""
 
 from __future__ import annotations
 
 import pytest
 
 import smoke
+from benethos_yahoo_finance_mcp.errors import RateLimitError
 from smoke import empty_fields
 
 
@@ -43,3 +44,33 @@ def test_no_pause_by_default(monkeypatch):
 def test_the_pause_comes_from_the_command_line():
     assert smoke.pause_from(["--pause", "1"]) == 1.0
     assert smoke.pause_from([]) == 0.0
+
+
+def _fine():
+    pass
+
+
+def _limited():
+    raise RateLimitError()
+
+
+def test_a_run_with_data_exits_with_0(monkeypatch):
+    monkeypatch.setattr(smoke, "_empty", [])
+    assert smoke.verdict(_fine) == 0
+
+
+def test_a_run_with_an_empty_section_exits_with_1(monkeypatch):
+    monkeypatch.setattr(smoke, "_empty", ["get_quote: everything"])
+    assert smoke.verdict(_fine) == 1
+
+
+def test_a_rate_limit_has_a_code_of_its_own(monkeypatch):
+    """It says nothing about the versions under test, so it must not read as a break."""
+    monkeypatch.setattr(smoke, "_empty", [])
+    assert smoke.verdict(_limited) == smoke.RATE_LIMITED
+    assert smoke.RATE_LIMITED not in (0, 1, 2)  # 2 is argparse's own
+
+
+def test_a_rate_limit_outweighs_what_came_back_empty_before_it(monkeypatch):
+    monkeypatch.setattr(smoke, "_empty", ["get_quote: everything"])
+    assert smoke.verdict(_limited) == smoke.RATE_LIMITED

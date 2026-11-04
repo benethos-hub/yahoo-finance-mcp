@@ -176,7 +176,8 @@ yfinance completely and stay green through any change in its behaviour, field
 names or response shapes, and the `fresh-install` CI job only catches import
 errors. Bump it on its own, run `tests/smoke.py` **before** the bump as a
 baseline and again afterwards, and compare the sections. It exits with 1 when a
-section or one of its lists comes back empty, but a wrong value still passes.
+section or one of its lists comes back empty, but a wrong value still passes, and
+with 3 when Yahoo rate-limits the run.
 Without the baseline a green run afterwards cannot be told apart from Yahoo
 simply having a good day.
 
