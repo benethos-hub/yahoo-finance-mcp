@@ -6,6 +6,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The daily check runs through the organisation's freshness workflow now, one
+  run and two issues. The organisation's report keeps "Pinned versions have
+  newer releases": every package `uv.lock` pins that has a newer release,
+  within the patch windows and beyond them, the build backend, known
+  vulnerabilities of the pinned versions, the images of the Dockerfile and the
+  compose files, and the actions pinned by commit. The alarm "Newest
+  dependency versions break the server" stays and has two sources now: the
+  newest versions allowed, installed from the checkout with the tests and a
+  live run against Yahoo as before, and new, the published release installed
+  from PyPI into a fresh environment, the path the auto-update extension
+  takes, with the same live run. The pins issue says under Checks which
+  versions passed each day. The issue "Newer dependency versions are
+  available" is gone, the pins report covers it. Nothing reaches an
+  installation, it only shows the maintainer what is new in one place.
+
 ### Fixed
 
 - The README said a break through a new dependency version shows up in this
