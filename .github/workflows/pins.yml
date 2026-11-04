@@ -1,0 +1,34 @@
+name: Pinned versions
+
+# The organisation's freshness report: what this repository pins and what is
+# newer, in one issue. Every package uv.lock pins that has a newer release,
+# within the patch windows and beyond them, the build backend, known
+# vulnerabilities of the pinned versions, the images of the Dockerfile and the
+# compose files, and the actions pinned by commit. Nothing here writes to the
+# repository, the upgrade is a dry run inside the runner.
+#
+# It runs beside freshness.yml, which asks the other question: whether the
+# newest versions allowed still work, with the tests and a live run against
+# Yahoo. That one keeps its own two issues, this one keeps the issue named
+# below. The title is unique on purpose, two workflows with one title would
+# close or overwrite the issue for each other.
+
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pins
+
+jobs:
+  pins:
+    uses: benethos-hub/.github/.github/workflows/freshness.yml@main
+    permissions:
+      contents: read
+      issues: write
+    with:
+      issue-title: Pinned versions have newer releases
