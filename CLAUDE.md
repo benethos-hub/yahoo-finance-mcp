@@ -233,14 +233,17 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    catches up with what every index user already has. Refresh with
    `uv lock --upgrade` as its own commit, then the gates, plus the `yfinance`
    or `mcp` checks above for anything that sits under those. The refresh
-   stays inside the upper bounds (`mcp<3`, `yfinance<2`, `pandas<4`, `pydantic<3`) and so
-   never shows a major past one. `uv tree --outdated --depth 1` does: it
-   names the newest release on the index whatever the bound, and a
-   `(latest: ...)` line after the refresh is such a major. It is asked about,
-   not taken: checked like any `yfinance` or `mcp` bump, the bound raised and
-   released on purpose. A security hole
+   stays inside the patch windows (`~=` on `mcp`, `yfinance`, `pandas`,
+   `pydantic`, `lxml` and `curl_cffi`) and so never shows a new minor or major
+   of those. `uv tree --outdated --depth 1` does: it names the newest release
+   on the index whatever the bound, and a `(latest: ...)` line after the
+   refresh is such a release. A minor is taken by hand, on its own: checked like
+   any `yfinance` or `mcp` bump, whichever of the six it is, and the window
+   raised. A major is asked about first. A security hole
    does not wait for this step: Dependabot's security updates read the whole
-   lockfile, transitive packages included, and arrive on their own.
+   lockfile, transitive packages included, and arrive on their own. A fix past
+   a window reaches nobody on the index until it is released, so it means a
+   release at once.
    The same goes for everything else pinned here, and a release does not
    wait for Dependabot to propose any of it. The two images in the
    `Dockerfile` (`containers/images/yahoo-finance-mcp/`) move to the newest

@@ -388,3 +388,16 @@ def test_the_build_backend_is_pinned_exactly() -> None:
     """
     [backend] = PYPROJECT["build-system"]["requires"]
     assert re.fullmatch(r"hatchling==\d+\.\d+\.\d+", backend), backend
+
+
+def test_the_main_dependencies_stay_inside_a_patch_window() -> None:
+    """The auto-update extension and uvx install the newest versions allowed.
+
+    A patch may reach them untested. A minor waits until it was checked: both
+    real breaks of this server through a dependency came with one, mcp 2.1.0 and
+    pandas 3.1.0.
+    """
+    requirements = PYPROJECT["project"]["dependencies"]
+    for name in ("mcp", "yfinance", "pandas", "pydantic", "lxml", "curl_cffi"):
+        pattern = rf"{name}~=\d+\.\d+\.\d+"
+        assert [r for r in requirements if re.fullmatch(pattern, r)], name
