@@ -215,7 +215,7 @@ show in place of its name.
 | `get_industry` | Browse an industry by key: overview, parent sector, top/top-performing/top-growth companies. |
 | `get_market` | Trading status and headline index summary for a market (US, EUROPE, ASIA, …). |
 | `screen` | Find stocks by criteria (dividend yield, P/E, market cap, region, sector, …), ranked, with the total number of matches. |
-| `server_status` | This server's version, transport and uptime, and with `details` whether its last request reached Yahoo and how long ago. Asks Yahoo nothing. |
+| `server_status` | This server's version, transport and uptime, and with `details` the yfinance version in use and whether its last request reached Yahoo and how long ago. Asks Yahoo nothing. |
 
 Most `get_*` tools take a Yahoo Finance **symbol** — either a ticker (`AAPL`,
 `SAP.DE`) or a plain ISIN. Use `search` to turn a company name into one. Four
@@ -409,12 +409,42 @@ How and when it updates:
   that stays as it was.
 - **Dependencies are not pinned.** uv takes the newest versions each
   release allows, as `uvx` does, not the tested set in `uv.lock` the pinned
-  extension and the container image run. The ranges stop before the next
-  major of `mcp`, `yfinance` and `pandas`, so those wait for a release that
-  allows them. A smaller release that breaks something reaches this
-  extension first.
+  extension and the container image run. The six libraries that decide what
+  an answer looks like (`mcp`, `yfinance`, `pandas`, `pydantic`, `lxml` and
+  `curl_cffi`) stay inside a patch window, so only their patch releases
+  arrive on their own, and a minor or major waits for a release here that
+  was checked against it. Everything underneath them moves freely. A check
+  in this repository runs the newest versions allowed every day and opens an
+  issue when they break the server, so a break shows up here within a day.
 - **Smart App Control** blocks it as it blocks the pinned extension, see the
   note above.
+
+If it fails:
+
+- **It can come without a release of this project.** A patch of a dependency
+  arrives while this server's version stays the same, so `server_status`
+  naming the version that worked yesterday proves nothing, and two machines
+  on one version can run different dependencies. `server_status` with
+  `details` names the yfinance in use, the likeliest cause.
+- **A crash shows.** The extension does not start and its tools are missing
+  from the chat, or a tool answers with an error. The reason is in Claude
+  Desktop's log folder, in `mcp-server-<extension name>.log`, uv's own
+  messages included.
+- **Wrong data does not show.** A dependency that changes a field or its
+  meaning can leave the server running, with empty or wrong values and no
+  error anywhere. If an answer looks off, compare it with the pinned extension
+  or with Yahoo's page before relying on it.
+- **Nothing rolls back on its own.** uv runs the newest versions at every
+  start. Once something broke, every restart runs it again, until a release
+  fixes it. Restarting does not help, and the auto-update file of an older
+  release does not either, since it runs the newest release as well.
+- **The way out is the pinned extension.** Remove this one and install
+  `benethos-yahoo-finance-mcp-X.Y.Z.mcpb` of a release that worked, from the
+  [releases page](https://github.com/benethos-hub/yahoo-finance-mcp/releases).
+  It runs that release with the versions tested for it, and stays there until
+  you install another. Please
+  [open an issue](https://github.com/benethos-hub/yahoo-finance-mcp/issues) with
+  the log, so the fix comes sooner.
 
 ### Claude Desktop with uv (manual config)
 
@@ -442,7 +472,7 @@ on demand from
    }
    ```
 
-   Pin a version for stability with `benethos-yahoo-finance-mcp==0.11.0`. To
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.12.0`. To
    enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
@@ -688,7 +718,7 @@ The examples publish the port on the loopback address only. Drop the
 `127.0.0.1:` prefix only behind a reverse proxy that authenticates, or at the
 very least with `YF_MCP_BEARER_TOKEN` set.
 
-Pin a version for anything you depend on — `:0.11.0` for an exact release, `:0.11`
+Pin a version for anything you depend on — `:0.12.0` for an exact release, `:0.12`
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
 built from `main` on demand and is not a release at all.
 

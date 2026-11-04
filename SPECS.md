@@ -367,7 +367,7 @@ these, it describes the server (see the end of the table).
 | `get_industry` | `key` (industry key), `limit` 1-100 (=25) | `{key, name, index_symbol, sector_key, sector_name, overview, top_companies[], top_performing_companies[], top_growth_companies[]}` (module-level, not a symbol) |
 | `get_market` | `key` (market key, =US) | `{key, status, count, indices[{symbol, shortName, fullExchangeName, marketState, regularMarketPrice, regularMarketPreviousClose, regularMarketChange, regularMarketChangePercent}]}` (module-level, `status` only for `US`, null elsewhere) |
 | `screen` | `filters[{field, op, value}]` (up to 10, all must hold), `sort_by` (=market_cap), `sort_desc` (=true), `limit` 1-100 (=25), `offset` 0-9900 (=0) | `{total, count, offset, matches[{symbol, name, exchange, currency, price, change_percent, market_cap, pe_ratio, price_to_book, eps, dividend_yield, change_52w_percent, avg_volume_3m}]}` (empty columns left out, module-level, see §12) |
-| `server_status` | `details` (=false) | plain text, one `key: value` per line: `name`, `version`, `transport`, `python`, `mcp`, `uptime_seconds`, and with `details` the lines `details:` and `upstream:` with `reachable` (yes/no/unknown) and `checked_seconds_ago` (or `never`), no `token_set`, since Yahoo is a public API and takes no key |
+| `server_status` | `details` (=false) | plain text, one `key: value` per line: `name`, `version`, `transport`, `python`, `mcp`, `uptime_seconds`, and with `details` the lines `details:`, `yfinance` (the installed version, which can differ between two installations of one server version) and `upstream:` with `reachable` (yes/no/unknown) and `checked_seconds_ago` (or `never`), no `token_set`, since Yahoo is a public API and takes no key |
 
 `server_status` never asks Yahoo. Its upstream lines say how the last
 request ended, which `yahoo/tickers.py` remembers (`last_answer`): reached
@@ -613,6 +613,12 @@ client shows the tool's own title and the model reads descriptions.
   takes, and a lockfile hides breakage in the *declared* dependency ranges —
   0.3.0 shipped an unbounded `mcp` requirement, resolved to an incompatible major
   on a fresh install and failed at import while every other job stayed green.
+  Since 0.12.0 the six dependencies that decide what an answer looks like
+  (`mcp`, `yfinance`, `pandas`, `pydantic`, `lxml`, `curl_cffi`) are declared
+  with `~=`, a patch window: an index installation and the auto-update
+  extension take their patches on their own, a minor waits until it was
+  checked here and the window raised (CLAUDE.md, Releasing). The two times a
+  dependency hurt this server, mcp 2.1.0 and pandas 3.1.0, it was a minor.
   A `lowest-versions` job checks the other end of those ranges: it installs
   every direct dependency at its lower bound (`--resolution lowest-direct`)
   on Python 3.11, again without the lockfile, runs the suite and audits

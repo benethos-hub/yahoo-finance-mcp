@@ -6,6 +6,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-04
+
+A minor release, since a schema changed: `search` bounds the length of its query
+and `methodology` describes one more case. The fix that matters most is
+`get_earnings`, which answered with the oldest dates on Yahoo's page and dropped
+the next one. Every release from here on also carries a Claude Desktop extension
+that runs the newest release from PyPI, so a new release arrives with a restart
+of Claude Desktop. The six main dependencies now stay inside a patch window, so a
+minor of theirs waits until it was checked and released, and `server_status` with
+`details` names the yfinance in use. The image's dependencies are those of 0.11.0
+apart from platformdirs 4.14.4, on the same builds of uv 0.13.7 and
+`python:3.15-slim`.
+
 ### Added
 
 - A second Claude Desktop extension on every release,
@@ -13,11 +26,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   on PyPI through `uv tool run`, so a new release arrives with a restart of
   Claude Desktop instead of a new download. uv checks for one at most every
   10 minutes, when the server starts, and takes the newest dependency
-  versions the release allows, not the locked ones. The README says how and
-  when it updates. The pinned extension stays as it is.
+  versions the release allows, not the locked ones. A dependency can change
+  under the same version number and make it crash or return wrong data with
+  no error, and nothing rolls back on its own. The README says how and when
+  it updates, and that the way out is the pinned extension of a release that
+  worked. The pinned extension stays as it is.
 
 ### Changed
 
+- `server_status` with `details` names the installed yfinance. It decides what
+  the data looks like, and two installations of one server version can differ
+  in it, most of all with the auto-update extension.
 - The picture of how a question gets answered, in the README and SPECS, has
   a symbol per station, the project's icon on the server and the colours of
   the social preview. What it says stays the same.
@@ -1803,7 +1822,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.2...v0.11.0
 [0.10.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.0...v0.10.1
