@@ -17,6 +17,11 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # A release the window allows changes uv.lock only, and one past it moves the
+    # window, as `~=` again. Left to itself Dependabot takes this project for a
+    # library, since its description matches PyPI, and widens to a range over two
+    # minors, which is no patch window any more.
+    versioning-strategy: increase-if-necessary
     groups:
       minor-and-patch:
         patterns: ["*"]
@@ -25,8 +30,9 @@ updates:
         # yfinance completely and never travels through the SDK, so neither
         # change is seen by it. Each needs its own checks, the smoke run
         # before and after for yfinance and a call through the SDK for mcp
-        # (CLAUDE.md, Verifying).
-        exclude-patterns: ["yfinance", "mcp"]
+        # (CLAUDE.md, Verifying). The other four stay inside a patch window too,
+        # and a minor of theirs is checked the same way (CLAUDE.md, Releasing).
+        exclude-patterns: ["yfinance", "mcp", "pandas", "pydantic", "lxml", "curl*cffi"]
 
   # The actions the workflows use, each pinned to a full commit SHA with the
   # version it stands for in a trailing comment. A tag, even an exact one, is a
