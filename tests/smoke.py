@@ -1,15 +1,25 @@
 """Ad-hoc smoke test hitting live Yahoo Finance. Not part of the unit suite.
 
 Exits with 1 when a section came back empty, which a changed library or a changed
-Yahoo tends to do without raising anything.
+Yahoo tends to do without raising anything. ``--pause`` waits that many seconds
+after each call, for a runner that shares its address with many others.
 """
 
+import argparse
 import json
 import sys
+import time
 
 from benethos_yahoo_finance_mcp import yahoo
 
 _empty: list[str] = []
+_pause = 0.0
+
+
+def pause_from(argv):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--pause", type=float, default=0.0)
+    return parser.parse_args(argv).pause
 
 
 def empty_fields(value):
@@ -29,9 +39,12 @@ def show(title, value):
     print(f"\n=== {title} ===")
     print(json.dumps(value, indent=2, ensure_ascii=False)[:1500])
     _empty.extend(f"{title}: {field or 'everything'}" for field in empty_fields(value))
+    if _pause:
+        time.sleep(_pause)
 
 
 if __name__ == "__main__":
+    _pause = pause_from(sys.argv[1:])
     show("search('Apple')", yahoo.search("Apple", limit=3))
     show("search('US0378331005')  # AAPL ISIN", yahoo.search("US0378331005", limit=3))
     show("get_quote('AAPL')", yahoo.get_quote("AAPL"))

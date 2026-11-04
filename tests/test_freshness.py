@@ -192,6 +192,12 @@ def test_it_can_write_issues_and_nothing_else():
     assert WORKFLOW.count("issues: write") == 1
 
 
+def test_the_runner_pauses_between_calls_to_yahoo():
+    """It shares its address with everyone else on GitHub's runners."""
+    assert WORKFLOW.count("python tests/smoke.py --pause 1") == 2
+    assert WORKFLOW.count("tests/smoke.py") == 2
+
+
 def test_a_red_step_still_reaches_the_reports():
     for step in ("Tests", "Smoke run against Yahoo\n        id: smoke"):
         body = WORKFLOW.split(f"- name: {step}", 1)[1].split("\n      - ", 1)[0]

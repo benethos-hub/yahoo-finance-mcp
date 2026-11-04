@@ -39,8 +39,11 @@ jobs:
       - name: Install the versions in uv.lock
         run: uv sync --frozen --extra dev
 
+      # A second after each call: a runner shares its address with everyone
+      # else on GitHub, and a limit Yahoo sets for that address would read as a
+      # failure here.
       - name: Smoke run against Yahoo
-        run: uv run --frozen python tests/smoke.py
+        run: uv run --frozen python tests/smoke.py --pause 1
 
   newest:
     name: Newest versions
@@ -76,7 +79,7 @@ jobs:
       - name: Smoke run against Yahoo
         id: smoke
         continue-on-error: true
-        run: uv run --frozen python tests/smoke.py
+        run: uv run --frozen python tests/smoke.py --pause 1
 
       - name: Write the reports
         env:
