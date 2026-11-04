@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- The README said a break through a new dependency version shows up in this
+  repository within a day. The daily check only sees failed tests, failed calls
+  and empty answers, so it says now what the check catches and what it misses.
+
 ## [0.12.0] - 2026-11-04
 
 A minor release, since a schema changed: `search` bounds the length of its query
