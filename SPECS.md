@@ -576,24 +576,25 @@ client shows the tool's own title and the model reads descriptions.
   `test_publish_workflow.py` on the release workflow's wiring: which job
   calls which of the organisation's actions, with what, on which event and
   after what. `test_freshness.py` holds the daily check's reports and wiring.
-- **The daily check.** `.github/workflows/freshness.yml` runs the smoke test on
-  the versions in `uv.lock`, then the tests and the smoke test on the newest
+- **The daily check.** `.github/workflows/freshness.yml` calls the
+  organisation's reusable `freshness.yml` (`docs/freshness.md` in
+  `benethos-hub/.github`) and adds one job of its own, the form that document
+  calls "a job of the repository". The organisation's part keeps the issue
+  "Pinned versions have newer releases": every pin of `uv.lock` with a newer
+  release, within the patch windows and beyond, the build backend, known
+  vulnerabilities, the images of the Dockerfile and the compose files, and the
+  actions pinned by commit. This repository's job `newest` runs the smoke test
+  on the versions in `uv.lock`, then the tests and the smoke test on the newest
   versions `pyproject.toml` allows, which is what the auto-update extension and
-  `uvx` install. When only the newest fail it keeps the issue "Newest dependency
-  versions break the server", through the organisation's `report-issue` action.
-  When both fail it leaves that issue alone, since that says something about
-  Yahoo, and so does a rate limit on the newest run. A second issue, "Newer dependency versions are available", lists every
-  new version of a direct dependency and every major below them, whether it
-  reaches users and how it did. It sits beside Dependabot, which writes the pull
-  requests. Neither issue is a required check, and a pull request runs neither.
-  A second workflow, `pins.yml`, calls the organisation's reusable
-  `freshness.yml` (`docs/freshness.md` in `benethos-hub/.github`) for the
-  issue "Pinned versions have newer releases": every pin of `uv.lock`, within
-  the windows and beyond, the build backend, the vulnerabilities, the images of
-  the Dockerfile and the compose files, and the actions pinned by commit. It
-  overlaps the news issue in the direct packages. Which of the two stays is
-  decided once both have run for a while. `tests/test_pins_workflow.py` holds
-  its wiring.
+  `uvx` install, and leaves the artifact `freshness-newest`
+  (`.github/scripts/freshness_newest.py`: `status.json`, and `section.md` when
+  the newest versions fail). Its status names the alarm issue "Newest
+  dependency versions break the server", which the organisation's report keeps
+  through `alarm-title`. A run that proves nothing is `inconclusive` and leaves
+  that issue as it was: Yahoo refused the locked versions too, rate-limited the
+  run, or a step failed while nothing moved. The report then says so in the
+  pins issue. It sits beside Dependabot, which writes the pull requests.
+  Neither issue is a required check, and a pull request runs neither.
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo, and it is not part of
   the pytest suite (no `test_*` functions, so it is not collected). It exits
   with 1 when a section or one of its lists comes back empty and with 3 when
