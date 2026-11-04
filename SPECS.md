@@ -575,9 +575,21 @@ client shows the tool's own title and the model reads descriptions.
   entry, `test_mcpb.py` on the Claude Desktop bundle, and
   `test_publish_workflow.py` on the release workflow's wiring: which job
   calls which of the organisation's actions, with what, on which event and
-  after what.
+  after what. `test_freshness.py` holds the daily check's reports and wiring.
+- **The daily check.** `.github/workflows/freshness.yml` runs the smoke test on
+  the versions in `uv.lock`, then the tests and the smoke test on the newest
+  versions `pyproject.toml` allows, which is what the auto-update extension and
+  `uvx` install. When only the newest fail it keeps the issue "Newest dependency
+  versions break the server", through the organisation's `report-issue` action.
+  When both fail it leaves that issue alone, since that says something about
+  Yahoo, and so does a rate limit on the newest run. A second issue, "Newer dependency versions are available", lists every
+  new version of a direct dependency and every major below them, whether it
+  reaches users and how it did. It sits beside Dependabot, which writes the pull
+  requests. Neither issue is a required check, and a pull request runs neither.
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo, and it is not part of
-  the pytest suite (no `test_*` functions, so it is not collected).
+  the pytest suite (no `test_*` functions, so it is not collected). It exits
+  with 1 when a section or one of its lists comes back empty and with 3 when
+  Yahoo rate-limits the run, which `test_smoke.py` holds.
 - Quality gates: ruff (lint + format), mypy (type check), and a coverage floor
   of 80% (the badge in the README shows the current figure).
 - **What the gates cannot see.** The suite mocks yfinance and stops at

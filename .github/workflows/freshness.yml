@@ -1,0 +1,124 @@
+name: Freshness
+
+# The auto-update extension and uvx install the newest versions pyproject.toml
+# allows, not the ones in uv.lock, so what a user runs can change on any day
+# without a release here. This checks that every day and keeps two issues:
+#
+#   * "Newest dependency versions break the server", when the newest versions
+#     fail and the locked ones pass. A failure of both says something about
+#     Yahoo, or about whether it lets this runner in, and leaves the issue alone,
+#     and so does a rate limit on the newest run.
+#   * "Newer dependency versions are available", the one place to see what is
+#     new, whether it reaches anyone yet and how it did.
+#
+# Nothing here commits anything: the upgraded lockfile stays in the runner.
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: freshness
+
+jobs:
+  locked:
+    name: Locked versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+
+      - name: Install the versions in uv.lock
+        run: uv sync --frozen --extra dev
+
+      # A second after each call: a runner shares its address with everyone
+      # else on GitHub, and a limit Yahoo sets for that address would read as a
+      # failure here.
+      - name: Smoke run against Yahoo
+        run: uv run --frozen python tests/smoke.py --pause 1
+
+  newest:
+    name: Newest versions
+    needs: locked
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+
+      - name: Install the newest versions allowed
+        run: |
+          cp uv.lock "$RUNNER_TEMP/uv.lock.before"
+          uv lock --upgrade
+          uv sync --frozen --extra dev
+          uv tree --frozen --outdated > "$RUNNER_TEMP/outdated.txt"
+
+      # Each step's result goes into the reports, so a red one must not stop
+      # the job before it gets there.
+      - name: Tests
+        id: tests
+        continue-on-error: true
+        run: uv run --frozen pytest -q
+
+      # Exit code 3 is a rate limit, which says nothing about these versions.
+      - name: Smoke run against Yahoo
+        id: smoke
+        run: |
+          code=0
+          uv run --frozen python tests/smoke.py --pause 1 || code=$?
+          case "$code" in
+            0) result=success ;;
+            3) result=rate-limited ;;
+            *) result=failure ;;
+          esac
+          echo "result=$result" >> "$GITHUB_OUTPUT"
+
+      - name: Write the reports
+        env:
+          TESTS: ${{ steps.tests.outcome }}
+          SMOKE: ${{ steps.smoke.outputs.result }}
+        run: |
+          for report in alarm news; do
+            uv run --frozen python .github/scripts/freshness_report.py "$report" \
+              --before "$RUNNER_TEMP/uv.lock.before" --after uv.lock \
+              --outdated "$RUNNER_TEMP/outdated.txt" \
+              --tests "$TESTS" --smoke "$SMOKE" > "$RUNNER_TEMP/$report.md"
+          done
+
+      - name: Say that the alarm cannot speak
+        if: needs.locked.result != 'success' || steps.smoke.outputs.result == 'rate-limited'
+        run: |
+          echo "The locked versions failed or Yahoo rate-limited the run, so the alarm issue was left alone." \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the alarm issue
+        if: needs.locked.result == 'success' && steps.smoke.outputs.result != 'rate-limited'
+        uses: benethos-hub/.github/actions/report-issue@main
+        with:
+          title: Newest dependency versions break the server
+          report: ${{ runner.temp }}/alarm.md
+          resolved: The newest dependency versions work.
+
+      - name: Keep the news issue
+        uses: benethos-hub/.github/actions/report-issue@main
+        with:
+          title: Newer dependency versions are available
+          report: ${{ runner.temp }}/news.md
+          resolved: The versions in uv.lock are the newest there are.

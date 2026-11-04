@@ -43,30 +43,35 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dependencies = [
+    # The six that decide what an answer looks like stay inside a patch window,
+    # at the versions tested last. The auto-update extension and uvx install the
+    # newest versions allowed, so a patch reaches them by itself. A minor waits
+    # until it was checked, the window raised and released: both real breaks of
+    # this server through a dependency came with one, mcp 2.1.0 and pandas 3.1.0.
+    #
     # Plain `mcp`, not `mcp[cli]`. The extra only adds the `mcp` command
     # (dev/run/install) and pulls typer, rich and pygments with it. This package
     # defines its own entry point and never imports them. It lives in `dev`.
     # 2.2.0 fixes GHSA-84m7-p3x7-pcfv: a stateful Streamable HTTP server never
     # reclaimed its sessions, and this server offers that transport.
-    "mcp>=2.2.0,<3",
+    "mcp~=2.3.0",
     # 1.8.0 reaches the ticker's news again, through the GraphQL route Yahoo's
     # site uses since it dropped the old one (ranaroussi/yfinance#3018), and
     # stops tripping pandas 3.1's deprecation of `inplace` (#3020).
-    # The upper bounds stop at the next major of the two libraries this server
-    # leans on most. The auto-update extension and uvx install the newest
-    # versions allowed, so a major would reach them untested. A new major is
-    # taken on purpose: checked, the bound raised, released.
-    "yfinance>=1.8.0,<2",
+    "yfinance~=1.8.0",
     # Imported directly by formatting.py, so named here and not only reached
     # through yfinance.
-    "pandas>=3.0.0,<4",
+    "pandas~=3.1.0",
     # Imported directly by server.py and the tools, so named here and not only
     # reached through mcp. It pins pydantic-core exactly, which tools/_base.py
     # imports too. The lower bound is what mcp 2.2.0 asks for.
-    "pydantic>=2.12.0,<3",
+    "pydantic~=2.14.2",
     # Required by yfinance for HTML-table scraping (e.g. earnings dates).
     # 6.1.0 fixes GHSA-vfmq-68hx-4jfw, XXE in iterparse() and ETCompatXMLParser().
-    "lxml>=6.1.0",
+    "lxml~=6.1.3",
+    # Nothing here imports it. yfinance reaches Yahoo through it, so its version
+    # decides whether Yahoo answers, and only the window is why it is named.
+    "curl_cffi~=0.17.0",
 ]
 
 [project.urls]
@@ -83,7 +88,7 @@ dev = [
     # Gives back the `mcp` command, whose `mcp dev` runs a server against the
     # MCP Inspector. A development tool, so it belongs here and not in the
     # runtime dependencies.
-    "mcp[cli]>=2.2.0,<3",
+    "mcp[cli]~=2.3.0",
 ]
 
 [project.scripts]

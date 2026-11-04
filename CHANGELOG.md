@@ -21,12 +21,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The picture of how a question gets answered, in the README and SPECS, has
   a symbol per station, the project's icon on the server and the colours of
   the social preview. What it says stays the same.
-- `yfinance` and `pandas` stop at their next major, `<2` and `<4`, as `mcp`
-  already did at `<3`. The auto-update extension and `uvx` install the
-  newest versions allowed, and a major would reach them before anyone
-  checked it. `pandas` is now a direct dependency, `>=3.0.0`, since the
-  server imports it itself. The lowest versions allowed (pandas 3.0.0,
-  yfinance 1.8.0, mcp 2.2.0 on Python 3.11) pass the tests.
+- `mcp`, `yfinance`, `pandas`, `pydantic`, `lxml` and `curl_cffi` stay inside a
+  patch window (`~=`), at the versions tested last. The auto-update extension
+  and `uvx` install the newest versions allowed, so a patch reaches them by
+  itself and a minor only once it was checked and released. Packages below
+  those six still move on their own. `pandas`, `pydantic` and `curl_cffi` are
+  direct dependencies now.
 - `search` takes a `query` of at most 200 characters, like every other
   text argument it has a bound now.
 - The build backend is pinned to an exact version, hatchling 1.33.0, so an
@@ -37,6 +37,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   profile, since nothing enforces it. They say to set it and what happens
   without one: Caddy still starts, and any request with an `Authorization`
   header reaches every tool. If you run that profile without a token, set one.
+- A daily check runs the server on the newest versions it allows and reports in
+  two issues in this repository: one when they break it, one listing what is
+  new. This reaches no installation, it only tells the maintainer sooner.
 
 ### Fixed
 

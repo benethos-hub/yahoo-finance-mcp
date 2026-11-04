@@ -1,16 +1,55 @@
-"""Ad-hoc smoke test hitting live Yahoo Finance. Not part of the unit suite."""
+"""Ad-hoc smoke test hitting live Yahoo Finance. Not part of the unit suite.
 
+Exits with 1 when a section came back empty, which a changed library or a changed
+Yahoo tends to do without raising anything, and with 3 when Yahoo rate-limits the
+run, which says nothing about the versions under test. ``--pause`` waits that many
+seconds after each call, for a runner that shares its address with many others.
+"""
+
+import argparse
 import json
+import sys
+import time
 
 from benethos_yahoo_finance_mcp import yahoo
+from benethos_yahoo_finance_mcp.errors import RateLimitError
+
+# The exit code of a rate-limited run. .github/workflows/freshness.yml reads it.
+RATE_LIMITED = 3
+
+_empty: list[str] = []
+_pause = 0.0
+
+
+def pause_from(argv):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--pause", type=float, default=0.0)
+    return parser.parse_args(argv).pause
+
+
+def empty_fields(value):
+    """What holds no data: "" for a whole section, else its empty list or dict fields.
+
+    A null stays allowed. Yahoo leaves single figures out, and which ones differs
+    by symbol and by day.
+    """
+    if not value:
+        return [""]
+    if not isinstance(value, dict):
+        return []
+    return [k for k, v in value.items() if isinstance(v, (list, dict)) and not v]
 
 
 def show(title, value):
     print(f"\n=== {title} ===")
     print(json.dumps(value, indent=2, ensure_ascii=False)[:1500])
+    _empty.extend(f"{title}: {field or 'everything'}" for field in empty_fields(value))
+    if _pause:
+        time.sleep(_pause)
 
 
-if __name__ == "__main__":
+def run():
+    """Every tool that asks Yahoo, one section per call."""
     show("search('Apple')", yahoo.search("Apple", limit=3))
     show("search('US0378331005')  # AAPL ISIN", yahoo.search("US0378331005", limit=3))
     show("get_quote('AAPL')", yahoo.get_quote("AAPL"))
@@ -163,3 +202,21 @@ if __name__ == "__main__":
         limit=3,
     )
     show("screen(industry software-infrastructure, pe_ratio < 40, limit=3)", screened)
+
+
+def verdict(calls):
+    """The run's exit code, once ``calls`` went through or Yahoo stopped it."""
+    try:
+        calls()
+    except RateLimitError:
+        print("\nRate-limited by Yahoo, so this says nothing about the versions.")
+        return RATE_LIMITED
+    if _empty:
+        print("\nEmpty:", *_empty, sep="\n  ")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    _pause = pause_from(sys.argv[1:])
+    sys.exit(verdict(run))
