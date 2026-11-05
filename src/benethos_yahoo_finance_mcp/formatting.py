@@ -8,6 +8,7 @@ produce small, deterministic structures suitable for an LLM context window.
 from __future__ import annotations
 
 import math
+from contextlib import suppress
 from datetime import date, datetime
 from typing import Any
 
@@ -33,11 +34,9 @@ def to_jsonable(value: Any) -> Any:
 
     # pandas missing-value sentinels (NaT, NA) — guarded because pd.isna on
     # arrays/containers raises or returns arrays.
-    try:
+    with suppress(TypeError, ValueError):
         if pd.isna(value):
             return None
-    except (TypeError, ValueError):
-        pass
 
     if isinstance(value, (str, bool, int)):
         return value

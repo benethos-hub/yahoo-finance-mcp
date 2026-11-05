@@ -13,7 +13,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   request, and `codeql.yml` every Monday for the queries GitHub adds in
   between. It replaces GitHub's default setup, which ran the security queries
   alone. The findings are under Security, Code scanning, and never fail a
-  check.
+  check. A test holds every action that is not the organisation's to a
+  commit SHA, offline and before any run.
 
 ### Changed
 
@@ -34,6 +35,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The daily check also runs after each completed Publish run, for its `index`
   job: a release that does not install from PyPI stands in the alarm issue
   within minutes instead of at the next morning's run.
+- Six small cleanups from CodeQL's first run, none of which changes what a
+  tool answers: two deliberately empty `except` blocks are a
+  `contextlib.suppress` now, two wrapped strings in the diagram script stand
+  in parentheses, a test variable is set before the `try` that fills it, and
+  a test reaches `smoke` one way instead of two.
 
 ### Fixed
 

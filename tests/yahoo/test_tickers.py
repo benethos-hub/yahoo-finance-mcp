@@ -134,6 +134,7 @@ def test_a_network_error_is_named_without_its_url():
 def test_an_unexpected_error_is_named_to_the_model_and_traced_for_the_operator(
     caplog,
 ):
+    text = ""
     with caplog.at_level("WARNING", logger="benethos_yahoo_finance_mcp.yahoo"):
         try:
             {}["price"]
