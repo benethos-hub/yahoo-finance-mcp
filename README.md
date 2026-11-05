@@ -382,7 +382,9 @@ PyPI instead, so a new release arrives with a restart of Claude Desktop.
    Any of them runs the newest release, the version only says which release
    built it.
 2. **Open it** as above. Install this one or the pinned one, not both, or
-   every tool shows up twice.
+   every tool shows up twice. Installing one does not remove the other, so
+   when you switch, remove the old one in Claude Desktop under Settings →
+   Extensions.
 
 How and when it updates:
 
@@ -475,7 +477,7 @@ on demand from
    }
    ```
 
-   Pin a version for stability with `benethos-yahoo-finance-mcp==0.12.0`. To
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.12.1`. To
    enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
@@ -721,7 +723,7 @@ The examples publish the port on the loopback address only. Drop the
 `127.0.0.1:` prefix only behind a reverse proxy that authenticates, or at the
 very least with `YF_MCP_BEARER_TOKEN` set.
 
-Pin a version for anything you depend on — `:0.12.0` for an exact release, `:0.12`
+Pin a version for anything you depend on — `:0.12.1` for an exact release, `:0.12`
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
 built from `main` on demand and is not a release at all.
 
@@ -1006,7 +1008,9 @@ more jobs install without the lockfile: `fresh-install` with the newest
 versions `pyproject.toml` allows, `lowest-versions` with the oldest. Every
 version in `uv.lock` and every lowest version is checked for known
 vulnerabilities against PyPI and OSV. CodeQL reads the code and the workflows
-with GitHub's security and quality queries on every change and once a week.
+with GitHub's security and quality queries on every change and once a week,
+and hadolint reads the Dockerfile on every change. Both file their findings
+under Security, Code scanning.
 
 ## Trademarks
 

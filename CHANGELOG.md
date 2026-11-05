@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-11-05
+
+A patch release for what ships pinned. The image and the pinned Claude Desktop
+extension move to pandas 3.1.1 and pydantic 2.14.3, and the image to the rebuild
+of `python:3.15-slim` from 2026-11-05, on the same uv 0.13.7. An installation
+from the index had these versions already. No tool, parameter or schema changes.
+The rest is how this repository checks itself: CodeQL, hadolint and the daily
+check through the organisation's workflows.
+
 ### Added
 
 - CodeQL with the security and the quality queries, through the
@@ -20,9 +29,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   a `FROM` may pull from. Its findings go to Security, Code scanning, and
   the job stays green on them: what turns a pull request red on a new
   finding is the repository's code scanning threshold, the same for every
-  scanner. Its first run found two things in the Dockerfile, both changed: `USER` names the id 10001 instead of the name,
-  which a check for a non-root container can read, and the health check runs
-  in exec form without a shell. The image behaves as before.
+  scanner. Its first run found two things in the Dockerfile, both changed:
+  `USER` names the id 10001 instead of the name, which a check for a non-root
+  container can read, and the health check runs in exec form without a shell.
+  The image behaves as before.
 
 ### Changed
 
@@ -58,6 +68,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The container image pins the rebuild of `python:3.15-slim` from 2026-11-05,
   still Python 3.15.2, with `apt` 3.0.4 and `tzdata` 2026f. It reaches users of
   the image alone.
+- The README says that installing one Claude Desktop extension does not remove
+  the other, so a switch means removing the old one by hand.
 
 ### Fixed
 
@@ -1886,7 +1898,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.2...v0.11.0
 [0.10.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.1...v0.10.2
