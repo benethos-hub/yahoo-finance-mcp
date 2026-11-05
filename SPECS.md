@@ -579,11 +579,13 @@ client shows the tool's own title and the model reads descriptions.
 - **The daily check.** `.github/workflows/freshness.yml` calls the
   organisation's reusable `freshness.yml` (`docs/freshness.md` in
   `benethos-hub/.github`) and adds one job of its own, the form that document
-  calls "a job of the repository". The organisation's part keeps the issue
-  "Pinned versions have newer releases": every pin of `uv.lock` with a newer
-  release, within the patch windows and beyond, the build backend, known
-  vulnerabilities, the images of the Dockerfile and the compose files, and the
-  actions pinned by commit. Two jobs ask whether what a user gets today still
+  calls "a job of the repository". It runs on a schedule, by hand, and once
+  more after each completed run of `publish.yml`, so the `index` job below
+  sees a release that does not install within minutes. The organisation's
+  part keeps the issue "Pinned versions have newer releases": every pin of
+  `uv.lock` with a newer release, within the patch windows and beyond, the
+  build backend, known vulnerabilities, the images of the Dockerfile and the
+  compose files, and the actions pinned by commit. Two jobs ask whether what a user gets today still
   works, and address the alarm issue "Newest dependency versions break the
   server", which the organisation's report keeps through `alarm-title`. The
   job `newest`, the organisation's `python/freshness-newest` action run from

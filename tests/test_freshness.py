@@ -26,12 +26,20 @@ def _job(name: str) -> str:
     return WORKFLOW.split(f"\n  {name}:\n", 1)[1].split("\n\n  ", 1)[0]
 
 
-def test_it_runs_on_a_schedule_and_by_hand_only():
+def test_it_runs_on_a_schedule_after_a_publish_and_by_hand_only():
     on = WORKFLOW.split("\non:\n", 1)[1].split("\npermissions:", 1)[0]
     assert "schedule:" in on
     assert "workflow_dispatch:" in on
     assert "push" not in on
     assert "pull_request" not in on
+
+
+def test_the_run_after_a_publish_waits_for_the_workflow_of_that_name():
+    """The index job then installs the release just published."""
+    on = WORKFLOW.split("\non:\n", 1)[1].split("\npermissions:", 1)[0]
+    assert "workflow_run:\n    workflows: [Publish]\n    types: [completed]" in on
+    publish = (ROOT / ".github" / "workflows" / "publish.yml").read_text("utf-8")
+    assert publish.startswith("name: Publish\n")
 
 
 def test_the_newest_job_is_the_organisations_with_the_smoke_run_as_the_check():

@@ -21,11 +21,19 @@ name: Freshness
 #     proves nothing, Yahoo refusing the locked versions too or rate-limiting
 #     the run, leaves the alarm issue as it was.
 #
+# The run after each completed Publish is for the index job: it installs the
+# release just published from PyPI, so a release that does not install stands
+# in the alarm issue within minutes instead of at the next cron. The reasoning
+# is in docs/freshness.md of benethos-hub/.github under "Calling it".
+#
 # Nothing here commits anything: the upgraded lockfile stays in the runner.
 
 on:
   schedule:
     - cron: "30 4 * * *"
+  workflow_run:
+    workflows: [Publish]
+    types: [completed]
   workflow_dispatch:
 
 permissions:

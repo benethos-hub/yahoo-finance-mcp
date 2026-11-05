@@ -22,6 +22,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   versions passed each day. The issue "Newer dependency versions are
   available" is gone, the pins report covers it. Nothing reaches an
   installation, it only shows the maintainer what is new in one place.
+- The daily check also runs after each completed Publish run, for its `index`
+  job: a release that does not install from PyPI stands in the alarm issue
+  within minutes instead of at the next morning's run.
 
 ### Fixed
 
