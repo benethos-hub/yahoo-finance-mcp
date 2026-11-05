@@ -658,10 +658,16 @@ client shows the tool's own title and the model reads descriptions.
   `fresh-install` and `docker` are this project's own. `dockerfile-lint`
   runs hadolint over `containers/**/Dockerfile`, with `docker.io` and
   `ghcr.io` as the registries a `FROM` may pull from, and files its findings
-  under Security, Code scanning as well. From a warning on the check is red,
-  so a pull request shows a finding, and it is no required check either. The
-  test `test_dockerfile_lint.py` holds the pattern to every Dockerfile of the
-  repository and the trusted registries to every `FROM`. `codeql` runs CodeQL
+  under Security, Code scanning as well, and its job stays green on them,
+  like `codeql`. What turns red on a new finding is the check GitHub adds to
+  a pull request per tool, `Code scanning results / <tool>`, and the
+  threshold for that is one setting of the repository for every scanner
+  (Settings, Code security, Code scanning, Protection rules, Check failure:
+  security alerts High or higher, other alerts Errors and warnings, as the
+  organisation's `repository-settings.md` says). Neither scanner job is a
+  required check. The test `test_dockerfile_lint.py` holds the pattern to
+  every Dockerfile of the repository and the trusted registries to every
+  `FROM`. `codeql` runs CodeQL
   on the Python code and on the workflows with the `security-and-quality`
   suite: the security queries GitHub's default setup of code scanning ran
   before, and the maintainability and reliability queries that setup does

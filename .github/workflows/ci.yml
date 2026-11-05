@@ -158,9 +158,11 @@ jobs:
   # version, ADD where COPY would do, no USER, the shell form of CMD, and
   # ShellCheck over every RUN line. A FROM that pulls from a registry other
   # than the two named is a finding as well. The findings go to Security,
-  # Code scanning, like CodeQL's, and from a warning on the check is red, so a
-  # pull request shows them. It is no required check. The docker job below
-  # builds and runs the image, this one reads the file.
+  # Code scanning, like CodeQL's, and this job stays green on them: whether
+  # a new finding turns the pull request's "Code scanning results" check red
+  # is the repository's protection rule, one threshold for every scanner.
+  # It is no required check. The docker job below builds and runs the
+  # image, this one reads the file.
   dockerfile-lint:
     uses: benethos-hub/.github/.github/workflows/dockerfile-lint.yml@main
     permissions:
