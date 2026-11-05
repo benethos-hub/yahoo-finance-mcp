@@ -47,6 +47,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `contextlib.suppress` now, two wrapped strings in the diagram script stand
   in parentheses, a test variable is set before the `try` that fills it, and
   a test reaches `smoke` one way instead of two.
+- Lock refresh for the image: `pandas` 3.1.1, `soupsieve` 4.0.1 and
+  `platformdirs` 4.14.5 under `yfinance`, `pydantic` 2.14.3 with
+  `pydantic-core` 2.50.4 and `typing-inspection` 0.4.5, and for development
+  only `coverage` 7.17.2. All of them are patches inside the windows, so an
+  installation from the index already gets them. A live smoke run returns the
+  same 28 sections before and after, and the tool schemas are the same byte
+  for byte.
 
 ### Fixed
 
