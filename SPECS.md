@@ -575,7 +575,8 @@ client shows the tool's own title and the model reads descriptions.
   entry, `test_mcpb.py` on the Claude Desktop bundle, and
   `test_publish_workflow.py` on the release workflow's wiring: which job
   calls which of the organisation's actions, with what, on which event and
-  after what. `test_freshness.py` holds the daily check's reports and wiring.
+  after what. `test_freshness.py` holds the daily check's wiring: its
+  triggers, the organisation's job and workflow it calls and with what.
 - **The daily check.** `.github/workflows/freshness.yml` calls the
   organisation's reusable `freshness.yml` (`docs/freshness.md` in
   `benethos-hub/.github`) and adds one job of its own, the form that document
@@ -656,7 +657,7 @@ client shows the tool's own title and the model reads descriptions.
   commits the coverage `test / Python 3.15` measured as `coverage.json` to
   the `badges` branch, which the README's coverage badge reads. It is no
   required check, since a pull request does not run it.
-- Every third-party action in both workflows is pinned to a full commit
+- Every third-party action in the three workflows is pinned to a full commit
   SHA, with the version it stands for in a trailing comment, and the two
   base images in the
   `Dockerfile` (`containers/images/yahoo-finance-mcp/`) by digest next to
@@ -689,8 +690,15 @@ client shows the tool's own title and the model reads descriptions.
   through Dependabot and eleven transitive ones underneath had not, and an
   image that ships the first without the second is half a rebuild.
   Minor and patch updates arrive grouped, one pull request per ecosystem and
-  week, a major on its own, and `yfinance` and `mcp` always on their own,
-  since each needs the checks CLAUDE.md describes.
+  week, a major on its own, and the six dependencies with a patch window
+  (`mcp`, `yfinance`, `pandas`, `pydantic`, `lxml`, `curl_cffi`) always on
+  their own, since each needs the checks CLAUDE.md describes, and the pull
+  request of a release past a window is where the window is lifted. The
+  `versioning-strategy` is `increase-if-necessary`: a release the window
+  allows changes `uv.lock` alone, and one past it moves the window, as `~=`
+  again. Left to itself Dependabot takes this project for a library, since
+  its description matches PyPI, and widens `~=` to a range over two minors,
+  which is no patch window any more.
 - A separate `publish` workflow runs when a GitHub release is published.
   Every upload in it goes through an action of the organisation
   (`benethos-hub/.github`, `actions/publish/`), while the jobs stay here,
