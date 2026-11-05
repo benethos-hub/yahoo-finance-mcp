@@ -382,7 +382,9 @@ PyPI instead, so a new release arrives with a restart of Claude Desktop.
    Any of them runs the newest release, the version only says which release
    built it.
 2. **Open it** as above. Install this one or the pinned one, not both, or
-   every tool shows up twice.
+   every tool shows up twice. Installing one does not remove the other, so
+   when you switch, remove the old one in Claude Desktop under Settings →
+   Extensions.
 
 How and when it updates:
 

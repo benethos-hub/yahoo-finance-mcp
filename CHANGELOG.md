@@ -68,6 +68,8 @@ check through the organisation's workflows.
 - The container image pins the rebuild of `python:3.15-slim` from 2026-11-05,
   still Python 3.15.2, with `apt` 3.0.4 and `tzdata` 2026f. It reaches users of
   the image alone.
+- The README says that installing one Claude Desktop extension does not remove
+  the other, so a switch means removing the old one by hand.
 
 ### Fixed
 
