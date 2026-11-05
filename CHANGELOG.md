@@ -54,6 +54,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   installation from the index already gets them. A live smoke run returns the
   same 28 sections before and after, and the tool schemas are the same byte
   for byte.
+- The container image pins the rebuild of `python:3.15-slim` from 2026-11-05,
+  still Python 3.15.2, with `apt` 3.0.4 and `tzdata` 2026f. It reaches users of
+  the image alone.
 
 ### Fixed
 
