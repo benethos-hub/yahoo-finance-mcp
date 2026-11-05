@@ -669,10 +669,12 @@ client shows the tool's own title and the model reads descriptions.
   rejects a workflow's upload for a language the default setup analyses. A
   rule that never applies here would go into a CodeQL configuration file as
   a `query-filters` entry with its reason, named by `config-file`. There is
-  none so far. The organisation's workflows and actions followed at `main`,
-  which `actions/unpinned-tag` reports, are the organisation's to trust in
-  its own action, for every repository that calls them. `test_codeql.py`
-  holds every other action to a commit SHA, offline and before any run. A
+  none so far. The organisation's workflows and actions followed at `main`
+  pass `actions/unpinned-tag` because the organisation's action names its
+  owner as trusted, through a model pack it writes into the checkout before
+  the analysis (`trusted-owners` in its `docs/codeql.md`), so no file here
+  does. `test_codeql.py` holds every other action to a commit SHA, offline
+  and before any run. A
   finding that is wrong in one place is dismissed in the Security tab with
   its reason, so that a new one stands out. A `coverage-badge`
   job, the organisation's as well, runs on a push to `main` only and
