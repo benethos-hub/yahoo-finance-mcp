@@ -676,9 +676,10 @@ client shows the tool's own title and the model reads descriptions.
   warnings and notes. A finding never fails the job, so its check
   `codeql / CodeQL` is no required check, by decision: it reports, the
   Security tab holds the result. `.github/workflows/codeql.yml` runs the same
-  call every Monday at 04:30 UTC and by hand, so a query GitHub adds later
-  reads code nobody changed, under the same category, so each run refreshes
-  the last. The default setup had to be switched off first, since GitHub
+  call every Monday at 05:00 UTC, half an hour after the freshness run so the
+  two do not fall together, and by hand, so a query GitHub adds later reads
+  code nobody changed, under the same category, so each run refreshes the
+  last. The default setup had to be switched off first, since GitHub
   rejects a workflow's upload for a language the default setup analyses. A
   rule that never applies here would go into a CodeQL configuration file as
   a `query-filters` entry with its reason, named by `config-file`. There is
