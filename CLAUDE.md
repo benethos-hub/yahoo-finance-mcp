@@ -67,7 +67,7 @@ containers/
   production/     # compose.yaml + Caddyfile + .env.example, the published image
   development/    # compose.yaml, built from the checkout, port 8001
 .github/workflows/
-  ci.yml          # brand, lint, test, lowest-versions, audit, coverage-badge, codeql (the organisation's workflows), fresh-install, docker
+  ci.yml          # brand, lint, test, lowest-versions, audit, coverage-badge, codeql, dockerfile-lint (the organisation's workflows), fresh-install, docker
   publish.yml     # PyPI, ghcr, .mcpb bundle, MCP Registry on a published release, through the organisation's actions
   freshness.yml   # daily and after each Publish run: the organisation's freshness report with its newest and index jobs, do the newest versions allowed still work, two issues
   codeql.yml      # weekly: the organisation's CodeQL analysis, the security and the quality queries on code nobody changed, findings under Security
@@ -215,11 +215,12 @@ and it now asserts the message text as well.
   reusable workflows of benethos-hub/.github at main, so their checks are
   named `<job> / <name>`, for example `test / Python 3.15`. Renaming such a
   job renames its checks, and the required ones have to follow.
-  `coverage-badge` and `codeql` are the exceptions. `coverage-badge` runs
-  on a push to main only, to publish the coverage badge on the `badges`
-  branch. `codeql` files what it finds under Security, Code scanning, and a
-  finding never fails it, so a required check would add nothing. Neither is
-  one.
+  `coverage-badge`, `codeql` and `dockerfile-lint` are the exceptions.
+  `coverage-badge` runs on a push to main only, to publish the coverage
+  badge on the `badges` branch. `codeql` and `dockerfile-lint` file what
+  they find under Security, Code scanning, where it is read and fixed or
+  dismissed with a reason, so a required check would add nothing. None of
+  the three is one.
 - `lowest-versions` installs the oldest versions `pyproject.toml` allows,
   runs the tests and audits those versions. When it goes red, raise the lower
   bound it names in the same pull request. `audit` checks every version in

@@ -47,9 +47,9 @@ way for it to make the server itself act differently is a finding.
 ## How the code is checked
 
 CodeQL reads the Python code and the workflows on every change and once a
-week, with GitHub's security and quality queries, through the workflow of the
-benethos-hub organisation. Its findings are under **Security → Code
-scanning**. Every version in the lockfile and every lowest version the
+week, with GitHub's security and quality queries, and hadolint reads the
+Dockerfile on every change, both through workflows of the benethos-hub
+organisation. Their findings are under **Security → Code scanning**. Every version in the lockfile and every lowest version the
 project allows is checked for known vulnerabilities in CI, and the daily
 freshness check reports what is newer.
 
