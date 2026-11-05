@@ -12,9 +12,9 @@ permissions:
   contents: read
 
 jobs:
-  # brand, lint, test, lowest-versions, audit and coverage-badge are the
-  # organisation's reusable workflows in benethos-hub/.github, the same for
-  # every Python project there. Each one explains itself in its file. They are
+  # brand, lint, test, lowest-versions, audit, coverage-badge and codeql are
+  # the organisation's reusable workflows in benethos-hub/.github, the same
+  # for every Python project there. Each one explains itself in its file. They are
   # followed at main on purpose, so a rule changed there applies here on the
   # next run, and Dependabot in that repository keeps the actions they pin
   # current. What stays here is what only this project has: fresh-install and
@@ -136,6 +136,23 @@ jobs:
   # waived with ignore-vulns, here and in lowest-versions alike.
   audit:
     uses: benethos-hub/.github/.github/workflows/python-dependency-audit.yml@main
+
+  # CodeQL on the Python code and on the workflows themselves, with the
+  # security and the quality queries. GitHub's default setup ran the security
+  # queries alone, and the quality queries are no setting of it. Findings go
+  # to Security, Code scanning, and never fail this job, so its check
+  # codeql / CodeQL is no required check: it reports, and the Security tab
+  # holds what it found. codeql.yml runs the same analysis once a week, for
+  # the queries GitHub adds in between. The job grants security-events:
+  # write, the one permission the upload needs, and the called workflow gets
+  # no more than that.
+  codeql:
+    uses: benethos-hub/.github/.github/workflows/codeql.yml@main
+    permissions:
+      contents: read
+      security-events: write
+    with:
+      languages: python,actions
 
   docker:
     runs-on: ubuntu-latest

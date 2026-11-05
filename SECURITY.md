@@ -44,5 +44,14 @@ documentation advises against. Text that Yahoo returns, such as news
 headlines, reaches the model as data. That it can say anything is known, a
 way for it to make the server itself act differently is a finding.
 
+## How the code is checked
+
+CodeQL reads the Python code and the workflows on every change and once a
+week, with GitHub's security and quality queries, through the workflow of the
+benethos-hub organisation. Its findings are under **Security → Code
+scanning**. Every version in the lockfile and every lowest version the
+project allows is checked for known vulnerabilities in CI, and the daily
+freshness check reports what is newer.
+
 How the HTTP transport, the bearer guard and the log are built is described
 in [SPECS.md](SPECS.md), section 4.

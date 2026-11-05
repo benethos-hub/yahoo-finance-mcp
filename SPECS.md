@@ -577,6 +577,8 @@ client shows the tool's own title and the model reads descriptions.
   calls which of the organisation's actions, with what, on which event and
   after what. `test_freshness.py` holds the daily check's wiring: its
   triggers, the organisation's job and workflow it calls and with what.
+  `test_codeql.py` holds the two CodeQL calls to one organisation's
+  workflow, the languages, the weekly schedule and the one permission.
 - **The daily check.** `.github/workflows/freshness.yml` calls the
   organisation's reusable `freshness.yml` (`docs/freshness.md` in
   `benethos-hub/.github`) and adds one job of its own, the form that document
@@ -646,18 +648,33 @@ client shows the tool's own title and the model reads descriptions.
   every other job both are required checks on `main`, so a red run blocks
   the merge until the lower bound in `pyproject.toml` it names is raised or
   the locked version is fixed.
-- `brand`, `lint`, `test`, `lowest-versions` and `audit` call the reusable
-  workflows of the benethos-hub organisation (`benethos-hub/.github`,
+- `brand`, `lint`, `test`, `lowest-versions`, `audit` and `codeql` call the
+  reusable workflows of the benethos-hub organisation (`benethos-hub/.github`,
   followed at `main`), shared by its Python projects. `brand` checks that
   `assets/brand/icon.svg` and the 512×512 `icon.png` and 1280×640
   `social-preview.png` exported from it are present and not older than the
   SVG. Their checks are named `<job> / <name>`, such as `test / Python 3.15`.
-  `fresh-install` and `docker` are this project's own. A `coverage-badge`
+  `fresh-install` and `docker` are this project's own. `codeql` runs CodeQL
+  on the Python code and on the workflows with the `security-and-quality`
+  suite: the security queries GitHub's default setup of code scanning ran
+  before, and the maintainability and reliability queries that setup does
+  not offer, such as an unreachable branch, a comparison that is always true
+  or an unused import. The findings go to Security, Code scanning, as
+  warnings and notes. A finding never fails the job, so its check
+  `codeql / CodeQL` is no required check, by decision: it reports, the
+  Security tab holds the result. `.github/workflows/codeql.yml` runs the same
+  call every Monday at 04:30 UTC and by hand, so a query GitHub adds later
+  reads code nobody changed, under the same category, so each run refreshes
+  the last. The default setup had to be switched off first, since GitHub
+  rejects a workflow's upload for a language the default setup analyses. A
+  rule that never applies here goes into a CodeQL configuration file as a
+  `query-filters` entry with its reason, named by `config-file`, once there
+  is one. A `coverage-badge`
   job, the organisation's as well, runs on a push to `main` only and
   commits the coverage `test / Python 3.15` measured as `coverage.json` to
   the `badges` branch, which the README's coverage badge reads. It is no
   required check, since a pull request does not run it.
-- Every third-party action in the three workflows is pinned to a full commit
+- Every third-party action in the four workflows is pinned to a full commit
   SHA, with the version it stands for in a trailing comment, and the two
   base images in the
   `Dockerfile` (`containers/images/yahoo-finance-mcp/`) by digest next to

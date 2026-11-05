@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- CodeQL with the security and the quality queries, through the
+  organisation's workflow: a `codeql` job in the CI on every push and pull
+  request, and `codeql.yml` every Monday for the queries GitHub adds in
+  between. It replaces GitHub's default setup, which ran the security queries
+  alone. The findings are under Security, Code scanning, and never fail a
+  check.
+
 ### Changed
 
 - The daily check runs through the organisation's freshness workflow now, one
