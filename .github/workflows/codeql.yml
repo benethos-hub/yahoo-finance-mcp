@@ -25,4 +25,3 @@ jobs:
       security-events: write
     with:
       languages: python,actions
-      config-file: .github/codeql/codeql-config.yml

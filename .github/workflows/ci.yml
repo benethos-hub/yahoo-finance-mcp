@@ -145,8 +145,7 @@ jobs:
   # holds what it found. codeql.yml runs the same analysis once a week, for
   # the queries GitHub adds in between. The job grants security-events:
   # write, the one permission the upload needs, and the called workflow gets
-  # no more than that. The rules left out here, each with its reason, are in
-  # .github/codeql/codeql-config.yml.
+  # no more than that.
   codeql:
     uses: benethos-hub/.github/.github/workflows/codeql.yml@main
     permissions:
@@ -154,7 +153,6 @@ jobs:
       security-events: write
     with:
       languages: python,actions
-      config-file: .github/codeql/codeql-config.yml
 
   docker:
     runs-on: ubuntu-latest

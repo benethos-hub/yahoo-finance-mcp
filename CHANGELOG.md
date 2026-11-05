@@ -13,9 +13,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   request, and `codeql.yml` every Monday for the queries GitHub adds in
   between. It replaces GitHub's default setup, which ran the security queries
   alone. The findings are under Security, Code scanning, and never fail a
-  check. A configuration file leaves out the one rule that flags the
-  organisation's workflows followed at `main`, with the reason beside it, and
-  a test holds every other action to a commit SHA in its place.
+  check. A test holds every action that is not the organisation's to a
+  commit SHA, offline and before any run.
 
 ### Changed
 
