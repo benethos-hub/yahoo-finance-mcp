@@ -54,8 +54,11 @@ def test_every_registry_a_from_line_pulls_from_is_trusted():
             if not line.startswith("FROM "):
                 continue
             image = line.split()[1]
-            first = image.split("/", 1)[0]
-            registry = first if "." in first or ":" in first else "docker.io"
+            # A registry is the first path component, and only when there is
+            # one and it looks like a host: python:3.15-slim is Docker Hub.
+            first, slash, _ = image.partition("/")
+            is_host = slash and ("." in first or ":" in first or first == "localhost")
+            registry = first if is_host else "docker.io"
             assert registry in trusted, f"{path.name}: {image} comes from {registry}"
 
 
