@@ -6,7 +6,7 @@ The image, and the places it runs in, each in a folder of its own.
 containers/
   images/
     yahoo-finance-mcp/
-      Dockerfile          # what CI builds and publishes, build context: the repository root
+      Dockerfile          # what CI lints, builds and publishes, build context: the repository root
   production/             # in operation, the published image, no clone needed
     compose.yaml          #   the server on 127.0.0.1, version from .env, Caddy with the profile https
     Caddyfile             #   Caddy's configuration: domain, certificate, 401 without a token

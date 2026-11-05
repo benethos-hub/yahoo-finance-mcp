@@ -578,7 +578,8 @@ client shows the tool's own title and the model reads descriptions.
   after what. `test_freshness.py` holds the daily check's wiring: its
   triggers, the organisation's job and workflow it calls and with what.
   `test_codeql.py` holds the two CodeQL calls to one organisation's
-  workflow, the languages, the weekly schedule and the one permission.
+  workflow, the languages, the weekly schedule and the one permission, and
+  `test_dockerfile_lint.py` the Dockerfile lint's pattern and registries.
 - **The daily check.** `.github/workflows/freshness.yml` calls the
   organisation's reusable `freshness.yml` (`docs/freshness.md` in
   `benethos-hub/.github`) and adds one job of its own, the form that document
@@ -654,7 +655,13 @@ client shows the tool's own title and the model reads descriptions.
   `assets/brand/icon.svg` and the 512×512 `icon.png` and 1280×640
   `social-preview.png` exported from it are present and not older than the
   SVG. Their checks are named `<job> / <name>`, such as `test / Python 3.15`.
-  `fresh-install` and `docker` are this project's own. `codeql` runs CodeQL
+  `fresh-install` and `docker` are this project's own. `dockerfile-lint`
+  runs hadolint over `containers/**/Dockerfile`, with `docker.io` and
+  `ghcr.io` as the registries a `FROM` may pull from, and files its findings
+  under Security, Code scanning as well. From a warning on the check is red,
+  so a pull request shows a finding, and it is no required check either. The
+  test `test_dockerfile_lint.py` holds the pattern to every Dockerfile of the
+  repository and the trusted registries to every `FROM`. `codeql` runs CodeQL
   on the Python code and on the workflows with the `security-and-quality`
   suite: the security queries GitHub's default setup of code scanning ran
   before, and the maintainability and reliability queries that setup does

@@ -12,9 +12,9 @@ permissions:
   contents: read
 
 jobs:
-  # brand, lint, test, lowest-versions, audit, coverage-badge and codeql are
-  # the organisation's reusable workflows in benethos-hub/.github, the same
-  # for every Python project there. Each one explains itself in its file. They are
+  # brand, lint, test, lowest-versions, audit, coverage-badge, codeql and
+  # dockerfile-lint are the organisation's reusable workflows in
+  # benethos-hub/.github, the same for every Python project there. Each one explains itself in its file. They are
   # followed at main on purpose, so a rule changed there applies here on the
   # next run, and Dependabot in that repository keeps the actions they pin
   # current. What stays here is what only this project has: fresh-install and
@@ -153,6 +153,22 @@ jobs:
       security-events: write
     with:
       languages: python,actions
+
+  # hadolint over the Dockerfile: an image without a tag, a package without a
+  # version, ADD where COPY would do, no USER, the shell form of CMD, and
+  # ShellCheck over every RUN line. A FROM that pulls from a registry other
+  # than the two named is a finding as well. The findings go to Security,
+  # Code scanning, like CodeQL's, and from a warning on the check is red, so a
+  # pull request shows them. It is no required check. The docker job below
+  # builds and runs the image, this one reads the file.
+  dockerfile-lint:
+    uses: benethos-hub/.github/.github/workflows/dockerfile-lint.yml@main
+    permissions:
+      contents: read
+      security-events: write
+    with:
+      files: containers/**/Dockerfile
+      trusted-registries: docker.io ghcr.io
 
   docker:
     runs-on: ubuntu-latest

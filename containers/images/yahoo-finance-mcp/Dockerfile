@@ -64,14 +64,16 @@ ENV PYTHONUNBUFFERED=1 \
     YF_MCP_CACHE=0 \
     YF_MCP_CACHE_DIR=/cache
 
-# Run as a non-root user, with the cache dir it owns.
+# Run as a non-root user, with the cache dir it owns. USER names the id, not
+# the name: the name is known inside the image only, the id is what the host
+# and a check for a non-root container see (hadolint DL3066).
 RUN useradd --create-home --uid 10001 appuser \
     && mkdir -p /cache \
     && chown appuser:appuser /cache
 
 COPY --from=builder /opt/venv /opt/venv
 
-USER appuser
+USER 10001
 WORKDIR /home/appuser
 
 # The MCP Registry reads this label from the image config to accept the
@@ -86,9 +88,11 @@ VOLUME ["/cache"]
 
 # Basic liveness check: the configured HTTP port is accepting connections. It
 # reads the port from YF_MCP_PORT, since a healthcheck cannot see the
-# command line: set the port through the variable, never with --port.
+# command line: set the port through the variable, never with --port. Exec
+# form, no shell in between (hadolint DL3025): a refused connection raises,
+# and Python's exit status 1 is what Docker reads as unhealthy.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import os, socket; socket.create_connection(('127.0.0.1', int(os.environ.get('YF_MCP_PORT', '8000'))), 3).close()" || exit 1
+    CMD ["python", "-c", "import os, socket; socket.create_connection(('127.0.0.1', int(os.environ.get('YF_MCP_PORT', '8000'))), 3).close()"]
 
 # No CMD: configuration comes from the environment above. Extra CLI flags can
 # still be appended (they override the env), e.g.:

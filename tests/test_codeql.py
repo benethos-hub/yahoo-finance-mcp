@@ -43,9 +43,10 @@ def test_the_weekly_run_is_weekly_and_by_hand_only():
     assert "pull_request" not in on
 
 
-def test_the_upload_permission_is_granted_to_the_codeql_job_and_nowhere_else():
+def test_the_upload_permission_is_granted_to_the_scanner_jobs_and_nowhere_else():
+    """codeql here and dockerfile-lint, whose test is test_dockerfile_lint.py."""
     assert "security-events: write" in _job(CI, "codeql")
-    assert CI.count("security-events: write") == 1
+    assert CI.count("security-events: write") == 2
     assert WEEKLY.count("security-events: write") == 1
     assert "contents: write" not in WEEKLY
 
