@@ -18,8 +18,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - hadolint over the Dockerfile on every push and pull request, through the
   organisation's workflow, with `docker.io` and `ghcr.io` as the registries
   a `FROM` may pull from. Its findings go to Security, Code scanning, and
-  from a warning on the check is red. Its first run found two things in the
-  Dockerfile, both changed: `USER` names the id 10001 instead of the name,
+  the job stays green on them: what turns a pull request red on a new
+  finding is the repository's code scanning threshold, the same for every
+  scanner. Its first run found two things in the Dockerfile, both changed: `USER` names the id 10001 instead of the name,
   which a check for a non-root container can read, and the health check runs
   in exec form without a shell. The image behaves as before.
 
