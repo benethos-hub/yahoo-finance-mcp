@@ -3,7 +3,9 @@
 The analysis runs through the organisation's workflow, which proves itself
 there. What can go wrong here is the call: a language left out, the two calls
 drifting apart, a permission beyond the upload, a weekly run that is not
-weekly, or a second category that would count every finding twice.
+weekly, or a second category that would count every finding twice. The one
+rule the configuration leaves out, the pin of every action, is held here in
+its place, for the actions that are not the organisation's.
 """
 
 from __future__ import annotations
@@ -15,6 +17,9 @@ ROOT = Path(__file__).resolve().parent.parent
 CI = (ROOT / ".github" / "workflows" / "ci.yml").read_text("utf-8")
 WEEKLY = (ROOT / ".github" / "workflows" / "codeql.yml").read_text("utf-8")
 CALL = "uses: benethos-hub/.github/.github/workflows/codeql.yml@main"
+CONFIG_PATH = ".github/codeql/codeql-config.yml"
+CONFIG = (ROOT / CONFIG_PATH).read_text("utf-8")
+ORG = "benethos-hub/.github/"
 
 
 def _job(workflow: str, name: str) -> str:
@@ -51,3 +56,27 @@ def test_the_two_runs_share_the_default_category():
     """A category of their own would file the same findings twice."""
     assert "category:" not in _job(CI, "codeql")
     assert "category:" not in WEEKLY
+
+
+def test_the_calls_read_the_configuration_file():
+    """The weekly call is held equal above, so one assertion covers both."""
+    assert f"config-file: {CONFIG_PATH}" in _job(CI, "codeql")
+
+
+def test_the_configuration_leaves_out_the_decided_rules_and_nothing_else():
+    excluded = re.findall(r"^\s+id: (\S+)$", CONFIG, re.M)
+    assert excluded == ["actions/unpinned-tag"]
+    assert "queries:" not in CONFIG, "the suite is the workflow's input"
+    assert "paths-ignore" not in CONFIG, "every file is read"
+
+
+def test_every_action_that_is_not_the_organisations_is_pinned_to_a_commit():
+    """What the excluded rule would check, for the actions it was meant for."""
+    for path in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        for line in path.read_text("utf-8").splitlines():
+            uses = re.search(r"uses: (\S+)", line)
+            if uses is None or uses.group(1).startswith(ORG):
+                continue
+            assert re.search(r"@[0-9a-f]{40} # v\d", line), (
+                f"{path.name}: {line.strip()}"
+            )

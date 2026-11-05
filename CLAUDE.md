@@ -72,6 +72,7 @@ containers/
   freshness.yml   # daily and after each Publish run: the organisation's freshness report with its newest and index jobs, do the newest versions allowed still work, two issues
   codeql.yml      # weekly: the organisation's CodeQL analysis, the security and the quality queries on code nobody changed, findings under Security
 .github/dependabot.yml   # weekly proposals for uv, the actions and the Dockerfile
+.github/codeql/          # codeql-config.yml: the rules CodeQL leaves out here, each with its reason
 .github/ISSUE_TEMPLATE/  # the bug report form, its version example read by test_packaging.py
 .github/publish/   # one folder per place a release is listed, read by publish.yml
   mcp-registry/   # server.json (the entry, its bundle hash filled in at release)

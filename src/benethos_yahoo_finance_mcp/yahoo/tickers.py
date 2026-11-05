@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 import time
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import date
 from typing import NamedTuple
 
@@ -172,12 +172,10 @@ _DATE_SHAPE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 def checked_date(name: str, value: str) -> str:
     """``value`` if it is a real date written YYYY-MM-DD, else a ``ToolError``."""
     value = value.strip()
-    try:
+    with suppress(ValueError):
         if _DATE_SHAPE.fullmatch(value):
             date.fromisoformat(value)
             return value
-    except ValueError:
-        pass
     raise ToolError(f"Invalid {name} {value!r}, expected a date as YYYY-MM-DD.")
 
 

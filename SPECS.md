@@ -666,10 +666,14 @@ client shows the tool's own title and the model reads descriptions.
   call every Monday at 04:30 UTC and by hand, so a query GitHub adds later
   reads code nobody changed, under the same category, so each run refreshes
   the last. The default setup had to be switched off first, since GitHub
-  rejects a workflow's upload for a language the default setup analyses. A
-  rule that never applies here goes into a CodeQL configuration file as a
-  `query-filters` entry with its reason, named by `config-file`, once there
-  is one. A `coverage-badge`
+  rejects a workflow's upload for a language the default setup analyses. The
+  rules that never apply here are `query-filters` in
+  `.github/codeql/codeql-config.yml`, each with its reason, which both calls
+  name as `config-file`: `actions/unpinned-tag` so far, since the
+  organisation's workflows and actions are followed at `main` by decision,
+  and `test_codeql.py` holds every other action to a commit SHA in its
+  place. A rule that fires wrongly in one place is dismissed in the Security
+  tab with its reason instead, so that a new finding stands out. A `coverage-badge`
   job, the organisation's as well, runs on a push to `main` only and
   commits the coverage `test / Python 3.15` measured as `coverage.json` to
   the `badges` branch, which the README's coverage badge reads. It is no

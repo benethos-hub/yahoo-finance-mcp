@@ -250,10 +250,14 @@ def _architecture() -> str:
         'flood-opacity="0.55"/></filter>'
     )
     body = [
-        '<polyline points="0,458 260,442 520,454 780,426 1020,436 1280,396" '
-        'fill="none" stroke="url(#arch-line)" stroke-width="3" opacity="0.16"/>',
-        '<text x="640" y="66" font-size="32" font-weight="700" fill="#F8FAFC" '
-        'text-anchor="middle">How a question gets answered</text>',
+        (
+            '<polyline points="0,458 260,442 520,454 780,426 1020,436 1280,396" '
+            'fill="none" stroke="url(#arch-line)" stroke-width="3" opacity="0.16"/>'
+        ),
+        (
+            '<text x="640" y="66" font-size="32" font-weight="700" fill="#F8FAFC" '
+            'text-anchor="middle">How a question gets answered</text>'
+        ),
         _pills(640, 92, "read-only", "no Yahoo account", "no API key"),
         _step(
             40, 200, "You", "ask in plain", "language", kind="plain", symbol="person"
