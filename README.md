@@ -1006,7 +1006,9 @@ more jobs install without the lockfile: `fresh-install` with the newest
 versions `pyproject.toml` allows, `lowest-versions` with the oldest. Every
 version in `uv.lock` and every lowest version is checked for known
 vulnerabilities against PyPI and OSV. CodeQL reads the code and the workflows
-with GitHub's security and quality queries on every change and once a week.
+with GitHub's security and quality queries on every change and once a week,
+and hadolint reads the Dockerfile on every change. Both file their findings
+under Security, Code scanning.
 
 ## Trademarks
 
