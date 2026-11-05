@@ -85,6 +85,11 @@ apart from platformdirs 4.14.4, on the same builds of uv 0.13.7 and
 - A daily check runs the server on the newest versions it allows and reports in
   two issues in this repository: one when they break it, one listing what is
   new. This reaches no installation, it only tells the maintainer sooner.
+- Dependabot proposes each of the six dependencies with a patch window on its
+  own, as it did for `yfinance` and `mcp` before, since a minor of theirs is
+  checked by hand. Its `versioning-strategy` is `increase-if-necessary`, so a
+  proposal inside a window changes `uv.lock` alone and one past it moves the
+  window as `~=` again, instead of widening it to a range over two minors.
 
 ### Fixed
 

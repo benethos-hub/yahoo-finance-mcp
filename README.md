@@ -414,10 +414,11 @@ How and when it updates:
   `curl_cffi`) stay inside a patch window, so only their patch releases
   arrive on their own, and a minor or major waits for a release here that
   was checked against it. Everything underneath them moves freely. A check
-  in this repository runs the newest versions allowed every day and opens an
-  issue when the tests or a live call to Yahoo fail on them, an empty answer
-  included. A wrong value passes it, and a day on which Yahoo blocks the run
-  says nothing.
+  in this repository runs the newest versions allowed every day and after
+  each release, installs the published package from PyPI as this extension
+  does, and opens an issue when the tests or a live call to Yahoo fail on
+  them, an empty answer included. A wrong value passes it, and a day on which
+  Yahoo blocks the run says nothing.
 - **Smart App Control** blocks it as it blocks the pinned extension, see the
   note above.
 
