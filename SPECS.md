@@ -579,28 +579,30 @@ client shows the tool's own title and the model reads descriptions.
 - **The daily check.** `.github/workflows/freshness.yml` calls the
   organisation's reusable `freshness.yml` (`docs/freshness.md` in
   `benethos-hub/.github`) and adds one job of its own, the form that document
-  calls "a job of the repository". The organisation's part keeps the issue
-  "Pinned versions have newer releases": every pin of `uv.lock` with a newer
-  release, within the patch windows and beyond, the build backend, known
+  calls "a job of the repository". It runs on a schedule, by hand, and once more
+  after each completed run of `publish.yml`, so the `index` job below sees a
+  release that does not install within minutes. The organisation's part keeps
+  the issue "Pinned versions have newer releases": every pin of `uv.lock` with a
+  newer release, within the patch windows and beyond, the build backend, known
   vulnerabilities, the images of the Dockerfile and the compose files, and the
   actions pinned by commit. Two jobs ask whether what a user gets today still
   works, and address the alarm issue "Newest dependency versions break the
-  server", which the organisation's report keeps through `alarm-title`. The
-  job `newest`, the organisation's `python/freshness-newest` action run from
-  this workflow, runs the smoke test on the versions in `uv.lock`, then the
-  tests and the smoke test on the newest versions `pyproject.toml` allows,
-  which is what the auto-update extension and `uvx` resolve, and leaves the
-  artifact `freshness-newest`. The job `index` of the organisation's workflow
-  installs the published release from PyPI into a fresh environment, the path
-  the auto-update extension takes, and runs the smoke test with its
-  interpreter, so a bound that is not released yet or an installation that
-  does not resolve shows there. Both say in one sentence what passed, which
-  the pins issue lists under Checks. A run that proves nothing is
-  `inconclusive` and leaves the alarm issue as it was: Yahoo refused the
-  locked versions too, rate-limited the run (exit code 3 of `smoke.py`), or a
-  step failed while nothing moved. The report then says so in the pins issue.
-  It sits beside Dependabot, which writes the pull requests. Neither issue is
-  a required check, and a pull request runs neither.
+  server", which the organisation's report keeps through `alarm-title`. The job
+  `newest`, the organisation's `python/freshness-newest` action run from this
+  workflow, runs the smoke test on the versions in `uv.lock`, then the tests and
+  the smoke test on the newest versions `pyproject.toml` allows, which is what
+  the auto-update extension and `uvx` resolve, and leaves the artifact
+  `freshness-newest`. The job `index` of the organisation's workflow installs
+  the published release from PyPI into a fresh environment, the path the
+  auto-update extension takes, and runs the smoke test with its interpreter, so
+  a bound that is not released yet or an installation that does not resolve
+  shows there. Both say in one sentence what passed, which the pins issue lists
+  under Checks. A run that proves nothing is `inconclusive` and leaves the alarm
+  issue as it was: Yahoo refused the locked versions too, rate-limited the run
+  (exit code 3 of `smoke.py`), or a step failed while nothing moved. The report
+  then says so in the pins issue. It sits beside Dependabot, which writes the
+  pull requests. Neither issue is a required check, and a pull request runs
+  neither.
 - `tests/smoke.py` is an ad-hoc **live** check against Yahoo, and it is not part of
   the pytest suite (no `test_*` functions, so it is not collected). It exits
   with 1 when a section or one of its lists comes back empty and with 3 when
