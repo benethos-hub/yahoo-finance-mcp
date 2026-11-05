@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The weekly CodeQL run starts on Monday at 05:00 UTC instead of 04:30, half an
+  hour after the daily check, so the two do not fall together. It reaches nobody
+  who installs the project.
+
 ## [0.12.1] - 2026-11-05
 
 A patch release for what ships pinned. The image and the pinned Claude Desktop
