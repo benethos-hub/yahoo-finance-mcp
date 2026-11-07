@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-11-07
+
+A patch release for what ships pinned. The image and the pinned Claude Desktop
+extension move to sse-starlette 3.7.0 and click 8.5.1, both under mcp, and the
+image pins the current index of `python:3.15-slim`, whose amd64 and arm64 images
+are the ones 0.12.1 shipped. An installation from the index had these versions
+already. No tool, parameter or schema changes.
+
 ### Changed
 
 - The `Dockerfile` pins the index of `python:3.15-slim` from 2026-11-05 14:10
@@ -18,7 +26,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   closes a response whose generator hangs in its cleanup after an interrupted
   send, with a limit of 30 seconds, and this server was checked on both HTTP
   transports through the SDK's client. The two under mcp reach the image and
-  the pinned Claude Desktop extension on the next release, an installation
+  the pinned Claude Desktop extension with this release, an installation
   from the index has them already. The two development tools reach nobody who
   installs the project.
 - The weekly CodeQL run starts on Monday at 05:00 UTC instead of 04:30, half an
@@ -1917,7 +1925,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.10.2...v0.11.0
