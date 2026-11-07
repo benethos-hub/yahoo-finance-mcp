@@ -374,7 +374,9 @@ request ended, which `yahoo/tickers.py` remembers (`last_answer`): reached
 when an upstream block ran through, ended in `not_found` or yfinance raised
 about the data, not reached on a rate limit or a network error. A cached
 result asks nobody and changes nothing, and after a restart the answer is
-`unknown` until the first request.
+`unknown` until the first request. The tool's description says that an
+answer holds for the moment it was given, so a model asks again after a
+restart or an update rather than quote an earlier version.
 
 ### Parameter descriptions
 

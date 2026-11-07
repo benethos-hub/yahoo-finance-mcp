@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **`server_status` says how long its answer holds.** Its description now
+  tells the model that an answer holds for the moment it was given, and to
+  call the tool again after a restart or an update rather than rely on an
+  earlier answer. With the auto-update bundle, the version can change under
+  a running chat.
+
 ## [0.12.2] - 2026-11-07
 
 A patch release for what ships pinned. The image and the pinned Claude Desktop
