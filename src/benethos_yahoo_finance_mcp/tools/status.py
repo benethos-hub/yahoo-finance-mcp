@@ -56,7 +56,9 @@ def register(server: MCPServer, transport: str) -> None:
         """Report this server's version, transport and uptime.
 
         With `details`, also the yfinance version in use, and whether its last
-        request reached Yahoo and how long ago, without asking Yahoo again.
+        request reached Yahoo and how long ago, without asking Yahoo again. An
+        answer holds for the moment it was given: after a restart or an update,
+        call it again rather than rely on an earlier one.
         """
         lines = [f"{key}: {value}" for key, value in core.items()]
         lines.append(f"uptime_seconds: {int(time.monotonic() - started)}")
