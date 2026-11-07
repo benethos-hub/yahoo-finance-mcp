@@ -8,6 +8,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The `Dockerfile` pins the index of `python:3.15-slim` from 2026-11-05 14:10
+  UTC. Only its ppc64le build changed: the amd64 and arm64 images the index
+  points to are the ones pinned before, byte for byte, with Python 3.15.2,
+  pip 26.2.2 and the Debian 13.7 packages. Nothing changes for users of the
+  image, the pin names the current index again.
+- `uv.lock` moves to sse-starlette 3.7.0 and click 8.5.1, both under mcp, and
+  to typer 0.28.0 and ruff 0.17.4 in the development group. sse-starlette
+  closes a response whose generator hangs in its cleanup after an interrupted
+  send, with a limit of 30 seconds, and this server was checked on both HTTP
+  transports through the SDK's client. The two under mcp reach the image and
+  the pinned Claude Desktop extension on the next release, an installation
+  from the index has them already. The two development tools reach nobody who
+  installs the project.
 - The weekly CodeQL run starts on Monday at 05:00 UTC instead of 04:30, half an
   hour after the daily check, so the two do not fall together. It reaches nobody
   who installs the project.
