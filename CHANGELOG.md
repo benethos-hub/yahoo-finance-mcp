@@ -13,6 +13,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   call the tool again after a restart or an update rather than rely on an
   earlier answer. With the auto-update bundle, the version can change under
   a running chat.
+- The `Dockerfile` pins the index of `python:3.15-slim` from 2026-11-07 23:08
+  UTC. Only its riscv64 build changed: the amd64 and arm64 images the index
+  points to are the ones pinned before. Nothing changes for users of the
+  image, the pin names the current index again.
 
 ## [0.12.2] - 2026-11-07
 
