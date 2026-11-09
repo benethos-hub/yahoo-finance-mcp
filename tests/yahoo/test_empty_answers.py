@@ -20,8 +20,9 @@ from benethos_yahoo_finance_mcp.settings import Settings
 from benethos_yahoo_finance_mcp.yahoo import tickers
 from fakes import FakeTicker
 
-# The six equity-only tools, each with the fake that answers nothing. Their
+# The seven equity-only tools, each with the fake that answers nothing. Their
 # descriptions used to promise an empty answer for ETFs, funds and crypto.
+# get_financials sent SPY to the search tool until 2026-11-09, measured live.
 EQUITY_ONLY = [
     ("get_earnings", FakeTicker(earnings_dates=None, earnings_history=None)),
     (
@@ -50,6 +51,7 @@ EQUITY_ONLY = [
         ),
     ),
     ("get_calendar", FakeTicker(calendar={})),
+    ("get_financials", FakeTicker(income_stmt=pd.DataFrame())),
 ]
 
 

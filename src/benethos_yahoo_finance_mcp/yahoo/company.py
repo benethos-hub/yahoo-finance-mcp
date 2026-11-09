@@ -107,7 +107,8 @@ def get_financials(
     ``statement`` is one of ``income``, ``balance``, ``cashflow``. ``freq`` is
     ``annual``, ``quarterly``, or ``ttm`` (trailing twelve months; income and
     cash-flow only). Each returned row is a line item; columns are reporting
-    periods (most recent first).
+    periods (most recent first). Equity-only: an ETF, fund or crypto symbol
+    raises SymbolNotFoundError with ``tickers.EQUITY_ONLY_REASON``.
     """
     statement = (statement or "").strip().lower()
     freq = (freq or "").strip().lower()
@@ -134,7 +135,7 @@ def get_financials(
         df = getattr(ticker, attr)
 
     if df is None or df.empty:
-        raise SymbolNotFoundError(symbol)
+        raise SymbolNotFoundError(symbol, reason=tickers.EQUITY_ONLY_REASON)
 
     # A statement is a set of line items, not a series, so no end of it is
     # safe to drop. It used to be capped at 60 rows with the tail kept, and

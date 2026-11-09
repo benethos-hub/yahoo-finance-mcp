@@ -25,6 +25,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `get_company_info` for EPS, forecasts and ratios, and `get_fund_data`
   for ETFs and funds, which have no statements. The first sentence of
   each description stays as it was.
+- **`get_financials` no longer sends an ETF to the search tool.** Asked
+  for SPY or another fund, it said no data was found and to look the
+  symbol up, although the symbol was right. It now answers like
+  `get_earnings` and the other tools Yahoo fills for single stocks only:
+  an ETF, fund, index, currency or crypto is expected to have no
+  statement, and the search tool is only for a doubtful symbol.
 - **`server_status` says how long its answer holds.** Its description now
   tells the model that an answer holds for the moment it was given, and to
   call the tool again after a restart or an update rather than rely on an
