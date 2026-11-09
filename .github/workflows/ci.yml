@@ -339,3 +339,65 @@ jobs:
             exit 1
           fi
           echo "OK: HTTP $code, container running, health check $health"
+
+      # Directories such as Glama start the image the way a local client does:
+      # over stdio, in a fresh container, with nothing of ours in its
+      # environment, and list its tools. The HTTP smoke test above never goes
+      # that way. This one sends initialize and tools/list through
+      # `docker run -i` without a network, fails on any line on stdout that is
+      # not JSON-RPC, and compares the tools with the bundle manifest, which
+      # tests/test_mcpb.py holds equal to the registered ones.
+      - name: Smoke test (tools listed over stdio)
+        run: |
+          python3 - <<'PY'
+          import json
+          import subprocess
+          import sys
+
+          image = "benethos-yahoo-finance-mcp:ci"
+          with open(".github/publish/mcpb/manifest.json", encoding="utf-8") as f:
+              expected = sorted(tool["name"] for tool in json.load(f)["tools"])
+
+          proc = subprocess.Popen(
+              ["timeout", "60", "docker", "run", "-i", "--rm", "--network", "none",
+               image, "--transport", "stdio"],
+              stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+              text=True,
+          )
+
+
+          def send(message):
+              proc.stdin.write(json.dumps(message) + "\n")
+              proc.stdin.flush()
+
+
+          def answer(wanted):
+              for line in proc.stdout:
+                  message = json.loads(line)  # anything but JSON-RPC on stdout fails here
+                  if message.get("id") == wanted:
+                      if "error" in message:
+                          sys.exit(f"::error::request {wanted} failed: {message['error']}")
+                      return message["result"]
+              proc.kill()
+              sys.exit(f"::error::no answer to request {wanted}\n{proc.stderr.read()}")
+
+
+          send({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+              "protocolVersion": "2025-06-18", "capabilities": {},
+              "clientInfo": {"name": "ci-smoke", "version": "0"}}})
+          server = answer(1)["serverInfo"]
+          send({"jsonrpc": "2.0", "method": "notifications/initialized"})
+          send({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+          listing = answer(2)
+          proc.stdin.close()
+          proc.wait()
+
+          found = sorted(tool["name"] for tool in listing["tools"])
+          if "nextCursor" in listing or found != expected:
+              sys.exit(
+                  "::error::tools/list over stdio does not match the bundle manifest\n"
+                  f"missing: {sorted(set(expected) - set(found))}\n"
+                  f"extra: {sorted(set(found) - set(expected))}"
+              )
+          print(f"OK: {server['name']} {server['version']} lists {len(found)} tools over stdio")
+          PY

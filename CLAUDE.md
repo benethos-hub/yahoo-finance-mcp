@@ -67,7 +67,7 @@ containers/
   production/     # compose.yaml + Caddyfile + .env.example, the published image
   development/    # compose.yaml, built from the checkout, port 8001
 .github/workflows/
-  ci.yml          # brand, lint, test, lowest-versions, audit, coverage-badge, codeql, dockerfile-lint (the organisation's workflows), fresh-install, docker
+  ci.yml          # brand, lint, test, lowest-versions, audit, coverage-badge, codeql, dockerfile-lint (the organisation's workflows), fresh-install, docker (HTTP and stdio smoke tests)
   publish.yml     # PyPI, ghcr, .mcpb bundle, MCP Registry on a published release, through the organisation's actions
   freshness.yml   # daily and after each Publish run: the organisation's freshness report with its newest and index jobs, do the newest versions allowed still work, two issues
   codeql.yml      # weekly: the organisation's CodeQL analysis, the security and the quality queries on code nobody changed, findings under Security
@@ -79,6 +79,7 @@ containers/
 assets/           # render_icon.py, the architecture diagram it draws, old icon copies
   brand/          # icon.svg, and icon.png (512x512) and social-preview.png (1280x640) exported from it
 SECURITY.md       # how to report a vulnerability, and what the server guards
+glama.json        # names the maintainers who may claim the Glama listing
 ```
 
 The brand folder follows the rules of the benethos-hub organisation, kept in

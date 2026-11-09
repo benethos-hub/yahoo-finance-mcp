@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`glama.json`** in the repository root names the maintainer, so the
+  listing on Glama can be claimed for a repository that belongs to an
+  organisation. Nothing changes for users of the package or the image.
+- CI starts the image over stdio, without a network and without settings,
+  and checks that `tools/list` returns every tool of the bundle manifest.
+  That is how directories such as Glama list the tools, and the HTTP
+  smoke test never took that way.
+
 ### Changed
 
 - **`server_status` says how long its answer holds.** Its description now
