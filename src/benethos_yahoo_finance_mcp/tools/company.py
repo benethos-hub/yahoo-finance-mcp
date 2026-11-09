@@ -17,10 +17,13 @@ if TYPE_CHECKING:  # pragma: no cover - imported for typing only
 def get_company_info(symbol: Symbol) -> dict[str, Any]:
     """Get a company profile and key statistics for a Yahoo symbol.
 
-    Returns name, sector/industry, location, employee count, and valuation
-    metrics (market cap, trailing and forward P/E, P/B, beta, 52-week range,
-    dividend yield) plus a business summary. For an ISIN, `resolved_symbol`
-    names the ticker it stands for.
+    Use it for what a company is and how it is valued. For the price right
+    now use `get_quote`, for reported figures `get_financials`, for an ETF's
+    or fund's holdings `get_fund_data`. Returns name, sector/industry,
+    location, employee count, and valuation metrics (market cap, trailing
+    and forward P/E, P/B, beta, 52-week range, dividend yield) plus a
+    business summary. For an ISIN, `resolved_symbol` names the ticker it
+    stands for.
     """
     return yahoo.get_company_info(symbol)
 
@@ -44,8 +47,11 @@ def get_financials(
 ) -> dict[str, Any]:
     """Get a financial statement for a Yahoo symbol.
 
-    Each row is a line item and each column a reporting period, most recent
-    first.
+    Use it for reported line items such as revenue, net income, debt or free
+    cash flow. For reported EPS against the estimate use `get_earnings`, for
+    forecasts `get_estimates`, for ratios such as P/E `get_company_info`.
+    ETFs and funds have no statements, `get_fund_data` covers them. Each row
+    is a line item and each column a reporting period, most recent first.
     """
     return yahoo.get_financials(symbol, statement=statement, freq=freq)
 

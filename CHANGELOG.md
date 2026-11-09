@@ -18,6 +18,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **`get_quote`, `get_financials` and `get_company_info` say when to use
+  them and which tool to take instead.** `get_quote` points to
+  `get_quotes` for several symbols and says that its price carries no
+  timestamp. `get_financials` names `get_earnings`, `get_estimates` and
+  `get_company_info` for EPS, forecasts and ratios, and `get_fund_data`
+  for ETFs and funds, which have no statements. The first sentence of
+  each description stays as it was.
 - **`server_status` says how long its answer holds.** Its description now
   tells the model that an answer holds for the moment it was given, and to
   call the tool again after a restart or an update rather than rely on an
