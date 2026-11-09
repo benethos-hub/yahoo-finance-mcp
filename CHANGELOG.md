@@ -15,6 +15,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and checks that `tools/list` returns every tool of the bundle manifest.
   That is how directories such as Glama list the tools, and the HTTP
   smoke test never took that way.
+- The README shows Glama's card for the server under its badges, with
+  the grades for license, tool definitions and maintenance. It links to
+  the listing on Glama.
 
 ### Changed
 

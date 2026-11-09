@@ -11,6 +11,8 @@
 [![Sponsor](https://raw.githubusercontent.com/benethos-hub/.github/main/profile/badges/sponsor.svg)](https://github.com/sponsors/BeneODev)
 [![PayPal](https://raw.githubusercontent.com/benethos-hub/.github/main/profile/badges/paypal.svg)](https://paypal.me/BeneODev)
 
+[![Unofficial Yahoo Finance MCP Server on Glama](https://glama.ai/mcp/servers/benethos-hub/yahoo-finance-mcp/badges/card.svg)](https://glama.ai/mcp/servers/benethos-hub/yahoo-finance-mcp)
+
 <!-- The MCP Registry looks for this line in the README on PyPI to accept the package as the one in server.json. -->
 <!-- mcp-name: io.github.benethos-hub/benethos-yahoo-finance-mcp -->
 
