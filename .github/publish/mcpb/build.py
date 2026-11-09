@@ -51,7 +51,7 @@ FILES = {
 # built the bundle, not which one runs.
 AUTO_UPDATE = {
     "name": "benethos-yahoo-finance-mcp-auto-update",
-    "display_name": "Yahoo Finance (unofficial, auto-update)",
+    "display_name": "Unofficial Yahoo Finance MCP Server (auto-update)",
     "description": (
         "Unofficial read-only MCP server exposing Yahoo Finance data (via "
         "yfinance). Starts the newest release from PyPI, so a new release "

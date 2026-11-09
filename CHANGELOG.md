@@ -13,6 +13,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   call the tool again after a restart or an update rather than rely on an
   earlier answer. With the auto-update bundle, the version can change under
   a running chat.
+- **Both Claude Desktop bundles carry the server's title.** Desktop lists
+  them as "Unofficial Yahoo Finance MCP Server" and "Unofficial Yahoo
+  Finance MCP Server (auto-update)", the title the server already gives
+  itself, in place of "Yahoo Finance (unofficial)". The bundles' internal
+  names stay, so an installed bundle updates as before.
 - The `Dockerfile` pins the index of `python:3.15-slim` from 2026-11-07 23:08
   UTC. Only its riscv64 build changed: the amd64 and arm64 images the index
   points to are the ones pinned before. Nothing changes for users of the
