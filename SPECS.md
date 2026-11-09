@@ -349,7 +349,7 @@ these, it describes the server (see the end of the table).
 | `get_quotes` | `symbols[]` (≤50) | `{count, quotes[{symbol, currency, lastPrice, previousClose, open, dayHigh, dayLow, marketCap}], not_found[], truncated}` |
 | `get_history` | `symbol`, `period` (=1mo), `interval` (=1d), `start?`, `end?` | `{symbol, interval, period, start, end, count, truncated, rows[]}` (OHLCV, ≤250 rows, tail kept) |
 | `get_company_info` | `symbol` | curated profile + key statistics, plus `resolved_symbol` when the input resolves to a different ticker (i.e. for an ISIN, see §6) |
-| `get_financials` | `symbol`, `statement` (income/balance/cashflow), `freq` (annual/quarterly/ttm — ttm income/cashflow only) | `{symbol, statement, freq, rows[]}` (every line item, columns = period-end dates as `YYYY-MM-DD`) |
+| `get_financials` | `symbol`, `statement` (income/balance/cashflow), `freq` (annual/quarterly/ttm — ttm income/cashflow only) | `{symbol, statement, freq, rows[]}` (every line item, columns = period-end dates as `YYYY-MM-DD`, equity-only) |
 | `get_dividends` | `symbol` | `{symbol, dividends[], splits[]}` (both empty for an instrument that never paid or split, an unknown symbol raises) |
 | `get_news` | `symbol`, `limit` 1-50 (=10) | `{symbol, count, source, articles[{title, summary, publisher, published, url}]}` (`source` `ticker`, or `search` when the ticker has none: the articles Yahoo's search tags with the symbol, `summary` null) |
 | `get_recommendations` | `symbol` | `{symbol, price_targets, recommendation_trend[]}` (trend rows keyed by `period`) |
@@ -886,7 +886,8 @@ them.
   `earnings_history`, `get_earnings_dates`, `major_holders`,
   `institutional_holders`, `mutualfund_holders`, `insider_purchases`,
   `insider_roster_holders`, `insider_transactions`, `sec_filings`, `calendar`,
-  `ttm_income_stmt`, `ttm_cashflow`, `valuation`, `get_shares_full`. The
+  `ttm_income_stmt`, `ttm_cashflow`, `valuation`, `get_shares_full`, and
+  `income_stmt`, empty for SPY and EUNL.DE as well (measured 2026-11-09). The
   four EPS tables among them (`earnings_estimate`, `eps_trend`,
   `eps_revisions`, `earnings_history`) are read through their `get_*`
   methods, which take a `methodology` since yfinance 1.8.0, GAAP or
