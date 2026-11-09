@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.3] - 2026-11-09
+
+A patch release for what a model and a person read. Three tool descriptions
+say when to use the tool and which one to take instead, `server_status` says
+how long its answer holds, `get_financials` no longer sends an ETF to the
+search tool, and both Claude Desktop bundles carry the server's title. The
+listing on Glama is claimed. No tool, parameter or schema changes, and the
+dependencies are those of 0.12.2.
+
 ### Added
 
 - **`glama.json`** in the repository root names the maintainer, so the
@@ -34,9 +43,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `get_earnings` and the other tools Yahoo fills for single stocks only:
   an ETF, fund, index, currency or crypto is expected to have no
   statement, and the search tool is only for a doubtful symbol.
-- A tool's description says when to use it and names the sibling to take
-  instead, and a release checks that Glama lists the new version (CLAUDE.md,
-  adding a tool and Releasing).
 - **`server_status` says how long its answer holds.** Its description now
   tells the model that an answer holds for the moment it was given, and to
   call the tool again after a restart or an update rather than rely on an
@@ -51,6 +57,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   UTC. Only its riscv64 build changed: the amd64 and arm64 images the index
   points to are the ones pinned before. Nothing changes for users of the
   image, the pin names the current index again.
+- A tool's description says when to use it and names the sibling to take
+  instead, and a release checks that Glama lists the new version (CLAUDE.md,
+  adding a tool and Releasing).
 
 ## [0.12.2] - 2026-11-07
 
@@ -1971,7 +1980,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.2...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.3...HEAD
+[0.12.3]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.11.0...v0.12.0
