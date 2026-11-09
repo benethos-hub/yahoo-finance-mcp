@@ -625,7 +625,9 @@ client shows the tool's own title and the model reads descriptions.
   `pytest` on Python 3.11-3.15, where only 3.15, the newest, measures
   coverage and enforces the floor, a `docker` job that builds the
   image for amd64 and arm64, smoke-tests that the container serves HTTP and
-  passes its health check, and checks both compose files, production with
+  passes its health check, lists every tool of the bundle manifest over
+  stdio without a network or settings, the way directories such as Glama
+  introspect a server, and checks both compose files, production with
   its profile `https` (valid, every port on the loopback address except
   Caddy's 443, read-only root, development builds and production
   pulls), and a `fresh-install`
