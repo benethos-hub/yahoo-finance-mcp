@@ -54,6 +54,12 @@ def search(
 def get_quote(symbol: Symbol) -> dict[str, Any]:
     """Get the current price and key intraday figures for a Yahoo symbol.
 
+    One symbol: currency, exchange, last price, previous close, open, day
+    high/low, volume, market cap, 50- and 200-day averages and the 52-week
+    range and change. To
+    compare several symbols use `get_quotes`, for past prices `get_history`,
+    for valuation and the business profile `get_company_info`. No timestamp
+    comes with the price, and Yahoo may show it with the exchange's delay.
     A cryptocurrency's market cap is null here, `get_company_info` has it.
     """
     return yahoo.get_quote(symbol)
