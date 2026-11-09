@@ -23,6 +23,7 @@ tests
 SPECS.md
 CLAUDE.md
 SECURITY.md
+glama.json
 containers
 assets
 .dockerignore
