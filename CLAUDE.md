@@ -139,7 +139,10 @@ exception to `settings.py` being the only module that does.
    for all of them, `server_status` excepted) and its log line. The
    **docstring becomes the tool description** Claude sees — write it for an
    LLM caller, and leave allowed values to the parameter descriptions rather
-   than repeating them.
+   than repeating them. Say when to use the tool and name the sibling to
+   take instead (`get_quotes` for several symbols, `get_fund_data` for an
+   ETF). Glama's tool definition score weighs exactly this, and it was what
+   the three weakest descriptions lacked.
    Give every parameter an `Annotated[type, Field(description=...)]` (reuse
    the `Symbol` alias for ticker arguments, and `Methodology` in
    `tools/analysts.py` for the EPS basis); add `ge`/`le` bounds for numeric
@@ -302,3 +305,8 @@ A release is its own `release/X.Y.Z` branch and PR. In this order:
    index with a cache-buster must list the version — the JSON API reports the
    old one for minutes after an upload. The MCP Registry must list it too:
    `https://registry.modelcontextprotocol.io/v0/servers?search=benethos-yahoo-finance-mcp`.
+   Glama's Auto-Release builds and lists every GitHub release under the
+   same version, with its notes, on the listing's releases page. Check that
+   the version shows up there. Do not start "Build & Release" on Glama
+   between releases: newer code would land under the version the server
+   still reports.

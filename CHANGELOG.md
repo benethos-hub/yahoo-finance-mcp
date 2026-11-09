@@ -34,6 +34,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `get_earnings` and the other tools Yahoo fills for single stocks only:
   an ETF, fund, index, currency or crypto is expected to have no
   statement, and the search tool is only for a doubtful symbol.
+- A tool's description says when to use it and names the sibling to take
+  instead, and a release checks that Glama lists the new version (CLAUDE.md,
+  adding a tool and Releasing).
 - **`server_status` says how long its answer holds.** Its description now
   tells the model that an answer holds for the moment it was given, and to
   call the tool again after a restart or an update rather than rely on an
