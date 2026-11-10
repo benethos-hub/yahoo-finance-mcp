@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `uv.lock` moves to soupsieve 4.1 under `beautifulsoup4` and `yfinance`, and
+  to typer 0.29.0 in the development group. soupsieve fixes selector parsing
+  and matching and is now thread safe. yfinance calls no CSS selector, so no
+  call of this server takes that code. It reaches the image and the pinned
+  Claude Desktop extension with the next release, an installation from the
+  index has it already. A live smoke run returns the same 30 sections before
+  and after. typer now validates through Pydantic and only serves the `mcp`
+  command line in development, so it reaches nobody who installs the project.
+
 ## [0.12.3] - 2026-11-09
 
 A patch release for what a model and a person read. Three tool descriptions
