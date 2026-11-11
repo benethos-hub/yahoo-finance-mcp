@@ -50,9 +50,9 @@ class Prompt(ABC):
     ``render`` is a plain template: each argument goes into the text as it
     came, an optional one defaults to ``""``, and the text says in words what
     an empty one means. No condition picks another sentence and no default
-    stands in for an empty value. Claude Desktop checks a prompt of the
-    pinned bundle against the manifest's text with the arguments put in, an
-    empty one as ``""``, and refuses one that differs (measured 2026-11-11).
+    stands in for an empty value, so the manifest's text with the arguments
+    put in is exactly what a client gets. Claude Desktop's own check of that
+    is switched off by ``prompts_generated``, see SPECS §7a.
     """
 
     #: The name a client calls the prompt by, and the name of its module.

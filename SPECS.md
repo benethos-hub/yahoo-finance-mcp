@@ -439,25 +439,35 @@ and the bundle manifest lists the prompts with their text (see
 **Every prompt is a plain template.** Each argument goes into the text as it
 came, an optional one defaults to `""`, and the text says in words what an
 empty one means (`Period:  (one year, 1y, when empty)`). No condition picks
-another sentence and no default stands in for an empty value. The reason is
-how Claude Desktop treats the manifest's prompts, measured on 2026-11-11 with
-Claude Desktop 5.1231.2 on Windows from its logs, on another MCP server with
-three bundles that differed only in the manifest:
+another sentence and no default stands in for an empty value, so the
+manifest's text with the arguments put in, an empty one as `""`, is exactly
+what the server sends. `tests/test_prompts.py` renders every prompt with its
+optional arguments left out, empty and filled in, and compares each with its
+template.
+
+**Both bundles set `prompts_generated`,** because of how Claude Desktop
+treats the manifest's prompts. Measured on 2026-11-11 with Claude Desktop
+5.1231.2 on Windows from its logs, first on another MCP server with three
+bundles that differed only in the manifest, then on this server's pinned
+bundle:
 
 - The "+" menu lists every prompt the server offers, declared or not.
 - Without `prompts_generated`, a prompt the manifest does not declare is
   refused when it is attached ("Failed to attach prompt").
 - A declared prompt is checked against its text in the manifest, with the
-  arguments put in. An optional argument left empty is put in as `""`, and a
-  text that differs is refused.
+  arguments put in, and a text that differs is refused "to prevent potential
+  prompt injection". An optional argument left empty in Desktop's form is
+  not sent, and its placeholder stays in the text Desktop expects. On this
+  bundle `dividend_calendar` with `year` and `currency` empty was refused:
+  expected 3382 characters, got 3344, the 38 of `${arguments.year}` and
+  `${arguments.currency}`. No text a server sends can match that, so every
+  prompt with an optional argument fails the check whenever one stays empty.
 - With `prompts_generated: true` nothing is checked, declared or not.
 
-The pinned bundle declares its prompts, so a default like `"1y"` or a
-sentence chosen by an `if` made `compare`, `dividend_calendar` and
-`find_symbol` fail there whenever an optional argument stayed empty. Running
-the server from a checkout carries no manifest and showed nothing.
-`tests/test_prompts.py` renders every prompt with its optional arguments left
-out, empty and filled in, and compares each with its template.
+The pinned bundle therefore lists its prompts, for display, and sets the
+flag. Its code ships in the same file as its manifest, and no prompt carries
+data from Yahoo, so the check would guard little here. Running the server
+from a checkout carries no manifest and shows none of this.
 
 `asset_analysis` takes from the asset-analysis skill what checks and
 calculates and leaves out what judges: an outlook by horizon and a case for
@@ -912,10 +922,12 @@ person adds to the message.
   (each with its text as the server renders it, an argument written
   `${arguments.name}`) to the package. The two lists come from the server:
   `sync_manifest.py` beside `build.py` writes them and leaves every other
-  field alone, and the test names that command while they differ. It asks
-  for no settings. Tested on 2026-10-10 in Claude Desktop twice, on a
-  machine with uv installed and in a fresh Windows Sandbox
-  without uv or Python: both ran, so Claude Desktop provides uv and Python
+  field alone, and the test names that command while they differ. It sets
+  `prompts_generated`, which turns off Claude Desktop's check of the prompts
+  against their text (§7a). It asks for no settings. Tested on 2026-10-10
+  in Claude Desktop twice, on a machine with uv installed and in a fresh
+  Windows Sandbox without uv or Python: both ran, so Claude Desktop provides
+  uv and Python
   itself, as the bundle format's documentation says, and a user needs
   nothing installed beforehand. The `mcpb` CLI 2.1.2 requires the
   `mcp_config` with the `uv` command even for a `uv` bundle, although the
@@ -931,14 +943,14 @@ person adds to the message.
   and server, and `tests/test_mcpb.py` holds the rest equal. It leaves the
   prompts out and sets `prompts_generated` and `tools_generated`: installed
   once, its manifest stays at the release that built it while the server
-  moves on, and Claude Desktop checks a declared prompt against its text in
-  the manifest and refuses an undeclared one, unless `prompts_generated` is
-  set, which turns the check off (measured 2026-11-11 in Claude Desktop
-  5.1231.2 from its logs, on another server). A later release with a changed
-  or a new recipe would have been refused in every auto-update installation.
-  `tools_generated` was not measured and is set for the tools a later
-  release may add. Tested on
-  2026-11-03 in a Windows Sandbox without uv or Python: Claude Desktop
+  moves on, and Claude Desktop refuses an undeclared prompt unless
+  `prompts_generated` is set (§7a). A later release with a new recipe would
+  have been refused in every auto-update installation. `tools_generated`
+  lets the tools a later release adds through: a manifest that left a tool
+  out and set it got the tool listed and its call answered (measured the
+  same day). Without the flag that case was not measured, and Desktop logged
+  no check of tools. The tool list stays for display. Tested on 2026-11-03
+  in a Windows Sandbox without uv or Python: Claude Desktop
   downloaded uv 0.9.7 of its own, uv a Python 3.14, and the extension ran
   0.10.2. After 0.11.0 was published, restarts at 3 and at 9 minutes 49
   seconds after the last check still ran 0.10.2, the one at 12 minutes ran

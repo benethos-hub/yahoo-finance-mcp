@@ -171,9 +171,11 @@ exception to `settings.py` being the only module that does.
    be optional. **`render` is a plain template:** an optional argument
    defaults to `""`, goes into the text as it came, and the text says in
    words what an empty one means. No `or` default and no `if` that picks
-   another sentence, since Claude Desktop refuses a prompt of the pinned
-   bundle whose text differs from the manifest's with the arguments put in
-   (SPECS §7a). `tests/test_prompts.py` checks it for every prompt.
+   another sentence, so the manifest's text with the arguments put in is
+   exactly what a client gets. `tests/test_prompts.py` checks it for every
+   prompt. Both bundles set `prompts_generated`, since Claude Desktop's own
+   check keeps the placeholder of an empty argument and refuses every such
+   prompt (SPECS §7a). Do not take the flag out of the pinned manifest.
 2. Write the text for the model. Name tools and the fields they return in
    backticks, start with `RESOLVE` where an argument may be a company name,
    and end a data recipe with `RULES`. `tests/test_prompts.py` fails on a

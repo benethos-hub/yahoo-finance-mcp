@@ -125,10 +125,11 @@ def _cases(prompt):
 
 @pytest.mark.parametrize("prompt", PROMPTS, ids=lambda p: p.name)
 def test_the_text_is_the_template_with_the_arguments_put_in(prompt):
-    """What Claude Desktop checks for the pinned bundle, measured 2026-11-11:
-    it puts the arguments into the manifest's text, an empty or missing one as
-    "", and refuses a prompt whose text differs. So no default and no
-    condition may change the text."""
+    """The manifest's text with the arguments put in, an empty or missing one
+    as "", is what the server sends. So no default and no condition may change
+    the text, and a client that checks prompts this way finds them equal.
+    Claude Desktop keeps the placeholder of an argument left empty instead,
+    which no text can match, and the bundles turn its check off (SPECS §7a)."""
     template = _placeholders(prompt.name)
     for arguments in _cases(prompt):
         expected = template
