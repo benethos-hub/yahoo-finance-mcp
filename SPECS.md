@@ -52,7 +52,7 @@ nothing and answers from the process itself.
 | `__main__.py` | Enables `python -m benethos_yahoo_finance_mcp` (delegates to `cli.main`). |
 | `settings.py` | Every `YF_MCP_*` variable and flag, resolved once into a `Settings` dataclass (flag > env > default), plus the default cache TTLs. The only module that reads the environment, apart from `NO_COLOR`, a terminal convention `logbook/formats.colours_wanted` reads for itself. |
 | `server.py` | The server's identity and instructions, `build_server()`, and the `call_tool` override that logs refused arguments. |
-| `prompts/` | The prompts a client offers a person, recipes in plain text that chain the tools (see §7a). `_base.py` holds the abstract `Prompt`, the `Symbol` argument and the shared `RESOLVE` and `RULES` texts, and each prompt is a subclass in the module of its name: `snapshot.py`, `compare.py`, `earnings_preview.py`, `etf_profile.py`, `dividend_calendar.py`, `find_symbol.py`. They ask Yahoo nothing and import nothing of the package. |
+| `prompts/` | The prompts a client offers a person, recipes in plain text that chain the tools (see §7a). `_base.py` holds the abstract `Prompt`, the `Symbol` argument and the shared `RESOLVE` and `RULES` texts, and each prompt is a subclass in the module of its name: `asset_analysis.py`, `compare.py`, `earnings_preview.py`, `etf_profile.py`, `dividend_calendar.py`, `find_symbol.py`. They ask Yahoo nothing and import nothing of the package. |
 | `tools/` | The tools a client sees, thin: parameters, descriptions, and a call to the yahoo function of the same name. `_base.py` holds the `Symbol` parameter, the shared annotations and `register_tool`, which wraps every tool with its log line. `status.py` holds `server_status`, the one tool with no yahoo twin and no log line. |
 | `yahoo/` | All yfinance usage, one module per subject. `tickers.py` builds the `Ticker` and holds the error mapping every subject shares. The only package that imports yfinance. |
 | `cache.py` | Opt-in persistent result cache (SQLite) with per-tool TTLs. Off until `configure(settings)` enables it. |
@@ -418,7 +418,7 @@ tool.
 
 | Prompt | Arguments | Tools it chains |
 |--------|-----------|-----------------|
-| `snapshot` | `symbol` | `get_quote`, then by `quoteType` `get_company_info` and `get_recommendations` or `get_fund_data`, and `get_history` 1y |
+| `asset_analysis` | `symbol` | `get_quote`, then by `quoteType` for a stock `get_company_info`, `get_recommendations`, `get_calendar`, `get_shares`, `get_financials` (annual income), `get_news` and `get_history` 1y in one block, for a fund `get_fund_data` and `get_history`, for crypto `get_history` only. Own calculations: distance to every target, share count implied by the market cap against the diluted average shares of the last annual report, a multi-year table, price to sales for a loss |
 | `compare` | `symbols` (comma-separated), `period` (=1y) | `get_quotes`, `get_history` and `get_company_info` for each |
 | `earnings_preview` | `symbol` | `get_calendar`, `get_earnings`, `get_estimates` (one `methodology` for both), `get_upgrades_downgrades` |
 | `etf_profile` | `symbol` | `get_fund_data`, `get_quote`, `get_history` 5y monthly when a return is missing |

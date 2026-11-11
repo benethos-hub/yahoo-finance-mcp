@@ -2,7 +2,7 @@
 
 A prompt asks Yahoo nothing. It returns one user message that tells the model
 which tools to call, in which order, and which traps of the data to mind, so
-a person who picks "Stock snapshot" and types a symbol gets the same careful
+a person who picks "Asset analysis" and types a symbol gets the same careful
 sequence every time. The data recipes gather and report data, and
 ``dividend_calendar`` also calculates. None of them judges an instrument or
 recommends anything, that is left to the person.
@@ -18,12 +18,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .asset_analysis import AssetAnalysis
 from .compare import Compare
 from .dividend_calendar import DividendCalendar
 from .earnings_preview import EarningsPreview
 from .etf_profile import EtfProfile
 from .find_symbol import FindSymbol
-from .snapshot import Snapshot
 
 if TYPE_CHECKING:  # pragma: no cover - imported for typing only
     from mcp.server.mcpserver import MCPServer
@@ -32,7 +32,7 @@ __all__ = ["register_prompts"]
 
 # The order of this tuple is the order a client lists the prompts in.
 _PROMPTS = (
-    Snapshot(),
+    AssetAnalysis(),
     Compare(),
     EarningsPreview(),
     EtfProfile(),

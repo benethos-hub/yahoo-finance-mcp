@@ -8,7 +8,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **Six MCP prompts.** `snapshot`, `compare`, `earnings_preview`,
+- **Six MCP prompts.** `asset_analysis`, `compare`, `earnings_preview`,
   `etf_profile`, `dividend_calendar` and `find_symbol` are recipes a person
   picks in the client,
   from the "+" menu in Claude Desktop or as a slash command in Claude Code.
@@ -16,6 +16,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the traps of the data to mind: an ETF has no statements or analysts,
   currencies are never converted, London prices are in pence, a WKN resolves
   nowhere. They gather and report data and give no recommendation.
+  `asset_analysis` takes the checks of a careful analysis: the distance to
+  every analyst target, the share count the market cap implies against the
+  one in the last annual report, revenue, earnings and shares over several
+  years, and price to sales where a loss leaves no P/E. An outlook and a case
+  for or against stay out.
   `dividend_calendar` also calculates: dividends per position and month,
   paid and forecast, converted to one currency by fixed rules. It takes the
   share counts as an argument, so they reach the server, but no tool, no

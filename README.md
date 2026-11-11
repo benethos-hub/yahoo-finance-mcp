@@ -194,7 +194,7 @@ reports data and gives no recommendation.
 
 | Prompt | Asks for | What you get |
 |--------|----------|--------------|
-| Stock snapshot | a symbol | price and currency, distance from the 52-week high and low, the year's deepest drawdown, P/E named as trailing or forward, the analyst consensus, or the fund profile for an ETF |
+| Asset analysis | a symbol | price, market cap and range, the distance to every analyst target, a check of the share count behind the market cap, revenue, earnings and shares over several years, P/E with its basis or price to sales for a loss, the next report and the headlines. Facts and own calculations, no outlook and no case for or against. For an ETF the fund profile |
 | Compare instruments | symbols, a period (=1y) | one table: performance rebased to 100, drawdown, market cap, P/E and dividend yield, each on one basis |
 | Earnings preview | a symbol | the next report date and what is expected, beats and misses so far, how the estimates moved, recent rating changes |
 | ETF profile | a symbol | holdings, sector and asset-class weights, costs against the category, size and returns, computed from the prices where Yahoo has none |
@@ -210,7 +210,7 @@ repeats the last twelve months without growth, so it is a plan, not a
 promise.
 
 In Claude Desktop they sit in the "+" menu under the server's name. In Claude
-Code they are slash commands, `/mcp__benethos-yahoo-finance-mcp__snapshot` and
+Code they are slash commands, `/mcp__benethos-yahoo-finance-mcp__asset_analysis` and
 so on. Other clients show them where they show MCP prompts, if they do.
 
 ## Tools

@@ -29,6 +29,7 @@ RESULT_KEYS = {
     "quoteType": yahoo.get_quote,
     "truncated": yahoo.get_history,
     "not_found": yahoo.get_quotes,
+    "recommendation_trend": yahoo.get_recommendations,
 }
 
 
@@ -47,7 +48,7 @@ def _placeholders(name: str) -> str:
 
 def test_the_client_lists_six_prompts_in_this_order():
     assert [p.name for p in PROMPTS] == [
-        "snapshot",
+        "asset_analysis",
         "compare",
         "earnings_preview",
         "etf_profile",
@@ -99,7 +100,7 @@ def test_a_result_key_a_recipe_names_is_built_where_it_says(field):
 
 
 @pytest.mark.parametrize(
-    "name", ["snapshot", "compare", "earnings_preview", "etf_profile"]
+    "name", ["asset_analysis", "compare", "earnings_preview", "etf_profile"]
 )
 def test_every_data_recipe_ends_with_the_rules(name):
     text = _placeholders(name)
@@ -123,7 +124,7 @@ def test_an_optional_argument_left_out_takes_its_default():
 
 def test_a_missing_required_argument_is_refused():
     with pytest.raises(ValueError, match="symbol"):
-        asyncio.run(SERVER.get_prompt("snapshot", {}))
+        asyncio.run(SERVER.get_prompt("asset_analysis", {}))
 
 
 def test_the_dividend_calendar_ends_with_its_own_rules():
