@@ -31,6 +31,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     `tests/test_prompts.py` holds every tool and field a recipe names to
     what the server registers and returns, and the bundle manifest lists
     the prompts with their text.
+  - Each prompt is a plain template: an optional argument stays empty
+    rather than taking a default, and the text says what empty means.
+    Claude Desktop checks a prompt of the pinned bundle against the
+    manifest's text with the arguments put in and refuses one that differs,
+    so a default or a sentence picked by a condition would have broken
+    `compare`, `dividend_calendar` and `find_symbol` there whenever an
+    optional argument stayed empty. Measured in Claude Desktop 5.1231.2,
+    see SPECS §7a.
 - **The README explains the prompts and how to try a checkout.** "Built-in
   prompts" says how to start one in Claude Desktop and Claude Code, that the
   model cannot start one itself, and how to write the positions of the

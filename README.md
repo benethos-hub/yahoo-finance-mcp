@@ -204,8 +204,9 @@ reports data and gives no recommendation.
 **Starting one.** A prompt is picked by you, the model cannot start one on
 its own and does not see that they exist.
 
-- **Claude Desktop:** click "+" in the message box, choose the server, then
-  the prompt. A small form asks for the arguments. The recipe is attached to
+- **Claude Desktop:** click "+" in the message box, then **Connectors**,
+  **Add from** and the server's name, then the prompt. A small form asks for
+  the arguments, and an optional one may stay empty. The recipe is attached to
   the message, and nothing happens until you send it. The recipes are written
   in English, so add a line such as "answer in German" if you want the answer
   in another language.

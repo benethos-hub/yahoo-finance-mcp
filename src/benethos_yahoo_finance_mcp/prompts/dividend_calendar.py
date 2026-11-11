@@ -30,20 +30,24 @@ class DividendCalendar(Prompt):
             ),
         ],
         year: Annotated[
-            str | None,
+            str,
             Field(
-                description="Calendar year such as 2027. The current year if left out."
+                description="Calendar year such as 2027. The current year if left "
+                "empty."
             ),
-        ] = None,
+        ] = "",
         currency: Annotated[
             str,
-            Field(description="Currency every amount is converted to, such as EUR."),
-        ] = "EUR",
+            Field(
+                description="Currency every amount is converted to, such as EUR. "
+                "EUR if left empty."
+            ),
+        ] = "",
     ) -> str:
         """Dividends per position and month for a year, paid and forecast, by rules."""
-        when = year or "the current year"
-        return f"""Build a dividend calendar for {when} in {currency} from these \
-positions: {positions}.
+        return f"""Build a dividend calendar from these positions: {positions}
+Year: {year} (the current year when empty)
+Currency: {currency} (EUR when empty)
 
 The positions may come in any form: SAP.DE:50, 50x IE00B4L5Y983, or rows \
 pasted from a bank export or a spreadsheet with columns of their own. Read \
@@ -59,8 +63,8 @@ ISIN of the same row where there is one, and else ask for it.
 2. In one parallel block, call `get_dividends` for every position, \
 `get_calendar` for every single stock (ETFs and funds have none), and \
 `get_quote` for the currency of every listing. For every other currency, call \
-`get_quote` on its rate against {currency}, such as EURUSD=X for US dollars \
-against euros.
+`get_quote` on its rate against the calendar's currency, such as EURUSD=X for \
+US dollars against euros.
 
 Calculate by these fixed rules, so that the same data always gives the same \
 numbers.

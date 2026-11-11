@@ -46,6 +46,13 @@ class Prompt(ABC):
     ``render`` returns the text of the one user message the client sends. It
     asks Yahoo nothing and writes no log line. Every argument is a string or
     left out, as MCP prompt arguments are.
+
+    ``render`` is a plain template: each argument goes into the text as it
+    came, an optional one defaults to ``""``, and the text says in words what
+    an empty one means. No condition picks another sentence and no default
+    stands in for an empty value. Claude Desktop checks a prompt of the
+    pinned bundle against the manifest's text with the arguments put in, an
+    empty one as ``""``, and refuses one that differs (measured 2026-11-11).
     """
 
     #: The name a client calls the prompt by, and the name of its module.

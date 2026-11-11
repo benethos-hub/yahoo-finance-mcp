@@ -110,16 +110,41 @@ def test_every_data_recipe_ends_with_the_rules(name):
 
 def test_the_arguments_land_in_the_text():
     text = _render("compare", {"symbols": "SAP.DE, MSFT", "period": "3mo"})
-    assert "Compare SAP.DE, MSFT over 3mo." in text
-    assert "period 3mo" in text
+    assert text.startswith("Compare these instruments: SAP.DE, MSFT\nPeriod: 3mo ")
 
 
-def test_an_optional_argument_left_out_takes_its_default():
-    assert "over 1y." in _render("compare", {"symbols": "SAP.DE, MSFT"})
-    assert "home exchange" in _render("find_symbol", {"query": "Siemens"})
-    assert "listing on Xetra" in _render(
-        "find_symbol", {"query": "Siemens", "exchange": "Xetra"}
-    )
+def _cases(prompt):
+    """Arguments as a client sends them: the optional ones left out, empty,
+    and filled in, the required ones always filled in."""
+    required = {a.name: f"<{a.name}>" for a in prompt.arguments if a.required}
+    optional = [a.name for a in prompt.arguments if not a.required]
+    yield required
+    yield {**required, **{n: "" for n in optional}}
+    yield {**required, **{n: f"<{n}>" for n in optional}}
+
+
+@pytest.mark.parametrize("prompt", PROMPTS, ids=lambda p: p.name)
+def test_the_text_is_the_template_with_the_arguments_put_in(prompt):
+    """What Claude Desktop checks for the pinned bundle, measured 2026-11-11:
+    it puts the arguments into the manifest's text, an empty or missing one as
+    "", and refuses a prompt whose text differs. So no default and no
+    condition may change the text."""
+    template = _placeholders(prompt.name)
+    for arguments in _cases(prompt):
+        expected = template
+        for argument in prompt.arguments:
+            value = arguments.get(argument.name, "")
+            expected = expected.replace(f"${{arguments.{argument.name}}}", value)
+        assert _render(prompt.name, arguments) == expected, arguments
+
+
+def test_an_optional_argument_defaults_to_empty_and_the_text_says_what_that_means():
+    for prompt in PROMPTS:
+        for argument in prompt.arguments:
+            if not argument.required:
+                assert "empty" in argument.description, (prompt.name, argument.name)
+    assert "(one year, 1y, when empty)" in _render("compare", {"symbols": "SAP.DE"})
+    assert "(none when empty)" in _render("find_symbol", {"query": "Siemens"})
 
 
 def test_a_missing_required_argument_is_refused():
@@ -138,8 +163,9 @@ def test_the_dividend_calendar_ends_with_its_own_rules():
 def test_the_dividend_calendar_defaults_to_this_year_in_euros():
     text = _render("dividend_calendar", {"positions": "SAP.DE:50"})
     assert text.startswith(
-        "Build a dividend calendar for the current year in EUR from these "
-        "positions: SAP.DE:50."
+        "Build a dividend calendar from these positions: SAP.DE:50\n"
+        "Year:  (the current year when empty)\n"
+        "Currency:  (EUR when empty)\n"
     )
 
 
