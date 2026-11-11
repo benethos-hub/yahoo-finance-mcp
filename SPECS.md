@@ -14,11 +14,13 @@ profile and fundamentals (financial statements incl. trailing-twelve-month),
 dividends and splits, shares outstanding, news, analyst recommendations,
 estimates and rating changes, earnings, holders and insider activity, SEC
 filings, the corporate calendar, options chains, fund/ETF profiles,
-sector/industry browsing, and symbol lookup by name / ticker / ISIN.
+sector/industry browsing, and symbol lookup by name / ticker / ISIN. Six
+prompts chain these tools into recipes a person picks in the client (§7a).
 
 **Out of scope (non-goals):** placing trades, real-time streaming, portfolio
 persistence, authenticating to Yahoo or any paid data feed, write operations
-of any kind.
+of any kind. The share counts the dividend calendar takes go into its text
+and are kept nowhere.
 
 ## 3. Architecture
 

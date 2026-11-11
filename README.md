@@ -83,6 +83,10 @@ Typical uses:
   or an industry, the holdings and weightings of an ETF.
 - **Calculations on raw data.** Six months of daily closes for an RSI, a MACD
   or a drawdown, which the model works out from the series.
+- **Recipes for recurring questions.** Six built-in prompts, among them an
+  asset analysis, an earnings preview and a dividend calendar for your
+  holdings, each a fixed order of tools with the traps of the data spelled
+  out, see [Built-in prompts](#built-in-prompts).
 - **A shared service.** Run over HTTP, in Docker, for a team's web front end or
   an automation such as n8n, with an optional result cache in front of Yahoo.
 
@@ -550,7 +554,7 @@ on demand from
    }
    ```
 
-   Pin a version for stability with `benethos-yahoo-finance-mcp==0.12.3`. To
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.13.0`. To
    enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
@@ -796,7 +800,7 @@ The examples publish the port on the loopback address only. Drop the
 `127.0.0.1:` prefix only behind a reverse proxy that authenticates, or at the
 very least with `YF_MCP_BEARER_TOKEN` set.
 
-Pin a version for anything you depend on — `:0.12.3` for an exact release, `:0.12`
+Pin a version for anything you depend on — `:0.13.0` for an exact release, `:0.13`
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
 built from `main` on demand and is not a release at all.
 
