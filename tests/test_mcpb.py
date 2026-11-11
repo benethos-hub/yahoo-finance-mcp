@@ -179,9 +179,20 @@ def test_the_auto_update_manifest_declares_no_prompt_a_later_release_could_contr
     assert "prompts" not in manifest
     assert manifest["prompts_generated"] is True
     assert manifest["tools_generated"] is True
-    # The pinned bundle ships its manifest with its code, so it lists both.
-    assert MANIFEST["prompts"]
-    assert "prompts_generated" not in MANIFEST
+
+
+def test_the_pinned_manifest_lists_its_prompts_and_has_desktop_check_none():
+    """Claude Desktop checks a declared prompt against the manifest's text, and
+    for an optional argument left empty in its form it keeps the placeholder
+    in the text it expects (measured 2026-11-11 on this bundle: expected 3382
+    characters, got 3344). No server text can match that, so the pinned
+    bundle lists its prompts for display and sets prompts_generated, which
+    turns the check off. Its code ships with it, so nothing can drift.
+    tools_generated is set as well, so both bundles carry the same two
+    flags, the maintainer's choice."""
+    assert MANIFEST["prompts"] and MANIFEST["tools"]
+    assert MANIFEST["prompts_generated"] is True
+    assert MANIFEST["tools_generated"] is True
 
 
 def test_the_auto_update_bundle_runs_the_newest_release_from_the_index():

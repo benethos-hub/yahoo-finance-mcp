@@ -32,13 +32,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     what the server registers and returns, and the bundle manifest lists
     the prompts with their text.
   - Each prompt is a plain template: an optional argument stays empty
-    rather than taking a default, and the text says what empty means.
-    Claude Desktop checks a prompt of the pinned bundle against the
-    manifest's text with the arguments put in and refuses one that differs,
-    so a default or a sentence picked by a condition would have broken
-    `compare`, `dividend_calendar` and `find_symbol` there whenever an
-    optional argument stayed empty. Measured in Claude Desktop 5.1231.2,
-    see SPECS §7a.
+    rather than taking a default, and the text says what empty means, so the
+    manifest's text with the arguments put in is what a client gets.
+  - **The pinned bundle sets `prompts_generated` and `tools_generated`,**
+    as the auto-update bundle does. Claude Desktop checks a declared prompt
+    against the manifest's text and refuses one that differs. For an
+    optional argument left empty in its form it keeps the placeholder in the
+    text it expects, which no server text can match: the pinned 0.13.0
+    bundle had `dividend_calendar` refused with `year` and `currency` empty
+    (expected 3382 characters, got 3344). `prompts_generated` turns the
+    check off, and with it set the same prompt was attached. The bundle
+    still lists its prompts and tools for display, and its code ships with
+    its manifest. Measured in Claude Desktop 5.1231.2, see SPECS §7a.
 - **The README explains the prompts and how to try a checkout.** "Built-in
   prompts" says how to start one in Claude Desktop and Claude Code, that the
   model cannot start one itself, and how to write the positions of the
@@ -64,8 +69,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   in Claude Desktop 5.1231.2). A later release with a changed or a new
   recipe would have been refused there. It now leaves the prompts out and
   sets `prompts_generated` and `tools_generated`, so Desktop takes what the
-  server offers. The pinned bundle ships its manifest with its code and
-  keeps both lists. An auto-update extension installed from an earlier
+  server offers: new and changed prompts and new tools arrive with a restart.
+  A tool left out of a manifest with `tools_generated` was measured to list
+  and answer. The pinned bundle ships its manifest with its code and keeps
+  both lists. An auto-update extension installed from an earlier
   release has neither, so Desktop lists the six prompts there but refuses
   to attach them until the extension is installed anew from this release.
 - `uv.lock` moves to soupsieve 4.1 under `beautifulsoup4` and `yfinance`, and

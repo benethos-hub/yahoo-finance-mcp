@@ -127,6 +127,7 @@
       "description": "Report this server's version, transport and uptime."
     }
   ],
+  "tools_generated": true,
   "prompts": [
     {
       "name": "asset_analysis",
@@ -181,6 +182,7 @@
       "text": "Find the Yahoo symbol for ${arguments.query}.\nPreferred exchange: ${arguments.exchange} (none when empty)\n\n1. Call `search` with ${arguments.query} and limit 25, since an ISIN often has a listing on many exchanges.\n2. List the matches as a table: symbol, name, exchange and type.\n3. With a preferred exchange, pick the listing there, and when it has none, say so and name the others. Without one, recommend the listing on the company's home exchange, say why, and name the other listings as alternatives.\n\nIf nothing comes back and ${arguments.query} has six letters and digits, it is likely a German WKN. WKNs resolve nowhere, not even through `search`. Say so and ask for the ISIN or the company name rather than guessing. Pass on every symbol exactly as `search` returns it, never build one by adding an exchange suffix."
     }
   ],
+  "prompts_generated": true,
   "keywords": [
     "finance",
     "stocks",
