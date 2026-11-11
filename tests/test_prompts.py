@@ -132,7 +132,7 @@ def test_the_dividend_calendar_ends_with_its_own_rules():
     text = _placeholders("dividend_calendar")
     assert text.endswith("Give no buy, sell or hold recommendation and no tax advice.")
     assert "never converted" not in text
-    assert "Pass them to no tool." in text
+    assert "but the instrument, to no tool." in text
 
 
 def test_the_dividend_calendar_defaults_to_this_year_in_euros():
@@ -148,3 +148,15 @@ def test_share_counts_reach_no_log_line(caplog):
     caplog.set_level(logging.DEBUG)
     _render("dividend_calendar", {"positions": "SAP.DE:4711", "year": "2027"})
     assert "4711" not in caplog.text
+
+
+def test_a_pasted_bank_export_arrives_as_it_was_pasted():
+    """Rows with tabs and line breaks, decimal commas and an account number."""
+    rows = (
+        "Account\tShares\tWKN\tISIN\n"
+        "123 4567890\t1,5\tA0RPWH\tIE00B4L5Y983\n"
+        "123 4567890\t12,25\tA2PKXG\tIE00BK5BQT80"
+    )
+    text = _render("dividend_calendar", {"positions": rows})
+    assert rows in text
+    assert "an account number above all" in text

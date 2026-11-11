@@ -24,9 +24,9 @@ class DividendCalendar(Prompt):
         positions: Annotated[
             str,
             Field(
-                description="Holdings separated by commas, each a ticker, an ISIN "
-                "or a name with a colon and the share count, such as SAP.DE:50. An "
-                "entry without a count is shown per share only."
+                description="Holdings with their share counts in any form, such "
+                "as SAP.DE:50, 50x IE00B4L5Y983, or rows pasted from a bank "
+                "export. An entry without a count is shown per share only."
             ),
         ],
         year: Annotated[
@@ -45,13 +45,17 @@ class DividendCalendar(Prompt):
         return f"""Build a dividend calendar for {when} in {currency} from these \
 positions: {positions}.
 
-Each comma-separated entry is a ticker, an ISIN or a company name, followed by \
-a colon and the number of shares, such as SAP.DE:50. An entry without a count \
-is a watch item, shown per share and left out of the totals. The share counts \
-are for the calculation only. Pass them to no tool.
+The positions may come in any form: SAP.DE:50, 50x IE00B4L5Y983, or rows \
+pasted from a bank export or a spreadsheet with columns of their own. Read \
+from each entry the instrument, by its ISIN where there is one and else by \
+ticker or name, and the number of shares. A decimal comma is a decimal, so \
+0,75 is three quarters of a share. Ignore every other column, an account number \
+above all. An entry without a count is a watch item, shown per share and left \
+out of the totals. The share counts are for the calculation only. Pass them, \
+and anything else from the positions but the instrument, to no tool.
 
-1. {RESOLVE.format(what="an entry")} A German WKN resolves nowhere, ask for \
-the ISIN instead.
+1. {RESOLVE.format(what="an entry")} A German WKN resolves nowhere. Use the \
+ISIN of the same row where there is one, and else ask for it.
 2. In one parallel block, call `get_dividends` for every position, \
 `get_calendar` for every single stock (ETFs and funds have none), and \
 `get_quote` for the currency of every listing. For every other currency, call \

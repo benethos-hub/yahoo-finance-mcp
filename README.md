@@ -218,24 +218,30 @@ Without a prompt, a plain question works as before and the model picks the
 tools itself. What the prompt adds is the fixed order and the traps of the
 data spelled out every time.
 
-**Positions for the dividend calendar.** One entry per holding, separated by
-commas, each a symbol, a colon and the share count:
+**Positions for the dividend calendar.** The model reads them in almost any
+form, as long as each holding has an instrument and a share count:
 
 ```
 SAP.DE:50, ALV.DE:20, IE00B4L5Y983:120
+50x SAP.DE, 12,5x IE00B4L5Y983
 ```
 
+Rows pasted from a bank export or a spreadsheet work too, with whatever
+columns they bring, such as name, WKN, ISIN and currency.
+
 - A ticker or an ISIN is safer than a company name, which has to be looked
-  up first. A German WKN resolves nowhere, use the ISIN instead.
-- A fractional count from a savings plan takes a decimal point,
-  `IE00B4L5Y983:12.5`. A decimal comma would split the entry.
+  up first. A German WKN resolves nowhere, so a row needs its ISIN as well.
+- Fractional counts from a savings plan work with a decimal point or a
+  decimal comma.
 - An entry without a count, such as `MSFT`, is a watch item: shown per share
   and left out of the totals.
 - Year and currency may stay empty, they default to the current year and EUR.
+- **Leave out the account number** of a bank export. The model is told to
+  ignore it, but it would still reach the server with the rest.
 
 It is the one prompt that takes personal data. The share counts go to the
-server as part of that argument, which for a server you host over HTTP means
-that machine. The server only puts them into the prompt's text: no tool
+server as part of that argument, as does anything else pasted with them,
+which for a server you host over HTTP means that machine. The server only puts them into the prompt's text: no tool
 receives them, Yahoo never sees them, and no log line carries them. The
 forecast repeats the last twelve months without growth, so it is a plan, not
 a promise. For many European stocks Yahoo reports the ex-date but no pay
