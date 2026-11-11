@@ -249,8 +249,9 @@ server as part of that argument, as does anything else pasted with them,
 which for a server you host over HTTP means that machine. The server only
 puts them into the prompt's text: no tool receives them, Yahoo never sees
 them, and no log line carries them. The forecast repeats the last twelve
-months without growth, so it is a plan, not a promise. For many European stocks Yahoo reports the ex-date but no pay
-date, and the calendar then estimates the pay date at 14 days later and
+months without growth, so it is a plan, not a promise. For many European
+stocks Yahoo reports the ex-date but no pay date, and the calendar then
+estimates the pay date at 14 days later and
 marks it.
 
 ## Tools
@@ -1106,6 +1107,15 @@ rather than from the index. Add an entry like this to
 - `server_status` reports the version in `pyproject.toml`, which is still
   the last release while the change is unreleased.
 - If Desktop cannot find `uv`, give its full path as `command`.
+- Started this way, the server brings no bundle manifest, so Desktop checks
+  no prompt against one. A prompt that works here can still be refused by
+  the extension, see
+  [SPECS.md](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/SPECS.md#7a-prompts).
+  The tests hold every prompt to the form the extension needs.
+- On Windows, while Desktop runs the server from the clone, `uv sync` cannot
+  replace the server's `.exe` in `.venv` and stops with "os error 32". Quit
+  Desktop for the sync, or run the checks in a second environment with
+  `UV_PROJECT_ENVIRONMENT` set to another folder.
 
 In Claude Code the same works with
 `claude mcp add yf-dev -- uv run --directory /path/to/yahoo-finance-mcp benethos-yahoo-finance-mcp`.

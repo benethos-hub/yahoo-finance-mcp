@@ -95,9 +95,9 @@ portfolio. No tool, parameter or schema changes. The lock moves under
   to typer 0.29.0 in the development group. soupsieve fixes selector parsing
   and matching and is now thread safe. yfinance calls no CSS selector, so no
   call of this server takes that code. It reaches the image and the pinned
-  Claude Desktop extension with the next release, an installation from the
-  index has it already. A live smoke run returns the same 30 sections before
-  and after. typer now validates through Pydantic and only serves the `mcp`
+  Claude Desktop extension with this release, an installation from the index
+  has it already. A live smoke run returns the same 28 sections before and
+  after. typer now validates through Pydantic and only serves the `mcp`
   command line in development, so it reaches nobody who installs the project.
 - `uv.lock` moves on in the development group: typer 0.29.1, which adds
   Python 3.15, markdown-it-py 4.3.0, which fixes two parsing paths that took

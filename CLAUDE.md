@@ -182,7 +182,7 @@ exception to `settings.py` being the only module that does.
    and end a data recipe with `RULES`. `tests/test_prompts.py` fails on a
    backticked name that is neither a tool nor listed there as a field.
 3. Add an instance to `_PROMPTS` in `prompts/__init__.py`, whose order is the
-   order a client lists them in. Then run
+   order a client lists them in. After adding or changing a prompt, run
    `uv run python .github/publish/mcpb/sync_manifest.py`, which writes the
    manifest's `prompts` from the server, `tests/test_mcpb.py` fails until
    it has.
@@ -208,6 +208,10 @@ Commands use uv (recommended); the venv interpreter forms
   uv run python -c "import asyncio,json;from benethos_yahoo_finance_mcp.server import mcp;print(json.dumps([t.model_dump() for t in asyncio.run(mcp.list_tools())],indent=2,default=str))"
   ```
 - Live check against Yahoo: `uv run python tests/smoke.py`.
+- When Claude Desktop runs the server from this checkout, `uv sync` on
+  Windows cannot replace the server's `.exe` in `.venv` (os error 32). Run
+  the checks in a second environment instead, with
+  `UV_PROJECT_ENVIRONMENT` pointing at a folder outside the repository.
 - After changing tool signatures/docstrings, **fully restart Claude Desktop**
   (quit from the tray, not just close the window) to reload the tools.
 

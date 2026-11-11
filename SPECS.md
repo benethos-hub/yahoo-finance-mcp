@@ -398,7 +398,8 @@ client shows the tool's own title and the model reads descriptions.
 ## 7a. Prompts
 
 Six prompts in `prompts/` are recipes a person picks in the client, Claude
-Desktop from the "+" menu, Claude Code as a slash command. Each returns one
+Desktop under "+", Connectors, Add from and the server's name, Claude Code as
+a slash command. Each returns one
 user message that names the tools to call, in which order, and the traps of
 the data to mind. A prompt asks Yahoo nothing and writes no log line, the
 tool calls it leads to write theirs. The four data recipes end with the same
@@ -428,11 +429,11 @@ the person to leave the account number out.
 | Prompt | Arguments | Tools it chains |
 |--------|-----------|-----------------|
 | `asset_analysis` | `symbol` | `get_quote`, then by `quoteType` for a stock `get_company_info`, `get_recommendations`, `get_calendar`, `get_shares`, `get_financials` (annual income), `get_news` and `get_history` 1y in one block, for a fund `get_fund_data` and `get_history`, for crypto `get_history` only. Own calculations: distance to every target, share count implied by the market cap against the diluted average shares of the last annual report, a multi-year table, price to sales for a loss |
-| `compare` | `symbols` (comma-separated), `period` (=1y) | `get_quotes`, `get_history` and `get_company_info` for each |
+| `compare` | `symbols` (comma-separated), `period` (empty: 1y) | `get_quotes`, `get_history` and `get_company_info` for each |
 | `earnings_preview` | `symbol` | `get_calendar`, `get_earnings`, `get_estimates` (one `methodology` for both), `get_upgrades_downgrades` |
 | `etf_profile` | `symbol` | `get_fund_data`, `get_quote`, `get_history` 5y monthly when a return is missing |
-| `dividend_calendar` | `positions` (symbol:shares, comma-separated), `year?` (=current), `currency` (=EUR) | `get_dividends` each, `get_calendar` for single stocks, `get_quote` for each listing's currency and each exchange rate |
-| `find_symbol` | `query`, `exchange?` | `search` with limit 25, a WKN named as unresolvable |
+| `dividend_calendar` | `positions` (any form, symbol and share count each), `year` (empty: the current one), `currency` (empty: EUR) | `get_dividends` each, `get_calendar` for single stocks, `get_quote` for each listing's currency and each exchange rate |
+| `find_symbol` | `query`, `exchange` (empty: the home exchange) | `search` with limit 25, a WKN named as unresolvable |
 
 Each recipe resolves a company name through `search` first. Every argument is
 a string, as MCP prompt arguments are. `tests/test_prompts.py` checks every
@@ -475,9 +476,9 @@ data from Yahoo, so the check would guard little here. It sets
 tools ship with its code, so that both bundles carry the same flags. Running the server
 from a checkout carries no manifest and shows none of this.
 
-`asset_analysis` takes from the asset-analysis skill what checks and
-calculates and leaves out what judges: an outlook by horizon and a case for
-or against. Its share count check compares the count behind the market cap
+`asset_analysis` takes from a careful analysis what checks and calculates
+and leaves out what judges: an outlook by horizon and a case for or
+against. Its share count check compares the count behind the market cap
 with the diluted average shares of the last annual report, since every other
 count the tools return is the same one (§12). A year of buybacks or issues
 moves the two a few percent apart, so it speaks up past ten percent only.
