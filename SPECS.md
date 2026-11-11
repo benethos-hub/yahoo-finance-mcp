@@ -953,12 +953,15 @@ person adds to the message.
   dependency versions that release allows. `build.py --auto-update` makes its
   manifest from the pinned one, with its own name (Claude Desktop keys an
   extension by it, so the two stand side by side), display name, description
-  and server, and `tests/test_mcpb.py` holds the rest equal. It leaves the
-  prompts out and sets `prompts_generated` and `tools_generated`: installed
-  once, its manifest stays at the release that built it while the server
-  moves on, and Claude Desktop refuses an undeclared prompt unless
-  `prompts_generated` is set (§7a). A later release with a new recipe would
-  have been refused in every auto-update installation. `tools_generated`
+  and server, and `tests/test_mcpb.py` holds the rest equal. So it declares
+  the same prompts, which Claude Desktop lists when installing, and sets
+  `prompts_generated` and `tools_generated`: installed once, its manifest
+  stays at the release that built it while the server moves on, and Claude
+  Desktop refuses an undeclared prompt and checks a declared one against its
+  text unless `prompts_generated` is set (§7a). Without it a later release
+  with a new or changed recipe would be refused in every auto-update
+  installation. 0.13.0 left the prompts out of this manifest, and Desktop's
+  install dialog then listed none, while "+" offered all six. `tools_generated`
   lets the tools a later release adds through: a manifest that left a tool
   out and set it got the tool listed and its call answered (measured the
   same day). Without the flag that case was not measured, and Desktop logged
