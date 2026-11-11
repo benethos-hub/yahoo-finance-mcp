@@ -143,8 +143,16 @@ def test_the_auto_update_manifest_is_the_pinned_one_in_all_but_its_own_fields():
     """Version and tools come from the pinned manifest, so they cannot drift."""
     build = _load_build_script()
     manifest = build.auto_update_manifest()
-    own = set(build.AUTO_UPDATE)
-    assert own == {"name", "display_name", "description", "server"}
+    own = set(build.AUTO_UPDATE) | set(build.AUTO_UPDATE_DROPPED)
+    assert own == {
+        "name",
+        "display_name",
+        "description",
+        "server",
+        "tools_generated",
+        "prompts_generated",
+        "prompts",
+    }
     assert {k: v for k, v in manifest.items() if k not in own} == {
         k: v for k, v in MANIFEST.items() if k not in own
     }
@@ -161,6 +169,19 @@ def test_the_auto_update_bundle_stands_beside_the_pinned_one():
     assert manifest["name"] == PROJECT["name"] + "-auto-update"
     assert manifest["display_name"] != MANIFEST["display_name"]
     assert "auto-update" in manifest["display_name"]
+
+
+def test_the_auto_update_manifest_declares_no_prompt_a_later_release_could_contradict():
+    """It stays at the release it was installed from while the server moves
+    on. A client may check the prompts against the manifest, so it names none
+    and says the server makes them, and the tools beyond its list."""
+    manifest = _load_build_script().auto_update_manifest()
+    assert "prompts" not in manifest
+    assert manifest["prompts_generated"] is True
+    assert manifest["tools_generated"] is True
+    # The pinned bundle ships its manifest with its code, so it lists both.
+    assert MANIFEST["prompts"]
+    assert "prompts_generated" not in MANIFEST
 
 
 def test_the_auto_update_bundle_runs_the_newest_release_from_the_index():

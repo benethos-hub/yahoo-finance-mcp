@@ -57,6 +57,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The auto-update bundle declares no prompts.** Its manifest stays at the
+  release it was installed from while `uv tool run` starts the newest one,
+  and the bundle format lets a client check the prompts a server offers
+  against the declared ones. A later release with a changed recipe could be
+  refused there. It now leaves the prompts out and sets `prompts_generated`
+  and `tools_generated`, so a client asks the server. The pinned bundle
+  ships its manifest with its code and keeps both lists. An auto-update
+  bundle installed before this release declares no prompts at all, and a
+  client that checks would hide all six there until it is installed anew.
 - `uv.lock` moves to soupsieve 4.1 under `beautifulsoup4` and `yfinance`, and
   to typer 0.29.0 in the development group. soupsieve fixes selector parsing
   and matching and is now thread safe. yfinance calls no CSS selector, so no

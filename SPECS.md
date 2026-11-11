@@ -928,7 +928,12 @@ person adds to the message.
   dependency versions that release allows. `build.py --auto-update` makes its
   manifest from the pinned one, with its own name (Claude Desktop keys an
   extension by it, so the two stand side by side), display name, description
-  and server, and `tests/test_mcpb.py` holds the rest equal. Tested on
+  and server, and `tests/test_mcpb.py` holds the rest equal. It leaves the
+  prompts out and sets `prompts_generated` and `tools_generated`: installed
+  once, its manifest stays at the release that built it while the server
+  moves on, and the bundle format lets a client check the prompts a server
+  offers against those declared, so a later release with a changed recipe
+  could be refused. Whether Claude Desktop checks is not known. Tested on
   2026-11-03 in a Windows Sandbox without uv or Python: Claude Desktop
   downloaded uv 0.9.7 of its own, uv a Python 3.14, and the extension ran
   0.10.2. After 0.11.0 was published, restarts at 3 and at 9 minutes 49
