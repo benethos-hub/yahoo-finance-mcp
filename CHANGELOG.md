@@ -6,6 +6,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-11
+
+> **Action needed for the auto-update extension.** Installed before 0.13.0,
+> it lists the new prompts, but Claude Desktop refuses to attach them. Open
+> the auto-update file of this release once to install it anew. The tools
+> keep working either way, and later prompts and tools arrive with a
+> restart. The pinned extension is a new download with every release
+> anyway.
+
+A minor release for six MCP prompts, recipes a person picks in the client
+that chain the tools in a fixed order and spell out the traps of the data.
+Among them an asset analysis with its own checks of the share count and the
+analyst targets, and a dividend calendar that takes the share counts of a
+portfolio. No tool, parameter or schema changes. The lock moves under
+`beautifulsoup4` and in the development group, see below.
+
 ### Added
 
 - **Six MCP prompts.** `asset_analysis`, `compare`, `earnings_preview`,
@@ -71,17 +87,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   sets `prompts_generated` and `tools_generated`, so Desktop takes what the
   server offers: new and changed prompts and new tools arrive with a restart.
   A tool left out of a manifest with `tools_generated` was measured to list
-  and answer. The pinned bundle ships its manifest with its code and keeps
-  both lists. An auto-update extension installed from an earlier
-  release has neither, so Desktop lists the six prompts there but refuses
-  to attach them until the extension is installed anew from this release.
+  and answer. The pinned bundle ships its manifest with its code, keeps both
+  lists and sets both flags too, see above. An auto-update
+  extension installed from an earlier release has neither, so Desktop lists
+  the six prompts there but refuses to attach them until the extension is
+  installed anew from this release.
 - `uv.lock` moves to soupsieve 4.1 under `beautifulsoup4` and `yfinance`, and
   to typer 0.29.0 in the development group. soupsieve fixes selector parsing
   and matching and is now thread safe. yfinance calls no CSS selector, so no
   call of this server takes that code. It reaches the image and the pinned
-  Claude Desktop extension with the next release, an installation from the
-  index has it already. A live smoke run returns the same 30 sections before
-  and after. typer now validates through Pydantic and only serves the `mcp`
+  Claude Desktop extension with this release, an installation from the index
+  has it already. A live smoke run returns the same 28 sections before and
+  after. typer now validates through Pydantic and only serves the `mcp`
   command line in development, so it reaches nobody who installs the project.
 - `uv.lock` moves on in the development group: typer 0.29.1, which adds
   Python 3.15, markdown-it-py 4.3.0, which fixes two parsing paths that took
@@ -2064,7 +2081,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.3...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.3...v0.13.0
 [0.12.3]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.0...v0.12.1

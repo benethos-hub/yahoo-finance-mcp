@@ -14,11 +14,13 @@ profile and fundamentals (financial statements incl. trailing-twelve-month),
 dividends and splits, shares outstanding, news, analyst recommendations,
 estimates and rating changes, earnings, holders and insider activity, SEC
 filings, the corporate calendar, options chains, fund/ETF profiles,
-sector/industry browsing, and symbol lookup by name / ticker / ISIN.
+sector/industry browsing, and symbol lookup by name / ticker / ISIN. Six
+prompts chain these tools into recipes a person picks in the client (§7a).
 
 **Out of scope (non-goals):** placing trades, real-time streaming, portfolio
 persistence, authenticating to Yahoo or any paid data feed, write operations
-of any kind.
+of any kind. The share counts the dividend calendar takes go into its text
+and are kept nowhere.
 
 ## 3. Architecture
 
@@ -141,8 +143,10 @@ submodules.
     exist. A line break would forge a second line, an escape sequence would
     reach a terminal. Never the bearer token, a search query (free text a person
     typed, the line gives the number of matches), a URL's query string,
-    anything from Yahoo's answer, or the text of an error this server raised,
-    which is written for the model. A line names the error's class instead.
+    anything from Yahoo's answer, the text of an error this server raised,
+    which is written for the model, or a prompt's argument, which for the
+    dividend calendar holds a portfolio. A line names the error's class
+    instead, and a prompt writes no line at all (§7a).
     A line another library wrote, which may quote what a caller sent, is
     reduced to printable characters on its way to stderr, so it cannot forge
     a second line either.
@@ -394,14 +398,14 @@ client shows the tool's own title and the model reads descriptions.
 ## 7a. Prompts
 
 Six prompts in `prompts/` are recipes a person picks in the client, Claude
-Desktop from the "+" menu, Claude Code as a slash command. Each returns one
-user message that names the tools to call, in which order, and the traps of
-the data to mind. A prompt asks Yahoo nothing and writes no log line, the
-tool calls it leads to write theirs. The four data recipes end with the same
-rules: currencies are never converted, London prices are in pence, the data
-may be delayed, a missing figure is named, and no buy, sell or hold
-recommendation is given. Judging an instrument is left to the person, in
-line with the read-only scope of §2.
+Desktop under "+", Connectors, Add from and the server's name, Claude Code as
+a slash command. Each returns one user message that names the tools to call,
+in which order, and the traps of the data to mind. A prompt asks Yahoo
+nothing and writes no log line, the tool calls it leads to write theirs. The
+four data recipes end with the same rules: currencies are never converted,
+London prices are in pence, the data may be delayed, a missing figure is
+named, and no buy, sell or hold recommendation is given. Judging an
+instrument is left to the person, in line with the read-only scope of §2.
 
 `dividend_calendar` is the one recipe that calculates. It converts every
 amount to one currency and forecasts the coming months by fixed rules: the
@@ -424,11 +428,11 @@ the person to leave the account number out.
 | Prompt | Arguments | Tools it chains |
 |--------|-----------|-----------------|
 | `asset_analysis` | `symbol` | `get_quote`, then by `quoteType` for a stock `get_company_info`, `get_recommendations`, `get_calendar`, `get_shares`, `get_financials` (annual income), `get_news` and `get_history` 1y in one block, for a fund `get_fund_data` and `get_history`, for crypto `get_history` only. Own calculations: distance to every target, share count implied by the market cap against the diluted average shares of the last annual report, a multi-year table, price to sales for a loss |
-| `compare` | `symbols` (comma-separated), `period` (=1y) | `get_quotes`, `get_history` and `get_company_info` for each |
+| `compare` | `symbols` (comma-separated), `period` (empty: 1y) | `get_quotes`, `get_history` and `get_company_info` for each |
 | `earnings_preview` | `symbol` | `get_calendar`, `get_earnings`, `get_estimates` (one `methodology` for both), `get_upgrades_downgrades` |
 | `etf_profile` | `symbol` | `get_fund_data`, `get_quote`, `get_history` 5y monthly when a return is missing |
-| `dividend_calendar` | `positions` (symbol:shares, comma-separated), `year?` (=current), `currency` (=EUR) | `get_dividends` each, `get_calendar` for single stocks, `get_quote` for each listing's currency and each exchange rate |
-| `find_symbol` | `query`, `exchange?` | `search` with limit 25, a WKN named as unresolvable |
+| `dividend_calendar` | `positions` (any form, symbol and share count each), `year` (empty: the current one), `currency` (empty: EUR) | `get_dividends` each, `get_calendar` for single stocks, `get_quote` for each listing's currency and each exchange rate |
+| `find_symbol` | `query`, `exchange` (empty: the home exchange) | `search` with limit 25, a WKN named as unresolvable |
 
 Each recipe resolves a company name through `search` first. Every argument is
 a string, as MCP prompt arguments are. `tests/test_prompts.py` checks every
@@ -445,11 +449,11 @@ what the server sends. `tests/test_prompts.py` renders every prompt with its
 optional arguments left out, empty and filled in, and compares each with its
 template.
 
-**Both bundles set `prompts_generated`,** because of how Claude Desktop
-treats the manifest's prompts. Measured on 2026-11-11 with Claude Desktop
-5.1231.2 on Windows from its logs, first on another MCP server with three
-bundles that differed only in the manifest, then on this server's pinned
-bundle:
+**Both bundles set `prompts_generated` and `tools_generated`,** because of
+how Claude Desktop treats the manifest's prompts. Measured on 2026-11-11 with
+Claude Desktop 5.1231.2 on Windows from its logs, first on another MCP server
+with three bundles that differed only in the manifest, then on this server's
+pinned bundle:
 
 - The "+" menu lists every prompt the server offers, declared or not.
 - Without `prompts_generated`, a prompt the manifest does not declare is
@@ -462,18 +466,22 @@ bundle:
   expected 3382 characters, got 3344, the 38 of `${arguments.year}` and
   `${arguments.currency}`. No text a server sends can match that, so every
   prompt with an optional argument fails the check whenever one stays empty.
-- With `prompts_generated: true` nothing is checked, declared or not.
+- With `prompts_generated: true` nothing is checked, declared or not. Desktop
+  logs "skipping prompt verification" when the extension starts, and on
+  this bundle the same `dividend_calendar` with `year` and `currency` empty
+  was attached.
 
 The pinned bundle therefore lists its prompts, for display, and sets the
 flag. Its code ships in the same file as its manifest, and no prompt carries
 data from Yahoo, so the check would guard little here. It sets
 `tools_generated` too, which changes nothing measured for a bundle whose
-tools ship with its code, so that both bundles carry the same flags. Running the server
-from a checkout carries no manifest and shows none of this.
+tools ship with its code, so that both bundles carry the same flags.
+Running the server from a checkout carries no manifest and shows none of
+this.
 
-`asset_analysis` takes from the asset-analysis skill what checks and
-calculates and leaves out what judges: an outlook by horizon and a case for
-or against. Its share count check compares the count behind the market cap
+`asset_analysis` takes from a careful analysis what checks and calculates
+and leaves out what judges: an outlook by horizon and a case for or
+against. Its share count check compares the count behind the market cap
 with the diluted average shares of the last annual report, since every other
 count the tools return is the same one (§12). A year of buybacks or issues
 moves the two a few percent apart, so it speaks up past ten percent only.
@@ -657,7 +665,9 @@ person adds to the message.
   client calls it, with Yahoo refused (`test_formatting.py`,
   `test_cache.py`, `test_settings.py`, `test_cli.py`, `test_logbook.py`,
   `test_logbook_formats.py`, `test_server.py`, `test_tools_integration.py`,
-  `test_status.py`, `test_transport.py`). Three guard the shape of
+  `test_status.py`, `test_transport.py`), and the prompts: every tool and
+  field a recipe names, their arguments, a pasted bank export, and no share
+  count in any log record (`test_prompts.py`). Three guard the shape of
   the code: `test_layers.py` the import table in both directions, that every
   library is imported in its one home and that only `settings.py` reads the
   environment (`NO_COLOR` excepted), `test_logbook_catalog.py` that every

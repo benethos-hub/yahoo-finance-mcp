@@ -83,6 +83,10 @@ Typical uses:
   or an industry, the holdings and weightings of an ETF.
 - **Calculations on raw data.** Six months of daily closes for an RSI, a MACD
   or a drawdown, which the model works out from the series.
+- **Recipes for recurring questions.** Six built-in prompts, among them an
+  asset analysis, an earnings preview and a dividend calendar for your
+  holdings, each a fixed order of tools with the traps of the data spelled
+  out, see [Built-in prompts](#built-in-prompts).
 - **A shared service.** Run over HTTP, in Docker, for a team's web front end or
   an automation such as n8n, with an optional result cache in front of Yahoo.
 
@@ -186,8 +190,8 @@ the tools. Replace the bracketed placeholders with concrete values.
 
 ### Built-in prompts
 
-Six recipes come with the server. Pick one in the client and fill in the
-symbol, and the model calls the right tools in the right order and minds the
+Six recipes come with the server. Pick one in the client and fill in its
+arguments, and the model calls the right tools in the right order and minds the
 traps of the data on the way: currencies that are never converted, London
 prices in pence, an ETF that has no balance sheet. Each one gathers and
 reports data and gives no recommendation.
@@ -207,9 +211,9 @@ its own and does not see that they exist.
 - **Claude Desktop:** click "+" in the message box, then **Connectors**,
   **Add from** and the server's name, then the prompt. A small form asks for
   the arguments, and an optional one may stay empty. The recipe is attached to
-  the message, and nothing happens until you send it. The recipes are written
-  in English, so add a line such as "answer in German" if you want the answer
-  in another language.
+  the message as a text file, and nothing happens until you send it. The
+  recipes are written in English, so add a line such as "answer in German"
+  if you want the answer in another language.
 - **Claude Code:** each prompt is a slash command,
   `/mcp__benethos-yahoo-finance-mcp__asset_analysis SAP.DE` and so on, with
   the arguments after the command.
@@ -242,11 +246,12 @@ columns they bring, such as name, WKN, ISIN and currency.
 
 It is the one prompt that takes personal data. The share counts go to the
 server as part of that argument, as does anything else pasted with them,
-which for a server you host over HTTP means that machine. The server only puts them into the prompt's text: no tool
-receives them, Yahoo never sees them, and no log line carries them. The
-forecast repeats the last twelve months without growth, so it is a plan, not
-a promise. For many European stocks Yahoo reports the ex-date but no pay
-date, and the calendar then estimates the pay date at 14 days later and
+which for a server you host over HTTP means that machine. The server only
+puts them into the prompt's text: no tool receives them, Yahoo never sees
+them, and no log line carries them. The forecast repeats the last twelve
+months without growth, so it is a plan, not a promise. For many European
+stocks Yahoo reports the ex-date but no pay date, and the calendar then
+estimates the pay date at 14 days later and
 marks it.
 
 ## Tools
@@ -550,7 +555,7 @@ on demand from
    }
    ```
 
-   Pin a version for stability with `benethos-yahoo-finance-mcp==0.12.3`. To
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.13.0`. To
    enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
@@ -796,7 +801,7 @@ The examples publish the port on the loopback address only. Drop the
 `127.0.0.1:` prefix only behind a reverse proxy that authenticates, or at the
 very least with `YF_MCP_BEARER_TOKEN` set.
 
-Pin a version for anything you depend on — `:0.12.3` for an exact release, `:0.12`
+Pin a version for anything you depend on — `:0.13.0` for an exact release, `:0.13`
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
 built from `main` on demand and is not a release at all.
 
@@ -1102,6 +1107,16 @@ rather than from the index. Add an entry like this to
 - `server_status` reports the version in `pyproject.toml`, which is still
   the last release while the change is unreleased.
 - If Desktop cannot find `uv`, give its full path as `command`.
+- Started this way, the server brings no bundle manifest, so a change to the
+  manifest itself shows only in a packed bundle. To try one, stage it with
+  `.github/publish/mcpb/build.py`, pack it with the mcpb CLI as its
+  docstring shows and open the file. How Desktop treats the manifest's
+  prompts is in
+  [SPECS.md](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/SPECS.md#7a-prompts).
+- On Windows, while Desktop runs the server from the clone, `uv sync` cannot
+  replace the server's `.exe` in `.venv` and stops with "os error 32". Quit
+  Desktop for the sync, or run the checks in a second environment with
+  `UV_PROJECT_ENVIRONMENT` set to another folder.
 
 In Claude Code the same works with
 `claude mcp add yf-dev -- uv run --directory /path/to/yahoo-finance-mcp benethos-yahoo-finance-mcp`.
