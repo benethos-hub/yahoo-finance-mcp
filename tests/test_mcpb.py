@@ -70,11 +70,13 @@ def test_syncing_touches_nothing_but_tools_and_prompts(tmp_path):
     stale = dict(MANIFEST, tools=[], prompts=[{"name": "gone"}])
     path = tmp_path / "manifest.json"
     path.write_text(json.dumps(stale, indent=2), encoding="utf-8")
-    assert SYNC.write(path) is True
+    first = SYNC.write(path)
+    assert first is True
     assert path.read_text(encoding="utf-8") == (BUNDLE / "manifest.json").read_text(
         encoding="utf-8"
     )
-    assert SYNC.write(path) is False
+    second = SYNC.write(path)
+    assert second is False
 
 
 def test_the_first_sentence_stops_at_a_full_stop_but_not_an_abbreviation():
