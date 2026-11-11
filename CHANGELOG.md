@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-11
+
+A minor release for six MCP prompts, recipes a person picks in the client
+that chain the tools in a fixed order and spell out the traps of the data.
+Among them an asset analysis with its own checks of the share count and the
+analyst targets, and a dividend calendar that takes the share counts of a
+portfolio. No tool, parameter or schema changes. The lock moves under
+`beautifulsoup4` and in the development group, see below.
+
 ### Added
 
 - **Six MCP prompts.** `asset_analysis`, `compare`, `earnings_preview`,
@@ -2064,7 +2073,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.3...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.3...v0.13.0
 [0.12.3]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.0...v0.12.1
