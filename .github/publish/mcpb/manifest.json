@@ -127,6 +127,7 @@
       "description": "Report this server's version, transport and uptime."
     }
   ],
+  "tools_generated": true,
   "prompts": [
     {
       "name": "asset_analysis",

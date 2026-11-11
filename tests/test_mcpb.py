@@ -187,10 +187,12 @@ def test_the_pinned_manifest_lists_its_prompts_and_has_desktop_check_none():
     in the text it expects (measured 2026-11-11 on this bundle: expected 3382
     characters, got 3344). No server text can match that, so the pinned
     bundle lists its prompts for display and sets prompts_generated, which
-    turns the check off. Its code ships with it, so nothing can drift."""
-    assert MANIFEST["prompts"]
+    turns the check off. Its code ships with it, so nothing can drift.
+    tools_generated is set as well, so both bundles carry the same two
+    flags, the maintainer's choice."""
+    assert MANIFEST["prompts"] and MANIFEST["tools"]
     assert MANIFEST["prompts_generated"] is True
-    assert "tools_generated" not in MANIFEST
+    assert MANIFEST["tools_generated"] is True
 
 
 def test_the_auto_update_bundle_runs_the_newest_release_from_the_index():

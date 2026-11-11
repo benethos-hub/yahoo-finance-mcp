@@ -466,7 +466,9 @@ bundle:
 
 The pinned bundle therefore lists its prompts, for display, and sets the
 flag. Its code ships in the same file as its manifest, and no prompt carries
-data from Yahoo, so the check would guard little here. Running the server
+data from Yahoo, so the check would guard little here. It sets
+`tools_generated` too, which changes nothing measured for a bundle whose
+tools ship with its code, so that both bundles carry the same flags. Running the server
 from a checkout carries no manifest and shows none of this.
 
 `asset_analysis` takes from the asset-analysis skill what checks and
@@ -924,7 +926,8 @@ person adds to the message.
   `sync_manifest.py` beside `build.py` writes them and leaves every other
   field alone, and the test names that command while they differ. It sets
   `prompts_generated`, which turns off Claude Desktop's check of the prompts
-  against their text (§7a). It asks for no settings. Tested on 2026-10-10
+  against their text (§7a), and `tools_generated`, so both bundles carry the
+  same two flags. It asks for no settings. Tested on 2026-10-10
   in Claude Desktop twice, on a machine with uv installed and in a fresh
   Windows Sandbox without uv or Python: both ran, so Claude Desktop provides
   uv and Python

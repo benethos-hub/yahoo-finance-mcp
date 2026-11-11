@@ -34,15 +34,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - Each prompt is a plain template: an optional argument stays empty
     rather than taking a default, and the text says what empty means, so the
     manifest's text with the arguments put in is what a client gets.
-  - **The pinned bundle sets `prompts_generated`.** Claude Desktop checks a
-    declared prompt against the manifest's text and refuses one that
-    differs. For an optional argument left empty in its form it keeps the
-    placeholder in the text it expects, which no server text can match: the
-    pinned 0.13.0 bundle had `dividend_calendar` refused with `year` and
-    `currency` empty (expected 3382 characters, got 3344). The flag turns
-    the check off. The bundle still lists its prompts for display, and its
-    code ships with its manifest. Measured in Claude Desktop 5.1231.2, see
-    SPECS §7a.
+  - **The pinned bundle sets `prompts_generated` and `tools_generated`,**
+    as the auto-update bundle does. Claude Desktop checks a declared prompt
+    against the manifest's text and refuses one that differs. For an
+    optional argument left empty in its form it keeps the placeholder in the
+    text it expects, which no server text can match: the pinned 0.13.0
+    bundle had `dividend_calendar` refused with `year` and `currency` empty
+    (expected 3382 characters, got 3344). `prompts_generated` turns the
+    check off, and with it set the same prompt was attached. The bundle
+    still lists its prompts and tools for display, and its code ships with
+    its manifest. Measured in Claude Desktop 5.1231.2, see SPECS §7a.
 - **The README explains the prompts and how to try a checkout.** "Built-in
   prompts" says how to start one in Claude Desktop and Claude Code, that the
   model cannot start one itself, and how to write the positions of the
