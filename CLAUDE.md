@@ -39,6 +39,10 @@ src/benethos_yahoo_finance_mcp/
   __main__.py     # enables `python -m benethos_yahoo_finance_mcp`
   settings.py     # every YF_MCP_* variable and flag, resolved once, TTL defaults
   server.py       # instructions + build_server() + refused-arguments logging
+  prompts/        # the prompts a client offers, recipes in plain text that chain the tools
+    _base.py      #   Prompt (the abstract base), Symbol, RESOLVE, RULES
+                  #   one module per prompt, named like it, dividend_calendar.py the one
+                  #   taking share counts, which reach no tool and no log line
   tools/          # the tools a client sees, one module per subject, thin
     _base.py      #   Symbol, READ_ONLY, register_tool (adds the log line)
     status.py     #   server_status: plain text, no log line, asks Yahoo nothing
@@ -154,6 +158,25 @@ exception to `settings.py` being the only module that does.
 4. Add unit tests in `tests/yahoo/test_<module>.py` using the `FakeTicker`
    pattern (the `patch_ticker` fixture patches `tickers.get_ticker`, or patch
    `tickers.yf.Search`). Do not hit the network in tests.
+
+## How to add or change a prompt
+
+1. Add a module to `prompts/` named like the prompt, with one subclass of
+   `Prompt` from `_base.py`. Set `name` (the module's name) and `title`, and
+   write `render`: its parameters become the arguments, each with an
+   `Annotated[str, Field(description=...)]` (reuse `Symbol`), its docstring
+   the one-line description. Every argument is a string, a later one may
+   default.
+2. Write the text for the model. Name tools and the fields they return in
+   backticks, start with `RESOLVE` where an argument may be a company name,
+   and end a data recipe with `RULES`. `tests/test_prompts.py` fails on a
+   backticked name that is neither a tool nor listed there as a field.
+3. Add an instance to `_PROMPTS` in `prompts/__init__.py`, whose order is the
+   order a client lists them in. `tests/test_mcpb.py` prints the manifest's
+   `prompts` block it expects, paste it into the manifest.
+4. A prompt asks Yahoo nothing and writes no log line. One that takes
+   personal data says so in README and SPECS §7a and keeps it out of every
+   tool call, as `dividend_calendar.py` does with share counts.
 
 ## Verifying
 

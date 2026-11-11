@@ -41,6 +41,7 @@ Yahoo's unofficial endpoints.
 
 - [What it is for](#what-it-is-for)
   - [Example prompts](#example-prompts)
+  - [Built-in prompts](#built-in-prompts)
 - [Tools](#tools)
 - [Symbol resolution](#symbol-resolution)
 - [Compatible clients](#compatible-clients)
@@ -182,6 +183,70 @@ the tools. Replace the bracketed placeholders with concrete values.
 > which already includes derived figures such as moving averages, P/E, beta and
 > dividend yield. Anything Yahoo does not carry — RSI, MACD, drawdown,
 > sentiment, total return — the model works out from the raw series.
+
+### Built-in prompts
+
+Six recipes come with the server. Pick one in the client and fill in the
+symbol, and the model calls the right tools in the right order and minds the
+traps of the data on the way: currencies that are never converted, London
+prices in pence, an ETF that has no balance sheet. Each one gathers and
+reports data and gives no recommendation.
+
+| Prompt | Asks for | What you get |
+|--------|----------|--------------|
+| Asset analysis | a symbol | price, market cap and range, the distance to every analyst target, a check of the share count behind the market cap, revenue, earnings and shares over several years, P/E with its basis or price to sales for a loss, the next report and the headlines. Facts and own calculations, no outlook and no case for or against. For an ETF the fund profile |
+| Compare instruments | symbols, a period (=1y) | one table: performance rebased to 100, drawdown, market cap, P/E and dividend yield, each on one basis |
+| Earnings preview | a symbol | the next report date and what is expected, beats and misses so far, how the estimates moved, recent rating changes |
+| ETF profile | a symbol | holdings, sector and asset-class weights, costs against the category, size and returns, computed from the prices where Yahoo has none |
+| Dividend calendar | positions with share counts, a year, a currency (=EUR) | dividends per position and month, paid so far and forecast for the rest, converted and gross, with every estimated pay date and gap listed |
+| Find a symbol | a name or ISIN, an exchange | the listings as a table and the one to use, a WKN named as unresolvable |
+
+**Starting one.** A prompt is picked by you, the model cannot start one on
+its own and does not see that they exist.
+
+- **Claude Desktop:** click "+" in the message box, choose the server, then
+  the prompt. A small form asks for the arguments. The recipe is attached to
+  the message, and nothing happens until you send it. The recipes are written
+  in English, so add a line such as "answer in German" if you want the answer
+  in another language.
+- **Claude Code:** each prompt is a slash command,
+  `/mcp__benethos-yahoo-finance-mcp__asset_analysis SAP.DE` and so on, with
+  the arguments after the command.
+- **Other clients** show them where they show MCP prompts, if they do.
+
+Without a prompt, a plain question works as before and the model picks the
+tools itself. What the prompt adds is the fixed order and the traps of the
+data spelled out every time.
+
+**Positions for the dividend calendar.** The model reads them in almost any
+form, as long as each holding has an instrument and a share count:
+
+```
+SAP.DE:50, ALV.DE:20, IE00B4L5Y983:120
+50x SAP.DE, 12,5x IE00B4L5Y983
+```
+
+Rows pasted from a bank export or a spreadsheet work too, with whatever
+columns they bring, such as name, WKN, ISIN and currency.
+
+- A ticker or an ISIN is safer than a company name, which has to be looked
+  up first. A German WKN resolves nowhere, so a row needs its ISIN as well.
+- Fractional counts from a savings plan work with a decimal point or a
+  decimal comma.
+- An entry without a count, such as `MSFT`, is a watch item: shown per share
+  and left out of the totals.
+- Year and currency may stay empty, they default to the current year and EUR.
+- **Leave out the account number** of a bank export. The model is told to
+  ignore it, but it would still reach the server with the rest.
+
+It is the one prompt that takes personal data. The share counts go to the
+server as part of that argument, as does anything else pasted with them,
+which for a server you host over HTTP means that machine. The server only puts them into the prompt's text: no tool
+receives them, Yahoo never sees them, and no log line carries them. The
+forecast repeats the last twelve months without growth, so it is a plan, not
+a promise. For many European stocks Yahoo reports the ex-date but no pay
+date, and the calendar then estimates the pay date at 14 days later and
+marks it.
 
 ## Tools
 
@@ -1000,6 +1065,40 @@ With the venv interpreter directly (replace `.venv/bin/python` with
 .venv/bin/python -m mypy                      # type check
 .venv/bin/python -m pytest --cov=benethos_yahoo_finance_mcp   # coverage
 ```
+
+**Trying a checkout in Claude Desktop.** To see a change to a tool or a
+prompt in Desktop before it is released, start the server from the clone
+rather than from the index. Add an entry like this to
+`claude_desktop_config.json`, with the path to your clone:
+
+```json
+{
+  "mcpServers": {
+    "benethos-yahoo-finance-mcp-dev": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/path/to/yahoo-finance-mcp",
+        "benethos-yahoo-finance-mcp"
+      ]
+    }
+  }
+}
+```
+
+- It runs whatever branch is checked out, so switching branches changes what
+  Desktop sees after the next restart.
+- The name with `-dev` lets it stand beside an installed extension instead
+  of replacing it.
+- Quit Desktop from the tray, not only the window, to reload tools and
+  prompts.
+- `server_status` reports the version in `pyproject.toml`, which is still
+  the last release while the change is unreleased.
+- If Desktop cannot find `uv`, give its full path as `command`.
+
+In Claude Code the same works with
+`claude mcp add yf-dev -- uv run --directory /path/to/yahoo-finance-mcp benethos-yahoo-finance-mcp`.
 
 The unit tests mock `yfinance` and run fully offline. `tests/smoke.py` performs
 an ad-hoc check against live Yahoo Finance and is not part of the unit suite.

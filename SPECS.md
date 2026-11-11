@@ -52,6 +52,7 @@ nothing and answers from the process itself.
 | `__main__.py` | Enables `python -m benethos_yahoo_finance_mcp` (delegates to `cli.main`). |
 | `settings.py` | Every `YF_MCP_*` variable and flag, resolved once into a `Settings` dataclass (flag > env > default), plus the default cache TTLs. The only module that reads the environment, apart from `NO_COLOR`, a terminal convention `logbook/formats.colours_wanted` reads for itself. |
 | `server.py` | The server's identity and instructions, `build_server()`, and the `call_tool` override that logs refused arguments. |
+| `prompts/` | The prompts a client offers a person, recipes in plain text that chain the tools (see §7a). `_base.py` holds the abstract `Prompt`, the `Symbol` argument and the shared `RESOLVE` and `RULES` texts, and each prompt is a subclass in the module of its name: `asset_analysis.py`, `compare.py`, `earnings_preview.py`, `etf_profile.py`, `dividend_calendar.py`, `find_symbol.py`. They ask Yahoo nothing and import nothing of the package. |
 | `tools/` | The tools a client sees, thin: parameters, descriptions, and a call to the yahoo function of the same name. `_base.py` holds the `Symbol` parameter, the shared annotations and `register_tool`, which wraps every tool with its log line. `status.py` holds `server_status`, the one tool with no yahoo twin and no log line. |
 | `yahoo/` | All yfinance usage, one module per subject. `tickers.py` builds the `Ticker` and holds the error mapping every subject shares. The only package that imports yfinance. |
 | `cache.py` | Opt-in persistent result cache (SQLite) with per-tool TTLs. Off until `configure(settings)` enables it. |
@@ -80,7 +81,8 @@ changes its row.
 | `cache` | `__init__.py`, `settings`, `logbook` |
 | `yahoo` | `errors`, `logbook`, `cache`, `formatting` |
 | `tools` | `errors`, `logbook`, `yahoo` |
-| `server` | `__init__.py`, `tools`, `logbook` |
+| `prompts` | — |
+| `server` | `__init__.py`, `tools`, `prompts`, `logbook` |
 | `transport` | `settings`, `logbook` |
 | `cli` | `__init__.py`, `settings`, `logbook`, `cache`, `server`, `transport` |
 | `__main__` | `cli` |
@@ -388,6 +390,65 @@ a precise input schema. Closed sets such as the valid `interval` or
 names the set. The listing goes out without the `title` keys pydantic puts on
 every argument model and field (`_Server.list_tools` strips them), since a
 client shows the tool's own title and the model reads descriptions.
+
+## 7a. Prompts
+
+Six prompts in `prompts/` are recipes a person picks in the client, Claude
+Desktop from the "+" menu, Claude Code as a slash command. Each returns one
+user message that names the tools to call, in which order, and the traps of
+the data to mind. A prompt asks Yahoo nothing and writes no log line, the
+tool calls it leads to write theirs. The four data recipes end with the same
+rules: currencies are never converted, London prices are in pence, the data
+may be delayed, a missing figure is named, and no buy, sell or hold
+recommendation is given. Judging an instrument is left to the person, in
+line with the read-only scope of §2.
+
+`dividend_calendar` is the one recipe that calculates. It converts every
+amount to one currency and forecasts the coming months by fixed rules: the
+pay date from the gap `get_calendar` reports or else 14 days and marked
+estimated, the payments of the last 365 days recurring without growth,
+gross amounts, and every gap listed. It is the only prompt that takes
+personal data, the share count of each position. **The share counts reach
+this server** as part of the `positions` argument, and with the HTTP
+transports that means the machine that hosts it. The server puts them into
+the text and nowhere else: no tool receives them, Yahoo never sees them, and
+no log line carries them (a test renders the prompt with a count and looks
+for it in every log record). The text tells the model to pass them to no
+tool. `positions` takes any form a model can read, `SAP.DE:50`, `50x
+IE00B4L5Y983` or rows pasted from a bank export with columns of their own,
+decimal commas included. Whatever else such rows carry, an account number
+for one, reaches the server the same way, so the text tells the model to
+ignore every column but the instrument and the count, and the README asks
+the person to leave the account number out.
+
+| Prompt | Arguments | Tools it chains |
+|--------|-----------|-----------------|
+| `asset_analysis` | `symbol` | `get_quote`, then by `quoteType` for a stock `get_company_info`, `get_recommendations`, `get_calendar`, `get_shares`, `get_financials` (annual income), `get_news` and `get_history` 1y in one block, for a fund `get_fund_data` and `get_history`, for crypto `get_history` only. Own calculations: distance to every target, share count implied by the market cap against the diluted average shares of the last annual report, a multi-year table, price to sales for a loss |
+| `compare` | `symbols` (comma-separated), `period` (=1y) | `get_quotes`, `get_history` and `get_company_info` for each |
+| `earnings_preview` | `symbol` | `get_calendar`, `get_earnings`, `get_estimates` (one `methodology` for both), `get_upgrades_downgrades` |
+| `etf_profile` | `symbol` | `get_fund_data`, `get_quote`, `get_history` 5y monthly when a return is missing |
+| `dividend_calendar` | `positions` (symbol:shares, comma-separated), `year?` (=current), `currency` (=EUR) | `get_dividends` each, `get_calendar` for single stocks, `get_quote` for each listing's currency and each exchange rate |
+| `find_symbol` | `query`, `exchange?` | `search` with limit 25, a WKN named as unresolvable |
+
+Each recipe resolves a company name through `search` first. Every argument is
+a string, as MCP prompt arguments are. `tests/test_prompts.py` checks every
+tool and field a recipe names against what the server registers and returns,
+and the bundle manifest lists the prompts with their text (see
+`tests/test_mcpb.py`).
+
+`asset_analysis` takes from the asset-analysis skill what checks and
+calculates and leaves out what judges: an outlook by horizon and a case for
+or against. Its share count check compares the count behind the market cap
+with the diluted average shares of the last annual report, since every other
+count the tools return is the same one (§12). A year of buybacks or issues
+moves the two a few percent apart, so it speaks up past ten percent only.
+
+A prompt is started by the person. The model cannot call one and does not
+see the list, so nothing a recipe says reaches a conversation in which it
+was not picked. That is why the rules that must always hold stay in the tool
+descriptions and parameters (§7), and a recipe only adds an order and a
+check on top. The texts are English, the answer follows the language the
+person adds to the message.
 
 ## 8. Output format
 
@@ -897,6 +958,17 @@ them.
 - **Fund/ETF:** `funds_data`, its `fund_operations` included, and from
   `info` the size and returns (`totalAssets`, `ytdReturn`, the three- and
   five-year average returns), probed 2026-11-03 for SPY, QQQ and FFOJX.
+- **Share counts:** `fast_info`'s and `info`'s market cap and the last point
+  of `get_shares_full` rest on one count, market cap divided by price gives
+  exactly that count, so comparing them finds nothing. The income
+  statement's "Diluted Average Shares" come from the report and are the one
+  independent count, 0 to 2 percent apart for SAP.DE, AAPL, ALV.DE, VOW3.DE
+  and RHM.DE (measured 2026-11-11). `asset_analysis` checks against it and
+  speaks up past ten percent (§7a).
+- **Dividend pay dates:** `calendar` gives a German stock's `Ex-Dividend
+  Date` but no `Dividend Date`, SAP.DE and ALV.DE alike (measured
+  2026-11-11), so `dividend_calendar` estimates their pay dates at the
+  ex-date plus 14 days (§7a).
 - **Any symbol:** `history_metadata`, `isin`.
 - **Crypto (`BTC-USD`):** the existing core paths work — `history`,
   `fast_info`/`info` (rich), `history_metadata`, `isin` — so `get_quote`,

@@ -15,6 +15,7 @@ from mcp.types import Tool
 from pydantic import ValidationError
 
 from . import __version__, logbook
+from .prompts import register_prompts
 from .tools import register_tools
 
 # Sent once during the initialize handshake, not per tool, so this is the
@@ -130,7 +131,7 @@ def _without_titles(schema: Any) -> Any:
 
 
 def build_server(transport: str = "stdio") -> MCPServer:
-    """A server with every tool registered, ready to be handed to ``transport``.
+    """A server with every tool and prompt, ready to be handed to ``transport``.
 
     ``name`` is the programmatic identifier reported in the MCP initialize
     handshake and is kept identical to the PyPI distribution name, so the
@@ -150,6 +151,7 @@ def build_server(transport: str = "stdio") -> MCPServer:
             website_url="https://github.com/benethos-hub/yahoo-finance-mcp",
         )
     register_tools(server, transport)
+    register_prompts(server)
     return server
 
 
