@@ -88,7 +88,7 @@ portfolio. No tool, parameter or schema changes. The lock moves under
   server offers: new and changed prompts and new tools arrive with a restart.
   A tool left out of a manifest with `tools_generated` was measured to list
   and answer. The pinned bundle ships its manifest with its code, keeps both
-  lists and sets `prompts_generated` too, see above. An auto-update
+  lists and sets both flags too, see above. An auto-update
   extension installed from an earlier release has neither, so Desktop lists
   the six prompts there but refuses to attach them until the extension is
   installed anew from this release.

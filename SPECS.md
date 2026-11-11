@@ -399,14 +399,13 @@ client shows the tool's own title and the model reads descriptions.
 
 Six prompts in `prompts/` are recipes a person picks in the client, Claude
 Desktop under "+", Connectors, Add from and the server's name, Claude Code as
-a slash command. Each returns one
-user message that names the tools to call, in which order, and the traps of
-the data to mind. A prompt asks Yahoo nothing and writes no log line, the
-tool calls it leads to write theirs. The four data recipes end with the same
-rules: currencies are never converted, London prices are in pence, the data
-may be delayed, a missing figure is named, and no buy, sell or hold
-recommendation is given. Judging an instrument is left to the person, in
-line with the read-only scope of §2.
+a slash command. Each returns one user message that names the tools to call,
+in which order, and the traps of the data to mind. A prompt asks Yahoo
+nothing and writes no log line, the tool calls it leads to write theirs. The
+four data recipes end with the same rules: currencies are never converted,
+London prices are in pence, the data may be delayed, a missing figure is
+named, and no buy, sell or hold recommendation is given. Judging an
+instrument is left to the person, in line with the read-only scope of §2.
 
 `dividend_calendar` is the one recipe that calculates. It converts every
 amount to one currency and forecasts the coming months by fixed rules: the
@@ -450,11 +449,11 @@ what the server sends. `tests/test_prompts.py` renders every prompt with its
 optional arguments left out, empty and filled in, and compares each with its
 template.
 
-**Both bundles set `prompts_generated`,** because of how Claude Desktop
-treats the manifest's prompts. Measured on 2026-11-11 with Claude Desktop
-5.1231.2 on Windows from its logs, first on another MCP server with three
-bundles that differed only in the manifest, then on this server's pinned
-bundle:
+**Both bundles set `prompts_generated` and `tools_generated`,** because of
+how Claude Desktop treats the manifest's prompts. Measured on 2026-11-11 with
+Claude Desktop 5.1231.2 on Windows from its logs, first on another MCP server
+with three bundles that differed only in the manifest, then on this server's
+pinned bundle:
 
 - The "+" menu lists every prompt the server offers, declared or not.
 - Without `prompts_generated`, a prompt the manifest does not declare is
@@ -467,14 +466,18 @@ bundle:
   expected 3382 characters, got 3344, the 38 of `${arguments.year}` and
   `${arguments.currency}`. No text a server sends can match that, so every
   prompt with an optional argument fails the check whenever one stays empty.
-- With `prompts_generated: true` nothing is checked, declared or not.
+- With `prompts_generated: true` nothing is checked, declared or not. Desktop
+  logs "skipping prompt verification" when the extension starts, and on
+  this bundle the same `dividend_calendar` with `year` and `currency` empty
+  was attached.
 
 The pinned bundle therefore lists its prompts, for display, and sets the
 flag. Its code ships in the same file as its manifest, and no prompt carries
 data from Yahoo, so the check would guard little here. It sets
 `tools_generated` too, which changes nothing measured for a bundle whose
-tools ship with its code, so that both bundles carry the same flags. Running the server
-from a checkout carries no manifest and shows none of this.
+tools ship with its code, so that both bundles carry the same flags.
+Running the server from a checkout carries no manifest and shows none of
+this.
 
 `asset_analysis` takes from a careful analysis what checks and calculates
 and leaves out what judges: an outlook by horizon and a case for or
