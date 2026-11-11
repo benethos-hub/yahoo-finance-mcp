@@ -908,9 +908,13 @@ person adds to the message.
   action validates and packs it with the locked `mcpb` CLI and compares the
   packed file byte for byte with the staged tree.
   The manifest is committed as it ships, and `tests/test_mcpb.py` holds its
-  version, metadata and tool list (each tool's first sentence) to the
-  package. It asks for no settings. Tested on 2026-10-10 in Claude Desktop
-  twice, on a machine with uv installed and in a fresh Windows Sandbox
+  version, metadata, tool list (each tool's first sentence) and prompts
+  (each with its text as the server renders it, an argument written
+  `${arguments.name}`) to the package. The two lists come from the server:
+  `sync_manifest.py` beside `build.py` writes them and leaves every other
+  field alone, and the test names that command while they differ. It asks
+  for no settings. Tested on 2026-10-10 in Claude Desktop twice, on a
+  machine with uv installed and in a fresh Windows Sandbox
   without uv or Python: both ran, so Claude Desktop provides uv and Python
   itself, as the bundle format's documentation says, and a user needs
   nothing installed beforehand. The `mcpb` CLI 2.1.2 requires the

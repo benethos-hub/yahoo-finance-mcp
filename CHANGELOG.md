@@ -47,6 +47,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   describes the prompts and §12 two measurements behind them: the share
   counts the tools return are one count, and Yahoo gives German stocks no
   dividend pay date.
+- **One command writes the bundle manifest's tools and prompts.**
+  `uv run python .github/publish/mcpb/sync_manifest.py` asks the server and
+  writes both lists into `manifest.json`, every other field left as it is.
+  `tests/test_mcpb.py` checks against the same code and names the command
+  while the manifest differs, where it used to print a block to paste. The
+  prompts are kept in one place, `prompts/`, and the manifest follows. This
+  reaches only the development of the project.
 
 ### Changed
 

@@ -9,10 +9,8 @@ directory below to check what a user's Claude Desktop would unpack.
 
 from __future__ import annotations
 
-import asyncio
 import importlib.util
 import json
-import re
 import struct
 import tomllib
 from pathlib import Path
@@ -28,17 +26,6 @@ PROJECT = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))[
 ]
 
 
-def _first_sentence(text: str) -> str:
-    """The tool description cut to its first sentence, as the manifest lists it.
-
-    Claude Desktop shows these lines before installing, so one sentence each.
-    An abbreviation like "e.g." does not end the sentence.
-    """
-    line = " ".join(text.split()).replace("`", "")
-    head = re.split(r"(?<!e\.g)(?<!i\.e)\. ", line)[0]
-    return head.rstrip(".") + "."
-
-
 def test_the_version_is_the_package_version():
     assert MANIFEST["version"] == benethos_yahoo_finance_mcp.__version__
 
@@ -51,41 +38,52 @@ def test_the_metadata_is_the_packages():
     assert MANIFEST["compatibility"]["runtimes"]["python"] == PROJECT["requires-python"]
 
 
+def _load_script(name: str):
+    spec = importlib.util.spec_from_file_location(f"mcpb_{name}", BUNDLE / f"{name}.py")
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+SYNC = _load_script("sync_manifest")
+SYNCED = SYNC.synced(MANIFEST, mcp)
+
+
 def test_the_tools_are_the_registered_ones():
     """Same tools, same order, each with the first sentence of its description.
 
-    A changed docstring changes the line here too. The expected list is printed
-    so it can be pasted into the manifest.
+    A changed docstring changes the line here too, and sync_manifest.py
+    writes it.
     """
-    tools = asyncio.run(mcp.list_tools())
-    expected = [
-        {"name": t.name, "description": _first_sentence(t.description or "")}
-        for t in tools
-    ]
-    assert MANIFEST["tools"] == expected, json.dumps(expected, indent=2)
+    assert MANIFEST["tools"] == SYNCED["tools"], f"run: {SYNC.COMMAND}"
 
 
 def test_the_prompts_are_the_registered_ones():
-    """Same prompts, same order, the text as the server renders it.
+    """Same prompts, same order, the text as the server renders it."""
+    assert MANIFEST["prompts"] == SYNCED["prompts"], f"run: {SYNC.COMMAND}"
 
-    The bundle format writes an argument as ``${arguments.name}``, so the
-    server renders each prompt with those placeholders. The expected list is
-    printed so it can be pasted into the manifest.
-    """
-    expected = []
-    for prompt in asyncio.run(mcp.list_prompts()):
-        names = [a.name for a in prompt.arguments or []]
-        placeholders = {n: f"${{arguments.{n}}}" for n in names}
-        [message] = asyncio.run(mcp.get_prompt(prompt.name, placeholders)).messages
-        expected.append(
-            {
-                "name": prompt.name,
-                "description": prompt.description,
-                "arguments": names,
-                "text": message.content.text,
-            }
-        )
-    assert MANIFEST["prompts"] == expected, json.dumps(expected, indent=2)
+
+def test_syncing_touches_nothing_but_tools_and_prompts(tmp_path):
+    """A stale manifest comes back whole, every other field and the key order
+    as they were, and a second run finds nothing to do."""
+    stale = dict(MANIFEST, tools=[], prompts=[{"name": "gone"}])
+    path = tmp_path / "manifest.json"
+    path.write_text(json.dumps(stale, indent=2), encoding="utf-8")
+    first = SYNC.write(path)
+    assert first is True
+    assert path.read_text(encoding="utf-8") == (BUNDLE / "manifest.json").read_text(
+        encoding="utf-8"
+    )
+    second = SYNC.write(path)
+    assert second is False
+
+
+def test_the_first_sentence_stops_at_a_full_stop_but_not_an_abbreviation():
+    assert SYNC.first_sentence("Find stocks, e.g. cheap ones. More.") == (
+        "Find stocks, e.g. cheap ones."
+    )
+    assert SYNC.first_sentence("Get `the` quote") == "Get the quote."
 
 
 def test_it_is_a_uv_bundle_started_from_its_own_directory():
@@ -108,11 +106,7 @@ def test_the_bundle_reads_no_settings():
 
 
 def _load_build_script():
-    spec = importlib.util.spec_from_file_location("mcpb_build", BUNDLE / "build.py")
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return _load_script("build")
 
 
 def test_the_staged_bundle_holds_what_uv_needs(tmp_path):
