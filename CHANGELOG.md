@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **The auto-update bundle declares its prompts again,** like the pinned
+  one, so Claude Desktop lists them when installing it. 0.13.0 left them
+  out of its manifest, and the install dialog showed none, although the
+  "+" menu offers all six. Both flags stay set, so a later release's new or
+  changed prompts are still taken unchecked. An extension installed from
+  0.13.0 keeps working and needs nothing, the list only shows before
+  installing.
+
 ## [0.13.0] - 2026-11-11
 
 > **Action needed for the auto-update extension.** Installed before 0.13.0,

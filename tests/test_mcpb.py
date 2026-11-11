@@ -140,19 +140,12 @@ def test_the_icon_is_the_size_claude_desktop_recommends():
 
 
 def test_the_auto_update_manifest_is_the_pinned_one_in_all_but_its_own_fields():
-    """Version and tools come from the pinned manifest, so they cannot drift."""
+    """Version, tools, prompts and flags come from the pinned manifest, so
+    they cannot drift."""
     build = _load_build_script()
     manifest = build.auto_update_manifest()
-    own = set(build.AUTO_UPDATE) | set(build.AUTO_UPDATE_DROPPED)
-    assert own == {
-        "name",
-        "display_name",
-        "description",
-        "server",
-        "tools_generated",
-        "prompts_generated",
-        "prompts",
-    }
+    own = set(build.AUTO_UPDATE)
+    assert own == {"name", "display_name", "description", "server"}
     assert {k: v for k, v in manifest.items() if k not in own} == {
         k: v for k, v in MANIFEST.items() if k not in own
     }
@@ -171,12 +164,13 @@ def test_the_auto_update_bundle_stands_beside_the_pinned_one():
     assert "auto-update" in manifest["display_name"]
 
 
-def test_the_auto_update_manifest_declares_no_prompt_a_later_release_could_contradict():
+def test_the_auto_update_manifest_declares_the_prompts_and_has_desktop_check_none():
     """It stays at the release it was installed from while the server moves
-    on. A client may check the prompts against the manifest, so it names none
-    and says the server makes them, and the tools beyond its list."""
+    on. It declares the pinned manifest's prompts, so Claude Desktop lists
+    them when installing, and both flags, so a later release's new or
+    changed prompts and tools are taken unchecked."""
     manifest = _load_build_script().auto_update_manifest()
-    assert "prompts" not in manifest
+    assert manifest["prompts"] == MANIFEST["prompts"]
     assert manifest["prompts_generated"] is True
     assert manifest["tools_generated"] is True
 
