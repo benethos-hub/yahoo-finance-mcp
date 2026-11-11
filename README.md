@@ -1107,11 +1107,12 @@ rather than from the index. Add an entry like this to
 - `server_status` reports the version in `pyproject.toml`, which is still
   the last release while the change is unreleased.
 - If Desktop cannot find `uv`, give its full path as `command`.
-- Started this way, the server brings no bundle manifest, so Desktop checks
-  no prompt against one. A prompt that works here can still be refused by
-  the extension, see
+- Started this way, the server brings no bundle manifest, so a change to the
+  manifest itself shows only in a packed bundle. To try one, stage it with
+  `.github/publish/mcpb/build.py`, pack it with the mcpb CLI as its
+  docstring shows and open the file. How Desktop treats the manifest's
+  prompts is in
   [SPECS.md](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/SPECS.md#7a-prompts).
-  The tests hold every prompt to the form the extension needs.
 - On Windows, while Desktop runs the server from the clone, `uv sync` cannot
   replace the server's `.exe` in `.venv` and stops with "os error 32". Quit
   Desktop for the sync, or run the checks in a second environment with

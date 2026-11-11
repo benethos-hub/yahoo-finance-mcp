@@ -87,10 +87,11 @@ portfolio. No tool, parameter or schema changes. The lock moves under
   sets `prompts_generated` and `tools_generated`, so Desktop takes what the
   server offers: new and changed prompts and new tools arrive with a restart.
   A tool left out of a manifest with `tools_generated` was measured to list
-  and answer. The pinned bundle ships its manifest with its code and keeps
-  both lists. An auto-update extension installed from an earlier
-  release has neither, so Desktop lists the six prompts there but refuses
-  to attach them until the extension is installed anew from this release.
+  and answer. The pinned bundle ships its manifest with its code, keeps both
+  lists and sets `prompts_generated` too, see above. An auto-update
+  extension installed from an earlier release has neither, so Desktop lists
+  the six prompts there but refuses to attach them until the extension is
+  installed anew from this release.
 - `uv.lock` moves to soupsieve 4.1 under `beautifulsoup4` and `yfinance`, and
   to typer 0.29.0 in the development group. soupsieve fixes selector parsing
   and matching and is now thread safe. yfinance calls no CSS selector, so no
