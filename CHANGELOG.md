@@ -8,6 +8,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.13.0] - 2026-11-11
 
+> **Action needed for the auto-update extension.** Installed before 0.13.0,
+> it lists the new prompts, but Claude Desktop refuses to attach them. Open
+> the auto-update file of this release once to install it anew. The tools
+> keep working either way, and later prompts and tools arrive with a
+> restart. The pinned extension is a new download with every release
+> anyway.
+
 A minor release for six MCP prompts, recipes a person picks in the client
 that chain the tools in a fixed order and spell out the traps of the data.
 Among them an asset analysis with its own checks of the share count and the
