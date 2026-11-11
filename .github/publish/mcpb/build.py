@@ -17,7 +17,8 @@ staged tree and attaches it. Locally, the mcpb CLI packs it:
     npx @anthropic-ai/mcpb pack <staging dir> <file>.mcpb
 
 The pinned manifest is committed as it ships. The auto-update one is made
-from it here, so its version and tool list cannot drift from it.
+from it here, so its version and tool list cannot drift from it. It leaves
+the prompts out, since it outlives the release that built it.
 tests/test_mcpb.py holds both to the package, and runs this script into a
 temporary directory to check what ends up in each bundle.
 """
@@ -65,7 +66,17 @@ AUTO_UPDATE = {
             "args": ["tool", "run", "benethos-yahoo-finance-mcp"],
         },
     },
+    # Installed once, this manifest stays at its release while the server
+    # moves on with every new one. The bundle format lets a client check the
+    # prompts a server offers against the ones declared here, so a later
+    # release with a changed recipe could be refused. It declares none and
+    # says the server makes them, and the same for tools beyond its list.
+    "tools_generated": True,
+    "prompts_generated": True,
 }
+
+# Fields of the pinned manifest the auto-update one leaves out, see above.
+AUTO_UPDATE_DROPPED = ("prompts",)
 
 # Destination in the auto-update bundle -> source. No pyproject.toml, so
 # Claude Desktop has no project to install, only the command to run.
@@ -97,8 +108,11 @@ def stage(target: Path) -> None:
 
 
 def auto_update_manifest() -> dict[str, object]:
-    """The pinned manifest with the fields of ``AUTO_UPDATE`` in its place."""
+    """The pinned manifest with the fields of ``AUTO_UPDATE`` in its place,
+    and without those of ``AUTO_UPDATE_DROPPED``."""
     manifest = json.loads(FILES["manifest.json"].read_text(encoding="utf-8"))
+    for field in AUTO_UPDATE_DROPPED:
+        manifest.pop(field, None)
     manifest.update(AUTO_UPDATE)
     return manifest
 

@@ -477,6 +477,11 @@ How and when it updates:
 - **The running version is the one `server_status` names.** Claude Desktop's
   extension list shows the version of the file it was installed from, and
   that stays as it was.
+- **Installed before 0.13.0? Install it once more for the prompts.** Tools
+  arrive with a restart, but an extension file from an earlier release does
+  not tell Claude Desktop that the server brings prompts of its own. Desktop
+  then lists them under "+" and refuses to attach them. The file of 0.13.0
+  or later says so, and later prompts arrive with a restart like the rest.
 - **Dependencies are not pinned.** uv takes the newest versions each
   release allows, as `uvx` does, not the tested set in `uv.lock` the pinned
   extension and the container image run. The six libraries that decide what
