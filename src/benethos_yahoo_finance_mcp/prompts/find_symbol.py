@@ -20,27 +20,24 @@ class FindSymbol(Prompt):
             Field(description="Company name or ISIN to look up."),
         ],
         exchange: Annotated[
-            str | None,
-            Field(description="Preferred exchange, such as Xetra or NASDAQ."),
-        ] = None,
+            str,
+            Field(
+                description="Preferred exchange, such as Xetra or NASDAQ. The "
+                "home exchange if left empty."
+            ),
+        ] = "",
     ) -> str:
         """The Yahoo symbol for a company name or an ISIN, on the right exchange."""
-        if exchange:
-            choice = (
-                f"Pick the listing on {exchange}. If there is none, say so and "
-                "name the others."
-            )
-        else:
-            choice = (
-                "Recommend the listing on the company's home exchange and say why. "
-                "Name the other listings as alternatives."
-            )
         return f"""Find the Yahoo symbol for {query}.
+Preferred exchange: {exchange} (none when empty)
 
 1. Call `search` with {query} and limit 25, since an ISIN often has a listing \
 on many exchanges.
 2. List the matches as a table: symbol, name, exchange and type.
-3. {choice}
+3. With a preferred exchange, pick the listing there, and when it has none, \
+say so and name the others. Without one, recommend the listing on the \
+company's home exchange, say why, and name the other listings as \
+alternatives.
 
 If nothing comes back and {query} has six letters and digits, it is likely a \
 German WKN. WKNs resolve nowhere, not even through `search`. Say so and ask \

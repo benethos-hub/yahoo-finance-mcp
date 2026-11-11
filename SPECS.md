@@ -436,6 +436,29 @@ tool and field a recipe names against what the server registers and returns,
 and the bundle manifest lists the prompts with their text (see
 `tests/test_mcpb.py`).
 
+**Every prompt is a plain template.** Each argument goes into the text as it
+came, an optional one defaults to `""`, and the text says in words what an
+empty one means (`Period:  (one year, 1y, when empty)`). No condition picks
+another sentence and no default stands in for an empty value. The reason is
+how Claude Desktop treats the manifest's prompts, measured on 2026-11-11 with
+Claude Desktop 5.1231.2 on Windows from its logs, on another MCP server with
+three bundles that differed only in the manifest:
+
+- The "+" menu lists every prompt the server offers, declared or not.
+- Without `prompts_generated`, a prompt the manifest does not declare is
+  refused when it is attached ("Failed to attach prompt").
+- A declared prompt is checked against its text in the manifest, with the
+  arguments put in. An optional argument left empty is put in as `""`, and a
+  text that differs is refused.
+- With `prompts_generated: true` nothing is checked, declared or not.
+
+The pinned bundle declares its prompts, so a default like `"1y"` or a
+sentence chosen by an `if` made `compare`, `dividend_calendar` and
+`find_symbol` fail there whenever an optional argument stayed empty. Running
+the server from a checkout carries no manifest and showed nothing.
+`tests/test_prompts.py` renders every prompt with its optional arguments left
+out, empty and filled in, and compares each with its template.
+
 `asset_analysis` takes from the asset-analysis skill what checks and
 calculates and leaves out what judges: an outlook by horizon and a case for
 or against. Its share count check compares the count behind the market cap

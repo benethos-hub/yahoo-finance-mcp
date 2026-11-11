@@ -21,18 +21,22 @@ class Compare(Prompt):
         ],
         period: Annotated[
             str,
-            Field(description="Look-back window such as 3mo, 1y or 5y."),
-        ] = "1y",
+            Field(
+                description="Look-back window such as 3mo, 1y or 5y. One year if "
+                "left empty."
+            ),
+        ] = "",
     ) -> str:
         """Several instruments side by side over one period, on one basis."""
-        return f"""Compare {symbols} over {period}.
+        return f"""Compare these instruments: {symbols}
+Period: {period} (one year, 1y, when empty)
 
 1. Each comma-separated entry is one instrument. \
 {RESOLVE.format(what="an entry")}
 2. Call `get_quotes` once with all of them, and name every symbol it lists \
 under `not_found`.
-3. Call `get_history` for each with period {period}, with interval 1d up to \
-6mo and 1wk beyond.
+3. Call `get_history` for each with that period, with interval 1d up to 6mo \
+and 1wk beyond.
 4. Call `get_company_info` for each, for market cap, trailing P/E and dividend \
 yield.
 
