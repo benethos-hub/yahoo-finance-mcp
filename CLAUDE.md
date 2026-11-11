@@ -39,6 +39,7 @@ src/benethos_yahoo_finance_mcp/
   __main__.py     # enables `python -m benethos_yahoo_finance_mcp`
   settings.py     # every YF_MCP_* variable and flag, resolved once, TTL defaults
   server.py       # instructions + build_server() + refused-arguments logging
+  prompts.py      # the prompts a client offers, recipes in plain text that chain the tools
   tools/          # the tools a client sees, one module per subject, thin
     _base.py      #   Symbol, READ_ONLY, register_tool (adds the log line)
     status.py     #   server_status: plain text, no log line, asks Yahoo nothing

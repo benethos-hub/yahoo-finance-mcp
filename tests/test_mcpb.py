@@ -65,6 +65,29 @@ def test_the_tools_are_the_registered_ones():
     assert MANIFEST["tools"] == expected, json.dumps(expected, indent=2)
 
 
+def test_the_prompts_are_the_registered_ones():
+    """Same prompts, same order, the text as the server renders it.
+
+    The bundle format writes an argument as ``${arguments.name}``, so the
+    server renders each prompt with those placeholders. The expected list is
+    printed so it can be pasted into the manifest.
+    """
+    expected = []
+    for prompt in asyncio.run(mcp.list_prompts()):
+        names = [a.name for a in prompt.arguments or []]
+        placeholders = {n: f"${{arguments.{n}}}" for n in names}
+        [message] = asyncio.run(mcp.get_prompt(prompt.name, placeholders)).messages
+        expected.append(
+            {
+                "name": prompt.name,
+                "description": prompt.description,
+                "arguments": names,
+                "text": message.content.text,
+            }
+        )
+    assert MANIFEST["prompts"] == expected, json.dumps(expected, indent=2)
+
+
 def test_it_is_a_uv_bundle_started_from_its_own_directory():
     server = MANIFEST["server"]
     assert MANIFEST["manifest_version"] == "0.4"

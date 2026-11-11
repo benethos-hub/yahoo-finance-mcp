@@ -41,7 +41,9 @@ LAYERS: dict[str, set[str]] = {
     "yahoo": {"errors", "logbook", "cache", "formatting"},
     # Never formatting: a tool returns what yahoo built.
     "tools": {"errors", "logbook", "yahoo"},
-    "server": {ROOT, "tools", "logbook"},
+    # Recipes in plain text, they import nothing of the package.
+    "prompts": set(),
+    "server": {ROOT, "tools", "prompts", "logbook"},
     # The server comes in as the SDK's type, never as this package's module.
     "transport": {"settings", "logbook"},
     "cli": {ROOT, "settings", "logbook", "cache", "server", "transport"},
@@ -209,10 +211,10 @@ LIBRARY_HOMES = {
     "sqlite3": {"cache"},
     "uvicorn": {"transport"},
     "starlette": {"transport"},
-    "pydantic": {"server", "tools"},
+    "pydantic": {"server", "tools", "prompts"},
     "pydantic_core": {"tools"},
-    # cli names the SDK's server type for the checker only.
-    "mcp": {"errors", "server", "tools", "transport", "cli"},
+    # cli and prompts name the SDK's server type for the checker only.
+    "mcp": {"errors", "server", "tools", "prompts", "transport", "cli"},
 }
 
 

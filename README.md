@@ -41,6 +41,7 @@ Yahoo's unofficial endpoints.
 
 - [What it is for](#what-it-is-for)
   - [Example prompts](#example-prompts)
+  - [Built-in prompts](#built-in-prompts)
 - [Tools](#tools)
 - [Symbol resolution](#symbol-resolution)
 - [Compatible clients](#compatible-clients)
@@ -182,6 +183,26 @@ the tools. Replace the bracketed placeholders with concrete values.
 > which already includes derived figures such as moving averages, P/E, beta and
 > dividend yield. Anything Yahoo does not carry — RSI, MACD, drawdown,
 > sentiment, total return — the model works out from the raw series.
+
+### Built-in prompts
+
+Five recipes come with the server. Pick one in the client and fill in the
+symbol, and the model calls the right tools in the right order and minds the
+traps of the data on the way: currencies that are never converted, London
+prices in pence, an ETF that has no balance sheet. Each one gathers and
+reports data and gives no recommendation.
+
+| Prompt | Asks for | What you get |
+|--------|----------|--------------|
+| Stock snapshot | a symbol | price and currency, distance from the 52-week high and low, the year's deepest drawdown, P/E named as trailing or forward, the analyst consensus, or the fund profile for an ETF |
+| Compare instruments | symbols, a period (=1y) | one table: performance rebased to 100, drawdown, market cap, P/E and dividend yield, each on one basis |
+| Earnings preview | a symbol | the next report date and what is expected, beats and misses so far, how the estimates moved, recent rating changes |
+| ETF profile | a symbol | holdings, sector and asset-class weights, costs against the category, size and returns, computed from the prices where Yahoo has none |
+| Find a symbol | a name or ISIN, an exchange | the listings as a table and the one to use, a WKN named as unresolvable |
+
+In Claude Desktop they sit in the "+" menu under the server's name. In Claude
+Code they are slash commands, `/mcp__benethos-yahoo-finance-mcp__snapshot` and
+so on. Other clients show them where they show MCP prompts, if they do.
 
 ## Tools
 

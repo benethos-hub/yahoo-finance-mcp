@@ -52,6 +52,7 @@ nothing and answers from the process itself.
 | `__main__.py` | Enables `python -m benethos_yahoo_finance_mcp` (delegates to `cli.main`). |
 | `settings.py` | Every `YF_MCP_*` variable and flag, resolved once into a `Settings` dataclass (flag > env > default), plus the default cache TTLs. The only module that reads the environment, apart from `NO_COLOR`, a terminal convention `logbook/formats.colours_wanted` reads for itself. |
 | `server.py` | The server's identity and instructions, `build_server()`, and the `call_tool` override that logs refused arguments. |
+| `prompts.py` | The prompts a client offers a person, recipes in plain text that chain the tools (see §7a). They ask Yahoo nothing and import nothing of the package. |
 | `tools/` | The tools a client sees, thin: parameters, descriptions, and a call to the yahoo function of the same name. `_base.py` holds the `Symbol` parameter, the shared annotations and `register_tool`, which wraps every tool with its log line. `status.py` holds `server_status`, the one tool with no yahoo twin and no log line. |
 | `yahoo/` | All yfinance usage, one module per subject. `tickers.py` builds the `Ticker` and holds the error mapping every subject shares. The only package that imports yfinance. |
 | `cache.py` | Opt-in persistent result cache (SQLite) with per-tool TTLs. Off until `configure(settings)` enables it. |
@@ -80,7 +81,8 @@ changes its row.
 | `cache` | `__init__.py`, `settings`, `logbook` |
 | `yahoo` | `errors`, `logbook`, `cache`, `formatting` |
 | `tools` | `errors`, `logbook`, `yahoo` |
-| `server` | `__init__.py`, `tools`, `logbook` |
+| `prompts` | — |
+| `server` | `__init__.py`, `tools`, `prompts`, `logbook` |
 | `transport` | `settings`, `logbook` |
 | `cli` | `__init__.py`, `settings`, `logbook`, `cache`, `server`, `transport` |
 | `__main__` | `cli` |
@@ -388,6 +390,32 @@ a precise input schema. Closed sets such as the valid `interval` or
 names the set. The listing goes out without the `title` keys pydantic puts on
 every argument model and field (`_Server.list_tools` strips them), since a
 client shows the tool's own title and the model reads descriptions.
+
+## 7a. Prompts
+
+Five prompts in `prompts.py` are recipes a person picks in the client, Claude
+Desktop from the "+" menu, Claude Code as a slash command. Each returns one
+user message that names the tools to call, in which order, and the traps of
+the data to mind. A prompt asks Yahoo nothing and writes no log line, the
+tool calls it leads to write theirs. Every recipe gathers and reports data
+and ends with the same rules: currencies are never converted, London prices
+are in pence, the data may be delayed, a missing figure is named, and no
+buy, sell or hold recommendation is given. Judging an instrument is left to
+the person, in line with the read-only scope of §2.
+
+| Prompt | Arguments | Tools it chains |
+|--------|-----------|-----------------|
+| `snapshot` | `symbol` | `get_quote`, then by `quoteType` `get_company_info` and `get_recommendations` or `get_fund_data`, and `get_history` 1y |
+| `compare` | `symbols` (comma-separated), `period` (=1y) | `get_quotes`, `get_history` and `get_company_info` for each |
+| `earnings_preview` | `symbol` | `get_calendar`, `get_earnings`, `get_estimates` (one `methodology` for both), `get_upgrades_downgrades` |
+| `etf_profile` | `symbol` | `get_fund_data`, `get_quote`, `get_history` 5y monthly when a return is missing |
+| `find_symbol` | `query`, `exchange?` | `search` with limit 25, a WKN named as unresolvable |
+
+Each recipe resolves a company name through `search` first. Every argument is
+a string, as MCP prompt arguments are. `tests/test_prompts.py` checks every
+tool and field a recipe names against what the server registers and returns,
+and the bundle manifest lists the prompts with their text (see
+`tests/test_mcpb.py`).
 
 ## 8. Output format
 
