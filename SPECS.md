@@ -52,7 +52,7 @@ nothing and answers from the process itself.
 | `__main__.py` | Enables `python -m benethos_yahoo_finance_mcp` (delegates to `cli.main`). |
 | `settings.py` | Every `YF_MCP_*` variable and flag, resolved once into a `Settings` dataclass (flag > env > default), plus the default cache TTLs. The only module that reads the environment, apart from `NO_COLOR`, a terminal convention `logbook/formats.colours_wanted` reads for itself. |
 | `server.py` | The server's identity and instructions, `build_server()`, and the `call_tool` override that logs refused arguments. |
-| `prompts.py` | The prompts a client offers a person, recipes in plain text that chain the tools (see §7a). They ask Yahoo nothing and import nothing of the package. |
+| `prompts/` | The prompts a client offers a person, recipes in plain text that chain the tools (see §7a). `_base.py` holds the abstract `Prompt`, the `Symbol` argument and the shared `RESOLVE` and `RULES` texts, and each prompt is a subclass in the module of its name: `snapshot.py`, `compare.py`, `earnings_preview.py`, `etf_profile.py`, `dividend_calendar.py`, `find_symbol.py`. They ask Yahoo nothing and import nothing of the package. |
 | `tools/` | The tools a client sees, thin: parameters, descriptions, and a call to the yahoo function of the same name. `_base.py` holds the `Symbol` parameter, the shared annotations and `register_tool`, which wraps every tool with its log line. `status.py` holds `server_status`, the one tool with no yahoo twin and no log line. |
 | `yahoo/` | All yfinance usage, one module per subject. `tickers.py` builds the `Ticker` and holds the error mapping every subject shares. The only package that imports yfinance. |
 | `cache.py` | Opt-in persistent result cache (SQLite) with per-tool TTLs. Off until `configure(settings)` enables it. |
@@ -393,7 +393,7 @@ client shows the tool's own title and the model reads descriptions.
 
 ## 7a. Prompts
 
-Six prompts in `prompts.py` are recipes a person picks in the client, Claude
+Six prompts in `prompts/` are recipes a person picks in the client, Claude
 Desktop from the "+" menu, Claude Code as a slash command. Each returns one
 user message that names the tools to call, in which order, and the traps of
 the data to mind. A prompt asks Yahoo nothing and writes no log line, the

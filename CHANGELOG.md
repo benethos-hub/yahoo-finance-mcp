@@ -20,8 +20,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   paid and forecast, converted to one currency by fixed rules. It takes the
   share counts as an argument, so they reach the server, but no tool, no
   request to Yahoo and no log line receives them. A prompt asks Yahoo
-  nothing and writes no log line. They live in `prompts.py`, a new
-  unit that imports nothing of the package, and `tests/test_prompts.py` holds
+  nothing and writes no log line. They live in `prompts/`, a new unit that
+  imports nothing of the package, each a subclass of the abstract `Prompt`
+  in a module of its own name, as the tools sit in theirs. CLAUDE.md says
+  how to add one. `tests/test_prompts.py` holds
   every tool and field a recipe names to what the server registers and
   returns. The bundle manifest lists them with their text. The README
   describes them under "Built-in prompts" and SPECS in §7a.

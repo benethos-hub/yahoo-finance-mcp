@@ -11,10 +11,11 @@ import asyncio
 import inspect
 import logging
 import re
+from pathlib import Path
 
 import pytest
 
-from benethos_yahoo_finance_mcp import yahoo
+from benethos_yahoo_finance_mcp import prompts, yahoo
 from benethos_yahoo_finance_mcp.server import build_server
 
 SERVER = build_server()
@@ -53,6 +54,14 @@ def test_the_client_lists_six_prompts_in_this_order():
         "dividend_calendar",
         "find_symbol",
     ]
+
+
+def test_each_prompt_sits_in_the_module_of_its_name():
+    """One module per prompt, so a module whose prompt was never registered
+    shows here."""
+    folder = Path(prompts.__file__).parent
+    modules = {p.stem for p in folder.glob("*.py") if not p.stem.startswith("_")}
+    assert modules == {p.name for p in PROMPTS}
 
 
 def test_each_has_a_title_and_a_one_line_description():
