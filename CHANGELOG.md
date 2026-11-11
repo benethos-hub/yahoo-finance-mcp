@@ -8,14 +8,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **Five MCP prompts.** `snapshot`, `compare`, `earnings_preview`,
-  `etf_profile` and `find_symbol` are recipes a person picks in the client,
+- **Six MCP prompts.** `snapshot`, `compare`, `earnings_preview`,
+  `etf_profile`, `dividend_calendar` and `find_symbol` are recipes a person
+  picks in the client,
   from the "+" menu in Claude Desktop or as a slash command in Claude Code.
   Each returns one message that names the tools to call, in which order, and
   the traps of the data to mind: an ETF has no statements or analysts,
   currencies are never converted, London prices are in pence, a WKN resolves
-  nowhere. They gather and report data and give no recommendation. A prompt
-  asks Yahoo nothing and writes no log line. They live in `prompts.py`, a new
+  nowhere. They gather and report data and give no recommendation.
+  `dividend_calendar` also calculates: dividends per position and month,
+  paid and forecast, converted to one currency by fixed rules. It takes the
+  share counts as an argument, so they reach the server, but no tool, no
+  request to Yahoo and no log line receives them. A prompt asks Yahoo
+  nothing and writes no log line. They live in `prompts.py`, a new
   unit that imports nothing of the package, and `tests/test_prompts.py` holds
   every tool and field a recipe names to what the server registers and
   returns. The bundle manifest lists them with their text. The README

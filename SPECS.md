@@ -393,15 +393,28 @@ client shows the tool's own title and the model reads descriptions.
 
 ## 7a. Prompts
 
-Five prompts in `prompts.py` are recipes a person picks in the client, Claude
+Six prompts in `prompts.py` are recipes a person picks in the client, Claude
 Desktop from the "+" menu, Claude Code as a slash command. Each returns one
 user message that names the tools to call, in which order, and the traps of
 the data to mind. A prompt asks Yahoo nothing and writes no log line, the
-tool calls it leads to write theirs. Every recipe gathers and reports data
-and ends with the same rules: currencies are never converted, London prices
-are in pence, the data may be delayed, a missing figure is named, and no
-buy, sell or hold recommendation is given. Judging an instrument is left to
-the person, in line with the read-only scope of §2.
+tool calls it leads to write theirs. The four data recipes end with the same
+rules: currencies are never converted, London prices are in pence, the data
+may be delayed, a missing figure is named, and no buy, sell or hold
+recommendation is given. Judging an instrument is left to the person, in
+line with the read-only scope of §2.
+
+`dividend_calendar` is the one recipe that calculates. It converts every
+amount to one currency and forecasts the coming months by fixed rules: the
+pay date from the gap `get_calendar` reports or else 14 days and marked
+estimated, the payments of the last 365 days recurring without growth,
+gross amounts, and every gap listed. It is the only prompt that takes
+personal data, the share count of each position. **The share counts reach
+this server** as part of the `positions` argument, and with the HTTP
+transports that means the machine that hosts it. The server puts them into
+the text and nowhere else: no tool receives them, Yahoo never sees them, and
+no log line carries them (a test renders the prompt with a count and looks
+for it in every log record). The text tells the model to pass them to no
+tool.
 
 | Prompt | Arguments | Tools it chains |
 |--------|-----------|-----------------|
@@ -409,6 +422,7 @@ the person, in line with the read-only scope of §2.
 | `compare` | `symbols` (comma-separated), `period` (=1y) | `get_quotes`, `get_history` and `get_company_info` for each |
 | `earnings_preview` | `symbol` | `get_calendar`, `get_earnings`, `get_estimates` (one `methodology` for both), `get_upgrades_downgrades` |
 | `etf_profile` | `symbol` | `get_fund_data`, `get_quote`, `get_history` 5y monthly when a return is missing |
+| `dividend_calendar` | `positions` (symbol:shares, comma-separated), `year?` (=current), `currency` (=EUR) | `get_dividends` each, `get_calendar` for single stocks, `get_quote` for each listing's currency and each exchange rate |
 | `find_symbol` | `query`, `exchange?` | `search` with limit 25, a WKN named as unresolvable |
 
 Each recipe resolves a company name through `search` first. Every argument is

@@ -186,7 +186,7 @@ the tools. Replace the bracketed placeholders with concrete values.
 
 ### Built-in prompts
 
-Five recipes come with the server. Pick one in the client and fill in the
+Six recipes come with the server. Pick one in the client and fill in the
 symbol, and the model calls the right tools in the right order and minds the
 traps of the data on the way: currencies that are never converted, London
 prices in pence, an ETF that has no balance sheet. Each one gathers and
@@ -198,7 +198,16 @@ reports data and gives no recommendation.
 | Compare instruments | symbols, a period (=1y) | one table: performance rebased to 100, drawdown, market cap, P/E and dividend yield, each on one basis |
 | Earnings preview | a symbol | the next report date and what is expected, beats and misses so far, how the estimates moved, recent rating changes |
 | ETF profile | a symbol | holdings, sector and asset-class weights, costs against the category, size and returns, computed from the prices where Yahoo has none |
+| Dividend calendar | positions with share counts, a year, a currency (=EUR) | dividends per position and month, paid so far and forecast for the rest, converted and gross, with every estimated pay date and gap listed |
 | Find a symbol | a name or ISIN, an exchange | the listings as a table and the one to use, a WKN named as unresolvable |
+
+The dividend calendar is the one prompt that takes personal data. Write the
+positions as `SAP.DE:50, IE00B4L5Y983:120`. The share counts go to the server
+as part of that argument, which for a server you host over HTTP means that
+machine. The server only puts them into the prompt's text: no tool receives
+them, Yahoo never sees them, and no log line carries them. The forecast
+repeats the last twelve months without growth, so it is a plan, not a
+promise.
 
 In Claude Desktop they sit in the "+" menu under the server's name. In Claude
 Code they are slash commands, `/mcp__benethos-yahoo-finance-mcp__snapshot` and

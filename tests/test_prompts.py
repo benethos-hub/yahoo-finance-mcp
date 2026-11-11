@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import logging
 import re
 
 import pytest
@@ -43,12 +44,13 @@ def _placeholders(name: str) -> str:
     return _render(name, {a.name: f"${{arguments.{a.name}}}" for a in prompt.arguments})
 
 
-def test_the_client_lists_five_prompts_in_this_order():
+def test_the_client_lists_six_prompts_in_this_order():
     assert [p.name for p in PROMPTS] == [
         "snapshot",
         "compare",
         "earnings_preview",
         "etf_profile",
+        "dividend_calendar",
         "find_symbol",
     ]
 
@@ -113,3 +115,26 @@ def test_an_optional_argument_left_out_takes_its_default():
 def test_a_missing_required_argument_is_refused():
     with pytest.raises(ValueError, match="symbol"):
         asyncio.run(SERVER.get_prompt("snapshot", {}))
+
+
+def test_the_dividend_calendar_ends_with_its_own_rules():
+    """It converts on purpose, so the rule that nothing is converted is not its."""
+    text = _placeholders("dividend_calendar")
+    assert text.endswith("Give no buy, sell or hold recommendation and no tax advice.")
+    assert "never converted" not in text
+    assert "Pass them to no tool." in text
+
+
+def test_the_dividend_calendar_defaults_to_this_year_in_euros():
+    text = _render("dividend_calendar", {"positions": "SAP.DE:50"})
+    assert text.startswith(
+        "Build a dividend calendar for the current year in EUR from these "
+        "positions: SAP.DE:50."
+    )
+
+
+def test_share_counts_reach_no_log_line(caplog):
+    """SPECS §7a promises it, and the SDK logs at debug level too."""
+    caplog.set_level(logging.DEBUG)
+    _render("dividend_calendar", {"positions": "SAP.DE:4711", "year": "2027"})
+    assert "4711" not in caplog.text
