@@ -187,8 +187,9 @@ exception to `settings.py` being the only module that does.
    manifest's `prompts` from the server, `tests/test_mcpb.py` fails until
    it has.
 4. A prompt asks Yahoo nothing and writes no log line. One that takes
-   personal data says so in README and SPECS §7a and keeps it out of every
-   tool call, as `dividend_calendar.py` does with share counts.
+   personal data says so in README, SPECS §7a and SECURITY.md and keeps it
+   out of every tool call, as `dividend_calendar.py` does with share counts.
+   Examples and tests use invented values, never a real portfolio.
 
 ## Verifying
 

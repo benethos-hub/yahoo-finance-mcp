@@ -190,8 +190,8 @@ the tools. Replace the bracketed placeholders with concrete values.
 
 ### Built-in prompts
 
-Six recipes come with the server. Pick one in the client and fill in the
-symbol, and the model calls the right tools in the right order and minds the
+Six recipes come with the server. Pick one in the client and fill in its
+arguments, and the model calls the right tools in the right order and minds the
 traps of the data on the way: currencies that are never converted, London
 prices in pence, an ETF that has no balance sheet. Each one gathers and
 reports data and gives no recommendation.
@@ -211,9 +211,9 @@ its own and does not see that they exist.
 - **Claude Desktop:** click "+" in the message box, then **Connectors**,
   **Add from** and the server's name, then the prompt. A small form asks for
   the arguments, and an optional one may stay empty. The recipe is attached to
-  the message, and nothing happens until you send it. The recipes are written
-  in English, so add a line such as "answer in German" if you want the answer
-  in another language.
+  the message as a text file, and nothing happens until you send it. The
+  recipes are written in English, so add a line such as "answer in German"
+  if you want the answer in another language.
 - **Claude Code:** each prompt is a slash command,
   `/mcp__benethos-yahoo-finance-mcp__asset_analysis SAP.DE` and so on, with
   the arguments after the command.
@@ -246,10 +246,10 @@ columns they bring, such as name, WKN, ISIN and currency.
 
 It is the one prompt that takes personal data. The share counts go to the
 server as part of that argument, as does anything else pasted with them,
-which for a server you host over HTTP means that machine. The server only puts them into the prompt's text: no tool
-receives them, Yahoo never sees them, and no log line carries them. The
-forecast repeats the last twelve months without growth, so it is a plan, not
-a promise. For many European stocks Yahoo reports the ex-date but no pay
+which for a server you host over HTTP means that machine. The server only
+puts them into the prompt's text: no tool receives them, Yahoo never sees
+them, and no log line carries them. The forecast repeats the last twelve
+months without growth, so it is a plan, not a promise. For many European stocks Yahoo reports the ex-date but no pay
 date, and the calendar then estimates the pay date at 14 days later and
 marks it.
 

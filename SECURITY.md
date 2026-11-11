@@ -31,7 +31,9 @@ them, so the newest release of the current minor is the one to run.
 
 For example: reaching a tool over HTTP without the bearer token when one is
 set, getting past the `Host` allow-list that guards against DNS rebinding,
-the token or a URL's query string in the log or in a response, a tool
+the token or a URL's query string in the log or in a response, the dividend
+calendar prompt passing the positions it is given on to the log, a cache or
+Yahoo, a tool
 argument that makes the server reach a host other than Yahoo's or write
 outside its cache directory, a crash or a hang that one request can cause,
 and anything that undoes the container's hardening (non-root user, read-only

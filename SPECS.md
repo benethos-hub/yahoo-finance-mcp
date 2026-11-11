@@ -143,8 +143,10 @@ submodules.
     exist. A line break would forge a second line, an escape sequence would
     reach a terminal. Never the bearer token, a search query (free text a person
     typed, the line gives the number of matches), a URL's query string,
-    anything from Yahoo's answer, or the text of an error this server raised,
-    which is written for the model. A line names the error's class instead.
+    anything from Yahoo's answer, the text of an error this server raised,
+    which is written for the model, or a prompt's argument, which for the
+    dividend calendar holds a portfolio. A line names the error's class
+    instead, and a prompt writes no line at all (§7a).
     A line another library wrote, which may quote what a caller sent, is
     reduced to printable characters on its way to stderr, so it cannot forge
     a second line either.
@@ -659,7 +661,9 @@ person adds to the message.
   client calls it, with Yahoo refused (`test_formatting.py`,
   `test_cache.py`, `test_settings.py`, `test_cli.py`, `test_logbook.py`,
   `test_logbook_formats.py`, `test_server.py`, `test_tools_integration.py`,
-  `test_status.py`, `test_transport.py`). Three guard the shape of
+  `test_status.py`, `test_transport.py`), and the prompts: every tool and
+  field a recipe names, their arguments, a pasted bank export, and no share
+  count in any log record (`test_prompts.py`). Three guard the shape of
   the code: `test_layers.py` the import table in both directions, that every
   library is imported in its one home and that only `settings.py` reads the
   environment (`NO_COLOR` excepted), `test_logbook_catalog.py` that every
