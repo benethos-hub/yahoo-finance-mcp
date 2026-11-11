@@ -10,28 +10,35 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **Six MCP prompts.** `asset_analysis`, `compare`, `earnings_preview`,
   `etf_profile`, `dividend_calendar` and `find_symbol` are recipes a person
-  picks in the client,
-  from the "+" menu in Claude Desktop or as a slash command in Claude Code.
-  Each returns one message that names the tools to call, in which order, and
-  the traps of the data to mind: an ETF has no statements or analysts,
-  currencies are never converted, London prices are in pence, a WKN resolves
-  nowhere. They gather and report data and give no recommendation.
-  `asset_analysis` takes the checks of a careful analysis: the distance to
-  every analyst target, the share count the market cap implies against the
-  one in the last annual report, revenue, earnings and shares over several
-  years, and price to sales where a loss leaves no P/E. An outlook and a case
-  for or against stay out.
-  `dividend_calendar` also calculates: dividends per position and month,
-  paid and forecast, converted to one currency by fixed rules. It takes the
-  share counts as an argument, so they reach the server, but no tool, no
-  request to Yahoo and no log line receives them. A prompt asks Yahoo
-  nothing and writes no log line. They live in `prompts/`, a new unit that
-  imports nothing of the package, each a subclass of the abstract `Prompt`
-  in a module of its own name, as the tools sit in theirs. CLAUDE.md says
-  how to add one. `tests/test_prompts.py` holds
-  every tool and field a recipe names to what the server registers and
-  returns. The bundle manifest lists them with their text. The README
-  describes them under "Built-in prompts" and SPECS in §7a.
+  picks in the client, from the "+" menu in Claude Desktop or as a slash
+  command in Claude Code. Each returns one message that names the tools to
+  call, in which order, and the traps of the data to mind: an ETF has no
+  statements or analysts, currencies are never converted, London prices are
+  in pence, a WKN resolves nowhere. They gather and report data and give no
+  recommendation. A prompt asks Yahoo nothing and writes no log line.
+  - `asset_analysis` takes the checks of a careful analysis: the distance to
+    every analyst target, the share count the market cap implies against
+    the one in the last annual report, revenue, earnings and shares over
+    several years, and price to sales where a loss leaves no P/E. An outlook
+    and a case for or against stay out.
+  - `dividend_calendar` also calculates: dividends per position and month,
+    paid and forecast, converted to one currency by fixed rules. It takes
+    the share counts as an argument, so they reach the server, but no tool,
+    no request to Yahoo and no log line receives them.
+  - They live in `prompts/`, a new unit that imports nothing of the package,
+    each a subclass of the abstract `Prompt` in a module of its own name, as
+    the tools sit in theirs. CLAUDE.md says how to add one.
+    `tests/test_prompts.py` holds every tool and field a recipe names to
+    what the server registers and returns, and the bundle manifest lists
+    the prompts with their text.
+- **The README explains the prompts and how to try a checkout.** "Built-in
+  prompts" says how to start one in Claude Desktop and Claude Code, that the
+  model cannot start one itself, and how to write the positions of the
+  dividend calendar. "Development" shows how to run the server from a clone
+  in Claude Desktop or Claude Code, to see an unreleased change. SPECS §7a
+  describes the prompts and §12 two measurements behind them: the share
+  counts the tools return are one count, and Yahoo gives German stocks no
+  dividend pay date.
 
 ### Changed
 

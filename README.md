@@ -201,17 +201,46 @@ reports data and gives no recommendation.
 | Dividend calendar | positions with share counts, a year, a currency (=EUR) | dividends per position and month, paid so far and forecast for the rest, converted and gross, with every estimated pay date and gap listed |
 | Find a symbol | a name or ISIN, an exchange | the listings as a table and the one to use, a WKN named as unresolvable |
 
-The dividend calendar is the one prompt that takes personal data. Write the
-positions as `SAP.DE:50, IE00B4L5Y983:120`. The share counts go to the server
-as part of that argument, which for a server you host over HTTP means that
-machine. The server only puts them into the prompt's text: no tool receives
-them, Yahoo never sees them, and no log line carries them. The forecast
-repeats the last twelve months without growth, so it is a plan, not a
-promise.
+**Starting one.** A prompt is picked by you, the model cannot start one on
+its own and does not see that they exist.
 
-In Claude Desktop they sit in the "+" menu under the server's name. In Claude
-Code they are slash commands, `/mcp__benethos-yahoo-finance-mcp__asset_analysis` and
-so on. Other clients show them where they show MCP prompts, if they do.
+- **Claude Desktop:** click "+" in the message box, choose the server, then
+  the prompt. A small form asks for the arguments. The recipe is attached to
+  the message, and nothing happens until you send it. The recipes are written
+  in English, so add a line such as "answer in German" if you want the answer
+  in another language.
+- **Claude Code:** each prompt is a slash command,
+  `/mcp__benethos-yahoo-finance-mcp__asset_analysis SAP.DE` and so on, with
+  the arguments after the command.
+- **Other clients** show them where they show MCP prompts, if they do.
+
+Without a prompt, a plain question works as before and the model picks the
+tools itself. What the prompt adds is the fixed order and the traps of the
+data spelled out every time.
+
+**Positions for the dividend calendar.** One entry per holding, separated by
+commas, each a symbol, a colon and the share count:
+
+```
+SAP.DE:50, ALV.DE:20, IE00B4L5Y983:120
+```
+
+- A ticker or an ISIN is safer than a company name, which has to be looked
+  up first. A German WKN resolves nowhere, use the ISIN instead.
+- A fractional count from a savings plan takes a decimal point,
+  `IE00B4L5Y983:12.5`. A decimal comma would split the entry.
+- An entry without a count, such as `MSFT`, is a watch item: shown per share
+  and left out of the totals.
+- Year and currency may stay empty, they default to the current year and EUR.
+
+It is the one prompt that takes personal data. The share counts go to the
+server as part of that argument, which for a server you host over HTTP means
+that machine. The server only puts them into the prompt's text: no tool
+receives them, Yahoo never sees them, and no log line carries them. The
+forecast repeats the last twelve months without growth, so it is a plan, not
+a promise. For many European stocks Yahoo reports the ex-date but no pay
+date, and the calendar then estimates the pay date at 14 days later and
+marks it.
 
 ## Tools
 
@@ -1030,6 +1059,40 @@ With the venv interpreter directly (replace `.venv/bin/python` with
 .venv/bin/python -m mypy                      # type check
 .venv/bin/python -m pytest --cov=benethos_yahoo_finance_mcp   # coverage
 ```
+
+**Trying a checkout in Claude Desktop.** To see a change to a tool or a
+prompt in Desktop before it is released, start the server from the clone
+rather than from the index. Add an entry like this to
+`claude_desktop_config.json`, with the path to your clone:
+
+```json
+{
+  "mcpServers": {
+    "benethos-yahoo-finance-mcp-dev": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/path/to/yahoo-finance-mcp",
+        "benethos-yahoo-finance-mcp"
+      ]
+    }
+  }
+}
+```
+
+- It runs whatever branch is checked out, so switching branches changes what
+  Desktop sees after the next restart.
+- The name with `-dev` lets it stand beside an installed extension instead
+  of replacing it.
+- Quit Desktop from the tray, not only the window, to reload tools and
+  prompts.
+- `server_status` reports the version in `pyproject.toml`, which is still
+  the last release while the change is unreleased.
+- If Desktop cannot find `uv`, give its full path as `command`.
+
+In Claude Code the same works with
+`claude mcp add yf-dev -- uv run --directory /path/to/yahoo-finance-mcp benethos-yahoo-finance-mcp`.
 
 The unit tests mock `yfinance` and run fully offline. `tests/smoke.py` performs
 an ad-hoc check against live Yahoo Finance and is not part of the unit suite.

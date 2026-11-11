@@ -431,6 +431,20 @@ tool and field a recipe names against what the server registers and returns,
 and the bundle manifest lists the prompts with their text (see
 `tests/test_mcpb.py`).
 
+`asset_analysis` takes from the asset-analysis skill what checks and
+calculates and leaves out what judges: an outlook by horizon and a case for
+or against. Its share count check compares the count behind the market cap
+with the diluted average shares of the last annual report, since every other
+count the tools return is the same one (§12). A year of buybacks or issues
+moves the two a few percent apart, so it speaks up past ten percent only.
+
+A prompt is started by the person. The model cannot call one and does not
+see the list, so nothing a recipe says reaches a conversation in which it
+was not picked. That is why the rules that must always hold stay in the tool
+descriptions and parameters (§7), and a recipe only adds an order and a
+check on top. The texts are English, the answer follows the language the
+person adds to the message.
+
 ## 8. Output format
 
 - Default output is **compact JSON** (JSON-safe dicts/lists). The one
@@ -939,6 +953,17 @@ them.
 - **Fund/ETF:** `funds_data`, its `fund_operations` included, and from
   `info` the size and returns (`totalAssets`, `ytdReturn`, the three- and
   five-year average returns), probed 2026-11-03 for SPY, QQQ and FFOJX.
+- **Share counts:** `fast_info`'s and `info`'s market cap and the last point
+  of `get_shares_full` rest on one count, market cap divided by price gives
+  exactly that count, so comparing them finds nothing. The income
+  statement's "Diluted Average Shares" come from the report and are the one
+  independent count, 0 to 2 percent apart for SAP.DE, AAPL, ALV.DE, VOW3.DE
+  and RHM.DE (measured 2026-11-11). `asset_analysis` checks against it and
+  speaks up past ten percent (§7a).
+- **Dividend pay dates:** `calendar` gives a German stock's `Ex-Dividend
+  Date` but no `Dividend Date`, SAP.DE and ALV.DE alike (measured
+  2026-11-11), so `dividend_calendar` estimates their pay dates at the
+  ex-date plus 14 days (§7a).
 - **Any symbol:** `history_metadata`, `isin`.
 - **Crypto (`BTC-USD`):** the existing core paths work — `history`,
   `fast_info`/`info` (rich), `history_metadata`, `isin` — so `get_quote`,
