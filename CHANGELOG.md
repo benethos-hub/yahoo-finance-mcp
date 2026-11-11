@@ -50,6 +50,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   index has it already. A live smoke run returns the same 30 sections before
   and after. typer now validates through Pydantic and only serves the `mcp`
   command line in development, so it reaches nobody who installs the project.
+- `uv.lock` moves on in the development group: typer 0.29.1, which adds
+  Python 3.15, markdown-it-py 4.3.0, which fixes two parsing paths that took
+  quadratic time on crafted input, and annotated-doc 0.0.6. All three sit
+  under `mcp[cli]` only, serve the `mcp` command line in development and
+  reach nobody who installs the project. `mcp --help` prints the same text
+  with the same empty error output before and after.
 
 ## [0.12.3] - 2026-11-09
 
