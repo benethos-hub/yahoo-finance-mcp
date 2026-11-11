@@ -79,7 +79,8 @@ containers/
 .github/ISSUE_TEMPLATE/  # the bug report form, its version example read by test_packaging.py
 .github/publish/   # one folder per place a release is listed, read by publish.yml
   mcp-registry/   # server.json (the entry, its bundle hash filled in at release)
-  mcpb/            # Claude Desktop bundles: manifest.json, server.py, build.py (pinned, and --auto-update from it)
+  mcpb/            # Claude Desktop bundles: manifest.json, server.py, build.py (pinned, and --auto-update from it),
+                   #   sync_manifest.py (writes the manifest's tools and prompts from the server)
 assets/           # render_icon.py, the architecture diagram it draws, old icon copies
   brand/          # icon.svg, and icon.png (512x512) and social-preview.png (1280x640) exported from it
 SECURITY.md       # how to report a vulnerability, and what the server guards
@@ -136,8 +137,9 @@ exception to `settings.py` being the only module that does.
    module's `register()` with a short title, which a client shows a person in
    place of the name (a test wants one per tool, no two alike). The bundle
    manifest in `.github/publish/mcpb/` lists every tool with the first
-   sentence of its docstring, and `tests/test_mcpb.py` prints the list it
-   expects when a tool or a first sentence changed.
+   sentence of its docstring. `uv run python
+   .github/publish/mcpb/sync_manifest.py` writes that list from the server,
+   and `tests/test_mcpb.py` fails until it has run.
    `register_tool` gives it the shared
    `readOnlyHint`/`openWorldHint` pair every tool carries (a test asserts it
    for all of them, `server_status` excepted) and its log line. The
@@ -177,8 +179,10 @@ exception to `settings.py` being the only module that does.
    and end a data recipe with `RULES`. `tests/test_prompts.py` fails on a
    backticked name that is neither a tool nor listed there as a field.
 3. Add an instance to `_PROMPTS` in `prompts/__init__.py`, whose order is the
-   order a client lists them in. `tests/test_mcpb.py` prints the manifest's
-   `prompts` block it expects, paste it into the manifest.
+   order a client lists them in. Then run
+   `uv run python .github/publish/mcpb/sync_manifest.py`, which writes the
+   manifest's `prompts` from the server, `tests/test_mcpb.py` fails until
+   it has.
 4. A prompt asks Yahoo nothing and writes no log line. One that takes
    personal data says so in README and SPECS §7a and keeps it out of every
    tool call, as `dividend_calendar.py` does with share counts.
