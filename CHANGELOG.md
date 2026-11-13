@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+
+- **Python 3.11.5 or later is required** (was 3.11). soupsieve 4.0 fixes
+  GHSA-mmhr-3c5m-f64f (CVE-2026-126190), a selector match whose time grows
+  polynomially with how deeply crafted HTML is nested. It needs Python
+  3.11.5, so on 3.11.0 to 3.11.4 the lock fell back to soupsieve 2.10, which
+  has the hole and no fix. yfinance only calls `find()` and never a CSS
+  selector, so no call of this server reached that code, and the image and
+  the pinned Claude Desktop extension ran soupsieve 4.1 already. The lock now
+  holds 4.1 alone. On Python 3.11.0 to 3.11.4, pip stays at 0.13.0, and a
+  newer 3.11 takes this release.
+
 ### Changed
 
 - **The auto-update bundle declares its prompts again,** like the pinned

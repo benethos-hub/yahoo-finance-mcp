@@ -193,7 +193,8 @@ submodules.
   on the wrong port.
 - **Entry points:** `python -m benethos_yahoo_finance_mcp` or the
   `benethos-yahoo-finance-mcp` console script.
-- **Python:** 3.11-3.15, all covered by the CI matrix.
+- **Python:** 3.11-3.15, all covered by the CI matrix, 3.11 from 3.11.5 on,
+  the first patch soupsieve 4 runs on.
 - **HTTP security:** an **optional** bearer token. With
   `YF_MCP_BEARER_TOKEN` set, every HTTP request must carry
   `Authorization: Bearer <token>` or gets HTTP 401. A single shared secret
