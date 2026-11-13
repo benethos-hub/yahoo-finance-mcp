@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+
+- **Python 3.11.5 or later is required** (was 3.11). soupsieve 4.0 fixes
+  GHSA-mmhr-3c5m-f64f (CVE-2026-126190), a selector match whose time grows
+  polynomially with how deeply crafted HTML is nested. It needs Python
+  3.11.5, so on 3.11.0 to 3.11.4 the lock fell back to soupsieve 2.10, which
+  has the hole and no fix. yfinance only calls `find()` and never a CSS
+  selector, so no call of this server reached that code, and the image and
+  the pinned Claude Desktop extension ran soupsieve 4.1 already. The lock now
+  holds 4.1 alone. On Python 3.11.0 to 3.11.4, pip stays at 0.13.0, and a
+  newer 3.11 takes this release.
+
 ### Changed
 
 - **The auto-update bundle declares its prompts again,** like the pinned
@@ -15,6 +27,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   changed prompts are still taken unchecked. An extension installed from
   0.13.0 keeps working and needs nothing, the list only shows before
   installing.
+- `uv.lock` moves on in the development group: ruff 0.17.5 and coverage
+  7.17.3. Both only check this repository and reach nobody who installs the
+  project. ruff finds and formats the same as before.
+- The container image is built with uv 0.13.8 (was 0.13.7). uv only
+  installs the locked versions in the build stage and is not in the image
+  itself. Its release updates the Python builds uv manages, which the image
+  does not use, and fixes bugs elsewhere. The built image runs the same
+  versions as before, healthy and answering.
 
 ## [0.13.0] - 2026-11-11
 

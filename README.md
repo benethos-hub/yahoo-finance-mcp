@@ -409,7 +409,7 @@ when the list of names is not.
 
 - [uv](https://docs.astral.sh/uv/) (recommended) — manages Python, the virtual
   environment, and dependencies in one tool.
-- Or, without uv: Python 3.11+ with `pip` / `venv`.
+- Or, without uv: Python 3.11.5+ with `pip` / `venv`.
 - `git` is **only** needed for the optional install-from-source method.
 
 ## Installation

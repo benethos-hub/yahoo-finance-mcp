@@ -325,9 +325,12 @@ def test_the_documented_python_range_is_the_matrix(relative_path):
 
 
 def test_the_oldest_tested_python_is_the_floor_everywhere():
+    """The floor may name a patch of the oldest tested Python: 3.11.5 is the
+    first soupsieve 4 runs on, and below it the lock fell back to a release
+    with a known hole and no fix. CI installs the newest patch of 3.11."""
     oldest = _matrix_versions()[0]
     requires = PYPROJECT["project"]["requires-python"]
-    assert requires == f">={oldest}", (
+    assert re.fullmatch(rf">={re.escape(oldest)}(\.\d+)?", requires), (
         f"requires-python is {requires!r}, the oldest tested Python is {oldest}"
     )
     lowest = _job_input("python-lowest-versions.yml", "python-version")
