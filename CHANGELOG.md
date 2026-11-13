@@ -15,6 +15,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   changed prompts are still taken unchecked. An extension installed from
   0.13.0 keeps working and needs nothing, the list only shows before
   installing.
+- `uv.lock` moves on in the development group: ruff 0.17.5 and coverage
+  7.17.3. Both only check this repository and reach nobody who installs the
+  project. ruff finds and formats the same as before.
 
 ## [0.13.0] - 2026-11-11
 
