@@ -18,6 +18,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `uv.lock` moves on in the development group: ruff 0.17.5 and coverage
   7.17.3. Both only check this repository and reach nobody who installs the
   project. ruff finds and formats the same as before.
+- The container image is built with uv 0.13.8 (was 0.13.7). uv only
+  installs the locked versions in the build stage and is not in the image
+  itself. Its release updates the Python builds uv manages, which the image
+  does not use, and fixes bugs elsewhere. The built image runs the same
+  versions as before, healthy and answering.
 
 ## [0.13.0] - 2026-11-11
 
