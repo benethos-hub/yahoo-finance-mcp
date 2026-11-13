@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-11-13
+
+A patch release. Python 3.11.5 is the new floor, so the lock no longer holds
+a soupsieve with a known hole, and the auto-update extension lists its
+prompts when installing. No tool, prompt, parameter or schema changes. The
+image is built with uv 0.13.8 and runs the same versions as 0.13.0.
+
 ### Security
 
 - **Python 3.11.5 or later is required** (was 3.11). soupsieve 4.0 fixes
@@ -2111,7 +2118,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.3...v0.13.0
 [0.12.3]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.1...v0.12.2
