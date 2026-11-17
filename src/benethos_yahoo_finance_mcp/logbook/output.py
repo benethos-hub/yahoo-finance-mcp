@@ -37,8 +37,8 @@ QUIET = (
     "curl_cffi",
     "urllib3",
     "peewee",
-    "httpx",
-    "httpcore",
+    "httpx2",
+    "httpcore2",
 )
 
 # Held at CRITICAL, which in practice means silent. yfinance logs an unknown

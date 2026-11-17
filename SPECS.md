@@ -154,9 +154,11 @@ submodules.
     uvicorn's request log only. The root logger stays at WARNING, so every
     other library, including one nobody thought of, says only what went
     wrong. `mcp`, `sse_starlette`, `curl_cffi`, `urllib3`,
-    `peewee`, `httpx` and `httpcore` are also pinned at WARNING by name:
+    `peewee`, `httpx2` and `httpcore2` (the SDK's HTTP client) are also
+    pinned at WARNING by name:
     `mcp` quotes every failed call's text at INFO and `sse_starlette` logs
-    every tool result in full at DEBUG. uvicorn's server log is held at INFO
+    every tool result in full at DEBUG. A test fails on a pinned name no
+    installed module logs under. uvicorn's server log is held at INFO
     for its startup lines. uvicorn gets no
     handlers of its own. Its request log reaches the same stderr handler
     without the query string, at INFO only for a refused request (status 400

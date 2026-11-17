@@ -6,14 +6,35 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.2] - 2026-11-17
+
+A patch release. Five packages below the direct dependencies take their
+newest fixes, so the container image and the pinned Claude Desktop
+extension, which install from `uv.lock`, catch up with what an index
+installation resolves already, and the SDK's HTTP client is held at WARNING
+under its current name. No tool, prompt, parameter or schema changes, and no
+direct dependency, Python or uv version moves.
+
+### Fixed
+
+- **The SDK's HTTP client is held at WARNING again.** The log pins a few
+  chatty libraries at WARNING by name, and the list still named `httpx` and
+  `httpcore`, which the mcp 2.x SDK replaced with `httpx2` and `httpcore2`.
+  The old names are not installed, so the pin held nothing. Nothing leaked,
+  since the root logger stays at WARNING and the server makes no request
+  through that client, but the pin is there for the day something lowers the
+  root. It names the new packages now, and a test fails on a pinned name no
+  installed module logs under.
+
 ### Changed
 
 - `uv.lock` moves on below the direct dependencies: httpx2 and httpcore2
   2.16.2 (under mcp), python-multipart 0.0.34 (under mcp), numpy 2.5.5
   (under pandas, 3.11 keeps 2.4.6) and soupsieve 4.1.1 (under yfinance).
-  All are fixes, and they reach users of the container image, whose versions
-  come from the lock. An index installation resolves them already. The live
-  check against Yahoo returns the same sections and fields as before.
+  All are fixes, and they reach users of the container image and of the
+  pinned Claude Desktop extension, whose versions come from the lock. An
+  index installation resolves them already. The live check against Yahoo
+  returns the same sections and fields as before.
 
 ## [0.13.1] - 2026-11-13
 
@@ -2127,7 +2148,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.1...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.2...HEAD
+[0.13.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.1...v0.13.2
 [0.13.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.3...v0.13.0
 [0.12.3]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.2...v0.12.3

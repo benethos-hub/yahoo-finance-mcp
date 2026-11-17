@@ -6,6 +6,7 @@ the one an operator would read.
 
 from __future__ import annotations
 
+import importlib.util
 import io
 import logging
 
@@ -292,6 +293,16 @@ def test_chatty_libraries_are_held_at_warning():
     output.configure("DEBUG")
     for name in output.QUIET:
         assert logging.getLogger(name).level == logging.WARNING, name
+
+
+def test_every_held_library_is_installed():
+    """A pin on a name no installed module logs under holds nothing.
+
+    The mcp 2.x SDK moved from httpx and httpcore to httpx2 and httpcore2,
+    and the old names stayed in QUIET without a single line to hold.
+    """
+    missing = [name for name in output.QUIET if importlib.util.find_spec(name) is None]
+    assert missing == []
 
 
 def test_yfinance_stays_out_of_the_log():
