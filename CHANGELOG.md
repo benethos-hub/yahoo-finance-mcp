@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The container image is built with uv 0.13.9 (was 0.13.8). uv only
+  installs the locked versions in the build stage and is not in the image
+  itself. Its release writes environment markers in lock files more
+  compactly and fixes bugs elsewhere, and it reads this project's `uv.lock`
+  without a change. The built image runs the same versions as before,
+  healthy and answering.
+
 ## [0.13.2] - 2026-11-17
 
 A patch release. Five packages below the direct dependencies take their
