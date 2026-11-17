@@ -8,11 +8,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.13.2] - 2026-11-17
 
-A patch release that only moves the lock. Five packages below the direct
-dependencies take their newest fixes, so the container image and the pinned
-Claude Desktop extension, which install from `uv.lock`, catch up with what an
-index installation resolves already. No tool, prompt, parameter or schema
-changes, and no direct dependency, Python or uv version moves.
+A patch release. Five packages below the direct dependencies take their
+newest fixes, so the container image and the pinned Claude Desktop
+extension, which install from `uv.lock`, catch up with what an index
+installation resolves already, and the SDK's HTTP client is held at WARNING
+under its current name. No tool, prompt, parameter or schema changes, and no
+direct dependency, Python or uv version moves.
+
+### Fixed
+
+- **The SDK's HTTP client is held at WARNING again.** The log pins a few
+  chatty libraries at WARNING by name, and the list still named `httpx` and
+  `httpcore`, which the mcp 2.x SDK replaced with `httpx2` and `httpcore2`.
+  The old names are not installed, so the pin held nothing. Nothing leaked,
+  since the root logger stays at WARNING and the server makes no request
+  through that client, but the pin is there for the day something lowers the
+  root. It names the new packages now, and a test fails on a pinned name no
+  installed module logs under.
 
 ### Changed
 
