@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `uv.lock` moves on below the direct dependencies: httpx2 and httpcore2
+  2.16.2 (under mcp), python-multipart 0.0.34 (under mcp), numpy 2.5.5
+  (under pandas, 3.11 keeps 2.4.6) and soupsieve 4.1.1 (under yfinance).
+  All are fixes, and they reach users of the container image, whose versions
+  come from the lock. An index installation resolves them already. The live
+  check against Yahoo returns the same sections and fields as before.
+
 ## [0.13.1] - 2026-11-13
 
 A patch release. Python 3.11.5 is the new floor, so the lock no longer holds
