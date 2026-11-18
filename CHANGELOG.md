@@ -14,6 +14,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   compactly and fixes bugs elsewhere, and it reads this project's `uv.lock`
   without a change. The built image runs the same versions as before,
   healthy and answering.
+- `uv.lock` moves platformdirs to 4.14.7 (was 4.14.5), under yfinance,
+  which finds its cache folder with it. The release fixes how a few unusual
+  folder settings on Linux and Windows are read and makes the import
+  faster. It reaches users of the container image and of the pinned Claude
+  Desktop extension, whose versions come from the lock. An index
+  installation resolves it already. yfinance's cache folder stays where it
+  was, and the live check against Yahoo returns the same sections with the
+  same fields and the same error output as before.
 
 ## [0.13.2] - 2026-11-17
 
