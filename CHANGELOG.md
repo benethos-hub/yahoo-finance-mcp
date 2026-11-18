@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.3] - 2026-11-18
+
+A patch release. platformdirs, below yfinance, takes its newest fixes, so
+the container image and the pinned Claude Desktop extension, which install
+from `uv.lock`, catch up with what an index installation resolves already,
+and the image is built with the newest uv. No tool, prompt, parameter or
+schema changes, and no direct dependency or Python version moves.
+
 ### Changed
 
 - The container image is built with uv 0.13.9 (was 0.13.8). uv only
@@ -2165,7 +2173,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.2...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.3...HEAD
+[0.13.3]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.2...v0.13.3
 [0.13.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.1...v0.13.2
 [0.13.1]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.12.3...v0.13.0
