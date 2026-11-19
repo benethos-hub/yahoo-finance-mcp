@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- A pre-commit hook in `.githooks/`, enabled per clone with
+  `git config core.hooksPath .githooks`, refuses a commit that would put an
+  `.env`, a folder `secrets/`, the result cache, a key file or a line that
+  looks like a credential into the history. Two invented tokens in the tests
+  carry `pragma: allowlist secret`. It reaches only those who work on the
+  repository, nothing in the package or the image changes.
+
 ## [0.13.4] - 2026-11-19
 
 A patch release. soupsieve under yfinance and pydantic with pydantic-core
