@@ -20,7 +20,7 @@ __pycache__
 # the build reads through -f and never from the context, and the compose files
 # with an .env beside them that may carry a token.
 tests
-SPECS.md
+docs
 CLAUDE.md
 SECURITY.md
 glama.json

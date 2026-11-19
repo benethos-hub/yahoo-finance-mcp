@@ -55,4 +55,4 @@ project allows is checked for known vulnerabilities in CI, and the daily
 freshness check reports what is newer.
 
 How the HTTP transport, the bearer guard and the log are built is described
-in [SPECS.md](SPECS.md), section 4.
+in [the concept](docs/concept/transport-and-runtime.md), section 4.

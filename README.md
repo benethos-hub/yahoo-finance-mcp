@@ -301,7 +301,7 @@ itself.
 <details>
 <summary><b>📊 Sector &amp; industry keys</b> — click to expand (11 sectors, 145 industries, generated)</summary>
 
-<!-- Generated from yfinance.const.SECTOR_INDUSTY_MAPPING_LC. Regenerate after a yfinance bump (see SPECS §12). Some industry keys use an em-dash, not a hyphen — copy them from get_sector output. -->
+<!-- Generated from yfinance.const.SECTOR_INDUSTY_MAPPING_LC. Regenerate after a yfinance bump (see CONCEPT §12). Some industry keys use an em-dash, not a hyphen — copy them from get_sector output. -->
 
 **`basic-materials`** (14)
 `agricultural-inputs`, `aluminum`, `building-materials`, `chemicals`, `coking-coal`, `copper`, `gold`, `lumber-wood-production`, `other-industrial-metals-mining`, `other-precious-metals-mining`, `paper-paper-products`, `silver`, `specialty-chemicals`, `steel`
@@ -1047,7 +1047,7 @@ Leave it off (the default) if you:
 ## Development
 
 How the code is laid out, module by module, is in
-[SPECS.md](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/SPECS.md#3-architecture).
+[the concept](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/docs/concept/architecture.md#3-architecture).
 
 Install the dev extras, then run the test, lint, and type-check steps (the same
 ones CI runs).
@@ -1112,7 +1112,7 @@ rather than from the index. Add an entry like this to
   `.github/publish/mcpb/build.py`, pack it with the mcpb CLI as its
   docstring shows and open the file. How Desktop treats the manifest's
   prompts is in
-  [SPECS.md](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/SPECS.md#7a-prompts).
+  [the concept](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/docs/concept/prompts.md#7a-prompts).
 - On Windows, while Desktop runs the server from the clone, `uv sync` cannot
   replace the server's `.exe` in `.venv` and stops with "os error 32". Quit
   Desktop for the sync, or run the checks in a second environment with

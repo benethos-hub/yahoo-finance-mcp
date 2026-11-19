@@ -129,7 +129,7 @@ def test_the_text_is_the_template_with_the_arguments_put_in(prompt):
     as "", is what the server sends. So no default and no condition may change
     the text, and a client that checks prompts this way finds them equal.
     Claude Desktop keeps the placeholder of an argument left empty instead,
-    which no text can match, and the bundles turn its check off (SPECS §7a)."""
+    which no text can match, and the bundles turn its check off (CONCEPT §7a)."""
     template = _placeholders(prompt.name)
     for arguments in _cases(prompt):
         expected = template
@@ -171,7 +171,7 @@ def test_the_dividend_calendar_defaults_to_this_year_in_euros():
 
 
 def test_share_counts_reach_no_log_line(caplog):
-    """SPECS §7a promises it, and the SDK logs at debug level too."""
+    """CONCEPT §7a promises it, and the SDK logs at debug level too."""
     caplog.set_level(logging.DEBUG)
     _render("dividend_calendar", {"positions": "SAP.DE:4711", "year": "2027"})
     assert "4711" not in caplog.text

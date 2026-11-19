@@ -13,7 +13,7 @@ are exported from it.
   repository link is shared. It is uploaded by hand under Settings > General
   > Social preview, there is no API for it.
 - architecture.png, how a question travels from you through an MCP client
-  and this server to Yahoo and back, for the README and SPECS.md §3.
+  and this server to Yahoo and back, for the README and CONCEPT §3.
 
 icon.svg and icon.png directly in this folder are the copies from before the
 brand folder. The MCP Registry entries up to 0.8.5 point at them, so they
@@ -224,7 +224,7 @@ def _pills(cx: int, y: int, *labels: str) -> str:
 def _architecture() -> str:
     """How a question gets answered, for a person rather than for the code.
 
-    The modules and which may import which stay in SPECS.md §3 as a table.
+    The modules and which may import which stay in CONCEPT §3 as a table.
     """
     defs = "".join(
         f'<marker id="{name}" viewBox="0 0 10 10" refX="9" refY="5" '

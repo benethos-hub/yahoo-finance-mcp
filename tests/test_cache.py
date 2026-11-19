@@ -191,7 +191,7 @@ def test_a_sweep_under_the_limit_drops_nothing_and_says_nothing(tmp_path, caplog
 
 
 def test_a_damaged_cache_file_starts_the_server_without_a_cache(tmp_path, caplog):
-    """SPECS 8a promises the cache never stops a call. It stopped the start."""
+    """CONCEPT §8a promises the cache never stops a call. It stopped the start."""
     (tmp_path / "cache.sqlite").write_bytes(b"not a database, " * 20)
     with caplog.at_level("INFO", logger="benethos_yahoo_finance_mcp.cache"):
         cache.configure(Settings(cache_enabled=True, cache_dir=tmp_path))
@@ -561,6 +561,8 @@ def test_every_cached_category_has_a_default_ttl_and_a_row_in_specs():
         )
     }
     assert used == set(DEFAULT_TTLS)
-    specs = (root / "SPECS.md").read_text(encoding="utf-8")
-    table = specs.split("## 8a.", 1)[1].split("\n- **Opt-in", 1)[0]
+    concept = (root / "docs" / "concept" / "output-and-cache.md").read_text(
+        encoding="utf-8"
+    )
+    table = concept.split("## 8a.", 1)[1].split("\n- **Opt-in", 1)[0]
     assert set(re.findall(r"^  \| `([a-z_]+)` \|", table, re.MULTILINE)) == used

@@ -22,6 +22,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   else. Both sit under `mcp[cli]` only, serve the `mcp` command line in
   development and reach nobody who installs the project. `mcp --help`
   prints the same text as before.
+- The specification moved from `SPECS.md` into `docs/`, laid out like the
+  other benethos-hub projects: `docs/CONCEPT.md` is the overview with the
+  purpose and the scope, and `docs/concept/` holds one file per topic,
+  each section under its old number. The release steps moved from
+  `CLAUDE.md` to `docs/RELEASING.md`. The README links to the new places.
+  `SPECS.md` is gone, so its links in the README of an earlier release,
+  on PyPI and in the listings, lead nowhere. A new test checks that every
+  link in the documents leads somewhere and that the concept's parts
+  follow the rule.
 
 ## [0.13.3] - 2026-11-18
 
