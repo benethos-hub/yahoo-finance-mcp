@@ -6,6 +6,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `uv.lock` moves soupsieve to 4.1.2 (was 4.1.1), under `beautifulsoup4`
+  and yfinance. The release removes several cases where matching a CSS
+  selector took quadratic time, halves the memory of its caches and fixes
+  `nth` selectors with very large values. yfinance calls no CSS selector,
+  so no call of this server takes that code. It reaches users of the
+  container image and of the pinned Claude Desktop extension, whose
+  versions come from the lock. An index installation resolves it already.
+  The live check against Yahoo returns the same sections with the same
+  fields and the same error output as before.
+- `uv.lock` moves on in the development group: typer 0.29.2 and
+  annotated-doc 0.0.7, which both drop Python 3.10 and change nothing
+  else. Both sit under `mcp[cli]` only, serve the `mcp` command line in
+  development and reach nobody who installs the project. `mcp --help`
+  prints the same text as before.
+
 ## [0.13.3] - 2026-11-18
 
 A patch release. platformdirs, below yfinance, takes its newest fixes, so
