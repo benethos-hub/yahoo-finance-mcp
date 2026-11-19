@@ -91,6 +91,7 @@ assets/           # render_icon.py, the architecture diagram it draws, old icon 
   brand/          # icon.svg, and icon.png (512x512) and social-preview.png (1280x640) exported from it
 SECURITY.md       # how to report a vulnerability, and what the server guards
 glama.json        # names the maintainers who may claim the Glama listing
+.githooks/        # pre-commit: refuses staged tokens, keys and local state files
 ```
 
 The brand folder follows the rules of the benethos-hub organisation, kept in
@@ -291,6 +292,18 @@ and it now asserts the message text as well.
   `uv.lock` against PyPI and OSV. A vulnerability without a fix yet is waived
   by its ID with `ignore-vulns`, in both jobs alike.
 - Do not commit `.venv/`, `__pycache__/`, or `*.egg-info/` (already gitignored).
+- The pre-commit hook in `.githooks/` refuses staged files that hold a
+  token, a key or local state (an `.env`, a folder `secrets/`, the result
+  cache) and staged lines that look like a credential, showing only the
+  start of each. It is enabled once per clone with
+  `git config core.hooksPath .githooks`. CI does not run it, so
+  `tests/test_repo_content.py` holds every tracked file to the same
+  patterns, and besides to no e-mail address on a domain not reserved for
+  examples and no path of a machine or a user. The patterns stand in
+  `tests/content_helpers.py` and in the hook, a change to one changes the
+  other. `tests/test_pre_commit.py` runs the hook on the same lines. A
+  line that must show such a form, such as an invented token in a test,
+  ends with `pragma: allowlist secret`.
 
 ## Releasing
 

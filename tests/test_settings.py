@@ -151,8 +151,9 @@ class TestCacheMaxEntries:
 
 
 def test_the_token_stays_out_of_repr():
-    resolved = load_settings({}, {TOKEN_VAR: "s3cr3t-token"})
-    assert resolved.bearer_token == "s3cr3t-token"
+    token = "s3cr3t-token"  # pragma: allowlist secret
+    resolved = load_settings({}, {TOKEN_VAR: token})
+    assert resolved.bearer_token == token
     assert "s3cr3t" not in repr(resolved)
 
 

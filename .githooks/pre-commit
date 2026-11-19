@@ -1,0 +1,102 @@
+#!/bin/sh
+# Refuse commits that would put a token, a key or a local state file into
+# the history.
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+# Deliberate bypass:      git commit --no-verify
+# Example in a doc/test:  end the line with "pragma: allowlist secret"
+#
+# Checks the staged content, not the working tree.
+
+set -eu
+
+fail=0
+note() {
+    printf 'pre-commit: %s\n' "$1" >&2
+    fail=1
+}
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -n "$staged" ] || exit 0
+
+# 1. Files that never belong in the repository, as .gitignore names them:
+#    an .env other than an example, which holds YF_MCP_BEARER_TOKEN beside
+#    a compose file, anything in a folder secrets/, where the https profile
+#    keeps its certificates, the result cache and other databases, key
+#    files anywhere, and Claude Code's per-machine permissions.
+forbidden=$(
+    printf '%s\n' "$staged" | while IFS= read -r file; do
+        case "$file" in
+            *.env.example) ;;
+            .env | */.env | .env.* | */.env.*) printf '%s\n' "$file" ;;
+            secrets/* | */secrets/*) printf '%s\n' "$file" ;;
+            *.db | *.db-journal | *.db-wal | *.db-shm | *.sqlite | *.sqlite3)
+                printf '%s\n' "$file" ;;
+            *.sqlite-journal | *.sqlite-wal | *.sqlite-shm)
+                printf '%s\n' "$file" ;;
+            *.pem | *.key | *.p12 | *.pfx) printf '%s\n' "$file" ;;
+            .claude/settings.local.json) printf '%s\n' "$file" ;;
+        esac
+    done
+)
+if [ -n "$forbidden" ]; then
+    note "these files hold a token, a key or local state:"
+    printf '%s\n' "$forbidden" | sed 's/^/  /' >&2
+fi
+
+# 2. Credentials inside the staged lines, whatever the file is called.
+# tests/content_helpers.py holds the same patterns for every tracked
+# file. A change to one changes the other.
+#
+# A bearer token as a client sends it, the tokens of GitHub and PyPI, a key
+# of the Anthropic API and a private key. Then a value given to a name.
+patterns='Bearer [A-Za-z0-9._-]{16,}'
+patterns="$patterns|gh[pousr]_[A-Za-z0-9]{16,}"
+patterns="$patterns|github_pat_[A-Za-z0-9_]{20,}"
+patterns="$patterns|pypi-[A-Za-z0-9_-]{50,}"
+patterns="$patterns|sk-ant-[A-Za-z0-9_-]{16,}"
+patterns="$patterns|BEGIN (RSA |OPENSSH |EC |DSA |PGP )?PRIVATE KEY"
+# A name that ends in TOKEN, SECRET, PASSWORD or _KEY, maybe with more
+# parts such as _ENV, then = or :, maybe a quote, then the value.
+# _KEYWORD is no such name. A value that starts with / is a path.
+patterns="$patterns|(TOKEN|SECRET|PASSWORD|_KEY)(_[A-Z]+)*[[:space:]]*[:=][[:space:]]*[\"']?[A-Za-z0-9+_-][A-Za-z0-9+/_.-]{11,}"
+# The same in any case, as JSON and YAML write it: a name that ends in
+# token, secret, password or _key, then = or :, then a quoted value, or a
+# bare one that ends the line or a word. A bare value with a dot or a
+# bracket is code, such as token = base64.b64encode(raw).
+named="(^|[^a-z0-9])[\"']?[a-z0-9_]*(token|secret|password|passwd|_key)[\"']?"
+named="$named[[:space:]]*[:=][[:space:]]*"
+named="$named([\"'][A-Za-z0-9+_-][A-Za-z0-9+/_.-]{11,}|[A-Za-z0-9+_-][A-Za-z0-9+/_-]{11,}([[:space:]]|\$))"
+# What such a name is given in code without being a value: the path of a
+# *_FILE setting, a constant or the name of an environment variable
+# (YF_MCP_BEARER_TOKEN), the name of a field in quotes ("bearer_token"),
+# a type (BearerToken) and an attribute (settings.bearer_token).
+references="_FILE[\"']?[[:space:]]*[:=]"
+references="$references|[:=][[:space:]]*[\"']?[A-Z][A-Z0-9]*(_[A-Z0-9]+)+\$"
+references="$references|[:=][[:space:]]*[\"'][a-z]+(_[a-z]+)+\$"
+references="$references|[:=][[:space:]]*[A-Z][a-z]+([A-Z][a-z]+)+\$"
+references="$references|[:=][[:space:]]*[a-z_]+(\\.[a-z_]+)+\$"
+
+added=$(
+    git diff --cached -U0 | grep '^+' | grep -v 'pragma: allowlist secret' || true
+)
+hits=$(
+    {
+        printf '%s\n' "$added" | grep -oE "$patterns" || true
+        printf '%s\n' "$added" | grep -oiE "$named" || true
+    } \
+        | sed 's/[[:space:]]*$//' \
+        | grep -vE "$references" \
+        | awk '!seen[$0]++' \
+        || true
+)
+if [ -n "$hits" ]; then
+    # Only the start of each: the terminal is no place for the rest.
+    note "staged lines look like a credential, each begins with:"
+    printf '%s\n' "$hits" | cut -c 1-32 | sed 's/^/  /' >&2
+fi
+
+if [ "$fail" -ne 0 ]; then
+    printf 'pre-commit: nothing was committed (override with --no-verify).\n' >&2
+    exit 1
+fi

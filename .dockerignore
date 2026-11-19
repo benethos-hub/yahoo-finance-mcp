@@ -21,6 +21,7 @@ __pycache__
 # with an .env beside them that may carry a token.
 tests
 docs
+.githooks
 CLAUDE.md
 SECURITY.md
 glama.json

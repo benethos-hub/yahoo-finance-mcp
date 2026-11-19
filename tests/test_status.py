@@ -126,7 +126,7 @@ def test_after_a_rate_limit_yahoo_is_not_reachable(server, no_request_yet):
 
 def test_no_secret_in_the_answer(monkeypatch):
     """The bearer token guards the HTTP port, the status never names it."""
-    token = "s3cr3t-T0ken-value-for-the-test"
+    token = "s3cr3t-T0ken-value-for-the-test"  # pragma: allowlist secret
     monkeypatch.setenv("YF_MCP_BEARER_TOKEN", token)
     settings = parse_settings(["--transport", "streamable-http"])
     assert settings.bearer_token == token
