@@ -22,6 +22,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   else. Both sit under `mcp[cli]` only, serve the `mcp` command line in
   development and reach nobody who installs the project. `mcp --help`
   prints the same text as before.
+- `uv.lock` moves pydantic to 2.14.4 (was 2.14.3) and pydantic-core to
+  2.50.5 (was 2.50.4), inside the patch window. pydantic builds every tool
+  schema and checks every argument, here and in the MCP SDK. The release
+  fixes memory use in its JSON parser, a few JSON schema details and its
+  garbage collection tracking. The tool and prompt schemas a client lists
+  are byte-identical before and after, and the live check against Yahoo
+  returns the same sections with the same fields and the same error
+  output. It reaches users of the container image and of the pinned
+  Claude Desktop extension, an index installation resolves it already.
+- `uv.lock` moves librt to 0.17.0 (was 0.16.0), the runtime library of
+  mypy in the development group, which now names its own dependency on
+  mypy_extensions. It reaches nobody who installs the project.
 - The specification moved from `SPECS.md` into `docs/`, laid out like the
   other benethos-hub projects: `docs/CONCEPT.md` is the overview with the
   purpose and the scope, and `docs/concept/` holds one file per topic,
