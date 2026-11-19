@@ -128,13 +128,6 @@ PY
 (Some industry keys use an em-dash, not a hyphen — copy them from `get_sector`
 output rather than typing them.)
 
-Every tool followed the same pattern, which CLAUDE.md describes under "How
-to add or change a tool": the logic in the yahoo module under
-`@cache.cached`, a thin function in the tools module of the same name, added
-to its `register()`, with `Annotated` fields, FakeTicker unit tests and a
-smoke-test entry, one pull request per group. The per-symbol groups came
-first, the screener last with 0.8.0.
-
 ### Decisions on the module-level candidates
 
 - **`get_market`** (`yf.Market`) — **built.** Eight fixed market keys. Only
@@ -188,5 +181,6 @@ The set is deliberately not "everything that is technically possible". With
 description competes for the model's attention on every single request, and
 a tool that only saves a loop is a net loss. What still applies to a new
 tool: read-only only, native Yahoo tickers, grouped by subject, probed live
-before it is built, one reviewable pull request, and responses row- or
-symbol-capped for the token budget.
+before it is built, built the way CLAUDE.md describes under "How to add or
+change a tool" with an entry in `tests/smoke.py`, one reviewable pull
+request, and responses row- or symbol-capped for the token budget.

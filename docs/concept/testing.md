@@ -20,14 +20,18 @@ Part of the [concept](../CONCEPT.md): section 10.
   library is imported in its one home and that only `settings.py` reads the
   environment (`NO_COLOR` excepted), `test_logbook_catalog.py` that every
   line is a logbook function, and `test_cache.py` that every cached category
-  has a default TTL and a row in §8a. Five more guard what ships rather than
+  has a default TTL and a row in §8a. Six more guard what ships rather than
   what runs: `test_packaging.py` on the PEP 561 marker, the version
   examples, the supported Pythons and the layout block in CLAUDE.md (every
   path in it exists, every module is named there or here),
   `test_readme.py` on link targets PyPI
   cannot resolve, on every `#anchor` link landing on a heading, on the table
   of contents naming every section in order and on the tool list matching
-  the registry, `test_server_json.py` on the MCP Registry
+  the registry, `test_docs.py` on every document a person reads here, the
+  changelog excepted (each link and anchor leads somewhere, a document in
+  `docs/` is named in capitals, each part of the concept names its document
+  and leads back, and the overview lists every part with its sections, each
+  number once), `test_server_json.py` on the MCP Registry
   entry, `test_mcpb.py` on the Claude Desktop bundle, and
   `test_publish_workflow.py` on the release workflow's wiring: which job
   calls which of the organisation's actions, with what, on which event and
@@ -113,8 +117,8 @@ Part of the [concept](../CONCEPT.md): section 10.
   `assets/brand/icon.svg` and the 512×512 `icon.png` and 1280×640
   `social-preview.png` exported from it are present and not older than the
   SVG. Their checks are named `<job> / <name>`, such as `test / Python 3.15`.
-  `fresh-install` and `docker` are this project's own. `dockerfile-lint`
-  runs hadolint over `containers/**/Dockerfile`, with `docker.io` and
+  `fresh-install` and `docker` are this project's own. `dockerfile-lint`,
+  the organisation's as well, runs hadolint over `containers/**/Dockerfile`, with `docker.io` and
   `ghcr.io` as the registries a `FROM` may pull from, and files its findings
   under Security, Code scanning as well, and its job stays green on them,
   like `codeql`. What turns red on a new finding is the check GitHub adds to
@@ -172,19 +176,14 @@ Part of the [concept](../CONCEPT.md): section 10.
   since 0.5.1, the Python dependencies in `uv.lock`. It reads `FROM` lines
   only, so the uv image is a stage of its own rather than a `COPY --from=`
   reference, and pinned to its patch, since Dependabot proposes only tags of
-  the precision already written. Up to 0.7.0 it was neither and fell three
-  patch releases behind unnoticed. That last entry used to name the `pip`
-  ecosystem, which does not read `uv.lock` — and with every requirement declared
-  as an open `>=` range there was no constraint for it to raise either, so it
-  proposed nothing at all while the lockfile drifted fourteen packages behind.
-  The ecosystem is `uv` now. It still only proposes **direct** dependencies, and
-  transitive ones move only when a direct bump drags them along, so a periodic
-  `uv lock --upgrade` remains the way to refresh the rest. The moment for it is
-  **before every version bump**, as the first step of the release checklist in
-  CLAUDE.md, and a release takes every newer version on offer rather than
-  waiting for a proposal. 0.5.2 is why: three direct packages had moved
-  through Dependabot and eleven transitive ones underneath had not, and an
-  image that ships the first without the second is half a rebuild.
+  the precision already written. The ecosystem for the Python dependencies
+  is `uv`, since `pip` does not read `uv.lock`. It only proposes **direct**
+  dependencies, and transitive ones move only when a direct bump drags them
+  along, so a periodic `uv lock --upgrade` remains the way to refresh the
+  rest. The moment for it is **before every version bump**, as the first
+  step of [RELEASING](../RELEASING.md), and a release takes every newer
+  version on offer rather than waiting for a proposal: an image that ships
+  the direct bumps without the transitive ones underneath is half a rebuild.
   Minor and patch updates arrive grouped, one pull request per ecosystem and
   week, a major on its own, and the six dependencies with a patch window
   (`mcp`, `yfinance`, `pandas`, `pydantic`, `lxml`, `curl_cffi`) always on
@@ -207,11 +206,8 @@ Part of the [concept](../CONCEPT.md): section 10.
   `ghcr.io/benethos-hub/benethos-yahoo-finance-mcp`, authenticating with the
   automatic `GITHUB_TOKEN`. The image carries the distribution's name, and
   the PyPI job deploys to the environment `pypi-benethos-yahoo-finance-mcp`.
-  Up to 0.7.1 they were `ghcr.io/benethos-hub/yahoo-finance-mcp` and `pypi`.
-  Those releases were copied to the new name once, digest for digest, so the
-  new name holds every release from 0.4.0 on. The 0.7 line was pushed
-  under the old image name as well, the same index with the same digest,
-  and 0.8.0 dropped it. Neither half stores a secret, and a failure
+  The image's earlier name is in `containers/README.md`. Neither half stores
+  a secret, and a failure
   in one does not withhold the other. Release tags become `X.Y.Z`, `X.Y` and `latest`, a
   pre-release its exact version only, so `latest` stays on the last full
   release. Every upload stops first when the tag is not `v` plus the
@@ -259,8 +255,7 @@ Part of the [concept](../CONCEPT.md): section 10.
   entry whole or not at all, so should it still refuse the one with the
   bundle after the retries, the action drops the bundle, publishes
   the rest so the version is listed with PyPI and the image, and fails
-  anyway, which leaves the refusal in sight. The first entry went out
-  with 0.8.2, accepted at the first attempt. The MCP list in VS Code's
+  anyway, which leaves the refusal in sight. The MCP list in VS Code's
   extension view does not show it: that list comes from GitHub's own
   registry, a selection of 394 servers on 2026-10-10 that held none of the
   official registry's Yahoo Finance servers, so a listing does not reach it

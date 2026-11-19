@@ -47,5 +47,3 @@ Nothing. The roadmap in §12 is done or dropped. Serving an expired cache entry
 while Yahoo rate-limits was considered and dropped: the cache is off by
 default, a quote from hours ago is worse than the rate-limit message, and
 every answer would need to carry its age.
-
-(Multi-symbol batch quoting is implemented as `get_quotes` — see §7 and §12.)
