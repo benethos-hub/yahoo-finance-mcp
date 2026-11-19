@@ -7,7 +7,6 @@
 # Example in a doc/test:  end the line with "pragma: allowlist secret"
 #
 # Checks the staged content, not the working tree.
-# tests/test_pre_commit.py runs it on lines of each kind.
 
 set -eu
 
@@ -46,6 +45,8 @@ if [ -n "$forbidden" ]; then
 fi
 
 # 2. Credentials inside the staged lines, whatever the file is called.
+# tests/content_helpers.py holds the same patterns for every tracked
+# file. A change to one changes the other.
 #
 # A bearer token as a client sends it, the tokens of GitHub and PyPI, a key
 # of the Anthropic API and a private key. Then a value given to a name.

@@ -296,10 +296,14 @@ and it now asserts the message text as well.
   token, a key or local state (an `.env`, a folder `secrets/`, the result
   cache) and staged lines that look like a credential, showing only the
   start of each. It is enabled once per clone with
-  `git config core.hooksPath .githooks`. CI does not run it.
-  `tests/test_pre_commit.py` runs it on each kind of line and on every
-  tracked file at once. A line that must show such a form, such as an
-  invented token in a test, ends with `pragma: allowlist secret`.
+  `git config core.hooksPath .githooks`. CI does not run it, so
+  `tests/test_repo_content.py` holds every tracked file to the same
+  patterns, and besides to no e-mail address on a domain not reserved for
+  examples and no path of a machine or a user. The patterns stand in
+  `tests/content_helpers.py` and in the hook, a change to one changes the
+  other. `tests/test_pre_commit.py` runs the hook on the same lines. A
+  line that must show such a form, such as an invented token in a test,
+  ends with `pragma: allowlist secret`.
 
 ## Releasing
 

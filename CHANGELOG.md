@@ -14,6 +14,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   looks like a credential into the history. Two invented tokens in the tests
   carry `pragma: allowlist secret`. It reaches only those who work on the
   repository, nothing in the package or the image changes.
+- A test reads every file git tracks, so in CI as well, where the hook does
+  not run, and fails on a credential in the forms the hook knows, an e-mail
+  address on a domain not reserved for examples and a path of a machine or
+  a user. The image's own user `appuser` and the README's placeholder path
+  are no such path. Nothing in the repository was found.
 
 ## [0.13.4] - 2026-11-19
 

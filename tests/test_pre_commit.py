@@ -1,9 +1,9 @@
 """The pre-commit hook, run in a repository of its own in a temporary folder.
 
 The hook in .githooks/ refuses staged files that hold a token, a key or
-local state, and staged lines that look like a credential. Every line of
-a credential here is put together from parts, so this file holds none of
-them and passes the hook itself.
+local state, and staged lines that look like a credential. The lines come
+from ``content_helpers.py``, whose rules ``test_repo_content.py`` holds
+every tracked file to, so the hook and the rules see the same lines.
 """
 
 from __future__ import annotations
@@ -14,10 +14,11 @@ from pathlib import Path
 
 import pytest
 
+from content_helpers import ALLOW, CREDENTIALS, REFERENCES
+
 ROOT = Path(__file__).resolve().parent.parent
 HOOK = ROOT / ".githooks" / "pre-commit"
 GIT = shutil.which("git")
-ALLOW = "pragma: allowlist secret"
 
 
 def _shell() -> str | None:
@@ -37,36 +38,6 @@ SH = _shell()
 pytestmark = pytest.mark.skipif(
     SH is None or GIT is None, reason="the hook needs sh and git"
 )
-
-# One line per form the hook knows, each put together from parts.
-CREDENTIALS = {
-    "env-bare": "YF_MCP_BEARER_TOKEN" + "=Zq7xW2pL9mN4vB8kR5tY",
-    "env-quoted": "YF_MCP_BEARER_TOKEN" + ' = "Zq7xW2pL9mN4vB8kR5tY"',
-    "yaml": "bearer_token" + ": Zq7xW2pL9mN4vB8kR5tY",
-    "json": '{"pass' + 'word": "Tr0ub4dor3xyzabc"}',
-    "header": "Authorization: " + "Bearer " + "abcdefghijklmnop1234",
-    "github": "token " + "ghp" + "_" + "abcdefghijklmnop1234",
-    "github-pat": "github" + "_pat_" + "11ABCDEFG0abcdefghijklmnop",
-    "pypi": "pypi" + "-AgEIcHlwaS5vcmc" + "A" * 50,
-    "anthropic": "key " + "sk-" + "ant-api03-abcdefghijklmnop",
-    "private-key": "-----" + "BEGIN " + "OPENSSH PRIVATE KEY-----",
-}
-
-# What names a secret without being one, as this repository writes it.
-REFERENCES = [
-    "YF_MCP_BEARER_TOKEN=",
-    "# YF_MCP_BEARER_TOKEN=",
-    "YF_MCP_BEARER_TOKEN=<long and random>",
-    "YF_MCP_BEARER_TOKEN=...",
-    'curl --header "Authorization: Bearer <token>"',
-    "bearer_token = settings.bearer_token",
-    "token = secrets.token_urlsafe(32)",
-    'token = os.environ["YF_MCP_BEARER_TOKEN"]',
-    "token: BearerToken",
-    'field = "bearer_token"',
-    "TLS_KEY_FILE: /run/secrets/tls.key",
-    'ADD_KEYWORD = "add_keyword_long_value"',
-]
 
 
 def _git(repo: Path, *args: str) -> None:
@@ -177,6 +148,14 @@ def test_shows_only_the_start_of_a_credential(repo: Path) -> None:
 @pytest.mark.parametrize("line", REFERENCES)
 def test_a_reference_to_a_secret_passes(repo: Path, line: str) -> None:
     _stage(repo, "notes.txt", line + "\n")
+
+    answer = _hook(repo)
+
+    assert answer.returncode == 0, answer.stderr
+
+
+def test_all_the_references_together_pass(repo: Path) -> None:
+    _stage(repo, "notes.txt", "\n".join(REFERENCES) + "\n")
 
     answer = _hook(repo)
 
