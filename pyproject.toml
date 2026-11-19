@@ -76,8 +76,10 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/benethos-hub/yahoo-finance-mcp"
+Documentation = "https://github.com/benethos-hub/yahoo-finance-mcp#readme"
 Repository = "https://github.com/benethos-hub/yahoo-finance-mcp"
 Issues = "https://github.com/benethos-hub/yahoo-finance-mcp/issues"
+Changelog = "https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

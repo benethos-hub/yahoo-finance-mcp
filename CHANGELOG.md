@@ -8,6 +8,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- The package names its documentation and its changelog among its links,
+  so PyPI shows them beside the homepage, the repository and the issues.
 - A pre-commit hook in `.githooks/`, enabled per clone with
   `git config core.hooksPath .githooks`, refuses a commit that would put an
   `.env`, a folder `secrets/`, the result cache, a key file or a line that
