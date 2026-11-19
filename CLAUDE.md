@@ -1,7 +1,8 @@
 # Working guidelines for Claude
 
 How to work in this repository. Read this before making changes. See
-[SPECS.md](SPECS.md) for what the project is and does.
+[docs/CONCEPT.md](docs/CONCEPT.md) for what the project is and does, and
+[docs/concept/](docs/concept/) for each topic.
 
 ## Golden rules
 
@@ -17,7 +18,7 @@ How to work in this repository. Read this before making changes. See
    to stdout from server/library code; log to **stderr** only.
 4. **Read-only domain.** This server only reads market data. Do not add write
    or trade operations, and do not authenticate to Yahoo or any paid feed (see
-   non-goals in SPECS.md). Guarding this server's own HTTP port is a different
+   non-goals in docs/CONCEPT.md). Guarding this server's own HTTP port is a different
    thing and is allowed — see `transport/http.py`.
 
 ## Environment
@@ -66,6 +67,10 @@ src/benethos_yahoo_finance_mcp/
 tests/            # mocked, offline unit tests (+ live smoke.py, not collected), FakeTicker in fakes.py
   yahoo/          #   one test file per yahoo module, test_tickers.py included,
                   #   plus the cross-module test_empty_answers.py
+docs/
+  CONCEPT.md      # what the server is for and its scope, and where each section is
+  concept/        #   one file per topic, the sections under their numbers
+  RELEASING.md    # the steps of a release, in order
 containers/
   README.md       # hosting with Docker and Compose
   images/yahoo-finance-mcp/Dockerfile   # build context: the repository root
@@ -108,9 +113,9 @@ new public name goes into its `__all__`.
 line is a function in `logbook/lifecycle.py`, `calls.py`, `cache.py` or
 `upstream.py`, taking parameters from the vocabulary in
 `tests/test_logbook_catalog.py`, and it never carries a search query, the
-token, a URL's query string, Yahoo's data or an error's text (see SPECS §4).
+token, a URL's query string, Yahoo's data or an error's text (see CONCEPT §4).
 A tool writes no line of its own, `register_tool` writes one per call.
-`server_status` is registered past it and writes none, see SPECS §4.
+`server_status` is registered past it and writes none, see CONCEPT §4.
 `logbook/formats.py` reads `NO_COLOR` from the environment itself, the one
 exception to `settings.py` being the only module that does.
 
@@ -176,7 +181,7 @@ exception to `settings.py` being the only module that does.
    exactly what a client gets. `tests/test_prompts.py` checks it for every
    prompt. Both bundles set `prompts_generated` and `tools_generated`,
    since Claude Desktop's own check keeps the placeholder of an empty
-   argument and refuses every such prompt (SPECS §7a). Do not take the
+   argument and refuses every such prompt (CONCEPT §7a). Do not take the
    flags out of the pinned manifest.
 2. Write the text for the model. Name tools and the fields they return in
    backticks, start with `RESOLVE` where an argument may be a company name,
@@ -188,7 +193,7 @@ exception to `settings.py` being the only module that does.
    manifest's `prompts` from the server, `tests/test_mcpb.py` fails until
    it has.
 4. A prompt asks Yahoo nothing and writes no log line. One that takes
-   personal data says so in README, SPECS §7a and SECURITY.md and keeps it
+   personal data says so in README, CONCEPT §7a and SECURITY.md and keeps it
    out of every tool call, as `dividend_calendar.py` does with share counts.
    Examples and tests use invented values, never a real portfolio.
 
@@ -250,6 +255,20 @@ and it now asserts the message text as well.
 - ruff's `BLE` rule is on: a bare `except Exception` carries
   `# noqa: BLE001` with its reason in the comment, and there are seven such
   places, each a deliberate fallback.
+- **The concept moves with the code.** `docs/CONCEPT.md` is the overview,
+  and `docs/concept/` holds one file per topic. A change that departs from
+  them changes them in the same commit. The sections keep their numbers:
+  "CONCEPT §4" in the code or in a document names section 4, and the
+  overview's table leads to it.
+- **A document is named for its subject.** One that stands directly in
+  `docs/` is written in capitals: `CONCEPT.md`, `RELEASING.md`. One that
+  grows too long becomes an overview, and its parts go into a folder of the
+  same name in lowercase beside it: `CONCEPT.md` and `concept/`. A part is
+  named in lowercase with hyphens. It starts with the name of its document,
+  as in `# Concept: tools`, and a line that leads back to the overview. The
+  overview lists every part in a table. `README.md`, `CHANGELOG.md`,
+  `SECURITY.md` and `CLAUDE.md` stay where GitHub and the tools look for
+  them. `tests/test_docs.py` checks the links and the parts.
 
 ## Git / commits
 
@@ -275,79 +294,6 @@ and it now asserts the message text as well.
 
 ## Releasing
 
-A release is its own `release/X.Y.Z` branch and PR. In this order:
-
-1. **`uv lock --upgrade --dry-run` first.** Dependabot lifts direct
-   dependencies only, and the transitive ones underneath move only when a
-   direct bump happens to drag them along. An index installation (`uvx`,
-   `pip`) resolves the newest of everything at install time, the container
-   image freezes whatever `uv.lock` says, so a release is the moment the image
-   catches up with what every index user already has. Refresh with
-   `uv lock --upgrade` as its own commit, then the gates, plus the `yfinance`
-   or `mcp` checks above for anything that sits under those. The refresh
-   stays inside the patch windows (`~=` on `mcp`, `yfinance`, `pandas`,
-   `pydantic`, `lxml` and `curl_cffi`) and so never shows a new minor or major
-   of those. `uv tree --outdated --depth 1` does: it names the newest release
-   on the index whatever the bound, and a `(latest: ...)` line after the
-   refresh is such a release. A minor is taken by hand, on its own: checked like
-   any `yfinance` or `mcp` bump, whichever of the six it is, and the window
-   raised. A major is asked about first. A security hole
-   does not wait for this step: Dependabot's security updates read the whole
-   lockfile, transitive packages included, and arrive on their own. A fix past
-   a window reaches nobody on the index until it is released, so it means a
-   release at once.
-   The same goes for everything else pinned here, and a release does not
-   wait for Dependabot to propose any of it. The two images in the
-   `Dockerfile` (`containers/images/yahoo-finance-mcp/`) move to the newest
-   tag (a new uv release, say) and to the current digest of that tag, since
-   a rebuild under the same tag, which is how the Debian fixes in the
-   `python:3.X-slim` base arrive, gets no proposal at all. Every action
-   pinned in `.github/workflows/` moves to its newest release, by its SHA.
-   The build backend in `pyproject.toml`, `hatchling`, moves to its newest
-   release by hand, like the image tags.
-   Read the release notes of each, build the image for a Dockerfile change,
-   and list every bump in the release PR.
-   `mcp-publisher` and the bundle packer are pinned in the organisation's
-   publishing actions and kept current there, not here.
-2. Bump `version` in `pyproject.toml`, then `uv lock` and `uv sync --extra dev`
-   (the packaging tests read the *installed* metadata). Let
-   `tests/test_packaging.py` name every stale version example instead of
-   hunting for them by eye, and `tests/test_server_json.py` the versions in
-   `.github/publish/mcp-registry/server.json`, the MCP Registry entry,
-   including the tag and file name in the bundle's download URL. Its
-   `fileSha256` stays the placeholder of zeros, the release workflow writes
-   the real hash.
-3. Close `[Unreleased]` in `CHANGELOG.md` as `[X.Y.Z] - <date>` and add the
-   compare links.
-4. After the squash merge: annotated tag `vX.Y.Z`, push it, then
-   `gh release create vX.Y.Z --verify-tag` with the changelog section as the
-   notes. Publishing the release is what triggers `publish.yml`. Its first
-   job, `ci-passed` (the organisation's `python-release-ci-passed`
-   workflow), waits for the CI run the merge commit's push to main started
-   and lets nothing be built unless that run succeeded, so a tag on a commit
-   that never reached main, or on one whose CI is red, publishes nothing. It
-   also audits `uv.lock` once more, and a waiver in `ignore-vulns` belongs
-   there as well as in `ci.yml`. The uploads after it go through the
-   organisation's `publish/` actions, and each stops first when the tag is
-   not `v` plus the version in its own file: the wheel, `pyproject.toml`,
-   `manifest.json` or `server.json`. A pre-release leaves `latest` where it
-   is and is not listed in the registry. A manual run of `publish.yml` on
-   main is a trial, and it is not part of a release: start it only when the
-   maintainer asks for one, permission for the release does not cover it.
-   `pypi-trial` builds and checks without uploading, and the image goes out
-   as `edge`. The release PR's checks, main's CI on the merge commit and
-   the `ci-passed` gate already stand between a tag and a broken upload.
-5. **Check what shipped, not the build.** The three ghcr tags (`X.Y.Z`, `X.Y`,
-   `latest`) of `benethos-yahoo-finance-mcp` must carry the same
-   `org.opencontainers.image.revision` annotation, the versions *inside*
-   the image must be what the lockfile says
-   (`docker run --rm --entrypoint python <image> -c "import
-   importlib.metadata as m; print(m.version('mcp'))"`), and PyPI's simple
-   index with a cache-buster must list the version — the JSON API reports the
-   old one for minutes after an upload. The MCP Registry must list it too:
-   `https://registry.modelcontextprotocol.io/v0/servers?search=benethos-yahoo-finance-mcp`.
-   Glama's Auto-Release builds and lists every GitHub release under the
-   same version, with its notes, on the listing's releases page. Check that
-   the version shows up there. Do not start "Build & Release" on Glama
-   between releases: newer code would land under the version the server
-   still reports.
+A release is its own `release/X.Y.Z` branch and PR. The steps in order, from
+the refresh of every pin to what is checked after the publish:
+[docs/RELEASING.md](docs/RELEASING.md).

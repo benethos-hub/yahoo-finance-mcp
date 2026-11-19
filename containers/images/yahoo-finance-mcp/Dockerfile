@@ -4,7 +4,7 @@
 # Dependabot, which proposes a newer tag of the same precision: `3.15-slim`
 # moves on to `3.16-slim`, and uv, pinned to its patch, to each patch release.
 # A rebuild under an unchanged tag is not reliably proposed, so a release
-# refreshes both digests (CLAUDE.md, Releasing).
+# refreshes both digests (docs/RELEASING.md).
 #
 # Dependabot reads FROM lines only. An image named inside `COPY --from=` is
 # invisible to it, which is why uv has a stage of its own below: written

@@ -31,7 +31,7 @@ updates:
         # change is seen by it. Each needs its own checks, the smoke run
         # before and after for yfinance and a call through the SDK for mcp
         # (CLAUDE.md, Verifying). The other four stay inside a patch window too,
-        # and a minor of theirs is checked the same way (CLAUDE.md, Releasing).
+        # and a minor of theirs is checked the same way (docs/RELEASING.md).
         exclude-patterns: ["yfinance", "mcp", "pandas", "pydantic", "lxml", "curl*cffi"]
 
   # The actions the workflows use, each pinned to a full commit SHA with the

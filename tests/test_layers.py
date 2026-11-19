@@ -1,7 +1,7 @@
 """The layers of the package, read from the source rather than from memory.
 
 Each top-level module or package is a unit, and the table below says which
-units it may import. SPECS.md §3 shows the same table to a reader, and a test
+units it may import. CONCEPT §3 shows the same table to a reader, and a test
 keeps the two in agreement. A unit missing from the table fails the suite, so
 a new module is placed deliberately rather than by whatever it happened to
 need.
@@ -29,7 +29,7 @@ PACKAGE = Path(benethos_yahoo_finance_mcp.__file__).resolve().parent
 ROOT = "__init__"
 
 # unit -> the units it imports, exactly. Order is bottom to top. A new edge
-# goes in here and in SPECS §3 in the same change, an edge no longer used
+# goes in here and in CONCEPT §3 in the same change, an edge no longer used
 # comes out, so the table describes the code rather than a ceiling over it.
 LAYERS: dict[str, set[str]] = {
     ROOT: set(),  # the version, nothing else
@@ -102,9 +102,10 @@ def _edges() -> Iterator[tuple[Path, str, str, int]]:
                 yield path, unit, other, line
 
 
-def _specs_table() -> dict[str, set[str]]:
-    """The layer table in SPECS.md §3, as ``LAYERS`` spells it."""
-    text = (PACKAGE.parent.parent / "SPECS.md").read_text(encoding="utf-8")
+def _concept_table() -> dict[str, set[str]]:
+    """The layer table of CONCEPT §3, as ``LAYERS`` spells it."""
+    concept = PACKAGE.parent.parent / "docs" / "concept" / "architecture.md"
+    text = concept.read_text(encoding="utf-8")
     block = text.split("<!-- layers:start -->")[1].split("<!-- layers:end -->")[0]
     table: dict[str, set[str]] = {}
     for row in block.splitlines():
@@ -117,9 +118,9 @@ def _specs_table() -> dict[str, set[str]]:
     return table
 
 
-def test_the_specs_table_matches_this_one():
-    """SPECS §3 shows the layers to a reader. It must say what is enforced."""
-    assert _specs_table() == LAYERS
+def test_the_concept_table_matches_this_one():
+    """CONCEPT §3 shows the layers to a reader. It must say what is enforced."""
+    assert _concept_table() == LAYERS
 
 
 def test_every_unit_has_a_line_in_the_table():

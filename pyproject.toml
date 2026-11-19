@@ -1,13 +1,13 @@
 [build-system]
 # Exact, since uv.lock pins what runs and not what builds this package. An image
 # build and the first start of the pinned bundle build the wheel. A release
-# moves it by hand, like the image tags (CLAUDE.md, Releasing).
+# moves it by hand, like the image tags (docs/RELEASING.md).
 requires = ["hatchling==1.33.0"]
 build-backend = "hatchling.build"
 
 [project]
 name = "benethos-yahoo-finance-mcp"
-version = "0.13.3"
+version = "0.13.4"
 description = "Unofficial read-only MCP server exposing Yahoo Finance data (via yfinance) over stdio or HTTP."
 readme = "README.md"
 requires-python = ">=3.11.5"

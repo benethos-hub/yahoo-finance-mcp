@@ -301,7 +301,7 @@ itself.
 <details>
 <summary><b>📊 Sector &amp; industry keys</b> — click to expand (11 sectors, 145 industries, generated)</summary>
 
-<!-- Generated from yfinance.const.SECTOR_INDUSTY_MAPPING_LC. Regenerate after a yfinance bump (see SPECS §12). Some industry keys use an em-dash, not a hyphen — copy them from get_sector output. -->
+<!-- Generated from yfinance.const.SECTOR_INDUSTY_MAPPING_LC. Regenerate after a yfinance bump (see CONCEPT §12). Some industry keys use an em-dash, not a hyphen — copy them from get_sector output. -->
 
 **`basic-materials`** (14)
 `agricultural-inputs`, `aluminum`, `building-materials`, `chemicals`, `coking-coal`, `copper`, `gold`, `lumber-wood-production`, `other-industrial-metals-mining`, `other-precious-metals-mining`, `paper-paper-products`, `silver`, `specialty-chemicals`, `steel`
@@ -555,7 +555,7 @@ on demand from
    }
    ```
 
-   Pin a version for stability with `benethos-yahoo-finance-mcp==0.13.3`. To
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.13.4`. To
    enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
@@ -801,15 +801,13 @@ The examples publish the port on the loopback address only. Drop the
 `127.0.0.1:` prefix only behind a reverse proxy that authenticates, or at the
 very least with `YF_MCP_BEARER_TOKEN` set.
 
-Pin a version for anything you depend on — `:0.13.3` for an exact release, `:0.13`
+Pin a version for anything you depend on — `:0.13.4` for an exact release, `:0.13`
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
 built from `main` on demand and is not a release at all.
 
 The image carries the name of the PyPI distribution, and every release from
-0.4.0 on is available under it. Up to 0.7.1 it was published as
-`ghcr.io/benethos-hub/yahoo-finance-mcp`, and those releases were copied over
-with the same digest. The 0.7 line was pushed under the old name as well, the
-same image again. Since 0.8.0 only the new name gets releases.
+0.4.0 on is available under it. Its earlier name,
+`ghcr.io/benethos-hub/yahoo-finance-mcp`, gets no releases since 0.8.0.
 
 The image hosts the server over the streamable-HTTP transport. The stdio
 transport is for local subprocess use and is not what you containerize.
@@ -1047,7 +1045,7 @@ Leave it off (the default) if you:
 ## Development
 
 How the code is laid out, module by module, is in
-[SPECS.md](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/SPECS.md#3-architecture).
+[the concept](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/docs/concept/architecture.md#3-architecture).
 
 Install the dev extras, then run the test, lint, and type-check steps (the same
 ones CI runs).
@@ -1112,7 +1110,7 @@ rather than from the index. Add an entry like this to
   `.github/publish/mcpb/build.py`, pack it with the mcpb CLI as its
   docstring shows and open the file. How Desktop treats the manifest's
   prompts is in
-  [SPECS.md](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/SPECS.md#7a-prompts).
+  [the concept](https://github.com/benethos-hub/yahoo-finance-mcp/blob/main/docs/concept/prompts.md#7a-prompts).
 - On Windows, while Desktop runs the server from the clone, `uv sync` cannot
   replace the server's `.exe` in `.venv` and stops with "os error 32". Quit
   Desktop for the sync, or run the checks in a second environment with

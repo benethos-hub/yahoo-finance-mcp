@@ -96,7 +96,7 @@ MINOR_LINE_EXAMPLES = (("README.md", r"`:(\d+\.\d+)`"),)
 
 
 # The lists above name the places known today, and a new example anywhere else,
-# SPECS.md, a comment, a file that does not exist yet, would not be on them.
+# the concept, a comment, a file that does not exist yet, would not be on them.
 # The 0.7.1 bump needed a sweep by hand to rule that out. This sweep reads every
 # text file of the repository for the shapes a copyable pin takes, so the next
 # example is checked from the day it is written. The changelog is history and
@@ -312,7 +312,10 @@ def test_the_coverage_badge_is_written_and_published_from_main_only():
 _PROSE_RANGE = re.compile(r"Python(?::\*\*)? (\d+\.\d+)[-–](\d+\.\d+)")
 
 
-@pytest.mark.parametrize("relative_path", ["CLAUDE.md", "README.md", "SPECS.md"])
+@pytest.mark.parametrize(
+    "relative_path",
+    ["CLAUDE.md", "README.md", "docs/concept/transport-and-runtime.md"],
+)
 def test_the_documented_python_range_is_the_matrix(relative_path):
     text = (REPO / relative_path).read_text(encoding="utf-8")
     ranges = set(_PROSE_RANGE.findall(text))
@@ -365,14 +368,13 @@ def test_every_path_in_the_layout_block_exists() -> None:
     assert not missing, f"CLAUDE.md names paths that do not exist: {missing}"
 
 
-def test_every_module_is_named_in_claude_md_or_specs() -> None:
+def test_every_module_is_named_in_claude_md_or_the_concept() -> None:
     """A module nobody names is one a contributor will not find the rules of.
 
     The eight subject modules of tools/ and yahoo/ are named once, as subjects.
     """
-    docs = "".join(
-        (_ROOT / name).read_text(encoding="utf-8") for name in ("CLAUDE.md", "SPECS.md")
-    )
+    files = [_ROOT / "CLAUDE.md", *sorted((_ROOT / "docs").rglob("*.md"))]
+    docs = "".join(path.read_text(encoding="utf-8") for path in files)
     [subjects] = re.findall(r"one per\s+subject \(([^)]+)\)", docs)
     named = {s.strip() + ".py" for s in subjects.split(",")}
     unnamed = sorted(
@@ -380,7 +382,7 @@ def test_every_module_is_named_in_claude_md_or_specs() -> None:
         for path in PACKAGE_DIR.rglob("*.py")
         if path.name not in docs and path.name not in named
     )
-    assert not unnamed, f"named in neither CLAUDE.md nor SPECS.md: {unnamed}"
+    assert not unnamed, f"named in neither CLAUDE.md nor docs/: {unnamed}"
 
 
 def test_the_build_backend_is_pinned_exactly() -> None:

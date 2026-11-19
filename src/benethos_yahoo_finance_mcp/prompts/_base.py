@@ -52,7 +52,7 @@ class Prompt(ABC):
     an empty one means. No condition picks another sentence and no default
     stands in for an empty value, so the manifest's text with the arguments
     put in is exactly what a client gets. Claude Desktop's own check of that
-    is switched off by ``prompts_generated``, see SPECS §7a.
+    is switched off by ``prompts_generated``, see CONCEPT §7a.
     """
 
     #: The name a client calls the prompt by, and the name of its module.
