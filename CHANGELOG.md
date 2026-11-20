@@ -52,6 +52,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   index installation resolves it already. The live check against Yahoo
   returns the same sections with the same fields and the same error output
   as before.
+- CI and the release use `astral-sh/setup-uv` 10.4.0 (was 10.3.3). The
+  release adds an input `require-checksums`, off unless asked for, knows
+  the checksums of uv up to 0.13.9 and fixes two things the workflows here
+  do not use, a partial version specifier and the Python cache on Windows.
+  Nothing the package or the image holds changes.
 
 ## [0.13.4] - 2026-11-19
 
