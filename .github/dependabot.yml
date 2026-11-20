@@ -70,3 +70,21 @@ updates:
       minor-and-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+
+  # The image the production compose file takes from a registry, caddy. Its
+  # tag names the major line without a digest, so a pull brings each fix
+  # within the line, also to an operator who runs the compose file.
+  # Dependabot raises the tag when a new line comes out, such as caddy 3.
+  # The server's own image in that file takes its version from .env, and the
+  # development compose file builds from the checkout, so neither has a tag
+  # to raise.
+  - package-ecosystem: "docker-compose"
+    directories:
+      - "/containers/production"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]

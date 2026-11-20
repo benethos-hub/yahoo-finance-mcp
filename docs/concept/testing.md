@@ -169,14 +169,18 @@ Part of the [concept](../CONCEPT.md): section 10.
   else runs, so `docker compose pull` should bring its security fixes the
   day they ship rather than with the next release here, and Caddy keeps its
   configuration compatible within a major version. Nothing is built from
-  it, so no credentials depend on it. The organisation's workflows and
+  it, so no credentials depend on it. Dependabot reads the tag all the same
+  and proposes the next line, `caddy:3`, when it comes out. The organisation's workflows and
   actions in `benethos-hub/.github` are the other exception, followed at
   `main`, and they pin the actions they use themselves.
-- Dependabot covers GitHub Actions, the two images in the `Dockerfile` and,
-  since 0.5.1, the Python dependencies in `uv.lock`. It reads `FROM` lines
+- Dependabot covers GitHub Actions, the two images in the `Dockerfile`,
+  Caddy's tag in the production compose file and, since 0.5.1, the Python
+  dependencies in `uv.lock`. In the `Dockerfile` it reads `FROM` lines
   only, so the uv image is a stage of its own rather than a `COPY --from=`
   reference, and pinned to its patch, since Dependabot proposes only tags of
-  the precision already written. The ecosystem for the Python dependencies
+  the precision already written. The server's own image in the production
+  compose file takes its version from `.env`, and the development compose
+  file builds from the checkout, so neither has a tag to raise. The ecosystem for the Python dependencies
   is `uv`, since `pip` does not read `uv.lock`. It only proposes **direct**
   dependencies, and transitive ones move only when a direct bump drags them
   along, so a periodic `uv lock --upgrade` remains the way to refresh the
