@@ -555,7 +555,7 @@ on demand from
    }
    ```
 
-   Pin a version for stability with `benethos-yahoo-finance-mcp==0.13.4`. To
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.13.5`. To
    enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
@@ -801,7 +801,7 @@ The examples publish the port on the loopback address only. Drop the
 `127.0.0.1:` prefix only behind a reverse proxy that authenticates, or at the
 very least with `YF_MCP_BEARER_TOKEN` set.
 
-Pin a version for anything you depend on — `:0.13.4` for an exact release, `:0.13`
+Pin a version for anything you depend on — `:0.13.5` for an exact release, `:0.13`
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
 built from `main` on demand and is not a release at all.
 
@@ -1074,6 +1074,11 @@ With the venv interpreter directly (replace `.venv/bin/python` with
 .venv/bin/python -m mypy                      # type check
 .venv/bin/python -m pytest --cov=benethos_yahoo_finance_mcp   # coverage
 ```
+
+**Before the first commit.** `git config core.hooksPath .githooks` enables
+the pre-commit hook of this repository, once per clone. It refuses a commit
+that stages a token, a key or a local state file such as an `.env`. CI runs
+no hook, so a test holds every tracked file to the same patterns there.
 
 **Trying a checkout in Claude Desktop.** To see a change to a tool or a
 prompt in Desktop before it is released, start the server from the clone
