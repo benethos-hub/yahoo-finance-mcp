@@ -22,6 +22,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   a user. The image's own user `appuser` and the README's placeholder path
   are no such path. Nothing in the repository was found.
 
+### Changed
+
+- Dependabot reads the production compose file as well. `caddy:2` there
+  stays a tag without a digest, so `docker compose pull` keeps bringing
+  Caddy's fixes within the major line, and a new line, such as `caddy:3`,
+  now arrives as a proposal. Nothing in the package, the image or the
+  compose files changes.
+
 ## [0.13.4] - 2026-11-19
 
 A patch release. soupsieve under yfinance and pydantic with pydantic-core

@@ -81,7 +81,7 @@ containers/
   publish.yml     # PyPI, ghcr, .mcpb bundle, MCP Registry on a published release, through the organisation's actions
   freshness.yml   # daily and after each Publish run: the organisation's freshness report with its newest and index jobs, do the newest versions allowed still work, two issues
   codeql.yml      # weekly: the organisation's CodeQL analysis, the security and the quality queries on code nobody changed, findings under Security
-.github/dependabot.yml   # weekly proposals for uv, the actions and the Dockerfile
+.github/dependabot.yml   # weekly proposals for uv, the actions, the Dockerfile and the production compose file
 .github/ISSUE_TEMPLATE/  # the bug report form, its version example read by test_packaging.py
 .github/publish/   # one folder per place a release is listed, read by publish.yml
   mcp-registry/   # server.json (the entry, its bundle hash filled in at release)
