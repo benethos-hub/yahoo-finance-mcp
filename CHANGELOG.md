@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.5] - 2026-11-20
+
+A patch release. platformdirs and soupsieve under yfinance take their
+newest fixes, so the container image and the pinned Claude Desktop
+extension, which install from `uv.lock`, catch up with what an index
+installation resolves already. On PyPI the package now links its
+documentation and its changelog. No tool, prompt, parameter or schema
+changes, and no dependency range or Python version moves.
+
 ### Added
 
 - The package names its documentation and its changelog among its links,
@@ -2273,7 +2282,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.4...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.5...HEAD
+[0.13.5]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.4...v0.13.5
 [0.13.4]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.3...v0.13.4
 [0.13.3]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.2...v0.13.3
 [0.13.2]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.1...v0.13.2
