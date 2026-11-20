@@ -24,7 +24,8 @@ changes, and no dependency range or Python version moves.
   `.env`, a folder `secrets/`, the result cache, a key file or a line that
   looks like a credential into the history. Two invented tokens in the tests
   carry `pragma: allowlist secret`. It reaches only those who work on the
-  repository, nothing in the package or the image changes.
+  repository, nothing in the package or the image changes. The README's
+  development section says how to enable it.
 - A test reads every file git tracks, so in CI as well, where the hook does
   not run, and fails on a credential in the forms the hook knows, an e-mail
   address on a domain not reserved for examples and a path of a machine or
