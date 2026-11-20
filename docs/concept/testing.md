@@ -40,6 +40,11 @@ Part of the [concept](../CONCEPT.md): section 10.
   `test_codeql.py` holds the two CodeQL calls to one organisation's
   workflow, the languages, the weekly schedule and the one permission, and
   `test_dockerfile_lint.py` the Dockerfile lint's pattern and registries.
+  `test_repo_content.py` reads every file git tracks and fails on a
+  credential in a form the pre-commit hook in `.githooks/` knows, on an
+  e-mail address on a domain not reserved for examples and on a path of a
+  machine or a user, so CI holds what the hook holds on a clone that
+  enabled it. `test_pre_commit.py` runs the hook itself on the same lines.
 - **The daily check.** `.github/workflows/freshness.yml` calls the
   organisation's reusable `freshness.yml` (`docs/freshness.md` in
   `benethos-hub/.github`) and adds one job of its own, the form that document
