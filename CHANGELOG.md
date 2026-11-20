@@ -29,6 +29,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Caddy's fixes within the major line, and a new line, such as `caddy:3`,
   now arrives as a proposal. Nothing in the package, the image or the
   compose files changes.
+- `uv.lock` moves platformdirs to 4.14.8 (was 4.14.7), under yfinance,
+  which finds its cache folder with it. The release checks the folders it
+  creates on Unix more strictly, their parents and symlinks included, and
+  corrects a few lookups for root and on Windows. yfinance asks for the
+  path only and creates its folder itself. It reaches users of the
+  container image and of the pinned Claude Desktop extension, whose
+  versions come from the lock. An index installation resolves it already.
+  In the built image the cache folder stays `/home/appuser/.cache`, the
+  container starts read-only, reports healthy and answers a quote, and the
+  live check against Yahoo returns the same sections with the same fields
+  and the same error output as before.
+- `uv.lock` moves ruff to 0.17.6 (was 0.17.5) in the development group, so
+  it reaches nobody who installs the project. ruff finds and formats the
+  same as before.
 
 ## [0.13.4] - 2026-11-19
 
