@@ -43,6 +43,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `uv.lock` moves ruff to 0.17.6 (was 0.17.5) in the development group, so
   it reaches nobody who installs the project. ruff finds and formats the
   same as before.
+- `uv.lock` moves soupsieve to 4.1.3 (was 4.1.2), under `beautifulsoup4`
+  and yfinance. The release removes more cases where a CSS selector took
+  quadratic time, in `filter()`, in the `of-type` selectors and in
+  `:lang()`. yfinance calls no CSS selector, so no call of this server
+  takes that code. It reaches users of the container image and of the
+  pinned Claude Desktop extension, whose versions come from the lock. An
+  index installation resolves it already. The live check against Yahoo
+  returns the same sections with the same fields and the same error output
+  as before.
 
 ## [0.13.4] - 2026-11-19
 
