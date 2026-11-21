@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.6] - 2026-11-21
+
+A patch release. certifi under curl_cffi takes its newest list of
+certificate authorities, so the pinned Claude Desktop extension and the
+container image, which install from `uv.lock`, catch up with what an index
+installation resolves already. No tool, prompt, parameter or schema
+changes, and no dependency range or Python version moves.
+
 ### Changed
 
 - `uv.lock` moves certifi to 2026.11.20 (was 2026.10.23), under curl_cffi
@@ -2306,7 +2314,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.5...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.6...HEAD
+[0.13.6]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.5...v0.13.6
 [0.13.5]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.4...v0.13.5
 [0.13.4]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.3...v0.13.4
 [0.13.3]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.2...v0.13.3
