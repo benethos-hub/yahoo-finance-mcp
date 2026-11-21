@@ -6,6 +6,29 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `uv.lock` moves certifi to 2026.11.20 (was 2026.10.23), under curl_cffi
+  and yfinance. It is the list of certificate authorities curl_cffi checks
+  Yahoo's certificate against where Python names no CA file of its own, as
+  on Windows. The release drops five roots, Buypass Class 2 and Class 3,
+  Certigna Root CA and QuoVadis Root CA 1 G3 and 3 G3, and adds none. The
+  seven hosts of Yahoo that yfinance names chain to DigiCert Global Root
+  G2, which stays, and each still verifies against the new list. It
+  reaches users of the pinned Claude Desktop extension and of the
+  container image, whose versions come from the lock. An index
+  installation resolves it already. In the image curl_cffi reads the
+  system's list from the base image, so the image holds the new certifi
+  without reading it. The image built from this lock starts read-only,
+  reports healthy and answers a quote and a search, and the live check
+  against Yahoo returns the same output and the same error output as
+  before, on a day the markets are closed.
+- `uv.lock` moves coverage to 7.17.4 (was 7.17.3) in the development
+  group, under pytest-cov, so it reaches nobody who installs the project.
+  The release fixes data lost in parallel and threaded runs and reads a
+  configuration file that starts with a byte order mark. The suite
+  measures 98.06 percent with either version.
+
 ## [0.13.5] - 2026-11-20
 
 A patch release. platformdirs and soupsieve under yfinance take their
