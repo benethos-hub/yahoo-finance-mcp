@@ -6,6 +6,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `uv.lock` moves sse-starlette to 3.7.1 (was 3.7.0), under mcp, which
+  streams its answers over SSE and streamable HTTP with it. The release
+  sends the closing part of a stream when the server's shutdown ends it.
+  It reaches users of the container image and of the pinned Claude
+  Desktop extension, whose versions come from the lock, and only the
+  image serves HTTP. An index installation resolves it already.
+- `uv.lock` moves charset-normalizer to 3.5.3 (was 3.5.2), under requests
+  under yfinance. The release speeds up detection and fixes several
+  misdetected encodings. yfinance fetches through curl_cffi and keeps
+  requests as a fallback, so the server does not call it. It reaches the
+  same installations as sse-starlette.
+- `uv.lock` moves coverage to 7.17.5 (was 7.17.4) in the development
+  group, under pytest-cov, so it reaches nobody who installs the project.
+
 ## [0.13.6] - 2026-11-21
 
 A patch release. certifi under curl_cffi takes its newest list of
