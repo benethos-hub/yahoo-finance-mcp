@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.7] - 2026-11-23
+
+A patch release. Over `--transport sse`, stopping the server with a
+stream still open no longer leaves a traceback in the log. sse-starlette
+under mcp and charset-normalizer under yfinance take their newest
+patches, so the pinned Claude Desktop extension and the container image,
+which install from `uv.lock`, catch up with what an index installation
+resolves already. No tool, prompt, parameter or schema changes, and no
+dependency range or Python version moves.
+
 ### Fixed
 
 - Over `--transport sse`, stopping the server with a stream still open,
@@ -2341,7 +2351,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.6...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.7...HEAD
+[0.13.7]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.6...v0.13.7
 [0.13.6]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.5...v0.13.6
 [0.13.5]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.4...v0.13.5
 [0.13.4]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.3...v0.13.4
