@@ -40,7 +40,7 @@ nothing and answers from the process itself.
 | `cache.py` | Opt-in persistent result cache (SQLite) with per-tool TTLs. Off until `configure(settings)` enables it. |
 | `formatting.py` | Convert pandas/yfinance output to compact, JSON-safe values. |
 | `logbook/` | Every log line, as a function, and the one stderr handler. The only package that imports `logging` (see §4). |
-| `transport/` | `stdio.py`, and `http.py`: the HTTP app with the DNS-rebinding policy and the optional bearer guard in front, served by uvicorn. stdio never touches the HTTP half. |
+| `transport/` | `stdio.py`, and `http.py`: the HTTP app with the DNS-rebinding policy and the optional bearer guard in front, the SSE app wrapped so each request is answered once, served by uvicorn. stdio never touches the HTTP half. |
 | `errors.py` | `ToolError`, `SymbolNotFoundError`, `RateLimitError`. |
 | `py.typed` | PEP 561 marker. Without it a type checker skips the installed package and every annotation in it goes unused. |
 
