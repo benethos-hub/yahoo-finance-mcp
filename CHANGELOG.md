@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Over `--transport sse`, stopping the server with a stream still open,
+  on Ctrl+C, a container stop or a restart, left a traceback in the log:
+  `RuntimeError: Unexpected ASGI message 'http.response.start' sent, after
+  response already completed.` The SDK's SSE endpoint answers a second
+  time after its stream ends, and uvicorn refused that answer. The client
+  saw its stream end cleanly either way. The SSE app now answers each
+  request once, and the stop leaves no traceback. Streamable HTTP did not
+  have the fault and is unchanged.
+
 ### Changed
 
 - `uv.lock` moves sse-starlette to 3.7.1 (was 3.7.0), under mcp, which

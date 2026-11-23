@@ -180,10 +180,14 @@ class TestHttpApp:
         assert app != "streamable-app", "the guard has to be in front of the app"
         assert callable(app)
 
-    def test_sse_uses_the_sse_app(self):
+    @staticmethod
+    def _sse(token):
+        built: dict[str, Any] = {}
+
         class FakeServer:
             def sse_app(self, **kwargs):
-                return ("sse", kwargs)
+                built.update(kwargs)
+                return _answers_twice
 
             def streamable_http_app(self, **kwargs):  # pragma: no cover
                 raise AssertionError("sse must not build the streamable app")
@@ -194,10 +198,91 @@ class TestHttpApp:
             path="/events",
             host="127.0.0.1",
             transport_security="policy",
-            token=None,
+            token=token,
         )
-        assert app[0] == "sse"
-        assert app[1]["sse_path"] == "/events"
+        return app, built
+
+    def test_sse_uses_the_sse_app_and_answers_once(self):
+        app, built = self._sse(None)
+        assert built["sse_path"] == "/events"
+        assert _sent(app) == _ONE_ANSWER
+
+    def test_sse_behind_the_token_answers_once(self):
+        app, _ = self._sse("s3cret")
+        assert _sent(app, [(b"authorization", b"Bearer s3cret")]) == _ONE_ANSWER
+        assert _sent(app)[0]["status"] == 401
+
+
+_START = {"type": "http.response.start", "status": 200, "headers": []}
+_ONE_ANSWER = [_START, {"type": "http.response.body", "body": b"stream"}]
+
+
+async def _answers_twice(scope, receive, send) -> None:
+    """What the SDK's SSE endpoint does when the server ends its stream."""
+    await send(_START)
+    await send({"type": "http.response.body", "body": b"stream"})
+    await send(_START)
+    await send({"type": "http.response.body", "body": b""})
+
+
+def _sent(app, headers=None, scope_type: str = "http") -> list[dict[str, Any]]:
+    """Every message an ASGI app sent for one scope, in order."""
+    sent: list[dict[str, Any]] = []
+
+    async def send(message: dict[str, Any]) -> None:
+        sent.append(message)
+
+    async def receive() -> dict[str, Any]:  # pragma: no cover - never awaited
+        return {"type": "http.disconnect"}
+
+    asyncio.run(app({"type": scope_type, "headers": headers or []}, receive, send))
+    return sent
+
+
+class TestSingleResponse:
+    """The SSE app answers a request once, see ``single_response``."""
+
+    def test_a_second_answer_is_dropped(self):
+        assert _sent(transport.single_response(_answers_twice)) == _ONE_ANSWER
+
+    def test_a_streamed_body_comes_through_whole(self):
+        chunks = [
+            {"type": "http.response.body", "body": b"a", "more_body": True},
+            {"type": "http.response.body", "body": b"b", "more_body": True},
+            {"type": "http.response.body", "body": b""},
+        ]
+
+        async def streams(scope, receive, send) -> None:
+            await send(_START)
+            for chunk in chunks:
+                await send(chunk)
+
+        assert _sent(transport.single_response(streams)) == [_START, *chunks]
+
+    def test_a_second_start_before_the_body_ends_is_dropped(self):
+        async def starts_twice(scope, receive, send) -> None:
+            await send(_START)
+            await send({**_START, "status": 500})
+            await send({"type": "http.response.body", "body": b"stream"})
+
+        assert _sent(transport.single_response(starts_twice)) == _ONE_ANSWER
+
+    def test_lifespan_passes_through_untouched(self):
+        """The same scope, receive and send, so the session manager starts."""
+        reached: dict[str, Any] = {}
+
+        async def lifespan(scope, receive, send) -> None:
+            reached.update(scope=scope, receive=receive, send=send)
+
+        async def receive() -> dict[str, Any]:  # pragma: no cover - never awaited
+            return {"type": "lifespan.startup"}
+
+        async def send(message: dict[str, Any]) -> None:  # pragma: no cover
+            raise AssertionError("nothing to send")
+
+        scope = {"type": "lifespan"}
+        asyncio.run(transport.single_response(lifespan)(scope, receive, send))
+        assert reached == {"scope": scope, "receive": receive, "send": send}
 
 
 def test_the_server_believes_no_forwarded_header(monkeypatch):

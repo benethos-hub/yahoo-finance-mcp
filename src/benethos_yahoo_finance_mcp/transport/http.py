@@ -34,7 +34,7 @@ from ..logbook import access
 
 if TYPE_CHECKING:  # pragma: no cover - imported for typing only
     from mcp.server.mcpserver import MCPServer
-    from starlette.types import ASGIApp, Receive, Scope, Send
+    from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
     from ..settings import Settings
 
@@ -154,6 +154,48 @@ def bearer_middleware(app: ASGIApp, token: str) -> ASGIApp:
     return guarded
 
 
+def single_response(app: ASGIApp) -> ASGIApp:
+    """Wrap the SSE app so a request is answered once, however often it tries.
+
+    The SDK's SSE endpoint returns an empty response after its stream has
+    ended, and Starlette sends it as a second answer to the same request.
+    When the server stops with a stream still open, on Ctrl+C or a container
+    stop, uvicorn refuses that second answer and logs a traceback as an
+    "Exception in ASGI application". The client has its stream closed
+    cleanly either way. This drops a second ``http.response.start`` and
+    everything sent after the closing body. Other scopes, the lifespan
+    included, pass through untouched.
+
+    https://github.com/modelcontextprotocol/python-sdk/issues/883 tracks it.
+    Once the SDK's endpoint stops answering twice, this can go. Streamable
+    HTTP answers once and is not wrapped.
+    """
+
+    async def guarded(scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await app(scope, receive, send)
+            return
+        started = finished = False
+
+        async def send_once(message: Message) -> None:
+            nonlocal started, finished
+            if finished:
+                return
+            if message["type"] == "http.response.start":
+                if started:
+                    return
+                started = True
+            elif message["type"] == "http.response.body" and not message.get(
+                "more_body", False
+            ):
+                finished = True
+            await send(message)
+
+        await app(scope, receive, send_once)
+
+    return guarded
+
+
 async def _unauthorized(send: Send) -> None:
     """A 401 that says how to authenticate and nothing else.
 
@@ -189,10 +231,12 @@ def http_app(
     the unguarded one.
     """
     if transport == "sse":
-        app: ASGIApp = server.sse_app(
-            sse_path=path,
-            transport_security=transport_security,
-            host=host,
+        app: ASGIApp = single_response(
+            server.sse_app(
+                sse_path=path,
+                transport_security=transport_security,
+                host=host,
+            )
         )
     else:
         app = server.streamable_http_app(
