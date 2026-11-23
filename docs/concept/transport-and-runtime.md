@@ -133,6 +133,15 @@ Part of the [concept](../CONCEPT.md): section 4.
   Production appends `YAHOO_FINANCE_MCP_DOMAIN` when it is set, the name
   clients use through Caddy (see Deployment), which would otherwise get 421.
   `tests/test_cli.py` holds it to that.
+  The SSE app answers each request once. The SDK's SSE endpoint returns an
+  empty response after its stream ends, and when the server stops with a
+  stream still open, uvicorn refused that second answer with a traceback
+  in the log, the client unaffected. `transport.single_response` wraps the
+  `sse_app` inside the bearer guard and drops a second response start and
+  anything sent after the closing body, every other scope passed through.
+  Streamable HTTP answers once and is not wrapped. The wrapper can go once
+  the SDK's endpoint stops answering twice (modelcontextprotocol/python-sdk
+  issue 883).
 - **Deployment:** everything for containers sits in `containers/`. The
   `Dockerfile` in `containers/images/yahoo-finance-mcp/` (multi-stage,
   non-root, healthcheck, dependencies installed reproducibly from `uv.lock`

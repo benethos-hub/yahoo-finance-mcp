@@ -6,7 +6,13 @@ branch any further itself.
 
 from __future__ import annotations
 
-from .http import bearer_middleware, http_app, run_http, transport_security_for
+from .http import (
+    bearer_middleware,
+    http_app,
+    run_http,
+    single_response,
+    transport_security_for,
+)
 from .stdio import run_stdio
 
 __all__ = [
@@ -14,5 +20,6 @@ __all__ = [
     "http_app",
     "run_http",
     "run_stdio",
+    "single_response",
     "transport_security_for",
 ]
