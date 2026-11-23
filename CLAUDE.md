@@ -61,7 +61,7 @@ src/benethos_yahoo_finance_mcp/
     calls.py      #   the lines: one per tool call, arguments refused
     cache.py      #   the lines: the result cache's state and failures
     upstream.py   #   the lines: rate limits, a missing constant
-  transport/      # stdio.py, http.py (Host allow-list + optional bearer guard)
+  transport/      # stdio.py, http.py (Host allow-list + optional bearer guard, one answer per SSE request)
   errors.py       # ToolError / SymbolNotFoundError / RateLimitError
   py.typed        # PEP 561 marker, without it the annotations reach nobody
 tests/            # mocked, offline unit tests (+ live smoke.py, not collected), FakeTicker in fakes.py
