@@ -258,35 +258,47 @@ def test_nothing_is_known_before_the_first_request(fresh):
 def test_a_block_that_ran_through_reached_yahoo(fresh):
     with tickers.upstream("Failed"):
         pass
-    assert tickers.last_answer() == (True, 0)
+    assert tickers.last_answer() == (True, 0, False)
 
 
 def test_a_missing_symbol_reached_yahoo(fresh):
     with pytest.raises(SymbolNotFoundError):
         with tickers.upstream("Failed", not_found=(_NoSuchData,), symbol="SPY"):
             raise _NoSuchData()
-    assert tickers.last_answer() == (True, 0)
+    assert tickers.last_answer() == (True, 0, False)
 
 
 def test_yfinances_own_error_reached_yahoo(fresh):
     from yfinance.exceptions import YFTickerMissingError
 
     tickers.wrap_upstream(YFTickerMissingError("XYZ", "no timezone"), "Failed")
-    assert tickers.last_answer() == (True, 0)
+    assert tickers.last_answer() == (True, 0, False)
 
 
-@pytest.mark.parametrize(
-    "exc", [YFRateLimitError(), ConnectionError("down")], ids=["rate", "network"]
-)
-def test_a_refusal_or_a_network_error_did_not_reach_yahoo(fresh, exc):
+def test_a_rate_limit_reached_yahoo_and_held_the_server_off(fresh):
+    """Yahoo answered, it only slowed the server down."""
+    with pytest.raises(RateLimitError):
+        with tickers.upstream("Failed"):
+            raise YFRateLimitError()
+    assert tickers.last_answer() == (True, 0, True)
+
+
+def test_a_network_error_did_not_reach_yahoo(fresh):
     with pytest.raises(ToolError):
         with tickers.upstream("Failed"):
-            raise exc
-    assert tickers.last_answer() == (False, 0)
+            raise ConnectionError("down")
+    assert tickers.last_answer() == (False, 0, False)
+
+
+def test_the_next_answer_clears_the_rate_limit(fresh):
+    tickers.wrap_upstream(YFRateLimitError(), "Failed")
+    with tickers.upstream("Failed"):
+        pass
+    assert tickers.last_answer() == (True, 0, False)
 
 
 def test_a_fault_in_code_says_nothing_about_yahoo(monkeypatch):
-    monkeypatch.setattr(tickers, "_last_answer", (False, 0.0))
+    monkeypatch.setattr(tickers, "_last_answer", (False, False, 0.0))
     with pytest.raises(ToolError):
         with tickers.upstream("Failed"):
             raise RuntimeError("boom")
@@ -298,13 +310,13 @@ def test_the_last_answer_names_its_fields(fresh):
     tickers.answered(True)
     last = tickers.last_answer()
     assert isinstance(last, yahoo.LastAnswer)
-    assert (last.reachable, last.seconds_ago) == (True, 0)
+    assert (last.reachable, last.seconds_ago, last.rate_limited) == (True, 0, False)
 
 
 def test_the_age_is_counted_in_whole_seconds(monkeypatch):
     now = tickers.time.monotonic()
-    monkeypatch.setattr(tickers, "_last_answer", (True, now - 17.9))
-    assert tickers.last_answer() == (True, 17)
+    monkeypatch.setattr(tickers, "_last_answer", (True, False, now - 17.9))
+    assert tickers.last_answer() == (True, 17, False)
 
 
 def test_a_rate_limit_in_a_batch_of_quotes_is_remembered(fresh, monkeypatch):
@@ -319,7 +331,7 @@ def test_a_rate_limit_in_a_batch_of_quotes_is_remembered(fresh, monkeypatch):
     )
     with pytest.raises(RateLimitError):
         yahoo.get_quotes(["AAPL"])
-    assert tickers.last_answer() == (False, 0)
+    assert tickers.last_answer() == (True, 0, True)
 
 
 def test_a_batch_of_quotes_that_came_back_reached_yahoo(fresh, monkeypatch):
@@ -327,7 +339,7 @@ def test_a_batch_of_quotes_that_came_back_reached_yahoo(fresh, monkeypatch):
         tickers, "get_ticker", lambda s: FakeTicker(fast_info={"lastPrice": 1.0})
     )
     yahoo.get_quotes(["AAPL"])
-    assert tickers.last_answer() == (True, 0)
+    assert tickers.last_answer() == (True, 0, False)
 
 
 def _http_error(status: int | None) -> HTTPError:
@@ -340,13 +352,20 @@ def _http_error(status: int | None) -> HTTPError:
 def test_an_http_status_is_an_answer_and_is_named(fresh, status):
     error = tickers.wrap_upstream(_http_error(status), "Failed")
     assert str(error) == f"Failed: Yahoo answered HTTP {status}."
-    assert tickers.last_answer() == (True, 0)
+    assert tickers.last_answer() == (True, 0, False)
+
+
+def test_an_http_429_is_a_rate_limit_and_keeps_its_message(fresh):
+    """Should one pass yfinance unconverted, the status still says so."""
+    error = tickers.wrap_upstream(_http_error(429), "Failed")
+    assert str(error) == "Failed: Yahoo answered HTTP 429."
+    assert tickers.last_answer() == (True, 0, True)
 
 
 def test_an_http_error_without_a_response_is_still_an_answer(fresh):
     error = tickers.wrap_upstream(_http_error(None), "Failed")
     assert str(error) == "Failed: Yahoo answered with an HTTP error."
-    assert tickers.last_answer() == (True, 0)
+    assert tickers.last_answer() == (True, 0, False)
 
 
 def test_the_text_of_an_http_error_stays_out(fresh):
@@ -363,4 +382,4 @@ def test_the_text_of_an_http_error_stays_out(fresh):
 def test_a_network_error_is_still_one(fresh):
     error = tickers.wrap_upstream(ConnectionError("down"), "Failed")
     assert str(error) == "Failed: Yahoo could not be reached (ConnectionError)."
-    assert tickers.last_answer() == (False, 0)
+    assert tickers.last_answer() == (False, 0, False)

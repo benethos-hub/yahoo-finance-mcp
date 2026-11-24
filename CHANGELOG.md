@@ -6,6 +6,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `server_status` with `details` reports `rate_limited` in its `upstream:`
+  block, after `checked_seconds_ago`: `yes` when Yahoo answered the last
+  request with a rate limit, `no` for any other ending, `unknown` before the
+  first request. It never quotes Yahoo's text. An HTTP 429 that reaches the
+  server past yfinance counts as a rate limit too.
+
+### Fixed
+
+- `server_status` reported a rate limit of Yahoo as `reachable: no`, and a
+  model then said Yahoo was unreachable, although Yahoo had answered and only
+  held the server off. A rate limit now reads `reachable: yes` with
+  `rate_limited: yes`. `reachable: no` is left for a request that got no
+  answer at all, such as a network error.
+
 ## [0.13.8] - 2026-11-24
 
 A patch release. The container image is built on the newest

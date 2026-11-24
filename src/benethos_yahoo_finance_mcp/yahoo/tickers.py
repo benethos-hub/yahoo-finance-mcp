@@ -51,10 +51,14 @@ except (ImportError, AttributeError):  # pragma: no cover - see above
     _HTTP_ERRORS = ()
 
 # How the last request to Yahoo ended, for the server's status: whether Yahoo
-# answered, and when by the monotonic clock. None until the first request. A
-# cached result asks nobody and leaves it alone. One tuple replaced whole, so
-# a reader in another worker thread sees the old pair or the new one.
-_last_answer: tuple[bool, float] | None = None
+# answered, whether the answer was a rate limit, and when by the monotonic
+# clock. None until the first request. A cached result asks nobody and leaves
+# it alone. One tuple replaced whole, so a reader in another worker thread
+# sees the old one or the new one.
+_last_answer: tuple[bool, bool, float] | None = None
+
+# The HTTP status of a rate limit, should one reach us past yfinance.
+_TOO_MANY_REQUESTS = 429
 
 
 class LastAnswer(NamedTuple):
@@ -62,26 +66,33 @@ class LastAnswer(NamedTuple):
 
     reachable: bool
     seconds_ago: int
+    rate_limited: bool
 
 
-def answered(reachable: bool) -> None:
-    """Remember that the request just made reached Yahoo, or did not."""
+def answered(reachable: bool, *, rate_limited: bool = False) -> None:
+    """Remember that the request just made reached Yahoo, or did not.
+
+    ``rate_limited`` says that Yahoo answered and held the request off.
+    """
     global _last_answer
-    _last_answer = (reachable, time.monotonic())
+    _last_answer = (reachable, rate_limited, time.monotonic())
 
 
 def last_answer() -> LastAnswer | None:
-    """Whether the last request reached Yahoo, and how many seconds ago.
+    """Whether the last request reached Yahoo, how many seconds ago, and
+    whether Yahoo held it off.
 
-    ``None`` before the first. A rate limit counts as not reached, Yahoo
-    refused, and so does a network error. An error yfinance raised about the
-    data counts as reached, Yahoo answered with it, and so does an HTTP status.
+    ``None`` before the first. A rate limit counts as reached, Yahoo answered
+    and only slowed the server down, and is the one answer with
+    ``rate_limited``. An error yfinance raised about the data counts as
+    reached, Yahoo answered with it, and so does an HTTP status. A network
+    error counts as not reached.
     """
     last = _last_answer
     if last is None:
         return None
-    reachable, at = last
-    return LastAnswer(reachable, int(time.monotonic() - at))
+    reachable, rate_limited, at = last
+    return LastAnswer(reachable, int(time.monotonic() - at), rate_limited)
 
 
 def _http_status(exc: Exception) -> int | None:
@@ -110,14 +121,14 @@ def wrap_upstream(exc: Exception, message: str) -> ToolError:
     A fault in code says nothing about Yahoo and leaves that alone.
     """
     if isinstance(exc, YFRateLimitError):
-        answered(False)
+        answered(True, rate_limited=True)
         return RateLimitError()
     if isinstance(exc, YFException):
         answered(True)
         return ToolError(f"{message}: {exc}")
     if isinstance(exc, _HTTP_ERRORS):
-        answered(True)
         status = _http_status(exc)
+        answered(True, rate_limited=status == _TOO_MANY_REQUESTS)
         return ToolError(
             f"{message}: Yahoo answered HTTP {status}."
             if status
