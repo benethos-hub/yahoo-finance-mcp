@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.8] - 2026-11-24
+
+A patch release. The container image is built on the newest
+`python:3.15-slim`, the Debian 13.8 point release with OpenSSL 3.5.9 and
+a new glibc. The package, the Claude Desktop extensions and the MCP
+Registry entry change only in their version. No tool, prompt, parameter
+or schema changes, and no dependency range or Python version moves.
+
 ### Changed
 
 - `uv.lock` moves packaging to 26.4 (was 26.3) in the development group,
@@ -2365,7 +2373,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.7...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.8...HEAD
+[0.13.8]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.7...v0.13.8
 [0.13.7]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.6...v0.13.7
 [0.13.6]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.5...v0.13.6
 [0.13.5]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.4...v0.13.5
