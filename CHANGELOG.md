@@ -6,6 +6,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `uv.lock` moves packaging to 26.4 (was 26.3) in the development group,
+  under pytest, so it reaches nobody who installs the project. The release
+  drops Python 3.9, adds marker and version range features and rejects a
+  few malformed specifiers and requirement URLs.
+- The `Dockerfile` pins the index of `python:3.15-slim` from 2026-11-24
+  08:11 UTC, a rebuild of its amd64 and arm64 images on Debian 13.8 (was
+  13.7). It brings OpenSSL 3.5.9 (was 3.5.7), glibc 2.41-12+deb13u5 (was
+  deb13u4) and a zlib update from the point release. Python stays 3.15.2.
+  It reaches users of the container image. The server's own fetches go
+  through curl_cffi, which brings its own TLS library, so the new OpenSSL
+  reaches Python's `ssl` module and not the requests to Yahoo.
+
 ## [0.13.7] - 2026-11-23
 
 A patch release. Over `--transport sse`, stopping the server with a
