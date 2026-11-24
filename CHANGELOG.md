@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `uv.lock` moves packaging to 26.4 (was 26.3) in the development group,
+  under pytest, so it reaches nobody who installs the project. The release
+  drops Python 3.9, adds marker and version range features and rejects a
+  few malformed specifiers and requirement URLs.
+
 ## [0.13.7] - 2026-11-23
 
 A patch release. Over `--transport sse`, stopping the server with a
