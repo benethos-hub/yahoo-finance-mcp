@@ -168,7 +168,7 @@ def test_get_fund_data_unknown_symbol_raises_not_found(patch_ticker):
     patch_ticker(FakeTicker(funds_data=error))
     with pytest.raises(SymbolNotFoundError):
         yahoo.get_fund_data("NOSUCHFUND")
-    assert tickers.last_answer() == (True, 0)
+    assert tickers.last_answer() == (True, 0, False)
 
 
 def test_get_fund_data_server_error_is_not_a_missing_symbol(patch_ticker):

@@ -16,7 +16,7 @@ import pytest
 
 from benethos_yahoo_finance_mcp import __version__, yahoo
 from benethos_yahoo_finance_mcp.cli import parse_settings
-from benethos_yahoo_finance_mcp.errors import RateLimitError
+from benethos_yahoo_finance_mcp.errors import RateLimitError, ToolError
 from benethos_yahoo_finance_mcp.server import build_server
 from benethos_yahoo_finance_mcp.tools import status
 from benethos_yahoo_finance_mcp.yahoo import tickers
@@ -94,6 +94,7 @@ def test_details_add_yfinance_and_the_upstream_block_after_the_core(
         "  upstream:",
         "    reachable: unknown",
         "    checked_seconds_ago: never",
+        "    rate_limited: unknown",
     ]
 
 
@@ -110,18 +111,35 @@ def test_after_an_answer_yahoo_is_reachable(server, no_request_yet, monkeypatch)
     text = _status(server, details=True)
     assert _value(text, "reachable") == "yes"
     assert _value(text, "checked_seconds_ago") == "17"
+    assert _value(text, "rate_limited") == "no"
 
 
-def test_after_a_rate_limit_yahoo_is_not_reachable(server, no_request_yet):
-    """The status answers although the request before it failed."""
+def test_after_a_rate_limit_yahoo_is_reachable_and_holds_the_server_off(
+    server, no_request_yet
+):
+    """Yahoo answered, it only slowed the server down. The status answers
+    although the request before it failed, and quotes nothing of Yahoo's."""
     from yfinance.exceptions import YFRateLimitError
 
     with pytest.raises(RateLimitError):
         with tickers.upstream("Failed"):
-            raise YFRateLimitError()
+            raise YFRateLimitError()  # its text: "Too Many Requests. ..."
+    text = _status(server, details=True)
+    assert _value(text, "reachable") == "yes"
+    assert _value(text, "checked_seconds_ago") == "0"
+    assert _value(text, "rate_limited") == "yes"
+    assert "Too Many" not in text
+
+
+def test_without_an_answer_yahoo_is_not_reachable(server, no_request_yet):
+    with pytest.raises(ToolError):
+        with tickers.upstream("Failed"):
+            raise ConnectionError("down")
     text = _status(server, details=True)
     assert _value(text, "reachable") == "no"
     assert _value(text, "checked_seconds_ago") == "0"
+    assert _value(text, "rate_limited") == "no"
+    assert "down" not in text
 
 
 def test_no_secret_in_the_answer(monkeypatch):

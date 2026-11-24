@@ -288,7 +288,7 @@ show in place of its name.
 | `get_industry` | Browse an industry by key: overview, parent sector, top/top-performing/top-growth companies. |
 | `get_market` | Trading status and headline index summary for a market (US, EUROPE, ASIA, …). |
 | `screen` | Find stocks by criteria (dividend yield, P/E, market cap, region, sector, …), ranked, with the total number of matches. |
-| `server_status` | This server's version, transport and uptime, and with `details` the yfinance version in use and whether its last request reached Yahoo and how long ago. Asks Yahoo nothing. |
+| `server_status` | This server's version, transport and uptime, and with `details` the yfinance version in use, whether its last request reached Yahoo, how long ago and whether Yahoo held it off with a rate limit. Asks Yahoo nothing. |
 
 Most `get_*` tools take a Yahoo Finance **symbol** — either a ticker (`AAPL`,
 `SAP.DE`) or a plain ISIN. Use `search` to turn a company name into one. Four
