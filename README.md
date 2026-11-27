@@ -227,8 +227,8 @@ data spelled out every time.
 form, as long as each holding has an instrument and a share count:
 
 ```
-SAP.DE:50, ALV.DE:20, IE00B4L5Y983:120
-50x SAP.DE, 12,5x IE00B4L5Y983
+SAP.DE:50, ALV.DE:20, IE00B3RBWM25:120
+50x SAP.DE, 12,5x IE00B3RBWM25
 ```
 
 Rows pasted from a bank export or a spreadsheet work too, with whatever

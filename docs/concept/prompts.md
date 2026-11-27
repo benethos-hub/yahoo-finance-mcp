@@ -26,7 +26,7 @@ the text and nowhere else: no tool receives them, Yahoo never sees them, and
 no log line carries them (a test renders the prompt with a count and looks
 for it in every log record). The text tells the model to pass them to no
 tool. `positions` takes any form a model can read, `SAP.DE:50`, `50x
-IE00B4L5Y983` or rows pasted from a bank export with columns of their own,
+IE00B3RBWM25` or rows pasted from a bank export with columns of their own,
 decimal commas included. Whatever else such rows carry, an account number
 for one, reaches the server the same way, so the text tells the model to
 ignore every column but the instrument and the count, and the README asks

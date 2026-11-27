@@ -16,6 +16,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The `dividend_calendar` prompt names a distributing ETF in its examples,
+  IE00B3RBWM25 (was IE00B4L5Y983), in the `positions` description, the
+  prompt text, the README and CONCEPT §7a. The old one accumulates and pays
+  nothing, so a calendar built from the README's example showed it with
+  no distributions in the data.
 - `uv.lock` moves typer to 0.29.3 (was 0.29.2), which only `mcp[cli]` in
   the development group pulls in, so it reaches nobody who installs the
   project. The release fixes `allow_dash` with a `Path` annotation, which
