@@ -14,6 +14,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   first request. It never quotes Yahoo's text. An HTTP 429 that reaches the
   server past yfinance counts as a rate limit too.
 
+### Changed
+
+- `uv.lock` moves typer to 0.29.3 (was 0.29.2), which only `mcp[cli]` in
+  the development group pulls in, so it reaches nobody who installs the
+  project. The release fixes `allow_dash` with a `Path` annotation, which
+  the `mcp` command line does not use.
+
 ### Fixed
 
 - `server_status` reported a rate limit of Yahoo as `reachable: no`, and a
