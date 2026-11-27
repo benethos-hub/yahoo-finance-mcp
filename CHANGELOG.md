@@ -20,6 +20,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the development group pulls in, so it reaches nobody who installs the
   project. The release fixes `allow_dash` with a `Path` annotation, which
   the `mcp` command line does not use.
+- The `Dockerfile` builds with uv 0.13.10 (was 0.13.9). It fixes
+  GHSA-vjvj-3m3f-fgmm, rated low: uv accepted a wheel or ZIP source
+  archive whose two size records disagree, so it could install other
+  content than pip from the same bytes. Using it takes a distribution an
+  attacker controls, the image installs only what `uv.lock` pins from
+  PyPI, and PyPI rejects such archives itself, the reason for the low
+  rating. It reaches users of the container image. uv now
+  also checks that the requirements in `uv.lock` match the locked
+  versions, and the build passes that check.
+- The `Dockerfile` pins the index of `python:3.15-slim` from 2026-11-27.
+  Only its arm/v5, arm/v7, ppc64le and s390x images were rebuilt, amd64
+  and arm64 are byte for byte the same, so the published image does not
+  change. Python stays 3.15.2 on Debian 13.8 with OpenSSL 3.5.9.
 
 ### Fixed
 
