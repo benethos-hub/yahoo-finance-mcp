@@ -15,10 +15,10 @@
 # cover, and nothing here needs more than the frontend built into BuildKit.
 
 # ---- uv: only the source of the binary, a stage so Dependabot sees it ----
-FROM ghcr.io/astral-sh/uv:0.13.9@sha256:d3b601f0c7b118bc1753febf7c41cc80981df678445e0254284eecf84db79a7d AS uv
+FROM ghcr.io/astral-sh/uv:0.13.10@sha256:a3ea1357342c1a4bf9a0c53a3deb1b55379aefa037338d8113d5771efa01774f AS uv
 
 # ---- builder: install locked deps + package into /opt/venv via uv ----
-FROM python:3.15-slim@sha256:2c879838405817bd51e53c75ab78f613f446c448070c2d70e2e99639705bd409 AS builder
+FROM python:3.15-slim@sha256:63bb298d2b7b88f176f51b5189f54ce6535c997682ea70885d2132f5d473a8a5 AS builder
 
 # Bring in the uv binary.
 COPY --from=uv /uv /usr/local/bin/uv
@@ -41,7 +41,7 @@ COPY src ./src
 RUN uv sync --frozen --no-dev --no-editable
 
 # ---- runtime: minimal image that just runs the server ----
-FROM python:3.15-slim@sha256:2c879838405817bd51e53c75ab78f613f446c448070c2d70e2e99639705bd409 AS runtime
+FROM python:3.15-slim@sha256:63bb298d2b7b88f176f51b5189f54ce6535c997682ea70885d2132f5d473a8a5 AS runtime
 
 # All runtime configuration is via environment variables, so the container
 # needs no CMD args and stays fully configurable with `docker run -e ...`.
