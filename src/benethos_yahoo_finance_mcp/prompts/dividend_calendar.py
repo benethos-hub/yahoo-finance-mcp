@@ -25,7 +25,7 @@ class DividendCalendar(Prompt):
             str,
             Field(
                 description="Holdings with their share counts in any form, such "
-                "as SAP.DE:50, 50x IE00B4L5Y983, or rows pasted from a bank "
+                "as SAP.DE:50, 50x IE00B3RBWM25, or rows pasted from a bank "
                 "export. An entry without a count is shown per share only."
             ),
         ],
@@ -49,7 +49,7 @@ class DividendCalendar(Prompt):
 Year: {year} (the current year when empty)
 Currency: {currency} (EUR when empty)
 
-The positions may come in any form: SAP.DE:50, 50x IE00B4L5Y983, or rows \
+The positions may come in any form: SAP.DE:50, 50x IE00B3RBWM25, or rows \
 pasted from a bank export or a spreadsheet with columns of their own. Read \
 from each entry the instrument, by its ISIN where there is one and else by \
 ticker or name, and the number of shares. A decimal comma is a decimal, so \

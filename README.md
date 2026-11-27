@@ -227,8 +227,8 @@ data spelled out every time.
 form, as long as each holding has an instrument and a share count:
 
 ```
-SAP.DE:50, ALV.DE:20, IE00B4L5Y983:120
-50x SAP.DE, 12,5x IE00B4L5Y983
+SAP.DE:50, ALV.DE:20, IE00B3RBWM25:120
+50x SAP.DE, 12,5x IE00B3RBWM25
 ```
 
 Rows pasted from a bank export or a spreadsheet work too, with whatever
@@ -555,7 +555,7 @@ on demand from
    }
    ```
 
-   Pin a version for stability with `benethos-yahoo-finance-mcp==0.13.8`. To
+   Pin a version for stability with `benethos-yahoo-finance-mcp==0.13.9`. To
    enable the optional result cache, add an `env` block, e.g.
    `"env": { "YF_MCP_CACHE": "1" }` (see [Caching](#caching)).
 
@@ -801,7 +801,7 @@ The examples publish the port on the loopback address only. Drop the
 `127.0.0.1:` prefix only behind a reverse proxy that authenticates, or at the
 very least with `YF_MCP_BEARER_TOKEN` set.
 
-Pin a version for anything you depend on — `:0.13.8` for an exact release, `:0.13`
+Pin a version for anything you depend on — `:0.13.9` for an exact release, `:0.13`
 to follow its patch releases. `:latest` moves with every release, and `:edge` is
 built from `main` on demand and is not a release at all.
 

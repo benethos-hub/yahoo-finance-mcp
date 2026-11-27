@@ -135,7 +135,7 @@ wheels = [
 
 [[package]]
 name = "benethos-yahoo-finance-mcp"
-version = "0.13.8"
+version = "0.13.9"
 source = { editable = "." }
 dependencies = [
     { name = "curl-cffi" },
