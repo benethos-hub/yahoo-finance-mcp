@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.9] - 2026-11-27
+
+A patch release. `server_status` tells a rate limit of Yahoo apart from
+a Yahoo it could not reach, with a new `rate_limited` field. The
+dividend calendar's examples name a distributing ETF, and the container
+image is built with uv 0.13.10. No tool, prompt or parameter is added or
+removed and no schema changes its shape. Only two descriptions change:
+`server_status`'s `details` names the new field, and `positions` names the
+other ETF. No dependency range or Python version moves.
+
 ### Added
 
 - `server_status` with `details` reports `rate_limited` in its `upstream:`
@@ -2414,7 +2424,8 @@ First public release.
   (~90%), wired into CI; Dependabot for pip and GitHub Actions updates.
 - Unit test suite (yfinance mocked, offline) and GitHub Actions CI.
 
-[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.8...HEAD
+[Unreleased]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.9...HEAD
+[0.13.9]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.8...v0.13.9
 [0.13.8]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.7...v0.13.8
 [0.13.7]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.6...v0.13.7
 [0.13.6]: https://github.com/benethos-hub/yahoo-finance-mcp/compare/v0.13.5...v0.13.6
